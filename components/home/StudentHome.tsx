@@ -4,6 +4,7 @@ import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import type { HomeworkWithStatus, Reminder } from '@/lib/types'
+import { dutyIcon } from '@/lib/dutyIcon'
 
 interface StudentHomeProps {
   fullName: string
@@ -55,7 +56,7 @@ export default function StudentHome({
             />
 
             <FeatureCard
-              href="/dienste" gradient="violet" icon="cleaning_services"
+              href="/dienste" gradient="violet" icon={myDuty ? dutyIcon(myDuty.name) : 'cleaning_services'}
               title={myDuty ? `Dienst: ${myDuty.name}` : 'Dienste'}
               meta={myDuty
                 ? (myDuty.partners.length > 0 ? `mit ${myDuty.partners.join(', ')}` : 'Diese Woche · Mo–Fr')

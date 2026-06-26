@@ -46,7 +46,7 @@ export default async function HomeworkPage() {
     // parent: show child's completions
     const { data: allStudents } = await supabase
       .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
-    const child = matchChild(profile.full_name, allStudents ?? [])
+    const child = matchChild(profile, allStudents ?? [])
     const childDoneIds = new Set<string>()
     if (child) {
       const { data: childCompletions } = await supabase
@@ -56,7 +56,11 @@ export default async function HomeworkPage() {
     homeworkWithStatus = homework.map(h => ({ ...h, done: childDoneIds.has(h.id) }))
   }
 
-  const openCount = homeworkWithStatus.filter(h => !h.done).length
+  const today = new Date().toISOString().slice(0, 10)
+  const doneCount = homeworkWithStatus.filter(h => h.done).length
+  const openCount = homeworkWithStatus.filter(h => !h.done && h.due_date > today).length
+  const missedCount = homeworkWithStatus.filter(h => !h.done && h.due_date <= today).length
+
   const { count: studentCount } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
@@ -66,9 +70,9 @@ export default async function HomeworkPage() {
   const subtitle =
     profile.role === 'teacher'
       ? `${homework.length} Aufgaben · ${homeworkWithStatus.reduce((s, h) => s + (h.completion_count ?? 0), 0)}/${(studentCount ?? 0) * homework.length} Abgaben`
-      : profile.role === 'parent'
-      ? `Status für dein Kind · ${openCount} offen`
-      : `${openCount} offen · ${homeworkWithStatus.length - openCount} erledigt`
+      : `${openCount} offen · ${doneCount} erledigt · ${missedCount} versäumt`
+
+  const isStudentOrParent = profile.role === 'student' || profile.role === 'parent'
 
   return (
     <HomeworkList
@@ -77,6 +81,7 @@ export default async function HomeworkPage() {
       userId={user.id}
       classId={profile.class_id}
       subtitle={subtitle}
+      stats={isStudentOrParent ? { open: openCount, done: doneCount, missed: missedCount } : undefined}
     />
   )
 }

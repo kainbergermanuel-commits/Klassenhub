@@ -16,6 +16,8 @@ interface Props {
   weekLabel: string
 }
 
+const STANDARD_DUTIES = ['Tafel wischen', 'Lüften', 'Blumen gießen', 'Ordner austeilen', 'Müll entleeren']
+
 const DUTY_ICONS: Record<string, string> = {
   'Tafel wischen': 'cleaning_services',
   'Lüften': 'air',
@@ -31,8 +33,30 @@ function getDutyIcon(name: string) {
 export default function DutyWeek({ duties, students, role, userId, classId, weekStart, weekLabel }: Props) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
+  const [editDuty, setEditDuty] = useState<Duty | null>(null)
+  const [randomizing, setRandomizing] = useState(false)
+
+  async function randomAssign() {
+    if (randomizing) return
+    setRandomizing(true)
+    const shuffled = [...students].sort(() => Math.random() - 0.5)
+    const supabase = createClient()
+    await Promise.all(STANDARD_DUTIES.map((name, i) => {
+      const picks = shuffled.slice(i * 2, i * 2 + 2).map(s => s.id)
+      return supabase.from('duties').upsert({
+        class_id: classId,
+        week_start: weekStart,
+        duty_name: name,
+        assignee_ids: picks,
+        created_by: userId,
+      }, { onConflict: 'class_id,week_start,duty_name' })
+    }))
+    setRandomizing(false)
+    router.refresh()
+  }
 
   const studentMap = Object.fromEntries(students.map(s => [s.id, s]))
+  const assignedStudentIds = [...new Set(duties.flatMap(d => d.assignee_ids))]
 
   async function deleteDuty(id: string) {
     const supabase = createClient()
@@ -51,13 +75,23 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
           <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{weekLabel}</p>
         </div>
         {role === 'teacher' && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
-          >
-            <span className="msym text-[19px]">add</span>
-            Dienst zuweisen
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={randomAssign}
+              disabled={randomizing}
+              className="flex items-center gap-2 gradient-violet text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              <span className="msym text-[19px]">{randomizing ? 'hourglass_empty' : 'shuffle'}</span>
+              Zufällig zuweisen
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+            >
+              <span className="msym text-[19px]">add</span>
+              Dienst zuweisen
+            </button>
+          </div>
         )}
       </div>
 
@@ -112,15 +146,9 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
                     {assignees.map(s => (
                       <span
                         key={s.id}
-                        className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
                         style={{ background: '#E0F0EE', color: '#0F8A82' }}
                       >
-                        <span
-                          className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white flex-shrink-0"
-                          style={{ background: s.avatar_color }}
-                        >
-                          {s.full_name[0]}
-                        </span>
                         {s.full_name.split(' ')[0]}
                       </span>
                     ))}
@@ -128,12 +156,20 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
                 </div>
 
                 {role === 'teacher' && (
-                  <button
-                    onClick={() => deleteDuty(duty.id)}
-                    className="msym text-[19px] text-[#CBD5D3] hover:text-kh-red opacity-0 group-hover:opacity-100 transition-all duration-150 flex-shrink-0"
-                  >
-                    delete
-                  </button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-150 flex-shrink-0">
+                    <button
+                      onClick={() => { setEditDuty(duty); setShowModal(true) }}
+                      className="msym text-[19px] text-[#CBD5D3] hover:text-kh-teal transition-colors"
+                    >
+                      edit
+                    </button>
+                    <button
+                      onClick={() => deleteDuty(duty.id)}
+                      className="msym text-[19px] text-[#CBD5D3] hover:text-kh-red transition-colors"
+                    >
+                      delete
+                    </button>
+                  </div>
                 )}
               </div>
             )
@@ -147,7 +183,9 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
           userId={userId}
           weekStart={weekStart}
           students={students}
-          onClose={() => setShowModal(false)}
+          assignedStudentIds={assignedStudentIds}
+          editDuty={editDuty ?? undefined}
+          onClose={() => { setShowModal(false); setEditDuty(null) }}
         />
       )}
     </>

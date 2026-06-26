@@ -2,14 +2,14 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getAuth, matchChild } from '@/lib/auth'
-import { todayISO } from '@/lib/date'
+import { todayISO, getMondayOfWeek } from '@/lib/date'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
 import MobileHeader from '@/components/layout/MobileHeader'
 import RolePreviewBar from '@/components/layout/RolePreviewBar'
 import type { Profile, Class } from '@/lib/types'
 
-function buildNav(profile: Profile, hwOpen: number, reminderUnread: number) {
+function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todoOpen: number) {
   const isTeacher = profile.role === 'teacher'
 
   const all = [
@@ -18,7 +18,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number) {
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
     { href: '/zahlungen', icon: 'payments', label: 'Zahlungen' },
-    { href: '/todo', icon: 'checklist', label: 'Wochen-To-Do' },
+    { href: '/todo', icon: 'checklist', label: 'Wochen-To-Do', badge: todoOpen || undefined },
     { href: '/streaks', icon: 'local_fire_department', label: 'Streaks' },
     ...(isTeacher ? [
       { href: '/klasse', icon: 'groups', label: 'Klasse' },
@@ -31,7 +31,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number) {
     { href: '/hausaufgaben', icon: 'assignment', label: 'HÜ', badge: hwOpen || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Termine' },
-    { href: '/todo', icon: 'checklist', label: 'To-Do' },
+    { href: '/todo', icon: 'checklist', label: 'To-Do', badge: todoOpen || undefined },
   ]
 
   return { all, bottom }
@@ -53,7 +53,7 @@ async function computeReminderBadge(profile: Profile, userId: string): Promise<n
   if (profile.role === 'parent') {
     const { data: students } = await supabase
       .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
-    const child = matchChild(profile.full_name, students ?? [])
+    const child = matchChild(profile, students ?? [])
     if (!child) return upcomingIds.length
     studentId = child.id
   }
@@ -84,7 +84,7 @@ async function computeHwBadge(profile: Profile): Promise<number> {
   if (profile.role === 'parent') {
     const { data: students } = await supabase
       .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
-    const child = matchChild(profile.full_name, students ?? [])
+    const child = matchChild(profile, students ?? [])
     if (!child) return 0
     studentId = child.id
   }
@@ -97,6 +97,34 @@ async function computeHwBadge(profile: Profile): Promise<number> {
   return upcomingIds.length - (count ?? 0)
 }
 
+/** Offene To-Dos dieser Woche je Rolle. */
+async function computeTodoBadge(profile: Profile, userId: string): Promise<number> {
+  if (!profile.class_id) return 0
+  const supabase = await createClient()
+  const weekStart = getMondayOfWeek()
+
+  const { data: todos } = await supabase
+    .from('todos').select('id').eq('class_id', profile.class_id).eq('week_start', weekStart)
+  const todoIds = (todos ?? []).map(t => t.id)
+  if (todoIds.length === 0) return 0
+
+  if (profile.role === 'teacher') return todoIds.length
+
+  let studentId = userId
+  if (profile.role === 'parent') {
+    const { data: students } = await supabase
+      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
+    const child = matchChild(profile, students ?? [])
+    if (!child) return 0
+    studentId = child.id
+  }
+
+  const { count } = await supabase
+    .from('todo_completions').select('todo_id', { count: 'exact', head: true })
+    .eq('student_id', studentId).in('todo_id', todoIds)
+  return todoIds.length - (count ?? 0)
+}
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, profile } = await getAuth()
   if (!user || !profile) redirect('/login')
@@ -106,31 +134,37 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ? await supabase.from('classes').select('*').eq('id', profile.class_id).single()
     : { data: null }
 
-  const [hwOpen, reminderUnread] = await Promise.all([
+  const [hwOpen, reminderUnread, todoOpen] = await Promise.all([
     computeHwBadge(profile),
     computeReminderBadge(profile, user.id),
+    computeTodoBadge(profile, user.id),
   ])
-  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread)
+  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, todoOpen)
 
   // Preview bar: only for teachers
   let previewRole: string | null = null
   let previewName: string | null = null
   let previewStudentId: string | null = null
+  let previewParentId: string | null = null
   let allStudents: { id: string; full_name: string }[] = []
+  let allParents: { id: string; full_name: string }[] = []
   if (profile.role === 'teacher' && profile.class_id) {
     const jar = await cookies()
     previewRole = jar.get('preview_role')?.value ?? null
     previewStudentId = jar.get('preview_student_id')?.value ?? null
-    const { data: students } = await supabase.from('profiles')
-      .select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student').order('full_name')
+    previewParentId = jar.get('preview_parent_id')?.value ?? null
+    const [{ data: students }, { data: parents }] = await Promise.all([
+      supabase.from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student').order('full_name'),
+      supabase.from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'parent').order('full_name'),
+    ])
     allStudents = students ?? []
+    allParents = parents ?? []
     if (previewRole === 'student') {
       const active = previewStudentId ? allStudents.find(s => s.id === previewStudentId) : allStudents[0]
       previewName = active?.full_name.split(' ')[0] ?? null
     } else if (previewRole === 'parent') {
-      const { data } = await supabase.from('profiles').select('full_name')
-        .eq('class_id', profile.class_id).eq('role', 'parent').order('full_name').limit(1)
-      previewName = data?.[0]?.full_name.split(' ')[0] ?? 'Elternteil'
+      const active = previewParentId ? allParents.find(p => p.id === previewParentId) : allParents[0]
+      previewName = active ? active.full_name.split(' ').slice(1).join(' ') || active.full_name : 'Elternteil'
     }
   }
 
@@ -147,7 +181,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <BottomNav items={bottom} />
       {profile.role === 'teacher' && (
-        <RolePreviewBar currentPreview={previewRole} previewName={previewName} previewStudentId={previewStudentId} students={allStudents} />
+        <RolePreviewBar currentPreview={previewRole} previewName={previewName} previewStudentId={previewStudentId} previewParentId={previewParentId} students={allStudents} parents={allParents} />
       )}
     </div>
   )

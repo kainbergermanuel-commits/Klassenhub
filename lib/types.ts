@@ -14,6 +14,7 @@ export type Profile = {
   avatar_seed: string | null
   avatar_hair_color: string | null
   avatar_skin_color: string | null
+  child_id: string | null
 }
 
 export type Class = {

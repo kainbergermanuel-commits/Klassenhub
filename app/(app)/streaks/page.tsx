@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO, lastDayOfPrevMonthISO, firstDayOfPrevMonthISO, daysUntil } from '@/lib/date'
-import { computeStreak, currentMilestone, MILESTONES } from '@/lib/streak'
+import { computeStreak, currentMilestone, confirmedStreak, MILESTONES } from '@/lib/streak'
 import StreakOverview from '@/components/streaks/StreakOverview'
 
 export default async function StreaksPage() {
@@ -50,17 +50,19 @@ export default async function StreaksPage() {
   }
 
   // Build per-student data
+  const allConfirmationsArr = (confirmations ?? []) as { student_id: string; milestone: number; confirmed_by: string; confirmed_at: string }[]
   const studentData = (students ?? []).map(s => {
     const doneIds = doneByStudent.get(s.id) ?? new Set<string>()
-    const streak = computeStreak(doneIds, allHwDesc ?? [], today)
+    const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today)
     const confirmedMilestones = confirmedByStudent.get(s.id) ?? new Set<number>()
+    const displayStreak = confirmedStreak(s.id, allConfirmationsArr)
 
     // Pending: current milestone threshold not yet confirmed
-    const milestone = currentMilestone(streak)
-    const pendingMilestone = streak >= 5 && milestone > 0 && !confirmedMilestones.has(milestone) ? milestone : null
+    const milestone = currentMilestone(actualStreak)
+    const pendingMilestone = actualStreak >= 5 && milestone > 0 && !confirmedMilestones.has(milestone) ? milestone : null
 
     // All confirmed milestone records for this student (for history)
-    const studentConfirmations = (confirmations ?? [])
+    const studentConfirmations = allConfirmationsArr
       .filter(c => c.student_id === s.id)
       .sort((a, b) => b.milestone - a.milestone)
 
@@ -72,7 +74,7 @@ export default async function StreaksPage() {
       avatar_hair_color: s.avatar_hair_color ?? null,
       avatar_skin_color: s.avatar_skin_color ?? null,
       gender: s.gender,
-      streak,
+      streak: displayStreak,
       pendingMilestone,
       confirmedMilestones: studentConfirmations,
     }
@@ -106,7 +108,7 @@ export default async function StreaksPage() {
 
   // Sort: by streak desc
   const withStreak = studentData
-    .filter(s => s.streak > 0 && (confirmedByStudent.get(s.id)?.size ?? 0) > 0)
+    .filter(s => s.streak > 0)
     .sort((a, b) => b.streak - a.streak)
   const noStreak = studentData.filter(s => s.streak === 0)
 

@@ -45,10 +45,10 @@ export default async function TodoPage() {
     for (const c of counts ?? []) countMap[c.todo_id] = (countMap[c.todo_id] ?? 0) + 1
     todosWithStatus = (todos ?? []).map(t => ({ ...t, done: false, completion_count: countMap[t.id] ?? 0 }))
   } else {
-    // parent: show child's completions (Kind via Nachnamen-Zuordnung)
+    // parent: show child's completions (Kind via child_id-Link, Fallback Nachname)
     const { data: allStudents } = await supabase
       .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
-    const child = matchChild(profile.full_name, allStudents ?? [])
+    const child = matchChild(profile, allStudents ?? [])
     const childDoneIds = new Set<string>()
     if (child && (todos ?? []).length > 0) {
       const { data: childCompletions } = await supabase

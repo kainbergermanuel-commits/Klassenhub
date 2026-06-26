@@ -51,16 +51,17 @@ export default function AgendaPanel({ reminders, role, userId, myViewedIds = [] 
   return (
     <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-extrabold text-[17px] text-kh-dark">Erinnerungen</h2>
-        {role === 'teacher' && (
-          <Link
-            href="/erinnerungen"
-            className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity"
-            aria-label="Neue Erinnerung"
-          >
-            <span className="msym text-[19px]">add</span>
-          </Link>
-        )}
+        <h2 className="font-extrabold text-[17px] text-kh-dark flex items-center gap-1.5">
+          <span className="msym text-[18px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>notifications</span>
+          Erinnerungen
+        </h2>
+        <Link
+          href="/erinnerungen"
+          className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+          aria-label="Zu Erinnerungen"
+        >
+          <span className="msym text-[19px]">{role === 'teacher' ? 'add' : 'arrow_forward'}</span>
+        </Link>
       </div>
 
       {groups.length === 0 ? (
@@ -72,8 +73,11 @@ export default function AgendaPanel({ reminders, role, userId, myViewedIds = [] 
         <div className="flex flex-col gap-5">
           {groups.map(g => (
             <div key={g.date}>
-              <div className="text-[12.5px] font-bold text-kh-muted mb-2.5">
-                {new Date(g.date).toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })}
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className="msym text-[14px] text-kh-amber" style={{ fontVariationSettings: "'FILL' 0" }}>warning</span>
+                <span className="text-[12.5px] font-bold text-kh-muted">
+                  {new Date(g.date).toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </span>
               </div>
               <div className="flex flex-col gap-2.5">
                 {g.items.map(r => {
@@ -120,9 +124,6 @@ export default function AgendaPanel({ reminders, role, userId, myViewedIds = [] 
         </div>
       )}
 
-      <Link href="/erinnerungen" className="block text-center text-sm font-semibold text-kh-teal mt-5 hover:underline">
-        Alle Erinnerungen
-      </Link>
     </div>
   )
 }

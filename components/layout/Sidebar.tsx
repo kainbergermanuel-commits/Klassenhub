@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import ComicAvatar from '@/components/ui/ComicAvatar'
 import Avatar from '@/components/ui/Avatar'
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
 import type { Profile, Class } from '@/lib/types'
@@ -56,19 +55,15 @@ export default function Sidebar({ profile, klass, navItems }: SidebarProps) {
             className="relative group focus:outline-none"
             title="Avatar ändern"
           >
-            {profile.avatar_seed || (!profile.gender) ? (
-              <Avatar
-                name={profile.full_name}
-                color={profile.avatar_color}
-                seed={profile.avatar_seed}
-                hairColor={profile.avatar_hair_color}
-                skinColor={profile.avatar_skin_color}
-                size={64}
-                className="shadow-sm"
-              />
-            ) : (
-              <ComicAvatar gender={profile.gender} color={profile.avatar_color} size={64} className="rounded-full shadow-sm" />
-            )}
+            <Avatar
+              name={profile.full_name}
+              color={profile.avatar_color}
+              seed={profile.avatar_seed}
+              hairColor={profile.avatar_hair_color}
+              skinColor={profile.avatar_skin_color}
+              size={64}
+              className="shadow-sm"
+            />
             <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
               <span className="msym text-white text-[20px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontVariationSettings: "'FILL' 1" }}>edit</span>
             </div>
@@ -87,14 +82,29 @@ export default function Sidebar({ profile, klass, navItems }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 ${
+                className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl overflow-hidden transition-all duration-200 ${
                   active
                     ? 'bg-kh-teal-light text-kh-dark'
-                    : 'text-kh-muted hover:bg-[#F6F3ED]'
+                    : 'text-kh-muted hover:shadow-sm'
                 }`}
+                style={active ? {} : undefined}
+                onMouseEnter={e => {
+                  if (!active) {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = 'linear-gradient(135deg, #EDEDEC 0%, #F6F3ED 100%)'
+                    el.style.transform = 'translateY(-2.5px)'
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!active) {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = ''
+                    el.style.transform = ''
+                  }
+                }}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full gradient-teal" />
+                  <span className="absolute left-0 top-0 bottom-0 w-[3.8px] gradient-teal" />
                 )}
                 <span
                   className="msym text-[22px] transition-all duration-200"

@@ -1,6 +1,11 @@
+import Avatar from '@/components/ui/Avatar'
+
 interface Person {
   full_name: string
   avatar_color?: string | null
+  avatar_seed?: string | null
+  avatar_hair_color?: string | null
+  avatar_skin_color?: string | null
 }
 
 interface AvatarStackProps {
@@ -16,25 +21,27 @@ export default function AvatarStack({ people, max = 4, ring = '#ffffff', size = 
 
   return (
     <div className="flex items-center">
-      {shown.map((p, i) => {
-        const seed = encodeURIComponent(p.full_name)
-        const url = `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&backgroundColor=transparent`
-        return (
-          <div
-            key={i}
-            className="rounded-full overflow-hidden flex-shrink-0"
-            style={{
-              width: size, height: size,
-              background: p.avatar_color || '#0F8A82',
-              boxShadow: `0 0 0 2.5px ${ring}`,
-              marginLeft: i === 0 ? 0 : -size * 0.32,
-              zIndex: i,
-            }}
-          >
-            <img src={url} alt={p.full_name} width={size} height={size} style={{ width: size, height: size }} />
-          </div>
-        )
-      })}
+      {shown.map((p, i) => (
+        <div
+          key={i}
+          className="rounded-full overflow-hidden flex-shrink-0"
+          style={{
+            width: size, height: size,
+            boxShadow: `0 0 0 2.5px ${ring}`,
+            marginLeft: i === 0 ? 0 : -size * 0.32,
+            zIndex: i,
+          }}
+        >
+          <Avatar
+            name={p.full_name}
+            color={p.avatar_color ?? '#0F8A82'}
+            seed={p.avatar_seed ?? null}
+            hairColor={p.avatar_hair_color ?? null}
+            skinColor={p.avatar_skin_color ?? null}
+            size={size}
+          />
+        </div>
+      ))}
       {extra > 0 && (
         <div
           className="rounded-full flex items-center justify-center font-bold text-kh-dark bg-white/90"

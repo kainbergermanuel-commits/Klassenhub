@@ -71,24 +71,24 @@ BEGIN
     (class_id, subject, subject_short, subject_color, title, due_date, created_by)
   VALUES
     -- KW 24 (vergangen)
-    (v_class_id, 'Mathematik', 'MA', '#3B82F6', 'Gleichungen Kap. 5 – Übungsaufgaben',           '2026-06-09', v_teacher_id),
+    (v_class_id, 'Mathematik', 'M', '#3B82F6', 'Gleichungen Kap. 5 – Übungsaufgaben',           '2026-06-09', v_teacher_id),
     (v_class_id, 'Biologie',   'BU', '#10B981', 'Ökosystem Wald – Zusammenfassung schreiben',    '2026-06-10', v_teacher_id),
     (v_class_id, 'Deutsch',    'D',  '#EF4444', 'Erlebnisaufsatz – Entwurf abgeben',             '2026-06-11', v_teacher_id),
     (v_class_id, 'Geschichte', 'GE', '#8B5CF6', 'Fragen zur Frühen Neuzeit S. 112–115',          '2026-06-13', v_teacher_id),
     (v_class_id, 'Englisch',   'E',  '#F59E0B', 'Vocabulary Unit 8 lernen + Übungen',            '2026-06-13', v_teacher_id),
     -- KW 25 (vergangen)
-    (v_class_id, 'Mathematik', 'MA', '#3B82F6', 'Textaufgaben S. 87 – Nr. 1–8',                 '2026-06-16', v_teacher_id),
+    (v_class_id, 'Mathematik', 'M', '#3B82F6', 'Textaufgaben S. 87 – Nr. 1–8',                 '2026-06-16', v_teacher_id),
     (v_class_id, 'Physik',     'PH', '#6366F1', 'Kräfte und Bewegung – Arbeitsblatt',            '2026-06-17', v_teacher_id),
     (v_class_id, 'Englisch',   'E',  '#F59E0B', 'Short Story lesen + Zusammenfassung',           '2026-06-18', v_teacher_id),
     (v_class_id, 'Deutsch',    'D',  '#EF4444', 'Gedichtanalyse „Erlkönig" (Goethe)',            '2026-06-19', v_teacher_id),
     (v_class_id, 'Geografie',  'GW', '#F97316', 'Klimazonen Lernblatt ausfüllen',               '2026-06-20', v_teacher_id),
     -- KW 26 (vergangen / heute)
-    (v_class_id, 'Mathematik', 'MA', '#3B82F6', 'Geometrie – Dreiecke & Kreise Übungsblatt',    '2026-06-23', v_teacher_id),
+    (v_class_id, 'Mathematik', 'M', '#3B82F6', 'Geometrie – Dreiecke & Kreise Übungsblatt',    '2026-06-23', v_teacher_id),
     (v_class_id, 'Englisch',   'E',  '#F59E0B', 'Grammar Unit 9 – Test-Vorbereitung',           '2026-06-25', v_teacher_id),
     (v_class_id, 'Biologie',   'BU', '#10B981', 'Pflanzen bestimmen – Fotos + Steckbriefe',      '2026-06-26', v_teacher_id),
     -- KW 27 (bevorstehend)
     (v_class_id, 'Deutsch',    'D',  '#EF4444', 'Textinterpretation „Die Verwandlung" S. 1–15', '2026-06-30', v_teacher_id),
-    (v_class_id, 'Mathematik', 'MA', '#3B82F6', 'Algebra – Prüfungsvorbereitung Kap. 6 & 7',    '2026-07-02', v_teacher_id);
+    (v_class_id, 'Mathematik', 'M', '#3B82F6', 'Algebra – Prüfungsvorbereitung Kap. 6 & 7',    '2026-07-02', v_teacher_id);
 
 END $$;
 

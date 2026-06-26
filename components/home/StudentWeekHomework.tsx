@@ -91,7 +91,11 @@ export default function StudentOpenHomework({ homework, userId }: Props) {
         <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline">Alle</Link>
       </div>
       {open.length === 0 ? (
-        <p className="text-sm text-kh-muted font-medium">Alle erledigt 🎉</p>
+        <div className="flex flex-col items-center justify-center py-4 gap-2">
+          <img src="/great-job.webp" alt="Alles erledigt" className="w-32 h-32" />
+          <p className="text-[15px] font-extrabold text-kh-dark">Alles erledigt!</p>
+          <p className="text-xs text-kh-muted font-medium">Keine offenen Hausübungen</p>
+        </div>
       ) : (
         <div className="flex flex-col gap-2.5">
           {open.map(hw => <Row key={hw.id} hw={hw} userId={userId} />)}

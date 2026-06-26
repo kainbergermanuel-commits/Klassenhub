@@ -3,6 +3,7 @@ import FeatureCard from './FeatureCard'
 import AgendaPanel from './AgendaPanel'
 import StreakConfirmButton from './StreakConfirmButton'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
+import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder } from '@/lib/types'
 
 interface ParentHomeProps {
@@ -11,6 +12,9 @@ interface ParentHomeProps {
   childId: string
   childName: string
   childColor: string
+  childSeed: string | null
+  childHairColor: string | null
+  childSkinColor: string | null
   className: string
   childHomework: HomeworkWithStatus[]
   reminders: Reminder[]
@@ -22,7 +26,7 @@ interface ParentHomeProps {
 }
 
 export default function ParentHome({
-  fullName, parentId, childId, childName, childColor, className, childHomework, reminders, todoTotal, todoDone, childStreak, pendingMilestone, streakEntries,
+  fullName, parentId, childId, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, todoTotal, todoDone, childStreak, pendingMilestone, streakEntries,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -40,19 +44,17 @@ export default function ParentHome({
 
       {/* Child banner */}
       <div className="bg-kh-dark rounded-[20px] p-[18px] text-white flex items-center gap-3.5 mb-6">
-        <div
-          className="w-[52px] h-[52px] rounded-full flex items-center justify-center font-extrabold text-[19px] flex-shrink-0"
-          style={{ background: childColor }}
-        >
-          {childFirst[0]}
-        </div>
+        <Avatar name={childName} color={childColor} seed={childSeed} hairColor={childHairColor} skinColor={childSkinColor} size={52} />
         <div className="flex-1 min-w-0">
           <div className="font-bold text-[17px]">{childName}</div>
           <div className="text-[12.5px] text-[#9FC4C0] font-medium mt-0.5">{className} · Alles im Blick</div>
         </div>
         <div className="text-right">
-          <div className="text-[22px] font-extrabold text-[#7FD4B6]">{hwOpen}</div>
-          <div className="text-[11.5px] text-[#9FC4C0]">HÜ offen</div>
+          <div className="flex items-center justify-end gap-1 text-[#7FD4B6]">
+            <span className="msym text-[18px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>edit</span>
+            <span className="text-[22px] font-extrabold">{hwOpen}</span>
+          </div>
+          <div className="text-[11.5px] text-[#9FC4C0]">Aufgaben offen</div>
         </div>
       </div>
 

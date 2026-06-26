@@ -9,11 +9,12 @@ const SUBJECTS = [
   { label: 'Mathematik', short: 'M', color: '#0F8A82' },
   { label: 'Deutsch', short: 'D', color: '#B0413E' },
   { label: 'Englisch', short: 'E', color: '#2F6DB0' },
-  { label: 'NaWi', short: 'NaWi', color: '#3E9E6B' },
-  { label: 'Geografie (GW)', short: 'GW', color: '#C98A2B' },
-  { label: 'Geschichte', short: 'Gesch.', color: '#7B5EA7' },
-  { label: 'Musik', short: 'Musik', color: '#D44B9E' },
-  { label: 'BSP', short: 'BSP', color: '#E07B35' },
+  { label: 'Biologie', short: 'BU', color: '#10B981' },
+  { label: 'Geografie', short: 'GW', color: '#C98A2B' },
+  { label: 'Geschichte', short: 'GS', color: '#7B5EA7' },
+  { label: 'Musik', short: 'MU', color: '#D44B9E' },
+  { label: 'Bew. & Sport', short: 'BSP', color: '#E07B35' },
+  { label: 'Sonstiges', short: 'S', color: '#6E7E80' },
 ]
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']

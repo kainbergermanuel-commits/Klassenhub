@@ -40,11 +40,11 @@ export async function getEffectiveAuth(): Promise<EffectiveAuth> {
   }
 
   if (previewRole === 'parent') {
-    // Try a real parent first; fall back to teacher-as-parent (shows layout without child data)
-    const { data } = await supabase
-      .from('profiles').select('*')
-      .eq('class_id', profile.class_id).eq('role', 'parent')
-      .order('full_name').limit(1)
+    const parentId = jar.get('preview_parent_id')?.value ?? null
+    const query = supabase.from('profiles').select('*').eq('class_id', profile.class_id).eq('role', 'parent')
+    const { data } = parentId
+      ? await query.eq('id', parentId).limit(1)
+      : await query.order('full_name').limit(1)
     const target = data?.[0]
     const effectiveProfile: Profile = target ?? { ...profile, role: 'parent' }
     const effectiveUser = target ? { ...user, id: target.id } : user

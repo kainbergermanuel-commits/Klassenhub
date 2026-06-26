@@ -13,6 +13,9 @@ interface Person {
   id?: string
   full_name: string
   avatar_color?: string | null
+  avatar_seed?: string | null
+  avatar_hair_color?: string | null
+  avatar_skin_color?: string | null
 }
 
 interface TeacherHomeProps {
