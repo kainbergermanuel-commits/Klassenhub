@@ -1,0 +1,154 @@
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
+import { getAuth, matchChild } from '@/lib/auth'
+import { todayISO } from '@/lib/date'
+import Sidebar from '@/components/layout/Sidebar'
+import BottomNav from '@/components/layout/BottomNav'
+import MobileHeader from '@/components/layout/MobileHeader'
+import RolePreviewBar from '@/components/layout/RolePreviewBar'
+import type { Profile, Class } from '@/lib/types'
+
+function buildNav(profile: Profile, hwOpen: number, reminderUnread: number) {
+  const isTeacher = profile.role === 'teacher'
+
+  const all = [
+    { href: '/', icon: 'home', label: 'Start' },
+    { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined },
+    { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
+    { href: '/zahlungen', icon: 'payments', label: 'Zahlungen' },
+    { href: '/todo', icon: 'checklist', label: 'Wochen-To-Do' },
+    { href: '/streaks', icon: 'local_fire_department', label: 'Streaks' },
+    ...(isTeacher ? [
+      { href: '/klasse', icon: 'groups', label: 'Klasse' },
+    ] : []),
+    { href: '/einstellungen', icon: 'settings', label: 'Einstellungen' },
+  ]
+
+  const bottom = [
+    { href: '/', icon: 'home', label: 'Start' },
+    { href: '/hausaufgaben', icon: 'assignment', label: 'HÜ', badge: hwOpen || undefined },
+    { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Termine' },
+    { href: '/todo', icon: 'checklist', label: 'To-Do' },
+  ]
+
+  return { all, bottom }
+}
+
+/** Ungelesene bevorstehende Erinnerungen je Rolle. */
+async function computeReminderBadge(profile: Profile, userId: string): Promise<number> {
+  if (!profile.class_id) return 0
+  if (profile.role === 'teacher') return 0
+  const supabase = await createClient()
+  const today = todayISO()
+
+  const { data: upcoming } = await supabase
+    .from('reminders').select('id').eq('class_id', profile.class_id).gte('event_date', today)
+  const upcomingIds = (upcoming ?? []).map(r => r.id)
+  if (upcomingIds.length === 0) return 0
+
+  let studentId = userId
+  if (profile.role === 'parent') {
+    const { data: students } = await supabase
+      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
+    const child = matchChild(profile.full_name, students ?? [])
+    if (!child) return upcomingIds.length
+    studentId = child.id
+  }
+
+  const { count } = await supabase
+    .from('reminder_views').select('reminder_id', { count: 'exact', head: true })
+    .eq('student_id', studentId).in('reminder_id', upcomingIds)
+  return upcomingIds.length - (count ?? 0)
+}
+
+/** Anzahl für das HÜ-Badge je Rolle (offen bzw. aktiv). */
+async function computeHwBadge(profile: Profile): Promise<number> {
+  if (!profile.class_id) return 0
+  const supabase = await createClient()
+  const today = todayISO()
+
+  // Bevorstehende (aktive) HÜ der Klasse
+  const { data: upcoming } = await supabase
+    .from('homework').select('id').eq('class_id', profile.class_id).gte('due_date', today)
+  const upcomingIds = (upcoming ?? []).map(h => h.id)
+
+  // Lehrer: Anzahl aktiver HÜ
+  if (profile.role === 'teacher') return upcomingIds.length
+  if (upcomingIds.length === 0) return 0
+
+  // Schüler: eigene offene; Elternteil: offene des Kindes
+  let studentId = profile.id
+  if (profile.role === 'parent') {
+    const { data: students } = await supabase
+      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
+    const child = matchChild(profile.full_name, students ?? [])
+    if (!child) return 0
+    studentId = child.id
+  }
+
+  const { count } = await supabase
+    .from('homework_completions')
+    .select('homework_id', { count: 'exact', head: true })
+    .eq('student_id', studentId)
+    .in('homework_id', upcomingIds)
+  return upcomingIds.length - (count ?? 0)
+}
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, profile } = await getAuth()
+  if (!user || !profile) redirect('/login')
+
+  const supabase = await createClient()
+  const { data: klass } = profile.class_id
+    ? await supabase.from('classes').select('*').eq('id', profile.class_id).single()
+    : { data: null }
+
+  const [hwOpen, reminderUnread] = await Promise.all([
+    computeHwBadge(profile),
+    computeReminderBadge(profile, user.id),
+  ])
+  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread)
+
+  // Preview bar: only for teachers
+  let previewRole: string | null = null
+  let previewName: string | null = null
+  let previewStudentId: string | null = null
+  let allStudents: { id: string; full_name: string }[] = []
+  if (profile.role === 'teacher' && profile.class_id) {
+    const jar = await cookies()
+    previewRole = jar.get('preview_role')?.value ?? null
+    previewStudentId = jar.get('preview_student_id')?.value ?? null
+    const { data: students } = await supabase.from('profiles')
+      .select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student').order('full_name')
+    allStudents = students ?? []
+    if (previewRole === 'student') {
+      const active = previewStudentId ? allStudents.find(s => s.id === previewStudentId) : allStudents[0]
+      previewName = active?.full_name.split(' ')[0] ?? null
+    } else if (previewRole === 'parent') {
+      const { data } = await supabase.from('profiles').select('full_name')
+        .eq('class_id', profile.class_id).eq('role', 'parent').order('full_name').limit(1)
+      previewName = data?.[0]?.full_name.split(' ')[0] ?? 'Elternteil'
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-kh-page p-3 md:p-4 max-md:p-0">
+      <div className="flex min-h-[calc(100vh-1.5rem)] md:min-h-[calc(100vh-2rem)] max-md:min-h-screen rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
+        <Sidebar profile={profile} klass={klass as Class | null} navItems={all} />
+        <main className="flex-1 min-w-0 overflow-y-auto scrollbar-kh">
+          <MobileHeader profile={profile} klass={klass as Class | null} />
+          <div className="max-w-[1180px] mx-auto px-7 py-7 pb-20 max-md:px-4 max-md:py-5">
+            {children}
+          </div>
+        </main>
+      </div>
+      <BottomNav items={bottom} />
+      {profile.role === 'teacher' && (
+        <RolePreviewBar currentPreview={previewRole} previewName={previewName} previewStudentId={previewStudentId} students={allStudents} />
+      )}
+    </div>
+  )
+}

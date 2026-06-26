@@ -1,0 +1,82 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { getEffectiveAuth } from '@/lib/previewAuth'
+import { matchChild } from '@/lib/auth'
+import HomeworkList from '@/components/homework/HomeworkList'
+import type { HomeworkWithStatus } from '@/lib/types'
+
+export default async function HomeworkPage() {
+  const { user, profile } = await getEffectiveAuth()
+  if (!user) redirect('/login')
+  if (!profile?.class_id) redirect('/')
+
+  const supabase = await createClient()
+
+  const { data: homeworkRaw } = await supabase
+    .from('homework')
+    .select('*')
+    .eq('class_id', profile.class_id)
+    .order('due_date', { ascending: true })
+
+  const homework = homeworkRaw ?? []
+
+  let homeworkWithStatus: HomeworkWithStatus[]
+
+  if (profile.role === 'student') {
+    const { data: completions } = await supabase
+      .from('homework_completions')
+      .select('homework_id')
+      .eq('student_id', user.id)
+
+    const doneIds = new Set((completions ?? []).map(c => c.homework_id))
+    homeworkWithStatus = homework.map(h => ({ ...h, done: doneIds.has(h.id) }))
+  } else if (profile.role === 'teacher') {
+    // Get completion counts per homework
+    const { data: counts } = await supabase
+      .from('homework_completions')
+      .select('homework_id')
+      .in('homework_id', homework.map(h => h.id))
+
+    const countMap: Record<string, number> = {}
+    for (const c of counts ?? []) {
+      countMap[c.homework_id] = (countMap[c.homework_id] ?? 0) + 1
+    }
+    homeworkWithStatus = homework.map(h => ({ ...h, done: false, completion_count: countMap[h.id] ?? 0 }))
+  } else {
+    // parent: show child's completions
+    const { data: allStudents } = await supabase
+      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
+    const child = matchChild(profile.full_name, allStudents ?? [])
+    const childDoneIds = new Set<string>()
+    if (child) {
+      const { data: childCompletions } = await supabase
+        .from('homework_completions').select('homework_id').eq('student_id', child.id)
+      for (const c of childCompletions ?? []) childDoneIds.add(c.homework_id)
+    }
+    homeworkWithStatus = homework.map(h => ({ ...h, done: childDoneIds.has(h.id) }))
+  }
+
+  const openCount = homeworkWithStatus.filter(h => !h.done).length
+  const { count: studentCount } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('class_id', profile.class_id)
+    .eq('role', 'student')
+
+  const subtitle =
+    profile.role === 'teacher'
+      ? `${homework.length} Aufgaben · ${homeworkWithStatus.reduce((s, h) => s + (h.completion_count ?? 0), 0)}/${(studentCount ?? 0) * homework.length} Abgaben`
+      : profile.role === 'parent'
+      ? `Status für dein Kind · ${openCount} offen`
+      : `${openCount} offen · ${homeworkWithStatus.length - openCount} erledigt`
+
+  return (
+    <HomeworkList
+      homework={homeworkWithStatus}
+      role={profile.role}
+      userId={user.id}
+      classId={profile.class_id}
+      subtitle={subtitle}
+    />
+  )
+}

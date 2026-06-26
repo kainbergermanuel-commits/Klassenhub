@@ -1,0 +1,62 @@
+import Link from 'next/link'
+import AvatarStack from './AvatarStack'
+
+type GradientKey = 'teal' | 'amber' | 'violet' | 'blue'
+
+const GRADIENT: Record<GradientKey, string> = {
+  teal: 'gradient-teal',
+  amber: 'gradient-amber',
+  violet: 'gradient-violet',
+  blue: 'gradient-blue',
+}
+
+interface Person {
+  full_name: string
+  avatar_color?: string | null
+}
+
+interface FeatureCardProps {
+  href: string
+  gradient: GradientKey
+  icon: string
+  title: string
+  meta: string
+  /** 0–100 */
+  progress?: number
+  people?: Person[]
+  badge?: string
+}
+
+export default function FeatureCard({ href, gradient, icon, title, meta, progress, people, badge }: FeatureCardProps) {
+  return (
+    <Link
+      href={href}
+      className={`${GRADIENT[gradient]} rounded-[20px] p-[18px] text-white flex flex-col gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200`}
+    >
+      <div className="flex items-start justify-between">
+        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+          <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+        </div>
+        {people && people.length > 0
+          ? <AvatarStack people={people} max={3} ring="rgba(255,255,255,0.35)" size={28} />
+          : badge
+            ? <span className="text-[11px] font-bold bg-white/20 px-2.5 py-1 rounded-full">{badge}</span>
+            : null}
+      </div>
+
+      <div className="mt-1">
+        <div className="font-extrabold text-[17px] leading-tight">{title}</div>
+        <div className="text-[13px] font-semibold text-white/85 mt-1">{meta}</div>
+      </div>
+
+      {progress !== undefined && (
+        <div className="flex items-center gap-2.5 mt-auto pt-1">
+          <div className="flex-1 h-1.5 rounded-full bg-white/25 overflow-hidden">
+            <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
+          </div>
+          <span className="text-[12px] font-bold">{Math.round(progress)}%</span>
+        </div>
+      )}
+    </Link>
+  )
+}
