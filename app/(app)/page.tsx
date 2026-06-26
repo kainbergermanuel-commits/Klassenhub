@@ -93,6 +93,7 @@ export default async function HomePage() {
         avatar_color: s.avatar_color ?? '#0F8A82',
         avatar_seed: s.avatar_seed ?? null,
         avatar_hair_color: s.avatar_hair_color ?? null,
+        avatar_skin_color: s.avatar_skin_color ?? null,
         streak: computeStreak(doneByStudent.get(s.id) ?? new Set(), allHwForStreaks ?? [], today),
       }))
       .filter(e => e.streak > 0 && confirmedStudentIds.has(e.id))
