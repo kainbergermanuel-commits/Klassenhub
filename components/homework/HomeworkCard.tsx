@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { todayISO, addDaysISO } from '@/lib/date'
 import type { HomeworkWithStatus, Role } from '@/lib/types'
+import Avatar from '@/components/ui/Avatar'
 
 interface Props {
   hw: HomeworkWithStatus
@@ -49,6 +50,8 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
   const [editDate, setEditDate] = useState(hw.due_date)
   const [saving, setSaving] = useState(false)
   const [deleted, setDeleted] = useState(false)
+  const [showStudents, setShowStudents] = useState(false)
+  const [students, setStudents] = useState<{ id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] | null>(null)
 
   const status = getStatus(hw, optimisticDone, role)
 
@@ -73,6 +76,18 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
     const supabase = createClient()
     await supabase.from('homework').delete().eq('id', hw.id)
     startTransition(() => router.refresh())
+  }
+
+  async function openStudents() {
+    setShowStudents(true)
+    if (students !== null) return
+    const supabase = createClient()
+    const [{ data: allStudents }, { data: completions }] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color').eq('class_id', hw.class_id).eq('role', 'student').order('full_name'),
+      supabase.from('homework_completions').select('student_id').eq('homework_id', hw.id),
+    ])
+    const doneIds = new Set((completions ?? []).map(c => c.student_id))
+    setStudents((allStudents ?? []).map(s => ({ ...s, done: doneIds.has(s.id) })))
   }
 
   async function saveEdit() {
@@ -158,7 +173,10 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
         {/* Teacher: count + edit/delete */}
         {role === 'teacher' && (
           <div className="flex-shrink-0 text-right flex flex-col items-end gap-2">
-            <span className="text-xs font-bold text-kh-teal">{hw.completion_count ?? 0} abgegeben</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-kh-teal">{hw.completion_count ?? 0} gemacht</span>
+              <button onClick={openStudents} className="msym text-[17px] text-kh-teal/60 hover:text-kh-teal transition-colors leading-none">visibility</button>
+            </div>
             <div className="flex gap-1.5 text-[#B6C0BE]">
               <button onClick={() => setEditing(true)} className="msym text-[19px] hover:text-kh-teal transition-colors">edit</button>
               <button onClick={deleteHw} className="msym text-[19px] hover:text-kh-red transition-colors">delete</button>
@@ -166,6 +184,69 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
           </div>
         )}
       </div>
+
+      {/* Students popup */}
+      {showStudents && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setShowStudents(false)}>
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-[11px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}
+                >
+                  {hw.subject_short}
+                </div>
+                <h2 className="text-[16px] font-extrabold text-kh-dark">{hw.title}</h2>
+              </div>
+              <button onClick={() => setShowStudents(false)} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
+            </div>
+            {students === null ? (
+              <div className="text-center py-8 text-kh-muted text-sm">Lädt…</div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {/* Gemacht */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="msym text-[16px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <span className="text-[12px] font-extrabold text-kh-teal uppercase tracking-wide">Gemacht · {students.filter(s => s.done).length}</span>
+                  </div>
+                  {students.filter(s => s.done).length === 0
+                    ? <p className="text-xs text-kh-muted pl-1">Noch niemand</p>
+                    : <div className="flex flex-wrap gap-1.5">
+                        {students.filter(s => s.done).map(s => (
+                          <span key={s.id} className="flex items-center gap-1.5 text-[12px] font-semibold bg-[#DDF0E7] text-[#2E9C6E] pl-1 pr-2.5 py-0.5 rounded-full">
+                            <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
+                            {s.full_name.split(' ')[0]}
+                          </span>
+                        ))}
+                      </div>
+                  }
+                </div>
+                <div className="border-t border-kh-border/40" />
+                {/* Nicht gemacht */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="msym text-[16px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 0" }}>radio_button_unchecked</span>
+                    <span className="text-[12px] font-extrabold text-kh-muted uppercase tracking-wide">Nicht gemacht · {students.filter(s => !s.done).length}</span>
+                  </div>
+                  {students.filter(s => !s.done).length === 0
+                    ? <p className="text-xs text-kh-muted pl-1">Alle haben gemacht 🎉</p>
+                    : <div className="flex flex-wrap gap-1.5">
+                        {students.filter(s => !s.done).map(s => (
+                          <span key={s.id} className="flex items-center gap-1.5 text-[12px] font-semibold bg-[#F6F3ED] text-kh-muted pl-1 pr-2.5 py-0.5 rounded-full">
+                            <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
+                            {s.full_name.split(' ')[0]}
+                          </span>
+                        ))}
+                      </div>
+                  }
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Edit modal */}
       {editing && (

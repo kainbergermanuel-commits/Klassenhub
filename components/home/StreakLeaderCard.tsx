@@ -69,10 +69,10 @@ export default function StreakLeaderCard({ entries }: Props) {
                   <span className={`text-[13px] font-semibold text-kh-dark truncate ${isFirst ? 'font-extrabold' : ''}`}>
                     {entry.full_name.split(' ')[0]}
                   </span>
-                  <span className="flex items-center gap-0.5 text-[12px] font-bold text-kh-amber ml-2 flex-shrink-0">
+                  <span className="flex items-center text-[12px] font-bold text-kh-amber ml-2 flex-shrink-0">
                     {flameCount(entry.streak) > 0
                       ? Array.from({ length: flameCount(entry.streak) }).map((_, fi) => (
-                          <img key={fi} src="/flame.svg" alt="" className="w-4 h-4" />
+                          <img key={fi} src="/flame.svg" alt="" className="w-5 h-5" style={{ marginLeft: fi === 0 ? 0 : '-4px' }} />
                         ))
                       : null}
                     {entry.streak}

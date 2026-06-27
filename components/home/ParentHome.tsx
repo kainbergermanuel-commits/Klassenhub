@@ -5,6 +5,7 @@ import StreakConfirmButton from './StreakConfirmButton'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder } from '@/lib/types'
+import { flameCount } from '@/lib/streak'
 
 interface ParentHomeProps {
   fullName: string
@@ -43,18 +44,73 @@ export default function ParentHome({
       </header>
 
       {/* Child banner */}
-      <div className="bg-kh-dark rounded-[20px] p-[18px] text-white flex items-center gap-3.5 mb-6">
+      <div className="rounded-[20px] p-[18px] text-white flex items-center gap-3.5 mb-6 relative overflow-hidden" style={{ background: 'linear-gradient(to right, #3D5452 0%, #2A3E3B 100%)' }}>
+        <svg viewBox="0 0 400 80" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0 w-full h-full pointer-events-none select-none" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="parentFade" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#2A3E3B" stopOpacity="1" />
+              <stop offset="40%" stopColor="#2A3E3B" stopOpacity="0" />
+            </linearGradient>
+            <mask id="parentMask">
+              <rect width="400" height="80" fill="white" />
+              <rect width="400" height="80" fill="url(#parentFade)" />
+            </mask>
+            {/* Dot fade: right=visible, left=transparent */}
+            <linearGradient id="dotFade" x1="1" y1="0" x2="0" y2="0">
+              <stop offset="0%" stopColor="white" stopOpacity="1" />
+              <stop offset="60%" stopColor="white" stopOpacity="0" />
+            </linearGradient>
+            <mask id="dotMask">
+              <rect width="400" height="80" fill="url(#dotFade)" />
+            </mask>
+            <clipPath id="parentWaveClip">
+              <path d="M100 90 C160 90, 200 30, 280 18 C330 10, 370 2, 410 -5 L410 90 Z" />
+            </clipPath>
+          </defs>
+          {/* Dot perforation grid */}
+          <g mask="url(#dotMask)">
+            {Array.from({ length: 28 }).map((_, row) =>
+              Array.from({ length: 80 }).map((_, col) => (
+                <circle key={`${row}-${col}`}
+                  cx={col * 5 + (row % 2 === 1 ? 2.5 : 0)}
+                  cy={row * 5 - 4}
+                  r="0.35"
+                  fill="white"
+                  opacity="0.12"
+                />
+              ))
+            )}
+          </g>
+          <g mask="url(#parentMask)">
+            <path d="M100 90 C160 90, 200 30, 280 18 C330 10, 370 2, 410 -5 L410 90 Z" fill="#7FD4B6" opacity="0.05" />
+            <path d="M100 90 C160 90, 200 30, 280 18 C330 10, 370 2, 410 -5" fill="none" stroke="#7FD4B6" strokeWidth="1.2" opacity="0.18" />
+            <path d="M108 90 C168 90, 207 33, 286 21 C335 13, 374 5, 410 0" fill="none" stroke="white" strokeWidth="0.7" opacity="0.08" />
+          </g>
+        </svg>
         <Avatar name={childName} color={childColor} seed={childSeed} hairColor={childHairColor} skinColor={childSkinColor} size={52} />
         <div className="flex-1 min-w-0">
           <div className="font-bold text-[17px]">{childName}</div>
           <div className="text-[12.5px] text-[#9FC4C0] font-medium mt-0.5">{className} · Alles im Blick</div>
         </div>
-        <div className="text-right">
-          <div className="flex items-center justify-end gap-1 text-[#7FD4B6]">
-            <span className="msym text-[18px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>edit</span>
-            <span className="text-[22px] font-extrabold">{hwOpen}</span>
+        <div className="flex items-center gap-4">
+          {childStreak > 0 && (
+            <div className="text-right border-r border-white/10 pr-4">
+              <div className="flex items-center gap-1 justify-end leading-none" style={{ height: '1.65rem' }}>
+                {flameCount(childStreak) > 0 && Array.from({ length: flameCount(childStreak) }).map((_, i) => (
+                  <img key={i} src="/flame.svg" alt="" className="w-5 h-5" style={{ marginLeft: i === 0 ? 0 : '-4px', filter: 'saturate(0.6)' }} />
+                ))}
+                <span className="text-[22px] font-extrabold text-[#7FD4B6]">{childStreak}</span>
+              </div>
+              <div className="text-[11.5px] text-[#9FC4C0] mt-0.5 text-right">in Folge</div>
+            </div>
+          )}
+          <div className="text-right">
+            <div className="flex items-center justify-end gap-1 text-[#7FD4B6] leading-none" style={{ height: '1.65rem' }}>
+              <span className="msym text-[18px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>edit</span>
+              <span className="text-[22px] font-extrabold">{hwOpen}</span>
+            </div>
+            <div className="text-[11.5px] text-[#9FC4C0] mt-0.5">Aufgaben offen</div>
           </div>
-          <div className="text-[11.5px] text-[#9FC4C0]">Aufgaben offen</div>
         </div>
       </div>
 

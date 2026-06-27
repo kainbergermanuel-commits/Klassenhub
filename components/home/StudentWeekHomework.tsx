@@ -35,9 +35,10 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
     startTransition(() => router.refresh())
   }
 
+  const isTomorrow = hw.due_date === TOMORROW
   const dueLabel = isToday
     ? 'Heute fällig'
-    : `Fällig: ${new Date(hw.due_date).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })}`
+    : `Fällig: ${isTomorrow ? 'Morgen, ' : ''}${new Date(hw.due_date).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })}`
 
   const statusColor = done ? 'text-kh-green' : isToday ? 'text-[#C95040]' : 'text-kh-amber'
   const statusText = done ? 'Erledigt' : dueLabel
@@ -62,6 +63,9 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
           {statusText} · {hw.subject}
         </div>
       </div>
+      {!done && hw.due_date === TOMORROW && (
+        <span className="msym text-[23px] flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1", background: 'linear-gradient(135deg, #FF6B6B 0%, #E03030 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>warning</span>
+      )}
       <button
         onClick={toggle}
         disabled={!canToggle}

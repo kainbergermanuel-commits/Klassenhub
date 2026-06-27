@@ -47,7 +47,8 @@ export default function TeacherHome({
 
   const hwSlots = studentCount * homeworkList.length
   const hwProgress = hwSlots > 0 ? (hwSubmittedCount / hwSlots) * 100 : 0
-  const todoProgress = todoTotal > 0 ? (todoDone / todoTotal) * 100 : 0
+  const todoSlots = todoTotal * studentCount
+  const todoProgress = todoSlots > 0 ? (todoDone / todoSlots) * 100 : 0
 
   return (
     <>
@@ -83,7 +84,7 @@ export default function TeacherHome({
             <FeatureCard
               href="/todo" gradient="teal" icon="checklist"
               title="Wochen-To-Do"
-              meta={todoTotal > 0 ? `${todoDone}/${todoTotal} erledigt` : 'Noch nichts gepostet'}
+              meta={todoTotal > 0 ? `${todoDone}/${todoSlots} erledigt` : 'Noch nichts gepostet'}
               progress={todoTotal > 0 ? todoProgress : undefined}
               badge={todoTotal > 0 ? `${todoTotal}` : undefined}
             />
@@ -131,7 +132,7 @@ export default function TeacherHome({
             {[
               { val: studentCount, label: 'Schüler:innen', color: 'text-kh-dark' },
               { val: homeworkList.length, label: 'Aktive HÜ', color: 'text-kh-amber' },
-              { val: `${todoDone}/${todoTotal}`, label: 'To-Dos erledigt', color: 'text-kh-teal' },
+              { val: `${todoDone}/${todoSlots}`, label: 'To-Do erledigt', color: 'text-kh-teal' },
             ].map(s => (
               <div key={s.label} className="bg-white rounded-[18px] p-4 shadow-sm border border-kh-border/50 flex flex-col items-center text-center">
                 <div className={`text-[26px] font-extrabold ${s.color}`}>{s.val}</div>

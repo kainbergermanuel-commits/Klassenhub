@@ -38,7 +38,7 @@ export default function StudentHome({
       </header>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
-        <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
+        <div className="flex flex-col gap-5 min-w-0 lg:pr-6 mx-auto w-full">
           {/* Cards */}
           <div className="grid sm:grid-cols-3 gap-4">
             <FeatureCard
