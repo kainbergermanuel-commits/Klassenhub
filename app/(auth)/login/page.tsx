@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -17,10 +17,11 @@ export default function LoginPage() {
     setError(null)
 
     const supabase = createClient()
+    const email = `${username}@klassenhub.local`
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('E-Mail oder Passwort falsch.')
+      setError('Benutzername oder Passwort falsch.')
       setLoading(false)
       return
     }
@@ -48,20 +49,22 @@ export default function LoginPage() {
         {/* Card */}
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-kh-border">
           <h1 className="text-xl font-extrabold text-kh-dark mb-1">Willkommen zurück</h1>
-          <p className="text-sm text-kh-muted font-medium mb-6">Melde dich mit deiner Schul-E-Mail an.</p>
+          <p className="text-sm text-kh-muted font-medium mb-6">Melde dich mit deinem Benutzernamen an.</p>
 
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
-              <label className="text-xs font-bold text-kh-dark mb-1.5 block" htmlFor="email">
-                E-Mail
+              <label className="text-xs font-bold text-kh-dark mb-1.5 block" htmlFor="username">
+                Benutzername
               </label>
               <input
-                id="email"
-                type="email"
+                id="username"
+                type="text"
                 required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="name@schule.at"
+                autoCapitalize="none"
+                autoCorrect="off"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="vorname.nachname"
                 className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition"
               />
             </div>
