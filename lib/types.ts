@@ -18,6 +18,7 @@ export type Profile = {
   avatar_skin_color: string | null
   child_id: string | null
   special_role: SpecialRole | null
+  subjects: unknown | null
 }
 
 export type Class = {
@@ -64,6 +65,7 @@ export type Database = {
           avatar_seed?: string | null
           avatar_hair_color?: string | null
           avatar_skin_color?: string | null
+          subjects?: unknown | null
         }
         Update: Partial<Profile>
         Relationships: []
