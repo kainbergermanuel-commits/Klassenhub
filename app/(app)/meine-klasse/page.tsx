@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getAuth } from '@/lib/auth'
+import { getEffectiveAuth } from '@/lib/previewAuth'
 import StudentCard from '@/components/klasse/StudentCard'
 import TeacherCard from '@/components/klasse/TeacherCard'
 import type { TeacherSubject } from '@/app/actions/saveTeacherSubjects'
 
 export default async function MeineKlassePage() {
-  const { user, profile } = await getAuth()
+  const { user, profile } = await getEffectiveAuth()
   if (!user || !profile) redirect('/login')
   if (profile.role !== 'student') redirect('/')
   if (!profile.class_id) redirect('/')
