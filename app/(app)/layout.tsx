@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getAuth, matchChild } from '@/lib/auth'
+import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, getMondayOfWeek } from '@/lib/date'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -129,8 +130,12 @@ async function computeTodoBadge(profile: Profile, userId: string): Promise<numbe
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile } = await getAuth()
-  if (!user || !profile) redirect('/login')
+  // realProfile: echter Lehrer — nur für Preview-Bar-Sichtbarkeit
+  const { user: realUser, profile: realProfile } = await getAuth()
+  if (!realUser || !realProfile) redirect('/login')
+
+  // effectiveProfile: aktive Rolle (Schüler/Elternteil während Vorschau)
+  const { user, profile } = await getEffectiveAuth()
 
   const supabase = await createClient()
   const { data: klass } = profile.class_id
@@ -144,21 +149,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ])
   const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, todoOpen)
 
-  // Preview bar: only for teachers
+  // Preview bar: nur für echten Lehrer
   let previewRole: string | null = null
   let previewName: string | null = null
   let previewStudentId: string | null = null
   let previewParentId: string | null = null
   let allStudents: { id: string; full_name: string }[] = []
   let allParents: { id: string; full_name: string }[] = []
-  if (profile.role === 'teacher' && profile.class_id) {
+  if (realProfile.role === 'teacher' && realProfile.class_id) {
     const jar = await cookies()
     previewRole = jar.get('preview_role')?.value ?? null
     previewStudentId = jar.get('preview_student_id')?.value ?? null
     previewParentId = jar.get('preview_parent_id')?.value ?? null
     const [{ data: students }, { data: parents }] = await Promise.all([
-      supabase.from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student').order('full_name'),
-      supabase.from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'parent').order('full_name'),
+      supabase.from('profiles').select('id,full_name').eq('class_id', realProfile.class_id).eq('role', 'student').order('full_name'),
+      supabase.from('profiles').select('id,full_name').eq('class_id', realProfile.class_id).eq('role', 'parent').order('full_name'),
     ])
     allStudents = students ?? []
     allParents = parents ?? []
@@ -183,7 +188,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </main>
       </div>
       <BottomNav items={bottom} />
-      {profile.role === 'teacher' && (
+      {realProfile.role === 'teacher' && (
         <RolePreviewBar currentPreview={previewRole} previewName={previewName} previewStudentId={previewStudentId} previewParentId={previewParentId} students={allStudents} parents={allParents} />
       )}
     </div>

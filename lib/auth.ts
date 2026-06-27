@@ -20,25 +20,11 @@ export const getAuth = cache(async (): Promise<{ user: { id: string; email?: str
   return { user, profile: (profile as Profile | null) ?? null }
 })
 
-/**
- * Zuordnung Elternteil → Kind.
- * 1. Bevorzugt den echten DB-Link `child_id` (Spalte auf profiles).
- * 2. Fällt für (noch) unverknüpfte Eltern auf die Nachnamen-Heuristik
- *    zurück (z. B. „Fam. Hofer" → Schüler:in, deren Name auf „Hofer" endet).
- */
 export function matchChild<T extends { id: string; full_name: string }>(
   parent: { full_name: string; child_id?: string | null },
   students: T[],
 ): T | null {
   if (students.length === 0) return null
-  // 1. Echter Beziehungs-Link
-  if (parent.child_id) {
-    const linked = students.find(s => s.id === parent.child_id)
-    if (linked) return linked
-  }
-  // 2. Fallback: Nachnamen-Heuristik
-  const lastName = parent.full_name.trim().split(/\s+/).slice(-1)[0]?.toLowerCase() ?? ''
-  if (!lastName) return students[0]
-  const match = students.find(s => s.full_name.toLowerCase().endsWith(lastName))
-  return match ?? students[0]
+  if (parent.child_id) return students.find(s => s.id === parent.child_id) ?? null
+  return null
 }

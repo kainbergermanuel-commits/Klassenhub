@@ -29,7 +29,10 @@ export default function Sidebar({ profile, klass, navItems }: SidebarProps) {
 
   async function handleLogout() {
     const supabase = createClient()
-    await supabase.auth.signOut()
+    await Promise.all([
+      supabase.auth.signOut(),
+      fetch('/api/preview-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: null }) }),
+    ])
     router.replace('/login')
     router.refresh()
   }

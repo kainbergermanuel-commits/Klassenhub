@@ -20,7 +20,7 @@ export default async function KlassePage() {
   ])
 
   const studentList = (students ?? []) as Profile[]
-  let parentList = (parents ?? []) as Profile[]
+  const parentList = (parents ?? []) as Profile[]
   const studentById = Object.fromEntries(studentList.map(s => [s.id, s]))
   const homeworkList = allHomework ?? []
 
@@ -34,16 +34,6 @@ export default async function KlassePage() {
       if (!completionsByStudent[c.student_id]) completionsByStudent[c.student_id] = []
       completionsByStudent[c.student_id].push(c.homework_id)
     }
-  }
-
-  // Elternteile ohne avatar_seed oder ohne amber-Farbe normalisieren
-  const parentsToUpdate = parentList.filter(p => !p.avatar_seed || p.avatar_color !== '#C98A2B')
-  if (parentsToUpdate.length > 0) {
-    await Promise.all(parentsToUpdate.map(p => {
-      const seed = p.avatar_seed ?? crypto.randomUUID()
-      return supabase.from('profiles').update({ avatar_seed: seed, avatar_color: '#C98A2B' }).eq('id', p.id)
-        .then(() => { p.avatar_seed = seed; p.avatar_color = '#C98A2B' })
-    }))
   }
 
   return (
