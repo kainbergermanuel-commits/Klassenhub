@@ -30,13 +30,14 @@ interface FeatureCardProps {
   /** Avatare unter dem Meta-Text statt oben rechts */
   peopleInline?: boolean
   badge?: string
+  footer?: React.ReactNode
 }
 
-export default function FeatureCard({ href, gradient, icon, title, meta, progress, people, peopleInline, badge }: FeatureCardProps) {
+export default function FeatureCard({ href, gradient, icon, title, meta, progress, people, peopleInline, badge, footer }: FeatureCardProps) {
   return (
     <Link
       href={href}
-      className={`${GRADIENT[gradient]} rounded-[20px] p-[18px] text-white flex flex-col gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200`}
+      className={`${GRADIENT[gradient]} rounded-[20px] p-[18px] text-white flex flex-col gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full`}
     >
       <div className="flex items-start justify-between">
         <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -67,6 +68,7 @@ export default function FeatureCard({ href, gradient, icon, title, meta, progres
           <span className="text-[12px] font-bold">{Math.round(progress)}%</span>
         </div>
       )}
+      {footer && <div className="mt-auto pt-1">{footer}</div>}
     </Link>
   )
 }

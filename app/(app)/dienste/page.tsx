@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getMondayOfWeek, getWeekNumber } from '@/lib/date'
+import { getRelevantMondayOfWeek, getWeekNumber } from '@/lib/date'
 import DutyWeek from '@/components/dienste/DutyWeek'
 
 export default async function DienstePage() {
@@ -10,7 +10,7 @@ export default async function DienstePage() {
   if (!profile?.class_id) redirect('/')
 
   const supabase = await createClient()
-  const weekStart = getMondayOfWeek()
+  const weekStart = getRelevantMondayOfWeek()
   const weekEnd = new Date(`${weekStart}T00:00:00`)
   weekEnd.setDate(weekEnd.getDate() + 6)
 

@@ -16,14 +16,24 @@ interface Props {
   weekLabel: string
 }
 
-const STANDARD_DUTIES = ['Tafel wischen', 'Lüften', 'Blumen gießen', 'Ordner austeilen', 'Müll entleeren']
+const STANDARD_DUTIES = ['Tafel wischen', 'Boden säubern', 'Lüften', 'Blumen gießen', 'Ordner austeilen', 'Müll entleeren']
 
 const DUTY_ICONS: Record<string, string> = {
-  'Tafel wischen': 'cleaning_services',
+  'Tafel wischen': 'water_drop',
+  'Boden säubern': 'cleaning_services',
   'Lüften': 'air',
   'Blumen gießen': 'local_florist',
   'Ordner austeilen': 'folder_open',
   'Müll entleeren': 'delete',
+}
+
+const DUTY_DESCRIPTIONS: Record<string, string> = {
+  'Tafel wischen': 'Nimm den nassen Schwamm und wisch die Tafel nach jeder Stunde sauber, damit beim nächsten Mal wieder Platz ist.',
+  'Boden säubern': 'Schau, ob unter den Tischen Papier oder Dreck liegt, und kehr alles mit dem Besen zusammen, bevor ihr geht.',
+  'Lüften': 'Öffne in jeder Pause die Fenster für ein paar Minuten, damit frische Luft ins Klassenzimmer kommt.',
+  'Blumen gießen': 'Gieß alle Pflanzen im Klassenzimmer – aber nicht zu viel! Die Erde soll leicht feucht, nicht nass sein.',
+  'Ordner austeilen': 'Hol die Klassenordner aus dem Regal und leg jedem Schüler seinen Ordner auf den Tisch, bevor es losgeht.',
+  'Müll entleeren': 'Nimm den Mistkübel, leere ihn in den großen Mülleimer auf dem Gang und stell den leeren Kübel wieder hin.',
 }
 
 function getDutyIcon(name: string) {
@@ -95,20 +105,6 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
         )}
       </div>
 
-      {/* Student's own duty highlight */}
-      {role === 'student' && myDuties.length > 0 && (
-        <div className="gradient-teal rounded-2xl p-5 text-white mb-5">
-          <div className="flex items-center gap-2 mb-1 opacity-80">
-            <span className="msym text-[17px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-            <span className="text-xs font-bold uppercase tracking-wider">Dein Dienst diese Woche</span>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {myDuties.map(d => (
-              <div key={d.id} className="font-extrabold text-[17px]">{d.duty_name}</div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {duties.length === 0 ? (
         <div className="text-center py-16 text-kh-muted">
@@ -123,12 +119,14 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
             return (
               <div
                 key={duty.id}
-                className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 group"
-                style={isMyDuty && role === 'student' ? { border: '2px solid #0F8A82' } : {}}
+                className="rounded-2xl p-4 shadow-sm flex items-center gap-4 group"
+                style={isMyDuty && role === 'student'
+                  ? { background: 'linear-gradient(135deg, #0F8A82 0%, #3DB5AC 100%)' }
+                  : { background: 'white' }}
               >
                 <div className="w-12 h-12 rounded-[14px] flex items-center justify-center flex-shrink-0"
                   style={isMyDuty && role === 'student'
-                    ? { background: 'linear-gradient(135deg,#0F8A82,#3DB5AC)' }
+                    ? { background: 'rgba(255,255,255,0.2)' }
                     : { background: '#E0F0EE' }
                   }
                 >
@@ -141,13 +139,18 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="font-extrabold text-[15px] text-kh-dark">{duty.duty_name}</div>
+                  <div className="font-extrabold text-[15px]" style={{ color: isMyDuty && role === 'student' ? 'white' : undefined }}>{duty.duty_name}</div>
+                  {role === 'student' && DUTY_DESCRIPTIONS[duty.duty_name] && (
+                    <div className="text-[12px] mt-0.5" style={{ color: isMyDuty ? 'rgba(255,255,255,0.8)' : '#7A9896' }}>{DUTY_DESCRIPTIONS[duty.duty_name]}</div>
+                  )}
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {assignees.map(s => (
                       <span
                         key={s.id}
                         className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                        style={{ background: '#E0F0EE', color: '#0F8A82' }}
+                        style={isMyDuty && role === 'student'
+                          ? { background: 'rgba(255,255,255,0.2)', color: 'white' }
+                          : { background: '#E0F0EE', color: '#0F8A82' }}
                       >
                         {s.full_name.split(' ')[0]}
                       </span>

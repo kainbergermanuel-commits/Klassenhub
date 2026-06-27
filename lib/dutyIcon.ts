@@ -1,5 +1,6 @@
 const DUTY_ICONS: Record<string, string> = {
-  'Tafel wischen': 'cleaning_services',
+  'Tafel wischen': 'water_drop',
+  'Boden säubern': 'cleaning_services',
   'Lüften': 'air',
   'Blumen gießen': 'local_florist',
   'Ordner austeilen': 'folder_open',

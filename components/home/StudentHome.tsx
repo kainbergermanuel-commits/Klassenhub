@@ -30,6 +30,31 @@ export default function StudentHome({
   const hwDone = hwTotal - hwOpenCount
   const todoProgress = todoTotal > 0 ? (todoDone / todoTotal) * 100 : 0
 
+  // Duty week day pills
+  const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
+  const now = new Date()
+  const nowDay = now.getDay() // 0=Sun,1=Mon,...
+  const nowMins = now.getHours() * 60 + now.getMinutes()
+  const DONE_MINS = 13 * 60 + 35
+  const dutyDayFooter = myDuty ? (
+    <div className="flex gap-1.5">
+      {DAYS.map((label, i) => {
+        const weekDay = i + 1 // Mon=1...Fri=5
+        const isDone = nowDay > weekDay || (nowDay === weekDay && nowMins >= DONE_MINS)
+        const isToday = nowDay === weekDay
+        return (
+          <div
+            key={label}
+            className="flex-1 rounded-lg py-1 flex items-center justify-center"
+            style={{ background: isDone ? 'rgba(255,255,255,0.08)' : isToday ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.15)' }}
+          >
+            <span className="text-[10px] font-bold" style={{ color: isDone ? 'rgba(255,255,255,0.35)' : 'white' }}>{label}</span>
+          </div>
+        )
+      })}
+    </div>
+  ) : null
+
   return (
     <>
       <header className="mb-6">
@@ -41,36 +66,45 @@ export default function StudentHome({
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6 mx-auto w-full">
           {/* Cards */}
           <div className="grid sm:grid-cols-3 gap-4">
-            <FeatureCard
-              href="/hausaufgaben" gradient="blue" icon="assignment"
-              title="Hausübungen"
-              meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
-              progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
-            />
-
-            <FeatureCard
-              href="/todo" gradient="teal" icon="checklist"
-              title="Wochen-To-Do"
-              meta={todoTotal > 0 ? `${todoDone}/${todoTotal} erledigt` : 'Noch nichts gepostet'}
-              progress={todoTotal > 0 ? todoProgress : undefined}
-            />
-
-            <FeatureCard
-              href="/dienste" gradient="violet" icon={myDuty ? dutyIcon(myDuty.name) : 'cleaning_services'}
-              title={myDuty ? `Dienst: ${myDuty.name}` : 'Dienste'}
-              meta={myDuty
-                ? (myDuty.partners.length > 0 ? `mit ${myDuty.partners.map(p => p.full_name.split(' ')[0]).join(', ')}` : 'Diese Woche · Mo–Fr')
-                : 'Diese Woche kein Dienst'}
-              people={myDuty?.partners}
-              peopleInline
-            />
+            {[
+              <FeatureCard
+                href="/hausaufgaben" gradient="blue" icon="assignment"
+                title="Hausübungen"
+                meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
+                progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
+              />,
+              <FeatureCard
+                href="/todo" gradient="teal" icon="checklist"
+                title="Wochen-To-Do"
+                meta={todoTotal > 0 ? `${todoDone}/${todoTotal} erledigt` : 'Noch nichts gepostet'}
+                progress={todoTotal > 0 ? todoProgress : undefined}
+              />,
+              <FeatureCard
+                href="/dienste" gradient="violet" icon={myDuty ? dutyIcon(myDuty.name) : 'cleaning_services'}
+                title={myDuty ? `Dienst: ${myDuty.name}` : 'Dienste'}
+                meta={myDuty
+                  ? (myDuty.partners.length > 0 ? `mit ${myDuty.partners.map(p => p.full_name.split(' ')[0]).join(', ')}` : 'Diese Woche · Mo–Fr')
+                  : 'Diese Woche kein Dienst'}
+                people={myDuty?.partners}
+                peopleInline
+                footer={dutyDayFooter}
+              />,
+            ].map((card, i) => (
+              <div key={i} className="animate-card-enter h-full" style={{ animationDelay: `${i * 60}ms` }}>
+                {card}
+              </div>
+            ))}
           </div>
 
           {/* Streak */}
-          <StreakBanner streak={streak} pendingMilestone={pendingMilestone} />
+          <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
+            <StreakBanner streak={streak} pendingMilestone={pendingMilestone} />
+          </div>
 
           {/* Open homework — all, sorted by urgency */}
-          <StudentOpenHomework homework={allHomework} userId={userId} />
+          <div className="animate-card-enter" style={{ animationDelay: '240ms' }}>
+            <StudentOpenHomework homework={allHomework} userId={userId} />
+          </div>
         </div>
 
         <div className="relative">

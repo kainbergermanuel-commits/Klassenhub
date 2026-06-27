@@ -23,7 +23,8 @@ interface Props {
 }
 
 const DUTY_OPTIONS = [
-  { name: 'Tafel wischen', icon: 'cleaning_services' },
+  { name: 'Tafel wischen', icon: 'water_drop' },
+  { name: 'Boden säubern', icon: 'cleaning_services' },
   { name: 'Lüften', icon: 'air' },
   { name: 'Blumen gießen', icon: 'local_florist' },
   { name: 'Ordner austeilen', icon: 'folder_open' },

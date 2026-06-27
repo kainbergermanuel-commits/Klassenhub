@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild } from '@/lib/auth'
-import { todayISO, getMondayOfWeek } from '@/lib/date'
+import { todayISO, getMondayOfWeek, getRelevantMondayOfWeek } from '@/lib/date'
 import { computeStreak, currentMilestone, confirmedStreak } from '@/lib/streak'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
@@ -22,6 +22,7 @@ export default async function HomePage() {
 
   const today = todayISO()
   const weekStart = getMondayOfWeek()
+  const dutyWeekStart = getRelevantMondayOfWeek()
 
   const [
     { data: homeworkRaw },
@@ -31,7 +32,7 @@ export default async function HomePage() {
   ] = await Promise.all([
     supabase.from('homework').select('*').eq('class_id', profile.class_id).gte('due_date', today).order('due_date'),
     supabase.from('reminders').select('*').eq('class_id', profile.class_id).gte('event_date', today).order('event_date').limit(8),
-    supabase.from('duties').select('*').eq('class_id', profile.class_id).eq('week_start', weekStart),
+    supabase.from('duties').select('*').eq('class_id', profile.class_id).eq('week_start', dutyWeekStart),
     supabase.from('todos').select('id').eq('class_id', profile.class_id).eq('week_start', weekStart),
   ])
 

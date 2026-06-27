@@ -29,6 +29,16 @@ export function getMondayOfWeek(from: Date = new Date()): string {
   return toISODateLocal(d)
 }
 
+/**
+ * Montag der "relevanten" Woche:
+ * Sonntag → nächste Woche (Vorschau), alle anderen Tage → aktuelle Woche.
+ */
+export function getRelevantMondayOfWeek(from: Date = new Date()): string {
+  const d = new Date(from)
+  if (d.getDay() === 0) d.setDate(d.getDate() + 1)
+  return getMondayOfWeek(d)
+}
+
 /** Kalenderwoche eines YYYY-MM-DD Datums. */
 export function getWeekNumber(dateStr: string): number {
   const d = new Date(`${dateStr}T00:00:00`)
