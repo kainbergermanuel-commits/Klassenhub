@@ -21,4 +21,18 @@
   .gradient-amber { background: linear-gradient(135deg, #C98A2B 0%, #E0A94B 100%); }
   .gradient-violet { background: linear-gradient(135deg, #5965B8 0%, #7C86D6 100%); }
   .gradient-blue { background: linear-gradient(135deg, #2F86C5 0%, #56AEE6 100%); }
+  @keyframes pop-shake {
+    0%   { transform: scale(1) rotate(0deg); }
+    20%  { transform: scale(1.15) rotate(-4deg); }
+    40%  { transform: scale(1.1) rotate(4deg); }
+    60%  { transform: scale(1.05) rotate(-2deg); }
+    80%  { transform: scale(1.02) rotate(1deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .animate-pop-shake { animation: pop-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+  @keyframes card-enter {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .animate-card-enter { animation: card-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
 }

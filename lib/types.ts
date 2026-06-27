@@ -4,6 +4,8 @@ export type Gender = 'm' | 'f'
 // Hinweis: Diese Entitäten sind `type`-Aliase (nicht `interface`), damit sie
 // `Record<string, unknown>` erfüllen — sonst akzeptiert der Supabase-Generic-Typ
 // das Schema nicht und alle Queries würden zu `never` auflösen.
+export type SpecialRole = 'klassensprecher' | 'stv_klassensprecher' | 'hw_admin'
+
 export type Profile = {
   id: string
   role: Role
@@ -15,6 +17,7 @@ export type Profile = {
   avatar_hair_color: string | null
   avatar_skin_color: string | null
   child_id: string | null
+  special_role: SpecialRole | null
 }
 
 export type Class = {
@@ -34,6 +37,7 @@ export type Homework = {
   created_by: string | null
   created_at: string
   attachment_name: string | null
+  status: 'published' | 'pending'
 }
 
 export type HomeworkCompletion = {
@@ -83,6 +87,7 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           attachment_name?: string | null
+          status?: 'published' | 'pending'
         }
         Update: Partial<Homework>
         Relationships: []
@@ -124,6 +129,7 @@ export type Database = {
           event_end_time?: string | null
           created_by?: string | null
           created_at?: string
+          status?: 'published' | 'pending'
         }
         Update: Partial<Reminder>
         Relationships: []
@@ -192,6 +198,7 @@ export type Reminder = {
   event_end_time: string | null
   created_by: string | null
   created_at: string
+  status: 'published' | 'pending'
 }
 
 export type Duty = {

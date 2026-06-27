@@ -23,6 +23,9 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     ...(isTeacher ? [
       { href: '/klasse', icon: 'groups', label: 'Klasse' },
     ] : []),
+    ...(profile.role === 'student' ? [
+      { href: '/meine-klasse', icon: 'groups', label: 'Meine Klasse' },
+    ] : []),
     { href: '/einstellungen', icon: 'settings', label: 'Einstellungen' },
   ]
 

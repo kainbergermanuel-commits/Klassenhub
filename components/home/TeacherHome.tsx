@@ -1,13 +1,100 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import Avatar from '@/components/ui/Avatar'
 import Link from 'next/link'
 import FeatureCard from './FeatureCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
-import { todayISO, getMondayOfWeek, getWeekNumber } from '@/lib/date'
-import type { Class, Homework, Reminder } from '@/lib/types'
+import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber } from '@/lib/date'
+import type { Class, HomeworkWithStatus, Reminder } from '@/lib/types'
+
+type StudentStatus = { id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }
+
+function HwEyeButton({ hw, classId }: { hw: HomeworkWithStatus; classId: string }) {
+  const [open, setOpen] = useState(false)
+  const [students, setStudents] = useState<StudentStatus[] | null>(null)
+
+  const openPopup = useCallback(async () => {
+    setOpen(true)
+    if (students !== null) return
+    const supabase = createClient()
+    const [{ data: allStudents }, { data: completions }] = await Promise.all([
+      supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', classId).eq('role', 'student').order('full_name'),
+      supabase.from('homework_completions').select('student_id').eq('homework_id', hw.id),
+    ])
+    const doneIds = new Set((completions ?? []).map(c => c.student_id))
+    setStudents((allStudents ?? []).map(s => ({ ...s, avatar_color: s.avatar_color ?? '#0F8A82', avatar_seed: s.avatar_seed ?? null, avatar_hair_color: s.avatar_hair_color ?? null, avatar_skin_color: s.avatar_skin_color ?? null, done: doneIds.has(s.id) })))
+  }, [hw.id, classId, students])
+
+  return (
+    <>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <span className="text-xs font-bold text-kh-teal">{hw.completion_count ?? 0} gemacht</span>
+        <button onClick={openPopup} className="msym text-[17px] text-kh-teal/60 hover:text-kh-teal transition-colors leading-none">visibility</button>
+      </div>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setOpen(false)}>
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-[11px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}>
+                  {hw.subject_short}
+                </div>
+                <h2 className="text-[16px] font-extrabold text-kh-dark">{hw.title}</h2>
+              </div>
+              <button onClick={() => setOpen(false)} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
+            </div>
+            {students === null ? (
+              <div className="text-center py-8 text-kh-muted text-sm">Lädt…</div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="msym text-[16px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <span className="text-[12px] font-extrabold text-kh-teal uppercase tracking-wide">Gemacht · {students.filter(s => s.done).length}</span>
+                  </div>
+                  {students.filter(s => s.done).length === 0
+                    ? <p className="text-xs text-kh-muted pl-1">Noch niemand</p>
+                    : <div className="flex flex-wrap gap-1.5">
+                        {students.filter(s => s.done).map(s => (
+                          <span key={s.id} className="flex items-center gap-1.5 text-[12px] font-semibold bg-[#DDF0E7] text-[#2E9C6E] pl-1 pr-2.5 py-0.5 rounded-full">
+                            <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
+                            {s.full_name.split(' ')[0]}
+                          </span>
+                        ))}
+                      </div>
+                  }
+                </div>
+                <div className="border-t border-kh-border/40" />
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="msym text-[16px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 0" }}>radio_button_unchecked</span>
+                    <span className="text-[12px] font-extrabold text-kh-muted uppercase tracking-wide">Nicht gemacht · {students.filter(s => !s.done).length}</span>
+                  </div>
+                  {students.filter(s => !s.done).length === 0
+                    ? <p className="text-xs text-kh-muted pl-1">Alle haben gemacht 🎉</p>
+                    : <div className="flex flex-wrap gap-1.5">
+                        {students.filter(s => !s.done).map(s => (
+                          <span key={s.id} className="flex items-center gap-1.5 text-[12px] font-semibold bg-[#F6F3ED] text-kh-muted pl-1 pr-2.5 py-0.5 rounded-full">
+                            <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
+                            {s.full_name.split(' ')[0]}
+                          </span>
+                        ))}
+                      </div>
+                  }
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
 
 interface Person {
   id?: string
@@ -23,7 +110,7 @@ interface TeacherHomeProps {
   userId: string
   classId: string
   klass: Class | null
-  homeworkList: Homework[]
+  homeworkList: HomeworkWithStatus[]
   hwSubmittedCount: number
   studentCount: number
   students: Person[]
@@ -43,7 +130,10 @@ export default function TeacherHome({
   const firstName = fullName.split(' ').slice(-1)[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
   const todayStr = todayISO()
-  const dueToday = homeworkList.filter(h => h.due_date === todayStr)
+  const upcoming = [...homeworkList]
+    .filter(h => h.due_date >= todayStr)
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))
+    .slice(0, 5)
 
   const hwSlots = studentCount * homeworkList.length
   const hwProgress = hwSlots > 0 ? (hwSubmittedCount / hwSlots) * 100 : 0
@@ -96,33 +186,40 @@ export default function TeacherHome({
             />
           </div>
 
-          {/* Today's homework */}
+          {/* Upcoming homework */}
           <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-extrabold text-base text-kh-dark">Heute fällig</h2>
+              <h2 className="font-extrabold text-base text-kh-dark">Demnächst fällig</h2>
               <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline">Alle</Link>
             </div>
-            {dueToday.length === 0 ? (
-              <p className="text-sm text-kh-muted font-medium">Heute ist nichts fällig.</p>
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-kh-muted font-medium">Keine bevorstehenden Hausübungen.</p>
             ) : (
               <div className="flex flex-col gap-2.5">
-                {dueToday.map(hw => (
-                  <div key={hw.id} className="flex items-center gap-3 rounded-xl bg-[#FAF8F3] px-3 py-2.5 overflow-hidden">
-                    <div
-                      className="w-9 h-9 rounded-[10px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
-                      style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}
-                    >
-                      {hw.subject_short}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-[14px] text-kh-dark truncate">{hw.title}</div>
-                      <div className="flex items-center gap-1 text-xs font-semibold text-kh-amber mt-0.5">
-                        <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 0" }}>event</span>
-                        Heute fällig · {hw.subject}
+                {upcoming.map(hw => {
+                  const isToday = hw.due_date === todayStr
+                  const isTomorrow = hw.due_date === addDaysISO(1)
+                  const dateLabel = isToday ? 'Heute' : isTomorrow ? 'Morgen' : new Date(hw.due_date).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })
+                  const dateColor = isToday ? '#C95040' : isTomorrow ? '#C98A2B' : '#6E7E80'
+                  return (
+                    <div key={hw.id} className="flex items-center gap-3 rounded-xl bg-[#FAF8F3] px-3 py-2.5 overflow-hidden">
+                      <div
+                        className="w-9 h-9 rounded-[10px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}
+                      >
+                        {hw.subject_short}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[14px] text-kh-dark truncate">{hw.title}</div>
+                        <div className="flex items-center gap-1 text-xs font-semibold mt-0.5" style={{ color: dateColor }}>
+                          <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 0" }}>event</span>
+                          {dateLabel} · {hw.subject}
+                        </div>
+                      </div>
+                      <HwEyeButton hw={hw} classId={classId} />
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

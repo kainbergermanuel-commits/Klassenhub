@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Avatar from '@/components/ui/Avatar'
+import SpecialRolePicker from './SpecialRolePicker'
 import type { Homework, Profile } from '@/lib/types'
 
 interface Props {
@@ -70,7 +71,10 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
             <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={40} />
             <div className="flex-1 min-w-0">
               <div className="font-bold text-[15px] text-kh-dark truncate">{s.full_name}</div>
-              <div className="text-xs text-kh-muted font-medium mt-0.5">{s.gender === 'f' ? 'Schülerin' : 'Schüler'}</div>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <span className="text-xs text-kh-muted font-medium">{s.gender === 'f' ? 'Schülerin' : 'Schüler'}</span>
+                <SpecialRolePicker studentId={s.id} currentRole={s.special_role ?? null} />
+              </div>
             </div>
             <button
               onClick={() => setSelectedId(s.id)}

@@ -53,7 +53,7 @@ export default async function HomePage() {
       supabase.from('homework_completions').select('homework_id', { count: 'exact', head: true }).in('homework_id', homework.map(h => h.id)),
       supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', profile.class_id).eq('role', 'student'),
       todoIds.length > 0
-        ? supabase.from('todo_completions').select('todo_id').in('todo_id', todoIds)
+        ? supabase.from('todo_completions').select('todo_id,student_id').in('todo_id', todoIds)
         : Promise.resolve({ data: [] }),
       supabase.from('homework').select('id,due_date').eq('class_id', profile.class_id).order('due_date', { ascending: false }),
     ])
@@ -78,7 +78,7 @@ export default async function HomePage() {
     })
     const dutyStudentIds = [...new Set(duties.flatMap(d => d.assignee_ids))]
     const dutyStudents = dutyStudentIds.map(id => studentById[id]).filter(Boolean)
-    const todoDone = new Set((todoCounts ?? []).map((c: { todo_id: string }) => c.todo_id)).size
+    const todoDone = (todoCounts ?? []).length // alle Completions (nicht nur unique todo_ids)
 
     const allConfirmations = (confirmations ?? []) as { student_id: string; milestone: number }[]
     const doneByStudent = new Map<string, Set<string>>()
@@ -102,13 +102,19 @@ export default async function HomePage() {
       .filter(e => e.streak > 0)
       .sort((a, b) => b.streak - a.streak)
 
+    const completionCountByHw = new Map<string, number>()
+    for (const c of allCompletions ?? []) {
+      completionCountByHw.set(c.homework_id, (completionCountByHw.get(c.homework_id) ?? 0) + 1)
+    }
+    const homeworkWithCounts = homework.map(h => ({ ...h, done: false, completion_count: completionCountByHw.get(h.id) ?? 0 }))
+
     return (
       <TeacherHome
         fullName={profile.full_name}
         userId={user.id}
         classId={profile.class_id}
         klass={klass}
-        homeworkList={homework}
+        homeworkList={homeworkWithCounts}
         hwSubmittedCount={submittedCount ?? 0}
         studentCount={studentCount ?? 0}
         students={students}
@@ -163,11 +169,18 @@ export default async function HomePage() {
       if (!confirmation) pendingMilestone = ms
     }
 
-    let myDutyPartners: string[] = []
+    let myDutyPartners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] = []
     if (myDuty) {
       const { data: partners } = await supabase
-        .from('profiles').select('id,full_name').in('id', myDuty.assignee_ids.filter((id: string) => id !== user.id))
-      myDutyPartners = (partners ?? []).map(p => p.full_name.split(' ')[0])
+        .from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color')
+        .in('id', myDuty.assignee_ids.filter((id: string) => id !== user.id))
+      myDutyPartners = (partners ?? []).map(p => ({
+        full_name: p.full_name,
+        avatar_color: p.avatar_color ?? '#0F8A82',
+        avatar_seed: p.avatar_seed ?? null,
+        avatar_hair_color: p.avatar_hair_color ?? null,
+        avatar_skin_color: p.avatar_skin_color ?? null,
+      }))
     }
 
     // Streak leaderboard for all students

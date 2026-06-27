@@ -3,11 +3,14 @@
 import { useState } from 'react'
 import HomeworkCard from './HomeworkCard'
 import AddHomeworkModal from './AddHomeworkModal'
-import type { HomeworkWithStatus, Role } from '@/lib/types'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import type { HomeworkWithStatus, Role, SpecialRole } from '@/lib/types'
 
 interface Props {
   homework: HomeworkWithStatus[]
   role: Role
+  specialRole?: SpecialRole | null
   userId: string
   classId: string
   subtitle: string
@@ -23,17 +26,29 @@ function monthLabel(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('de-AT', { month: 'long', year: 'numeric' })
 }
 
-export default function HomeworkList({ homework, role, userId, classId, subtitle, stats }: Props) {
+export default function HomeworkList({ homework, role, specialRole, userId, classId, subtitle, stats }: Props) {
+  const router = useRouter()
   const [showModal, setShowModal] = useState(false)
 
+  const canCreate = role === 'teacher' || specialRole === 'hw_admin'
+  const asPending = role !== 'teacher'
+
+  async function confirmHomework(id: string) {
+    const supabase = createClient()
+    await supabase.from('homework').update({ status: 'published' }).eq('id', id)
+    router.refresh()
+  }
+
   const today = todayLocalISO()
-  const open = homework
+  const pending = homework.filter(h => h.status === 'pending')
+  const published = homework.filter(h => h.status === 'published')
+  const open = published
     .filter(h => h.due_date > today)
     .sort((a, b) => {
       if (a.done !== b.done) return a.done ? 1 : -1
       return a.due_date.localeCompare(b.due_date)
     })
-  const past = homework.filter(h => h.due_date <= today).sort((a, b) => b.due_date.localeCompare(a.due_date))
+  const past = published.filter(h => h.due_date <= today).sort((a, b) => b.due_date.localeCompare(a.due_date))
 
   // Group past by month (most recent first)
   const pastGroups: { label: string; items: HomeworkWithStatus[] }[] = []
@@ -71,7 +86,7 @@ export default function HomeworkList({ homework, role, userId, classId, subtitle
             <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{subtitle}</p>
           )}
         </div>
-        {role === 'teacher' && (
+        {canCreate && (
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
@@ -89,6 +104,20 @@ export default function HomeworkList({ homework, role, userId, classId, subtitle
         </div>
       ) : (
         <div className="flex flex-col gap-6">
+          {/* Pending — nur für Lehrer */}
+          {role === 'teacher' && pending.length > 0 && (
+            <div>
+              <div className="text-xs font-bold text-kh-amber uppercase tracking-[.6px] mb-3 flex items-center gap-1.5">
+                <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 0" }}>pending</span>
+                Ausstehend · Bestätigung erforderlich ({pending.length})
+              </div>
+              <div className="flex flex-col gap-3">
+                {pending.map(hw => (
+                  <PendingHomeworkCard key={hw.id} hw={hw} onConfirm={confirmHomework} />
+                ))}
+              </div>
+            </div>
+          )}
           {/* Open / upcoming */}
           {open.length > 0 && (
             <div>
@@ -123,9 +152,37 @@ export default function HomeworkList({ homework, role, userId, classId, subtitle
         <AddHomeworkModal
           classId={classId}
           userId={userId}
+          asPending={asPending}
           onClose={() => setShowModal(false)}
         />
       )}
     </>
+  )
+}
+
+function PendingHomeworkCard({ hw, onConfirm }: { hw: HomeworkWithStatus; onConfirm: (id: string) => void }) {
+  return (
+    <div className="bg-[#FFFBF2] border border-kh-amber/30 rounded-2xl px-4 py-3.5 flex items-center gap-3">
+      <div
+        className="w-10 h-10 rounded-[10px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
+        style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}
+      >
+        {hw.subject_short}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-[14px] text-kh-dark truncate">{hw.title}</div>
+        <div className="text-xs text-kh-muted font-medium mt-0.5">
+          {hw.subject} · Fällig: {new Date(`${hw.due_date}T00:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })}
+        </div>
+      </div>
+      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#F8ECD6] text-kh-amber flex-shrink-0">Ausstehend</span>
+      <button
+        onClick={() => onConfirm(hw.id)}
+        className="flex items-center gap-1 bg-kh-teal text-white text-[12px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity flex-shrink-0"
+      >
+        <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+        Bestätigen
+      </button>
+    </div>
   )
 }

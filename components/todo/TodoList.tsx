@@ -22,7 +22,13 @@ export default function TodoList({ todos: initial, role, userId, classId, weekSt
 
   const done = items.filter(t => t.done)
   const open = items.filter(t => !t.done)
-  const progress = items.length > 0 ? Math.round((done.length / items.length) * 100) : 0
+
+  const totalSlots = items.length * studentCount
+  const totalDone = role === 'teacher'
+    ? items.reduce((s, t) => s + (t.completion_count ?? 0), 0)
+    : done.length
+  const totalPossible = role === 'teacher' ? totalSlots : items.length
+  const progress = totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0
 
   async function addTodo() {
     if (role !== 'teacher') return
@@ -70,7 +76,9 @@ export default function TodoList({ todos: initial, role, userId, classId, weekSt
           <span className="font-extrabold text-kh-dark text-base">
             {role === 'teacher' ? 'Aufgaben diese Woche' : 'Mein Fortschritt'}
           </span>
-          <span className="font-extrabold text-kh-teal text-lg">{done.length} / {items.length}</span>
+          <span className="font-extrabold text-kh-teal text-lg">
+            {role === 'teacher' ? `${totalDone} / ${totalSlots}` : `${done.length} / ${items.length}`}
+          </span>
         </div>
         <div className="h-2.5 rounded-full bg-[#ECE6D9] overflow-hidden">
           <div
@@ -162,10 +170,10 @@ function TodoRow({ todo, role, studentCount, onToggle, onDelete }: {
         {todo.title}
       </span>
 
-      {/* Lehrer: Abgabe-Zähler */}
+      {/* Lehrer: Erledigungszähler */}
       {role === 'teacher' && (
         <span className="text-xs font-bold text-kh-teal bg-kh-teal-light px-2.5 py-1 rounded-full flex-shrink-0">
-          {todo.completion_count ?? 0}/{studentCount}
+          {todo.completion_count ?? 0}/{studentCount} erledigt
         </span>
       )}
 

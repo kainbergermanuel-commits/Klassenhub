@@ -6,7 +6,7 @@ SELECT id, email FROM auth.users;
 
 UPDATE public.profiles SET
   role         = 'teacher',
-  full_name    = 'Hr. Berger',
+  full_name    = 'Herr Berger',
   class_id     = '00000000-0000-0000-0000-000000000001',
   avatar_color = '#0F8A82'
 WHERE id = (SELECT id FROM auth.users WHERE email = 'berger@mshirtenberg.at');

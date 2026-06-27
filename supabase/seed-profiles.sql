@@ -2,7 +2,7 @@
 
 update public.profiles set
   role         = 'teacher',
-  full_name    = 'Hr. Berger',
+  full_name    = 'Herr Berger',
   class_id     = '00000000-0000-0000-0000-000000000001',
   avatar_color = '#0F8A82'
 where id = (select id from auth.users where email = 'berger@schule.at');

@@ -163,7 +163,7 @@ export default function AvatarPickerModal({ currentSeed, currentHairColor, curre
 
         {/* Avatar grid */}
         <p className="text-[11px] font-bold text-kh-muted uppercase tracking-wider mb-2">Gesicht</p>
-        <div className="max-h-[220px] overflow-y-auto scrollbar-kh -mx-1">
+        <div className="max-h-[240px] overflow-y-auto scrollbar-kh -mx-1">
           <div className="grid grid-cols-8 gap-1.5 p-3">
             {SEEDS.map(seed => {
               const active = selected === seed

@@ -8,10 +8,11 @@ import { todayISO } from '@/lib/date'
 interface Props {
   classId: string
   userId: string
+  isPending?: boolean
   onClose: () => void
 }
 
-export default function AddReminderModal({ classId, userId, onClose }: Props) {
+export default function AddReminderModal({ classId, userId, isPending = false, onClose }: Props) {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -30,6 +31,7 @@ export default function AddReminderModal({ classId, userId, onClose }: Props) {
       description: description.trim() || null,
       event_date: date,
       created_by: userId,
+      status: isPending ? 'pending' : 'published',
     })
     if (dbError) { setError('Fehler beim Speichern. Bitte erneut versuchen.'); setSaving(false); return }
     router.refresh()
@@ -40,7 +42,12 @@ export default function AddReminderModal({ classId, userId, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-extrabold text-kh-dark">Neue Erinnerung</h2>
+          <div>
+            <h2 className="text-lg font-extrabold text-kh-dark">Neue Erinnerung</h2>
+            {isPending && (
+              <p className="text-xs text-kh-amber font-semibold mt-0.5">Wird zuerst von der Lehrkraft bestätigt</p>
+            )}
+          </div>
           <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
         </div>
 
@@ -84,7 +91,7 @@ export default function AddReminderModal({ classId, userId, onClose }: Props) {
             disabled={!title.trim() || !date || saving}
             className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
           >
-            {saving ? 'Speichern…' : 'Posten'}
+            {saving ? 'Speichern…' : isPending ? 'Zur Bestätigung senden' : 'Posten'}
           </button>
         </div>
       </div>

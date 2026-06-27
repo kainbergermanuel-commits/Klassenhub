@@ -47,6 +47,7 @@ export default async function ErinnerungenPage() {
     <ReminderList
       reminders={reminders ?? []}
       role={profile.role}
+      specialRole={profile.special_role}
       userId={user.id}
       classId={profile.class_id}
       viewersByReminder={viewersByReminder}

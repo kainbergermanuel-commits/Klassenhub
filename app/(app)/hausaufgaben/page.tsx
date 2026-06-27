@@ -78,6 +78,7 @@ export default async function HomeworkPage() {
     <HomeworkList
       homework={homeworkWithStatus}
       role={profile.role}
+      specialRole={profile.special_role}
       userId={user.id}
       classId={profile.class_id}
       subtitle={subtitle}

@@ -27,10 +27,12 @@ interface FeatureCardProps {
   /** 0–100 */
   progress?: number
   people?: Person[]
+  /** Avatare unter dem Meta-Text statt oben rechts */
+  peopleInline?: boolean
   badge?: string
 }
 
-export default function FeatureCard({ href, gradient, icon, title, meta, progress, people, badge }: FeatureCardProps) {
+export default function FeatureCard({ href, gradient, icon, title, meta, progress, people, peopleInline, badge }: FeatureCardProps) {
   return (
     <Link
       href={href}
@@ -40,7 +42,7 @@ export default function FeatureCard({ href, gradient, icon, title, meta, progres
         <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
           <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
         </div>
-        {people && people.length > 0
+        {people && people.length > 0 && !peopleInline
           ? <AvatarStack people={people} max={3} ring="rgba(255,255,255,0.35)" size={28} />
           : badge
             ? <span className="text-[11px] font-bold bg-white/20 px-2.5 py-1 rounded-full">{badge}</span>
@@ -49,7 +51,12 @@ export default function FeatureCard({ href, gradient, icon, title, meta, progres
 
       <div className="mt-1">
         <div className="font-extrabold text-[17px] leading-tight">{title}</div>
-        <div className="text-[13px] font-semibold text-white/85 mt-1">{meta}</div>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[13px] font-semibold text-white/85">{meta}</span>
+          {people && people.length > 0 && peopleInline && (
+            <AvatarStack people={people} max={3} ring="rgba(255,255,255,0.35)" size={22} />
+          )}
+        </div>
       </div>
 
       {progress !== undefined && (

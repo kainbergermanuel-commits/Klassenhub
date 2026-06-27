@@ -52,7 +52,7 @@ export default function AgendaPanel({ reminders, role, userId, myViewedIds = [] 
     <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-extrabold text-[17px] text-kh-dark flex items-center gap-1.5">
-          <span className="msym text-[18px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>notifications</span>
+          <span className="msym text-[22px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>push_pin</span>
           Erinnerungen
         </h2>
         <Link

@@ -12,9 +12,13 @@ const SUBJECTS = [
   { label: 'Biologie', short: 'BU', color: '#10B981' },
   { label: 'Geografie', short: 'GW', color: '#C98A2B' },
   { label: 'Geschichte', short: 'GS', color: '#7B5EA7' },
+  { label: 'Physik', short: 'PH', color: '#0369A1' },
+  { label: 'Chemie', short: 'CH', color: '#9D174D' },
   { label: 'Musik', short: 'MU', color: '#D44B9E' },
   { label: 'Bew. & Sport', short: 'BSP', color: '#E07B35' },
-  { label: 'Sonstiges', short: 'S', color: '#6E7E80' },
+  { label: 'Digitale Grundbildung', short: 'DGB', color: '#6366F1' },
+  { label: 'Berufsorientierung', short: 'BO', color: '#64748B' },
+  { label: 'Sonstiges', short: 'Sonst.', color: '#6E7E80' },
 ]
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
@@ -155,10 +159,11 @@ function DatePicker({ value, min, onChange }: DatePickerProps) {
 interface Props {
   classId: string
   userId: string
+  asPending?: boolean
   onClose: () => void
 }
 
-export default function AddHomeworkModal({ classId, userId, onClose }: Props) {
+export default function AddHomeworkModal({ classId, userId, asPending = false, onClose }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [subjectIdx, setSubjectIdx] = useState(0)
@@ -185,6 +190,7 @@ export default function AddHomeworkModal({ classId, userId, onClose }: Props) {
       title: title.trim(),
       due_date: dueDate,
       created_by: userId,
+      status: asPending ? 'pending' : 'published',
     })
 
     if (dbError) { setError('Fehler beim Speichern. Bitte erneut versuchen.'); setSaving(false); return }
@@ -199,7 +205,12 @@ export default function AddHomeworkModal({ classId, userId, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-extrabold text-kh-dark">Neue Hausübung</h2>
+          <div>
+            <h2 className="text-lg font-extrabold text-kh-dark">Neue Hausübung</h2>
+            {asPending && (
+              <p className="text-xs text-kh-amber font-semibold mt-0.5">Wird zuerst von der Lehrkraft bestätigt</p>
+            )}
+          </div>
           <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-red transition-colors">close</button>
         </div>
 
@@ -252,7 +263,7 @@ export default function AddHomeworkModal({ classId, userId, onClose }: Props) {
           >
             {isPending || saving
               ? <span className="msym animate-spin text-lg">progress_activity</span>
-              : <><span className="msym text-lg">check</span> Hausübung posten</>
+              : <><span className="msym text-lg">check</span> {asPending ? 'Zur Bestätigung senden' : 'Hausübung posten'}</>
             }
           </button>
         </form>

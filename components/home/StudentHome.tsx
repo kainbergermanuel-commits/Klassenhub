@@ -16,7 +16,7 @@ interface StudentHomeProps {
   myViewedIds: string[]
   todoTotal: number
   todoDone: number
-  myDuty: { name: string; partners: string[] } | null
+  myDuty: { name: string; partners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] } | null
   streak: number
   pendingMilestone: number | null
   streakEntries: StreakEntry[]
@@ -59,8 +59,10 @@ export default function StudentHome({
               href="/dienste" gradient="violet" icon={myDuty ? dutyIcon(myDuty.name) : 'cleaning_services'}
               title={myDuty ? `Dienst: ${myDuty.name}` : 'Dienste'}
               meta={myDuty
-                ? (myDuty.partners.length > 0 ? `mit ${myDuty.partners.join(', ')}` : 'Diese Woche · Mo–Fr')
+                ? (myDuty.partners.length > 0 ? `mit ${myDuty.partners.map(p => p.full_name.split(' ')[0]).join(', ')}` : 'Diese Woche · Mo–Fr')
                 : 'Diese Woche kein Dienst'}
+              people={myDuty?.partners}
+              peopleInline
             />
           </div>
 
