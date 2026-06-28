@@ -20,6 +20,21 @@ export type Profile = {
   special_role: SpecialRole | null
   subjects: unknown | null
   is_admin: boolean
+  joined_class_at: string | null
+}
+
+export type TimetableEntry = {
+  student_id: string
+  day: number
+  slot: number
+  subject: string
+}
+
+export type TeacherClass = {
+  teacher_id: string
+  class_id: string
+  is_primary: boolean
+  subjects: unknown | null
 }
 
 export type Class = {
@@ -69,6 +84,7 @@ export type Database = {
           child_id?: string | null
           subjects?: unknown | null
           is_admin?: boolean
+          joined_class_at?: string | null
         }
         Update: Partial<Profile>
         Relationships: []
@@ -135,8 +151,21 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           status?: 'published' | 'pending'
+          target_student_ids?: string[] | null
         }
         Update: Partial<Reminder>
+        Relationships: []
+      }
+      timetable_entries: {
+        Row: TimetableEntry
+        Insert: { student_id: string; day: number; slot: number; subject: string }
+        Update: Partial<TimetableEntry>
+        Relationships: []
+      }
+      teacher_classes: {
+        Row: TeacherClass
+        Insert: { teacher_id: string; class_id: string; is_primary?: boolean; subjects?: unknown | null }
+        Update: Partial<TeacherClass>
         Relationships: []
       }
       duties: {
@@ -204,6 +233,7 @@ export type Reminder = {
   created_by: string | null
   created_at: string
   status: 'published' | 'pending'
+  target_student_ids: string[] | null
 }
 
 export type Duty = {
