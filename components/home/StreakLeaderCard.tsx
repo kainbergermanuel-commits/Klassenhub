@@ -10,6 +10,7 @@ export interface StreakEntry {
   avatar_hair_color: string | null
   avatar_skin_color: string | null
   streak: number
+  confirmedMilestone: number
 }
 
 interface Props {
@@ -70,8 +71,8 @@ export default function StreakLeaderCard({ entries }: Props) {
                     {entry.full_name.split(' ')[0]}
                   </span>
                   <span className="flex items-center text-[12px] font-bold text-kh-amber ml-2 flex-shrink-0">
-                    {flameCount(entry.streak) > 0
-                      ? Array.from({ length: flameCount(entry.streak) }).map((_, fi) => (
+                    {flameCount(entry.confirmedMilestone) > 0
+                      ? Array.from({ length: flameCount(entry.confirmedMilestone) }).map((_, fi) => (
                           <img key={fi} src="/flame.svg" alt="" className="w-5 h-5" style={{ marginLeft: fi === 0 ? 0 : '-4px' }} />
                         ))
                       : null}

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO, lastDayOfPrevMonthISO, firstDayOfPrevMonthISO, daysUntil } from '@/lib/date'
-import { computeStreak, currentMilestone, confirmedStreak, MILESTONES } from '@/lib/streak'
+import { computeStreak, currentMilestone } from '@/lib/streak'
 import StreakOverview from '@/components/streaks/StreakOverview'
 
 export default async function StreaksPage() {
@@ -32,14 +32,19 @@ export default async function StreaksPage() {
 
   const allHwIds = (allHwDesc ?? []).map(h => h.id)
   const { data: allCompletions } = allHwIds.length > 0
-    ? await supabase.from('homework_completions').select('homework_id,student_id').in('homework_id', allHwIds)
+    ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
     : { data: [] }
 
-  // Build doneIds per student
+  // Build doneIds per student (alle für eigenen Streak) + nur bestätigte für Leaderboard
   const doneByStudent = new Map<string, Set<string>>()
+  const confirmedDoneByStudent = new Map<string, Set<string>>()
   for (const c of allCompletions ?? []) {
     if (!doneByStudent.has(c.student_id)) doneByStudent.set(c.student_id, new Set())
     doneByStudent.get(c.student_id)!.add(c.homework_id)
+    if ((c as any).confirmed_by_parent_at) {
+      if (!confirmedDoneByStudent.has(c.student_id)) confirmedDoneByStudent.set(c.student_id, new Set())
+      confirmedDoneByStudent.get(c.student_id)!.add(c.homework_id)
+    }
   }
 
   // Confirmed milestone lookup: student_id → Set<milestone>
@@ -53,9 +58,10 @@ export default async function StreaksPage() {
   const allConfirmationsArr = (confirmations ?? []) as { student_id: string; milestone: number; confirmed_by: string; confirmed_at: string }[]
   const studentData = (students ?? []).map(s => {
     const doneIds = doneByStudent.get(s.id) ?? new Set<string>()
+    const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
     const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today)
+    const displayStreak = computeStreak(confirmedIds, allHwDesc ?? [], today)
     const confirmedMilestones = confirmedByStudent.get(s.id) ?? new Set<number>()
-    const displayStreak = confirmedStreak(s.id, allConfirmationsArr)
 
     // Pending: current milestone threshold not yet confirmed
     const milestone = currentMilestone(actualStreak)

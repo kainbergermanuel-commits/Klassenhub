@@ -82,7 +82,8 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
               {withStreak.map((s, i) => {
                 const barWidth = Math.round((s.streak / maxStreak) * 100)
                 const confirmedSet = new Set(s.confirmedMilestones.map(c => c.milestone))
-                const milestones = [5, 10, 15, 20].filter(m => confirmedSet.has(m))
+                const milestones = [5, 10, 15, 20].filter(m => confirmedSet.has(m) && m <= s.streak)
+                const topConfirmedMilestone = s.confirmedMilestones.length > 0 ? Math.max(...s.confirmedMilestones.map(c => c.milestone)) : 0
 
                 return (
                   <div key={s.id} className="flex items-start gap-3">
@@ -126,8 +127,8 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
                           />
                         </div>
                         <span className="flex items-center gap-0.5 text-[13px] font-extrabold text-kh-amber flex-shrink-0">
-                          {flameCount(s.streak) > 0
-                            ? Array.from({ length: flameCount(s.streak) }).map((_, fi) => (
+                          {flameCount(topConfirmedMilestone) > 0
+                            ? Array.from({ length: flameCount(topConfirmedMilestone) }).map((_, fi) => (
                                 <img key={fi} src="/flame.svg" alt="" className="w-4 h-4" />
                               ))
                             : null}

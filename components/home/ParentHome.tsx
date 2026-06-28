@@ -3,6 +3,7 @@ import FeatureCard from './FeatureCard'
 import AgendaPanel from './AgendaPanel'
 import StreakConfirmButton from './StreakConfirmButton'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
+import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
 import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder } from '@/lib/types'
 import { flameCount } from '@/lib/streak'
@@ -22,12 +23,14 @@ interface ParentHomeProps {
   todoTotal: number
   todoDone: number
   childStreak: number
+  childConfirmedMilestone: number
   pendingMilestone: number | null
+  pendingConfirmations: PendingConfirmation[]
   streakEntries: StreakEntry[]
 }
 
 export default function ParentHome({
-  fullName, parentId, childId, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, todoTotal, todoDone, childStreak, pendingMilestone, streakEntries,
+  fullName, parentId, childId, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, todoTotal, todoDone, childStreak, childConfirmedMilestone, pendingMilestone, pendingConfirmations, streakEntries,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -96,7 +99,7 @@ export default function ParentHome({
           {childStreak > 0 && (
             <div className="text-right border-r border-white/10 pr-4">
               <div className="flex items-center gap-1 justify-end leading-none" style={{ height: '1.65rem' }}>
-                {flameCount(childStreak) > 0 && Array.from({ length: flameCount(childStreak) }).map((_, i) => (
+                {flameCount(childConfirmedMilestone) > 0 && Array.from({ length: flameCount(childConfirmedMilestone) }).map((_, i) => (
                   <img key={i} src="/flame.svg" alt="" className="w-5 h-5" style={{ marginLeft: i === 0 ? 0 : '-4px', filter: 'saturate(0.6)' }} />
                 ))}
                 <span className="text-[22px] font-extrabold text-[#7FD4B6]">{childStreak}</span>
@@ -113,6 +116,9 @@ export default function ParentHome({
           </div>
         </div>
       </div>
+
+      {/* HÜ-Bestätigungen */}
+      <ParentHwConfirmList items={pendingConfirmations} childFirstName={childFirst} />
 
       {/* Streak pending confirmation */}
       {pendingMilestone && childStreak > 0 && (

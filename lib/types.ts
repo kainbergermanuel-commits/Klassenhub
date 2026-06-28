@@ -61,6 +61,7 @@ export type HomeworkCompletion = {
   homework_id: string
   student_id: string
   completed_at: string
+  confirmed_by_parent_at: string | null
 }
 
 // Supabase Database type for generic client usage.
