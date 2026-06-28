@@ -152,15 +152,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let previewParentId: string | null = null
   let allStudents: { id: string; full_name: string }[] = []
   let allParents: { id: string; full_name: string }[] = []
-  if (realProfile.is_admin && realProfile.class_id) {
+  if (realProfile.is_admin && activeClassId) {
     const supabase = await createClient()
     const jar = await cookies()
     previewRole = jar.get('preview_role')?.value ?? null
     previewStudentId = jar.get('preview_student_id')?.value ?? null
     previewParentId = jar.get('preview_parent_id')?.value ?? null
     const [{ data: students }, { data: parents }] = await Promise.all([
-      supabase.from('profiles').select('id,full_name').eq('class_id', realProfile.class_id).eq('role', 'student').order('full_name'),
-      supabase.from('profiles').select('id,full_name').eq('class_id', realProfile.class_id).eq('role', 'parent').order('full_name'),
+      supabase.from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
+      supabase.from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'parent').order('full_name'),
     ])
     allStudents = students ?? []
     allParents = parents ?? []
