@@ -200,8 +200,8 @@ export async function adminUpdateTeacherClasses(profileId: string, classIds: str
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tc = service.from('teacher_classes' as any) as any
 
-  // '' means explicitly no KV; undefined means not set → fall back to first class
-  const effectivePrimary = primaryClassId === '' ? null : (primaryClassId ?? classIds[0] ?? null)
+  // '' = explicitly no KV; valid classId = that class is KV
+  const effectivePrimary = (primaryClassId && classIds.includes(primaryClassId)) ? primaryClassId : null
 
   // Replace all existing assignments
   await tc.delete().eq('teacher_id', profileId)
@@ -209,7 +209,6 @@ export async function adminUpdateTeacherClasses(profileId: string, classIds: str
     await tc.insert(classIds.map(cid => ({ teacher_id: profileId, class_id: cid, is_primary: cid === effectivePrimary })))
   }
 
-  // Sync profiles.class_id to primary class (or first class if no KV)
   await service.from('profiles').update({ class_id: effectivePrimary ?? classIds[0] ?? null }).eq('id', profileId)
 }
 

@@ -41,15 +41,16 @@ export default function AdminManageBar({
 
   async function handleEditClasses() {
     setOpen(false)
-    setSelectedClassIds([])
-    setPrimaryClassId('')
+    setSelectedClassIds(assignedClassIds)
+    setPrimaryClassId(initialPrimaryClassId ?? '')
     setEditingClasses(true)
   }
 
   async function handleSaveClasses() {
     setLoading('classes')
     try {
-      await adminUpdateTeacherClasses(profileId, selectedClassIds, primaryClassId || undefined)
+      // Pass '' explicitly for "no KV"; action distinguishes '' from undefined
+      await adminUpdateTeacherClasses(profileId, selectedClassIds, primaryClassId)
       router.refresh()
       setEditingClasses(false)
     } catch {}
@@ -59,9 +60,8 @@ export default function AdminManageBar({
   function toggleClass(id: string) {
     setSelectedClassIds(prev => {
       const next = prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-      // If the primary class was unchecked, reset to first remaining
       if (id === primaryClassId && !next.includes(id)) {
-        setPrimaryClassId(next[0] ?? '')
+        setPrimaryClassId('')
       }
       return next
     })
