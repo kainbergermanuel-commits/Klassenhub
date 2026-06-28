@@ -1,28 +1,34 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { saveTeacherSubjects, type TeacherSubject } from '@/app/actions/saveTeacherSubjects'
+import { SUBJECTS } from '@/lib/subjects'
 
-const SUBJECTS = [
-  { label: 'Mathematik',          short: 'M',   color: '#0F8A82' },
-  { label: 'Deutsch',             short: 'D',   color: '#B0413E' },
-  { label: 'Englisch',            short: 'E',   color: '#2F6DB0' },
-  { label: 'Biologie',            short: 'BU',  color: '#10B981' },
-  { label: 'Geografie',           short: 'GW',  color: '#C98A2B' },
-  { label: 'Geschichte',          short: 'GS',  color: '#7B5EA7' },
-  { label: 'Physik',              short: 'PH',  color: '#0369A1' },
-  { label: 'Chemie',              short: 'CH',  color: '#9D174D' },
-  { label: 'Musik',               short: 'MU',  color: '#D44B9E' },
-  { label: 'Bew. & Sport',        short: 'BSP', color: '#E07B35' },
-  { label: 'Digitale Grundbildung', short: 'DGB', color: '#6366F1' },
-  { label: 'Berufsorientierung',  short: 'BO',  color: '#64748B' },
-  { label: 'Sonstiges',           short: 'Sonst.', color: '#6E7E80' },
-]
+interface Props {
+  initial: TeacherSubject[]
+  activeClassId?: string | null
+  allClasses?: { id: string; name: string }[]
+}
 
-export default function TeacherSubjectsEditor({ initial }: { initial: TeacherSubject[] }) {
+export default function TeacherSubjectsEditor({ initial, activeClassId, allClasses = [] }: Props) {
+  const router = useRouter()
   const [selected, setSelected] = useState<TeacherSubject[]>(initial)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState(false)
+  const [switching, setSwitching] = useState(false)
   const [, startTransition] = useTransition()
+
+  async function switchClass(classId: string) {
+    if (classId === activeClassId || switching) return
+    setSwitching(true)
+    await fetch('/api/active-class', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ classId }),
+    })
+    router.refresh()
+  }
 
   function toggle(s: typeof SUBJECTS[0]) {
     setSelected(prev => {
@@ -44,15 +50,39 @@ export default function TeacherSubjectsEditor({ initial }: { initial: TeacherSub
   }
 
   function save() {
+    setError(false)
     startTransition(async () => {
-      await saveTeacherSubjects(selected)
-      setSaved(true)
+      try {
+        await saveTeacherSubjects(selected)
+        setSaved(true)
+      } catch {
+        setError(true)
+      }
     })
   }
 
   return (
     <div className="bg-[#FAF8F3] rounded-2xl p-5 border border-kh-border">
       <h2 className="text-[15px] font-extrabold text-kh-dark mb-1">Meine Fächer</h2>
+      {allClasses.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {allClasses.map(c => (
+            <button
+              key={c.id}
+              onClick={() => switchClass(c.id)}
+              disabled={switching}
+              className={`w-[72px] flex items-center justify-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full transition-all ${
+                c.id === activeClassId
+                  ? 'bg-kh-teal/15 text-kh-teal'
+                  : 'text-kh-muted/60 hover:text-kh-muted hover:bg-kh-border/20'
+              }`}
+            >
+              <span className="msym text-[14px]" style={{ fontVariationSettings: `'FILL' ${c.id === activeClassId ? 1 : 0}` }}>group</span>
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
       <p className="text-[12.5px] text-kh-muted mb-4">Fächer auswählen · Stern = Hauptfach (bestimmt Kartenfarbe)</p>
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -98,13 +128,16 @@ export default function TeacherSubjectsEditor({ initial }: { initial: TeacherSub
         </div>
       )}
 
-      <button
-        onClick={save}
-        disabled={selected.length === 0}
-        className="px-5 py-2 rounded-full gradient-teal text-white text-[13px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
-      >
-        {saved ? '✓ Gespeichert' : 'Speichern'}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={save}
+          disabled={selected.length === 0}
+          className="px-5 py-2 rounded-full gradient-teal text-white text-[13px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+        >
+          {saved ? '✓ Gespeichert' : 'Speichern'}
+        </button>
+        {error && <span className="text-[12px] font-semibold text-kh-red">Fehler beim Speichern.</span>}
+      </div>
     </div>
   )
 }

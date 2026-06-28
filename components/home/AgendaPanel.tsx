@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { daysUntil, daysUntilLabel } from '@/lib/date'
 import type { Reminder, Role } from '@/lib/types'
+import AddReminderModal from '@/components/erinnerungen/AddReminderModal'
 
 interface Props {
   reminders: Reminder[]
   role: Role
   userId?: string
+  classId?: string
   myViewedIds?: string[]
 }
 
@@ -28,7 +30,8 @@ function badgeStyle(days: number) {
   return { color: '#6E7E80', bg: '#ECE6D9' }
 }
 
-export default function AgendaPanel({ reminders, role, userId, myViewedIds = [] }: Props) {
+export default function AgendaPanel({ reminders, role, userId, classId, myViewedIds = [] }: Props) {
+  const [showAddModal, setShowAddModal] = useState(false)
   const router = useRouter()
   const [viewedSet, setViewedSet] = useState(new Set(myViewedIds))
 
@@ -49,19 +52,30 @@ export default function AgendaPanel({ reminders, role, userId, myViewedIds = [] 
   }
 
   return (
+    <>
     <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-extrabold text-[17px] text-kh-dark flex items-center gap-1.5">
           <span className="msym text-[22px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>push_pin</span>
           Erinnerungen
         </h2>
-        <Link
-          href="/erinnerungen"
-          className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity"
-          aria-label="Zu Erinnerungen"
-        >
-          <span className="msym text-[19px]">{role === 'teacher' ? 'add' : 'arrow_forward'}</span>
-        </Link>
+        {role === 'teacher' ? (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+            aria-label="Neue Erinnerung"
+          >
+            <span className="msym text-[19px]">add</span>
+          </button>
+        ) : (
+          <Link
+            href="/erinnerungen"
+            className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+            aria-label="Zu Erinnerungen"
+          >
+            <span className="msym text-[19px]">arrow_forward</span>
+          </Link>
+        )}
       </div>
 
       {groups.length === 0 ? (
@@ -125,5 +139,10 @@ export default function AgendaPanel({ reminders, role, userId, myViewedIds = [] 
       )}
 
     </div>
+
+    {showAddModal && classId && userId && (
+      <AddReminderModal classId={classId} userId={userId} onClose={() => setShowAddModal(false)} />
+    )}
+    </>
   )
 }

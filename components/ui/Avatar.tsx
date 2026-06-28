@@ -16,7 +16,23 @@ export function avatarUrl(seed: string, hairColor?: string | null, skinColor?: s
 }
 
 export default function Avatar({ name, color, seed, hairColor, skinColor, size = 36, className = '' }: Props) {
-  const url = avatarUrl(seed ?? name, hairColor, skinColor)
+  if (!seed) {
+    return (
+      <div
+        className={`rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center ${className}`}
+        style={{ width: size, height: size, background: '#E8E4DC', minWidth: size }}
+      >
+        <span
+          className="msym select-none"
+          style={{ fontSize: size * 0.65, color: '#B8B0A4', lineHeight: 1, fontVariationSettings: "'FILL' 1" }}
+        >
+          person
+        </span>
+      </div>
+    )
+  }
+
+  const url = avatarUrl(seed, hairColor, skinColor)
 
   return (
     <div

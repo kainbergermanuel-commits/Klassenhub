@@ -6,9 +6,9 @@ import { computeStreak, currentMilestone, confirmedStreak, MILESTONES } from '@/
 import StreakOverview from '@/components/streaks/StreakOverview'
 
 export default async function StreaksPage() {
-  const { user, profile } = await getEffectiveAuth()
+  const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user) redirect('/login')
-  if (!profile?.class_id) redirect('/')
+  if (!activeClassId) redirect('/')
 
   const supabase = await createClient()
   const today = todayISO()
@@ -22,11 +22,11 @@ export default async function StreaksPage() {
     { data: allHwDesc },
     { data: confirmations },
   ] = await Promise.all([
-    supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color,gender').eq('class_id', profile.class_id).eq('role', 'student').order('full_name'),
-    supabase.from('homework').select('id,due_date').eq('class_id', profile.class_id).order('due_date', { ascending: false }),
+    supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
+    supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).order('due_date', { ascending: false }),
     supabase.from('streak_confirmations').select('student_id,milestone,confirmed_by,confirmed_at').in(
       'student_id',
-      (await supabase.from('profiles').select('id').eq('class_id', profile.class_id).eq('role', 'student')).data?.map(s => s.id) ?? []
+      (await supabase.from('profiles').select('id').eq('class_id', activeClassId).eq('role', 'student')).data?.map(s => s.id) ?? []
     ),
   ])
 
@@ -73,7 +73,6 @@ export default async function StreaksPage() {
       avatar_seed: s.avatar_seed ?? null,
       avatar_hair_color: s.avatar_hair_color ?? null,
       avatar_skin_color: s.avatar_skin_color ?? null,
-      gender: s.gender,
       streak: displayStreak,
       pendingMilestone,
       confirmedMilestones: studentConfirmations,

@@ -106,7 +106,10 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
     <>
       <div
         className="rounded-2xl p-4 flex gap-3 items-start shadow-[0_2px_10px_rgba(20,50,55,.04)]"
-        style={{ background: status.cardBg, border: status.cardBorder }}
+        style={{
+          background: `linear-gradient(135deg, ${hw.subject_color}12 0%, ${hw.subject_color}06 100%)`,
+          border: status.cardBorder,
+        }}
       >
         {/* Subject badge */}
         <div

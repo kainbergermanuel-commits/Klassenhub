@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Avatar from '@/components/ui/Avatar'
 import SpecialRolePicker from './SpecialRolePicker'
+import KlasseManageBar from './KlasseManageBar'
 import type { Homework, Profile } from '@/lib/types'
 
 interface Props {
@@ -72,7 +73,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
             <div className="flex-1 min-w-0">
               <div className="font-bold text-[15px] text-kh-dark truncate">{s.full_name}</div>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span className="text-xs text-kh-muted font-medium">{s.gender === 'f' ? 'Schülerin' : 'Schüler'}</span>
+                <span className="text-xs text-kh-muted font-medium">Schüler:in</span>
                 <SpecialRolePicker studentId={s.id} currentRole={s.special_role ?? null} />
               </div>
             </div>
@@ -83,6 +84,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
             >
               <span className="msym text-[20px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>assignment</span>
             </button>
+            <KlasseManageBar profileId={s.id} fullName={s.full_name} />
           </div>
         ))}
         {students.length === 0 && (

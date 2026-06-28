@@ -243,7 +243,7 @@ export default function TeacherHome({
           <div className="hidden lg:block absolute top-0 -left-6 w-6 h-6 bg-white rounded-br-[20px]" />
           <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-[20px]" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-[24px] lg:p-5 lg:sticky lg:top-7">
-            <AgendaPanel reminders={reminders} role="teacher" />
+            <AgendaPanel reminders={reminders} role="teacher" classId={classId} userId={userId} />
             <StreakLeaderCard entries={streakEntries} />
           </div>
         </div>

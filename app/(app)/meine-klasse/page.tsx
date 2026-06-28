@@ -12,23 +12,35 @@ export default async function MeineKlassePage() {
   if (!profile.class_id) redirect('/')
 
   const supabase = await createClient()
-  const [{ data: studentsRaw }, { data: klass }, { data: teacherRaw }] = await Promise.all([
+
+  // Lehrer via teacher_classes laden (Multi-Class-korrekt)
+  const tcRows = await (supabase
+    .from('teacher_classes' as string)
+    .select('teacher_id,is_primary,subjects')
+    .eq('class_id', profile.class_id) as unknown as Promise<{ data: { teacher_id: string; is_primary: boolean; subjects: TeacherSubject[] | null }[] | null }>)
+    .then(r => r.data ?? [])
+  const teacherIds = tcRows.map(r => r.teacher_id)
+  const homeroomTeacherIds = new Set(tcRows.filter(r => r.is_primary).map(r => r.teacher_id))
+  const teacherSubjectsMap = new Map(tcRows.map(r => [r.teacher_id, r.subjects ?? []]))
+
+  const [{ data: studentsRaw }, { data: klass }, { data: teachersRaw }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role, gender')
+      .select('id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role')
       .eq('class_id', profile.class_id)
       .eq('role', 'student')
       .order('full_name'),
     supabase.from('classes').select('name').eq('id', profile.class_id).single(),
-    supabase
-      .from('profiles')
-      .select('id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, subjects')
-      .eq('class_id', profile.class_id)
-      .eq('role', 'teacher')
-      .single(),
+    teacherIds.length > 0
+      ? supabase
+          .from('profiles')
+          .select('id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, is_admin')
+          .in('id', teacherIds)
+          .order('full_name')
+      : Promise.resolve({ data: [] }),
   ])
 
-  const teacherSubjects = (teacherRaw?.subjects as TeacherSubject[] | null) ?? []
+  const teachers = teachersRaw ?? []
 
   // Sortierung: eigene Card zuerst, dann Klassensprecher:in, dann Stv., dann Rest (alphabetisch)
   const priority = (s: { id: string; special_role: string | null }) => {
@@ -49,17 +61,20 @@ export default async function MeineKlassePage() {
       </header>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {teacherRaw && (
+        {teachers.map((t, i) => (
           <TeacherCard
-            full_name={teacherRaw.full_name}
-            avatar_color={teacherRaw.avatar_color ?? '#0F8A82'}
-            avatar_seed={teacherRaw.avatar_seed ?? null}
-            avatar_hair_color={teacherRaw.avatar_hair_color ?? null}
-            avatar_skin_color={teacherRaw.avatar_skin_color ?? null}
-            subjects={teacherSubjects}
-            index={0}
+            key={t.id}
+            full_name={t.full_name}
+            avatar_color={t.avatar_color ?? '#0F8A82'}
+            avatar_seed={t.avatar_seed ?? null}
+            avatar_hair_color={t.avatar_hair_color ?? null}
+            avatar_skin_color={t.avatar_skin_color ?? null}
+            subjects={teacherSubjectsMap.get(t.id) ?? []}
+            is_admin={t.is_admin ?? false}
+            is_homeroom={homeroomTeacherIds.has(t.id)}
+            index={i}
           />
-        )}
+        ))}
         {students.map((s, i) => (
           <StudentCard
             key={s.id}
@@ -70,9 +85,8 @@ export default async function MeineKlassePage() {
             avatar_hair_color={s.avatar_hair_color ?? null}
             avatar_skin_color={s.avatar_skin_color ?? null}
             special_role={s.special_role ?? null}
-            gender={s.gender ?? null}
             isMe={s.id === user.id}
-            index={teacherRaw ? i + 1 : i}
+            index={teachers.length + i}
           />
         ))}
       </div>

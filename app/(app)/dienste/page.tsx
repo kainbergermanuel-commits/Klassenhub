@@ -5,9 +5,9 @@ import { getRelevantMondayOfWeek, getWeekNumber } from '@/lib/date'
 import DutyWeek from '@/components/dienste/DutyWeek'
 
 export default async function DienstePage() {
-  const { user, profile } = await getEffectiveAuth()
+  const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user) redirect('/login')
-  if (!profile?.class_id) redirect('/')
+  if (!activeClassId) redirect('/')
 
   const supabase = await createClient()
   const weekStart = getRelevantMondayOfWeek()
@@ -15,8 +15,8 @@ export default async function DienstePage() {
   weekEnd.setDate(weekEnd.getDate() + 6)
 
   const [{ data: duties }, { data: students }] = await Promise.all([
-    supabase.from('duties').select('*').eq('class_id', profile.class_id).eq('week_start', weekStart).order('created_at'),
-    supabase.from('profiles').select('*').eq('class_id', profile.class_id).eq('role', 'student').order('full_name'),
+    supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', weekStart).order('created_at'),
+    supabase.from('profiles').select('*').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
   ])
 
   const weekLabel = `KW ${getWeekNumber(weekStart)} · ${new Date(weekStart).toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })} – ${weekEnd.toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })}`
@@ -27,7 +27,7 @@ export default async function DienstePage() {
       students={students ?? []}
       role={profile.role}
       userId={user.id}
-      classId={profile.class_id}
+      classId={activeClassId}
       weekStart={weekStart}
       weekLabel={weekLabel}
     />

@@ -13,6 +13,16 @@ export function todayISO(): string {
   return toISODateLocal(new Date())
 }
 
+/**
+ * Beginn des aktuellen Schuljahres als YYYY-MM-DD (1. September).
+ * Ab September → heuriges Jahr, davor → Vorjahr. Dient als untere Grenze
+ * für Streak-Berechnungen (eine Serie reicht nie über das Schuljahr hinaus).
+ */
+export function schoolYearStartISO(from: Date = new Date()): string {
+  const year = from.getMonth() >= 8 ? from.getFullYear() : from.getFullYear() - 1
+  return `${year}-09-01`
+}
+
 /** Datum +/- n Tage als YYYY-MM-DD (lokal). */
 export function addDaysISO(days: number, from: Date = new Date()): string {
   const d = new Date(from)

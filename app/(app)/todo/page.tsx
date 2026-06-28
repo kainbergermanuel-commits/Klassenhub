@@ -7,9 +7,9 @@ import TodoList from '@/components/todo/TodoList'
 import type { TodoWithStatus } from '@/lib/types'
 
 export default async function TodoPage() {
-  const { user, profile } = await getEffectiveAuth()
+  const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user) redirect('/login')
-  if (!profile?.class_id) redirect('/')
+  if (!activeClassId) redirect('/')
 
   const supabase = await createClient()
   const weekStart = getMondayOfWeek()
@@ -17,14 +17,14 @@ export default async function TodoPage() {
   const { data: todos } = await supabase
     .from('todos')
     .select('*')
-    .eq('class_id', profile.class_id)
+    .eq('class_id', activeClassId)
     .eq('week_start', weekStart)
     .order('created_at', { ascending: true })
 
   const { count: studentCount } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
-    .eq('class_id', profile.class_id)
+    .eq('class_id', activeClassId)
     .eq('role', 'student')
 
   let todosWithStatus: TodoWithStatus[]
@@ -47,7 +47,7 @@ export default async function TodoPage() {
   } else {
     // parent: show child's completions (Kind via child_id-Link, Fallback Nachname)
     const { data: allStudents } = await supabase
-      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
+      .from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'student')
     const child = matchChild(profile, allStudents ?? [])
     const childDoneIds = new Set<string>()
     if (child && (todos ?? []).length > 0) {
@@ -73,7 +73,7 @@ export default async function TodoPage() {
         todos={todosWithStatus}
         role={profile.role}
         userId={user.id}
-        classId={profile.class_id}
+        classId={activeClassId}
         weekStart={weekStart}
         studentCount={studentCount ?? 0}
       />

@@ -202,13 +202,13 @@ export default function AddHomeworkModal({ classId, userId, asPending = false, o
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40" onClick={onClose}>
       <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-extrabold text-kh-dark">Neue Hausübung</h2>
             {asPending && (
-              <p className="text-xs text-kh-amber font-semibold mt-0.5">Wird zuerst von der Lehrkraft bestätigt</p>
+              <p className="text-xs text-kh-amber font-semibold mt-0.5">Wird zuerst von der Lehrperson bestätigt</p>
             )}
           </div>
           <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-red transition-colors">close</button>

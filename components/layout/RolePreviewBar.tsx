@@ -18,7 +18,7 @@ interface Props {
 }
 
 const ROLES = [
-  { key: 'teacher', label: 'Lehrer', icon: 'school' },
+  { key: 'teacher', label: 'Lehrperson', icon: 'school' },
   { key: 'student', label: 'Schüler', icon: 'face' },
   { key: 'parent', label: 'Elternteil', icon: 'family_restroom' },
 ] as const
@@ -28,6 +28,7 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
   const pathname = usePathname()
   const [active, setActive] = useState(currentPreview ?? 'teacher')
   const [showDropup, setShowDropup] = useState<'student' | 'parent' | null>(null)
+  const [localName, setLocalName] = useState<string | null>(previewName)
   const studentDropupRef = useRef<HTMLDivElement>(null)
   const parentDropupRef = useRef<HTMLDivElement>(null)
 
@@ -42,6 +43,16 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
   }, [])
 
   async function switchTo(role: string, personId?: string) {
+    // Namen sofort lokal setzen, damit kein falscher Name vor dem Reload aufblitzt
+    if (role === 'student') {
+      const s = personId ? students.find(s => s.id === personId) : students[0]
+      setLocalName(s?.full_name.split(' ')[0] ?? null)
+    } else if (role === 'parent') {
+      const p = personId ? parents.find(p => p.id === personId) : parents[0]
+      setLocalName(p ? p.full_name.split(' ').slice(1).join(' ') || p.full_name : null)
+    } else {
+      setLocalName(null)
+    }
     setActive(role)
     setShowDropup(null)
     await fetch('/api/preview-role', {
@@ -53,10 +64,10 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
   }
 
   const activeStudentId = previewStudentId ?? students[0]?.id
-  const activeStudentName = active === 'student' ? (previewName ?? students[0]?.full_name.split(' ')[0]) : undefined
+  const activeStudentName = active === 'student' ? (localName ?? students[0]?.full_name.split(' ')[0]) : undefined
   const activeParentId = previewParentId ?? parents[0]?.id
   const activeParentName = active === 'parent'
-    ? (previewName ?? (parents[0] ? parents[0].full_name.split(' ').slice(1).join(' ') || parents[0].full_name : undefined))
+    ? (localName ?? (parents[0] ? parents[0].full_name.split(' ').slice(1).join(' ') || parents[0].full_name : undefined))
     : undefined
 
   return (
@@ -73,7 +84,7 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
           }`}
         >
           <span className="msym text-[15px]" style={{ fontVariationSettings: `'FILL' ${active === 'teacher' ? 1 : 0}` }}>school</span>
-          Lehrer
+          Lehrperson
         </button>
 
         {/* Schüler + Dropup */}

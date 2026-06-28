@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Avatar from '@/components/ui/Avatar'
-import type { SpecialRole, Gender } from '@/lib/types'
+import type { SpecialRole } from '@/lib/types'
 
 const ROLE_BADGE: Record<SpecialRole, { icon: string; base: string; color: string; fill: boolean }> = {
   klassensprecher:     { icon: 'star',       base: 'Klassensprecher',      color: '#C98A2B', fill: true },
@@ -10,9 +10,8 @@ const ROLE_BADGE: Record<SpecialRole, { icon: string; base: string; color: strin
   hw_admin:            { icon: 'assignment', base: 'HÜ-Administrator',      color: '#0F8A82', fill: true },
 }
 
-function roleLabel(base: string, gender: Gender | null) {
-  const suffix = gender === 'm' ? '' : gender === 'f' ? 'in' : ':in'
-  return base + suffix
+function roleLabel(base: string) {
+  return base + ':in'
 }
 
 interface Props {
@@ -23,12 +22,11 @@ interface Props {
   avatar_hair_color: string | null
   avatar_skin_color: string | null
   special_role: SpecialRole | null
-  gender: Gender | null
   isMe: boolean
   index: number
 }
 
-export default function StudentCard({ id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role, gender, isMe, index }: Props) {
+export default function StudentCard({ id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role, isMe, index }: Props) {
   const reactions = ['Autsch! 😖', 'Hey! 😤', 'Hihi 😄', 'Hehe 😏', 'Wer war das? 👀']
   const [reaction, setReaction] = useState('')
   const badge = special_role ? ROLE_BADGE[special_role] : null
@@ -48,7 +46,7 @@ export default function StudentCard({ id, full_name, avatar_color, avatar_seed, 
     >
       {badge && (
         <span
-          title={roleLabel(badge.base, gender)}
+          title={roleLabel(badge.base)}
           className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-sm"
           style={{ background: `linear-gradient(135deg, ${badge.color}ee 0%, ${badge.color}99 100%)` }}
         >

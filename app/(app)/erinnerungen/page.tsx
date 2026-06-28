@@ -4,16 +4,16 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import ReminderList from '@/components/erinnerungen/ReminderList'
 
 export default async function ErinnerungenPage() {
-  const { user, profile } = await getEffectiveAuth()
+  const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user) redirect('/login')
-  if (!profile?.class_id) redirect('/')
+  if (!activeClassId) redirect('/')
 
   const supabase = await createClient()
 
   const { data: reminders } = await supabase
     .from('reminders')
     .select('*')
-    .eq('class_id', profile.class_id)
+    .eq('class_id', activeClassId)
     .order('event_date', { ascending: true })
 
   const reminderIds = (reminders ?? []).map(r => r.id)
@@ -24,7 +24,7 @@ export default async function ErinnerungenPage() {
   if (profile.role === 'teacher' && reminderIds.length > 0) {
     const [{ data: views }, { data: students }] = await Promise.all([
       supabase.from('reminder_views').select('reminder_id,student_id').in('reminder_id', reminderIds),
-      supabase.from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student'),
+      supabase.from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'student'),
     ])
     allStudentNames = (students ?? []).map(s => s.full_name.split(' ')[0])
     const nameById = Object.fromEntries((students ?? []).map(s => [s.id, s.full_name.split(' ')[0]]))
@@ -49,7 +49,7 @@ export default async function ErinnerungenPage() {
       role={profile.role}
       specialRole={profile.special_role}
       userId={user.id}
-      classId={profile.class_id}
+      classId={activeClassId}
       viewersByReminder={viewersByReminder}
       allStudentNames={allStudentNames}
       myViewedIds={myViewedIds}

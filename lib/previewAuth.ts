@@ -8,6 +8,7 @@ export type EffectiveAuth = {
   profile: Profile
   isPreview: boolean
   previewRole: string | null
+  activeClassId: string | null
 }
 
 export async function getEffectiveAuth(): Promise<EffectiveAuth> {
@@ -15,14 +16,15 @@ export async function getEffectiveAuth(): Promise<EffectiveAuth> {
 
   // No auth or not a teacher → no preview available
   if (!user || !profile || profile.role !== 'teacher' || !profile.class_id) {
-    return { user: user ?? { id: '' }, profile: profile!, isPreview: false, previewRole: null }
+    return { user: user ?? { id: '' }, profile: profile!, isPreview: false, previewRole: null, activeClassId: profile?.class_id ?? null }
   }
 
   const jar = await cookies()
   const previewRole = jar.get('preview_role')?.value ?? null
+  const activeClassId = jar.get('active_class_id')?.value ?? profile.class_id
 
   if (!previewRole || previewRole === 'teacher') {
-    return { user, profile, isPreview: false, previewRole: null }
+    return { user, profile, isPreview: false, previewRole: null, activeClassId }
   }
 
   const supabase = await createClient()
@@ -35,7 +37,7 @@ export async function getEffectiveAuth(): Promise<EffectiveAuth> {
       : await query.order('full_name').limit(1)
     const target = data?.[0]
     if (target) {
-      return { user: { ...user, id: target.id }, profile: target, isPreview: true, previewRole }
+      return { user: { ...user, id: target.id }, profile: target, isPreview: true, previewRole, activeClassId: target.class_id ?? activeClassId }
     }
   }
 
@@ -48,8 +50,8 @@ export async function getEffectiveAuth(): Promise<EffectiveAuth> {
     const target = data?.[0]
     const effectiveProfile: Profile = target ?? { ...profile, role: 'parent' }
     const effectiveUser = target ? { ...user, id: target.id } : user
-    return { user: effectiveUser, profile: effectiveProfile, isPreview: true, previewRole }
+    return { user: effectiveUser, profile: effectiveProfile, isPreview: true, previewRole, activeClassId: effectiveProfile.class_id ?? activeClassId }
   }
 
-  return { user, profile, isPreview: false, previewRole: null }
+  return { user, profile, isPreview: false, previewRole: null, activeClassId }
 }

@@ -6,16 +6,16 @@ import HomeworkList from '@/components/homework/HomeworkList'
 import type { HomeworkWithStatus } from '@/lib/types'
 
 export default async function HomeworkPage() {
-  const { user, profile } = await getEffectiveAuth()
+  const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user) redirect('/login')
-  if (!profile?.class_id) redirect('/')
+  if (!activeClassId) redirect('/')
 
   const supabase = await createClient()
 
   const { data: homeworkRaw } = await supabase
     .from('homework')
     .select('*')
-    .eq('class_id', profile.class_id)
+    .eq('class_id', activeClassId)
     .order('due_date', { ascending: true })
 
   const homework = homeworkRaw ?? []
@@ -45,7 +45,7 @@ export default async function HomeworkPage() {
   } else {
     // parent: show child's completions
     const { data: allStudents } = await supabase
-      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
+      .from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'student')
     const child = matchChild(profile, allStudents ?? [])
     const childDoneIds = new Set<string>()
     if (child) {
@@ -64,7 +64,7 @@ export default async function HomeworkPage() {
   const { count: studentCount } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
-    .eq('class_id', profile.class_id)
+    .eq('class_id', activeClassId)
     .eq('role', 'student')
 
   const subtitle =
@@ -80,7 +80,7 @@ export default async function HomeworkPage() {
       role={profile.role}
       specialRole={profile.special_role}
       userId={user.id}
-      classId={profile.class_id}
+      classId={activeClassId}
       subtitle={subtitle}
       stats={isStudentOrParent ? { open: openCount, done: doneCount, missed: missedCount } : undefined}
     />

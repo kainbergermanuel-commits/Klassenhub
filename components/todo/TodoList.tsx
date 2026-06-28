@@ -136,7 +136,7 @@ export default function TodoList({ todos: initial, role, userId, classId, weekSt
         <div className="text-center py-16 text-kh-muted">
           <span className="msym text-5xl block mb-3 text-kh-teal-light">checklist</span>
           <p className="font-medium">
-            {role === 'teacher' ? 'Noch keine Aufgaben diese Woche gepostet.' : 'Der Lehrer hat noch keine Aufgaben gepostet.'}
+            {role === 'teacher' ? 'Noch keine Aufgaben diese Woche gepostet.' : 'Die Lehrperson hat noch keine Aufgaben gepostet.'}
           </p>
         </div>
       )}

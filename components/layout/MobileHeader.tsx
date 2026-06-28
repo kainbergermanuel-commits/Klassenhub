@@ -7,7 +7,7 @@ interface Props {
 
 export default function MobileHeader({ profile, klass }: Props) {
   const roleLabel =
-    profile.role === 'teacher' ? 'Lehrkraft' : profile.role === 'parent' ? 'Elternteil' : 'Schüler:in'
+    profile.role === 'teacher' ? 'Lehrperson' : profile.role === 'parent' ? 'Elternteil' : 'Schüler:in'
 
   return (
     <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-white/90 backdrop-blur-sm border-b border-kh-border/60">

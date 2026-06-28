@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { getAuth, matchChild } from '@/lib/auth'
+import { getAuth, getClass, getTeacherClasses } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, getMondayOfWeek } from '@/lib/date'
 import Sidebar from '@/components/layout/Sidebar'
@@ -18,14 +18,20 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
-    { href: '/zahlungen', icon: 'payments', label: 'Zahlungen' },
     { href: '/todo', icon: 'checklist', label: 'Wochen-To-Do', badge: todoOpen || undefined },
     { href: '/streaks', icon: 'local_fire_department', label: 'Streaks' },
     ...(isTeacher ? [
       { href: '/klasse', icon: 'groups', label: 'Klasse' },
     ] : []),
+    ...(profile.is_admin ? [
+      { href: '/admin', icon: 'admin_panel_settings', label: 'Admin' },
+    ] : []),
     ...(profile.role === 'student' ? [
       { href: '/meine-klasse', icon: 'groups', label: 'Meine Klasse' },
+      { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
+    ] : []),
+    ...(profile.role === 'parent' ? [
+      { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
     ] : []),
     { href: '/einstellungen', icon: 'settings', label: 'Einstellungen' },
   ]
@@ -42,24 +48,21 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
 }
 
 /** Ungelesene bevorstehende Erinnerungen je Rolle. */
-async function computeReminderBadge(profile: Profile, userId: string): Promise<number> {
-  if (!profile.class_id) return 0
+async function computeReminderBadge(profile: Profile, userId: string, classId: string | null): Promise<number> {
+  if (!classId) return 0
   if (profile.role === 'teacher') return 0
   const supabase = await createClient()
   const today = todayISO()
 
   const { data: upcoming } = await supabase
-    .from('reminders').select('id').eq('class_id', profile.class_id).gte('event_date', today)
+    .from('reminders').select('id').eq('class_id', classId).gte('event_date', today)
   const upcomingIds = (upcoming ?? []).map(r => r.id)
   if (upcomingIds.length === 0) return 0
 
   let studentId = userId
   if (profile.role === 'parent') {
-    const { data: students } = await supabase
-      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
-    const child = matchChild(profile, students ?? [])
-    if (!child) return upcomingIds.length
-    studentId = child.id
+    if (!profile.child_id) return upcomingIds.length
+    studentId = profile.child_id
   }
 
   const { count } = await supabase
@@ -69,14 +72,14 @@ async function computeReminderBadge(profile: Profile, userId: string): Promise<n
 }
 
 /** Anzahl für das HÜ-Badge je Rolle (offen bzw. aktiv). */
-async function computeHwBadge(profile: Profile): Promise<number> {
-  if (!profile.class_id) return 0
+async function computeHwBadge(profile: Profile, classId: string | null): Promise<number> {
+  if (!classId) return 0
   const supabase = await createClient()
   const today = todayISO()
 
   // Bevorstehende (aktive) HÜ der Klasse
   const { data: upcoming } = await supabase
-    .from('homework').select('id').eq('class_id', profile.class_id).gte('due_date', today)
+    .from('homework').select('id').eq('class_id', classId).gte('due_date', today)
   const upcomingIds = (upcoming ?? []).map(h => h.id)
 
   // Lehrer: Anzahl aktiver HÜ
@@ -86,11 +89,8 @@ async function computeHwBadge(profile: Profile): Promise<number> {
   // Schüler: eigene offene; Elternteil: offene des Kindes
   let studentId = profile.id
   if (profile.role === 'parent') {
-    const { data: students } = await supabase
-      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
-    const child = matchChild(profile, students ?? [])
-    if (!child) return 0
-    studentId = child.id
+    if (!profile.child_id) return 0
+    studentId = profile.child_id
   }
 
   const { count } = await supabase
@@ -102,13 +102,13 @@ async function computeHwBadge(profile: Profile): Promise<number> {
 }
 
 /** Offene To-Dos dieser Woche je Rolle. */
-async function computeTodoBadge(profile: Profile, userId: string): Promise<number> {
-  if (!profile.class_id) return 0
+async function computeTodoBadge(profile: Profile, userId: string, classId: string | null): Promise<number> {
+  if (!classId) return 0
   const supabase = await createClient()
   const weekStart = getMondayOfWeek()
 
   const { data: todos } = await supabase
-    .from('todos').select('id').eq('class_id', profile.class_id).eq('week_start', weekStart)
+    .from('todos').select('id').eq('class_id', classId).eq('week_start', weekStart)
   const todoIds = (todos ?? []).map(t => t.id)
   if (todoIds.length === 0) return 0
 
@@ -116,11 +116,8 @@ async function computeTodoBadge(profile: Profile, userId: string): Promise<numbe
 
   let studentId = userId
   if (profile.role === 'parent') {
-    const { data: students } = await supabase
-      .from('profiles').select('id,full_name').eq('class_id', profile.class_id).eq('role', 'student')
-    const child = matchChild(profile, students ?? [])
-    if (!child) return 0
-    studentId = child.id
+    if (!profile.child_id) return 0
+    studentId = profile.child_id
   }
 
   const { count } = await supabase
@@ -135,17 +132,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!realUser || !realProfile) redirect('/login')
 
   // effectiveProfile: aktive Rolle (Schüler/Elternteil während Vorschau)
-  const { user, profile } = await getEffectiveAuth()
+  const { user, profile, activeClassId } = await getEffectiveAuth()
 
-  const supabase = await createClient()
-  const { data: klass } = profile.class_id
-    ? await supabase.from('classes').select('*').eq('id', profile.class_id).single()
-    : { data: null }
+  const klass = await getClass(activeClassId)
+
+  const teacherClasses = realProfile.role === 'teacher' ? await getTeacherClasses(realProfile.id) : []
 
   const [hwOpen, reminderUnread, todoOpen] = await Promise.all([
-    computeHwBadge(profile),
-    computeReminderBadge(profile, user.id),
-    computeTodoBadge(profile, user.id),
+    computeHwBadge(profile, activeClassId),
+    computeReminderBadge(profile, user.id, activeClassId),
+    computeTodoBadge(profile, user.id, activeClassId),
   ])
   const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, todoOpen)
 
@@ -156,7 +152,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let previewParentId: string | null = null
   let allStudents: { id: string; full_name: string }[] = []
   let allParents: { id: string; full_name: string }[] = []
-  if (realProfile.role === 'teacher' && realProfile.class_id) {
+  if (realProfile.is_admin && realProfile.class_id) {
+    const supabase = await createClient()
     const jar = await cookies()
     previewRole = jar.get('preview_role')?.value ?? null
     previewStudentId = jar.get('preview_student_id')?.value ?? null
@@ -179,7 +176,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-kh-page p-3 md:p-4 max-md:p-0">
       <div className="flex min-h-[calc(100vh-1.5rem)] md:min-h-[calc(100vh-2rem)] max-md:min-h-screen rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
-        <Sidebar profile={profile} klass={klass as Class | null} navItems={all} />
+        <Sidebar profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} isPreview={!!previewRole} />
         <main className="flex-1 min-w-0 overflow-y-auto scrollbar-kh">
           <MobileHeader profile={profile} klass={klass as Class | null} />
           <div className="max-w-[1180px] mx-auto px-7 py-7 pb-20 max-md:px-4 max-md:py-5">
@@ -188,7 +185,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </main>
       </div>
       <BottomNav items={bottom} />
-      {realProfile.role === 'teacher' && (
+      {realProfile.is_admin && (
         <RolePreviewBar currentPreview={previewRole} previewName={previewName} previewStudentId={previewStudentId} previewParentId={previewParentId} students={allStudents} parents={allParents} />
       )}
     </div>

@@ -10,7 +10,6 @@ interface StudentStreak {
   avatar_seed: string | null
   avatar_hair_color: string | null
   avatar_skin_color: string | null
-  gender: string | null
   streak: number
   pendingMilestone: number | null
   confirmedMilestones: Array<{ milestone: number; confirmed_at: string }>

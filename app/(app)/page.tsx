@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { matchChild } from '@/lib/auth'
-import { todayISO, getMondayOfWeek, getRelevantMondayOfWeek } from '@/lib/date'
+import { matchChild, getClass } from '@/lib/auth'
+import { todayISO, getMondayOfWeek, getRelevantMondayOfWeek, schoolYearStartISO } from '@/lib/date'
 import { computeStreak, currentMilestone, confirmedStreak } from '@/lib/streak'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
@@ -10,19 +10,20 @@ import ParentHome from '@/components/home/ParentHome'
 import type { HomeworkWithStatus, Reminder, Duty } from '@/lib/types'
 
 export default async function HomePage() {
-  const { user, profile } = await getEffectiveAuth()
+  const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user?.id) redirect('/login')
 
-  if (!profile || !profile.class_id) {
+  if (!profile || !activeClassId) {
     return <div className="text-kh-muted text-center py-20">Dein Profil ist noch nicht vollständig konfiguriert.</div>
   }
 
   const supabase = await createClient()
-  const { data: klass } = await supabase.from('classes').select('*').eq('id', profile.class_id).single()
+  const klass = await getClass(activeClassId)
 
   const today = todayISO()
   const weekStart = getMondayOfWeek()
   const dutyWeekStart = getRelevantMondayOfWeek()
+  const schoolYearStart = schoolYearStartISO()
 
   const [
     { data: homeworkRaw },
@@ -30,10 +31,10 @@ export default async function HomePage() {
     { data: weekDuties },
     { data: weekTodos },
   ] = await Promise.all([
-    supabase.from('homework').select('*').eq('class_id', profile.class_id).gte('due_date', today).order('due_date'),
-    supabase.from('reminders').select('*').eq('class_id', profile.class_id).gte('event_date', today).order('event_date').limit(8),
-    supabase.from('duties').select('*').eq('class_id', profile.class_id).eq('week_start', dutyWeekStart),
-    supabase.from('todos').select('id').eq('class_id', profile.class_id).eq('week_start', weekStart),
+    supabase.from('homework').select('*').eq('class_id', activeClassId).gte('due_date', today).order('due_date'),
+    supabase.from('reminders').select('*').eq('class_id', activeClassId).gte('event_date', today).order('event_date').limit(8),
+    supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', dutyWeekStart),
+    supabase.from('todos').select('id').eq('class_id', activeClassId).eq('week_start', weekStart),
   ])
 
   const homework = homeworkRaw ?? []
@@ -50,13 +51,13 @@ export default async function HomePage() {
       { data: todoCounts },
       { data: allHwForStreaks },
     ] = await Promise.all([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', profile.class_id).eq('role', 'student'),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
       supabase.from('homework_completions').select('homework_id', { count: 'exact', head: true }).in('homework_id', homework.map(h => h.id)),
-      supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', profile.class_id).eq('role', 'student'),
+      supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
       todoIds.length > 0
         ? supabase.from('todo_completions').select('todo_id,student_id').in('todo_id', todoIds)
         : Promise.resolve({ data: [] }),
-      supabase.from('homework').select('id,due_date').eq('class_id', profile.class_id).order('due_date', { ascending: false }),
+      supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
     ])
 
     const allHwIds = (allHwForStreaks ?? []).map(h => h.id)
@@ -113,7 +114,7 @@ export default async function HomePage() {
       <TeacherHome
         fullName={profile.full_name}
         userId={user.id}
-        classId={profile.class_id}
+        classId={activeClassId}
         klass={klass}
         homeworkList={homeworkWithCounts}
         hwSubmittedCount={submittedCount ?? 0}
@@ -141,8 +142,8 @@ export default async function HomePage() {
       todoIds.length > 0
         ? supabase.from('todo_completions').select('todo_id').eq('student_id', user.id).in('todo_id', todoIds)
         : Promise.resolve({ data: [] }),
-      supabase.from('homework').select('id,due_date').eq('class_id', profile.class_id).order('due_date', { ascending: false }),
-      supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', profile.class_id).eq('role', 'student'),
+      supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
+      supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
     ])
 
     const doneIds = new Set((completions ?? []).map(c => c.homework_id))
@@ -232,7 +233,7 @@ export default async function HomePage() {
   // ─── PARENT ─────────────────────────────────────────────────────────────────
   if (profile.role === 'parent') {
     const { data: allStudents } = await supabase
-      .from('profiles').select('*').eq('class_id', profile.class_id).eq('role', 'student')
+      .from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student')
     const child = matchChild(profile, allStudents ?? [])
       ?? allStudents?.[0] // preview fallback: use first student
 
@@ -243,7 +244,7 @@ export default async function HomePage() {
     if (child) {
       const [{ data: childCompletions }, { data: hwForStreak }] = await Promise.all([
         supabase.from('homework_completions').select('homework_id').eq('student_id', child.id),
-        supabase.from('homework').select('id,due_date').eq('class_id', profile.class_id).order('due_date', { ascending: false }),
+        supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
       ])
       allHwForStreak = hwForStreak ?? []
       childDoneIds = new Set((childCompletions ?? []).map(c => c.homework_id))

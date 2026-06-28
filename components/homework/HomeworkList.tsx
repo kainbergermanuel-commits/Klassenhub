@@ -68,19 +68,37 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
         <div>
           <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Hausübungen</h1>
           {stats ? (
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <span className="flex items-center gap-1.5 bg-[#FFF8ED] text-[#C98A2B] px-3 py-1 rounded-full text-[12px] font-bold">
-                <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>pending</span>
-                {stats.open} offen
-              </span>
-              <span className="flex items-center gap-1.5 bg-[#EDFAF5] text-[#0F8A82] px-3 py-1 rounded-full text-[12px] font-bold">
-                <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check_circle</span>
-                {stats.done} erledigt
-              </span>
-              <span className="flex items-center gap-1.5 bg-[#FDECEA] text-[#C95040] px-3 py-1 rounded-full text-[12px] font-bold">
-                <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>cancel</span>
-                {stats.missed} versäumt
-              </span>
+            <div className="mt-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 bg-[#FFF8ED] text-[#C98A2B] px-3 py-1 rounded-full text-[12px] font-bold">
+                  <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>pending</span>
+                  {stats.open} offen
+                </span>
+                <span className="flex items-center gap-1.5 bg-[#EDFAF5] text-[#0F8A82] px-3 py-1 rounded-full text-[12px] font-bold">
+                  <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check_circle</span>
+                  {stats.done} erledigt
+                </span>
+                <span className="flex items-center gap-1.5 bg-[#FDECEA] text-[#C95040] px-3 py-1 rounded-full text-[12px] font-bold">
+                  <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>cancel</span>
+                  {stats.missed} versäumt
+                </span>
+              </div>
+              {(() => {
+                const total = stats.open + stats.done + stats.missed
+                const donePct = total > 0 ? Math.round((stats.done / total) * 100) : 0
+                const missedPct = total > 0 ? Math.round((stats.missed / total) * 100) : 0
+                const openPct = 100 - donePct - missedPct
+                return (
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <div className="flex-1 h-[5px] rounded-full overflow-hidden bg-[#EDE9E0] flex">
+                      {donePct > 0 && <div style={{ width: `${donePct}%`, background: '#0F8A82' }} />}
+                      {missedPct > 0 && <div style={{ width: `${missedPct}%`, background: '#C95040' }} />}
+                      {openPct > 0 && <div style={{ width: `${openPct}%` }} />}
+                    </div>
+                    <span className="text-[11px] font-bold text-kh-muted flex-shrink-0">{donePct}% erledigt</span>
+                  </div>
+                )
+              })()}
             </div>
           ) : (
             <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{subtitle}</p>
@@ -92,7 +110,7 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
             className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
           >
             <span className="msym text-[19px]">add</span>
-            HÜ posten
+            Neue Hausübung
           </button>
         )}
       </div>

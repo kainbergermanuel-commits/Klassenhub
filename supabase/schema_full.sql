@@ -1,8 +1,20 @@
 -- ============================================================
--- KlassenHub · KONSOLIDIERTES Schema + RLS (Stand: aktuell)
--- Einzige Quelle der Wahrheit. Idempotent: legt fehlende Tabellen an,
--- ersetzt Policies/Funktionen. Löscht KEINE Tabellen/Daten.
--- Im Supabase SQL-Editor ausführen.
+-- ⚠️  VERALTET — NICHT ALS BASELINE VERWENDEN!  ⚠️
+-- ------------------------------------------------------------
+-- Diese Datei ist auf dem Stand vom 26. Juni und bildet die DB
+-- NICHT mehr vollständig ab. Es fehlen u.a. die späteren Migrationen:
+--   add-admin.sql (is_admin, is_teacher/is_admin Funktionen),
+--   feature-parent-child-link.sql (profiles.child_id),
+--   feature-special-roles.sql (special_role/status + RLS-Umbau),
+--   add-teacher-subjects.sql, cron-auto-duties.sql,
+--   fix-profiles.sql, fix-auth-accounts.sql.
+-- Wer das hier als Baseline ausführt, baut ein FALSCHES Schema.
+-- TODO: durch echten DB-Dump (supabase db dump) ersetzen, sobald
+-- die CLI/DB-Connection verfügbar ist.
+-- ============================================================
+-- KlassenHub · KONSOLIDIERTES Schema + RLS (Stand: 26. Juni, veraltet)
+-- Idempotent: legt fehlende Tabellen an, ersetzt Policies/Funktionen.
+-- Löscht KEINE Tabellen/Daten.
 -- ============================================================
 
 -- ---- TABLES ------------------------------------------------

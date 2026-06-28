@@ -29,6 +29,9 @@ export default function SpecialRolePicker({ studentId, currentRole }: { studentI
 
   return (
     <div className="relative">
+      {open && (
+        <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+      )}
       <button
         onClick={() => setOpen(v => !v)}
         disabled={saving}
@@ -43,7 +46,7 @@ export default function SpecialRolePicker({ studentId, currentRole }: { studentI
       </button>
 
       {open && (
-        <div className="absolute top-full mt-1.5 left-0 bg-white rounded-2xl shadow-xl border border-kh-border/60 py-1.5 z-20 min-w-[210px]">
+        <div className="absolute top-full mt-1.5 left-0 bg-white rounded-2xl shadow-xl border border-kh-border/60 py-1.5 z-20 min-w-[210px]" onClick={e => e.stopPropagation()}>
           {OPTIONS.map(opt => (
             <button
               key={String(opt.value)}
