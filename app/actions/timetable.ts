@@ -17,19 +17,17 @@ async function getStudentId(): Promise<string> {
 export async function saveTimetableEntry(day: number, slot: number, subject: string) {
   const studentId = await getStudentId()
   const supabase = await createClient()
-  const table = supabase.from('timetable_entries' as never)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const table = (supabase as any).from('timetable_entries')
 
   if (!subject.trim()) {
-    await (table as unknown as ReturnType<typeof supabase.from>).delete()
-      .eq('student_id', studentId).eq('day', day).eq('slot', slot)
+    await table.delete().eq('student_id', studentId).eq('day', day).eq('slot', slot)
     return
   }
 
-  const { error } = await (table as unknown as ReturnType<typeof supabase.from>).upsert({
-    student_id: studentId,
-    day,
-    slot,
-    subject: subject.trim(),
-  } as never, { onConflict: 'student_id,day,slot' }) as unknown as Promise<{ error: { message: string } | null }>
+  const { error } = await table.upsert(
+    { student_id: studentId, day, slot, subject: subject.trim() },
+    { onConflict: 'student_id,day,slot' }
+  )
   if (error) throw new Error(error.message)
 }
