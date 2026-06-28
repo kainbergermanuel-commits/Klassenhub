@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { getAuth, getTeacherClasses } from './auth'
 import { createClient } from './supabase/server'
@@ -11,7 +12,7 @@ export type EffectiveAuth = {
   activeClassId: string | null
 }
 
-export async function getEffectiveAuth(): Promise<EffectiveAuth> {
+export const getEffectiveAuth = cache(async (): Promise<EffectiveAuth> => {
   const { user, profile } = await getAuth()
 
   if (!user || !profile || profile.role !== 'teacher') {
@@ -59,4 +60,4 @@ export async function getEffectiveAuth(): Promise<EffectiveAuth> {
   }
 
   return { user, profile, isPreview: false, previewRole: null, activeClassId }
-}
+})

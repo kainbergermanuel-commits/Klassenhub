@@ -203,10 +203,20 @@ export async function adminUpdateTeacherClasses(profileId: string, classIds: str
   // '' = explicitly no KV; valid classId = that class is KV
   const effectivePrimary = (primaryClassId && classIds.includes(primaryClassId)) ? primaryClassId : null
 
-  // Replace all existing assignments
+  // Bestehende Fächer je Klasse sichern, damit sie beim Neuzuweisen nicht verloren gehen
+  const { data: existing } = await tc.select('class_id, subjects').eq('teacher_id', profileId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subjectsByClass = new Map<string, unknown>((existing ?? []).map((r: any) => [r.class_id, r.subjects]))
+
+  // Replace all existing assignments (Fächer der weiterhin zugewiesenen Klassen bleiben erhalten)
   await tc.delete().eq('teacher_id', profileId)
   if (classIds.length > 0) {
-    await tc.insert(classIds.map(cid => ({ teacher_id: profileId, class_id: cid, is_primary: cid === effectivePrimary })))
+    await tc.insert(classIds.map(cid => ({
+      teacher_id: profileId,
+      class_id: cid,
+      is_primary: cid === effectivePrimary,
+      subjects: subjectsByClass.get(cid) ?? null,
+    })))
   }
 
   await service.from('profiles').update({ class_id: effectivePrimary ?? classIds[0] ?? null }).eq('id', profileId)
