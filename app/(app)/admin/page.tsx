@@ -16,6 +16,14 @@ export default async function AdminPage() {
     supabase.from('teacher_classes' as string).select('teacher_id,class_id,is_primary') as unknown as Promise<{ data: { teacher_id: string; class_id: string; is_primary: boolean }[] | null }>,
   ])
 
+  const teacherIds = (teachers ?? []).map(t => t.id)
+  const { data: signInData } = teacherIds.length > 0
+    ? await (supabase as any).rpc('get_teacher_last_sign_in', { teacher_ids: teacherIds })
+    : { data: [] }
+  const lastSignInMap = new Map<string, string>(
+    (signInData ?? []).map((r: { id: string; last_sign_in_at: string }) => [r.id, r.last_sign_in_at])
+  )
+
   // Map teacherId → classId[]
   const teacherClassMap = new Map<string, string[]>()
   const teacherPrimaryMap = new Map<string, string>()
@@ -108,6 +116,11 @@ export default async function AdminPage() {
                     {assignedClasses.length > 0
                       ? assignedClasses.map(c => c!.name).join(', ')
                       : 'Keine Klasse zugewiesen'}
+                    {lastSignInMap.has(t.id) && (
+                      <span className="ml-2 text-[11px] text-kh-muted/60">
+                        · zuletzt {new Date(lastSignInMap.get(t.id)!).toLocaleDateString('de-AT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <AdminManageBar

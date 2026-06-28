@@ -70,7 +70,8 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
         <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="font-extrabold text-base text-kh-dark">Aktuelle Streaks</h2>
-            <span className="text-[12px] font-semibold text-kh-muted">
+            <span className="flex items-center gap-1 text-[12px] font-semibold text-kh-muted">
+              <span className="msym text-[14px]">hourglass_bottom</span>
               Race endet in {daysLeft} {daysLeft === 1 ? 'Tag' : 'Tagen'}
             </span>
           </div>
@@ -84,6 +85,7 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
                 const confirmedSet = new Set(s.confirmedMilestones.map(c => c.milestone))
                 const milestones = [5, 10, 15, 20].filter(m => confirmedSet.has(m) && m <= s.streak)
                 const topConfirmedMilestone = s.confirmedMilestones.length > 0 ? Math.max(...s.confirmedMilestones.map(c => c.milestone)) : 0
+                const activeMilestone = topConfirmedMilestone <= s.streak ? topConfirmedMilestone : 0
 
                 return (
                   <div key={s.id} className="flex items-start gap-3">
@@ -99,41 +101,38 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
-                        <span className="font-extrabold text-[14px] text-kh-dark">{s.full_name}</span>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Milestone chips */}
-                          {milestones.map(m => (
-                            <MilestoneChip key={m} value={m} />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Streak bar */}
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex-1 h-2.5 rounded-full bg-[#F3F0EA] overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${barWidth}%`,
-                              background: i === 0
-                                ? 'linear-gradient(90deg, #E8A020 0%, #F5C842 100%)'
-                                : i === 1
-                                  ? 'linear-gradient(90deg, #9CA3AF 0%, #C7CDD5 100%)'
-                                  : i === 2
-                                    ? 'linear-gradient(90deg, #C4A35A 0%, #D4B86A 100%)'
-                                    : 'linear-gradient(90deg, #0F8A82 0%, #14B8A9 100%)',
-                            }}
-                          />
-                        </div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-extrabold text-[14px] text-kh-dark">
+                          {s.full_name}
+                          {i === 0 && <span className="ml-1.5 text-[16px]">🥇</span>}
+                          {i === 1 && <span className="ml-1.5 text-[16px]">🥈</span>}
+                          {i === 2 && <span className="ml-1.5 text-[16px]">🥉</span>}
+                        </span>
                         <span className="flex items-center gap-0.5 text-[13px] font-extrabold text-kh-amber flex-shrink-0">
-                          {flameCount(topConfirmedMilestone) > 0
-                            ? Array.from({ length: flameCount(topConfirmedMilestone) }).map((_, fi) => (
+                          {flameCount(activeMilestone) > 0
+                            ? Array.from({ length: flameCount(activeMilestone) }).map((_, fi) => (
                                 <img key={fi} src="/flame.svg" alt="" className="w-4 h-4" />
                               ))
                             : null}
                           {s.streak}
                         </span>
+                      </div>
+
+                      {/* Streak bar */}
+                      <div className="h-2.5 rounded-full bg-[#F3F0EA] overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${barWidth}%`,
+                            background: i === 0
+                              ? 'linear-gradient(90deg, #E8A020 0%, #F5C842 100%)'
+                              : i === 1
+                                ? 'linear-gradient(90deg, #9CA3AF 0%, #C7CDD5 100%)'
+                                : i === 2
+                                  ? 'linear-gradient(90deg, #C4A35A 0%, #D4B86A 100%)'
+                                  : 'linear-gradient(90deg, #0F8A82 0%, #14B8A9 100%)',
+                          }}
+                        />
                       </div>
                     </div>
                   </div>

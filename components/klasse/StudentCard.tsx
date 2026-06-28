@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Avatar from '@/components/ui/Avatar'
 import type { SpecialRole } from '@/lib/types'
 
@@ -27,21 +27,29 @@ interface Props {
 }
 
 export default function StudentCard({ id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role, isMe, index }: Props) {
-  const reactions = ['Autsch! 😖', 'Hey! 😤', 'Hihi 😄', 'Hehe 😏', 'Wer war das? 👀']
+  const reactions = ['Autsch! 😖', 'Hey! 😤', 'Hihi 😄', 'Hehe 😏', 'Wer war das? 👀', 'Ey!! 😠', 'Nicht jetzt 😴', 'Bruh 💀', '??']
   const [reaction, setReaction] = useState('')
+  const [wobble, setWobble] = useState(false)
+  const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wobbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const badge = special_role ? ROLE_BADGE[special_role] : null
 
   function handleClick() {
     if (isMe) return
+    if (reactionTimer.current) clearTimeout(reactionTimer.current)
+    if (wobbleTimer.current) clearTimeout(wobbleTimer.current)
     setReaction(reactions[Math.floor(Math.random() * reactions.length)])
-    setTimeout(() => setReaction(''), 1400)
+    setWobble(false)
+    requestAnimationFrame(() => setWobble(true))
+    reactionTimer.current = setTimeout(() => setReaction(''), 1400)
+    wobbleTimer.current = setTimeout(() => setWobble(false), 500)
   }
 
   return (
     <div className="h-full animate-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
     <div
       onClick={handleClick}
-      className={`relative h-full rounded-[20px] p-5 shadow-sm border border-kh-border/50 flex flex-col items-center text-center gap-3 select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-95 ${isMe ? '' : 'cursor-pointer'} ${isMe ? 'ring-2 ring-kh-teal/40' : ''}`}
+      className={`relative h-full rounded-[20px] p-5 shadow-sm border border-kh-border/50 flex flex-col items-center text-center gap-3 select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-95 ${isMe ? '' : 'cursor-pointer'} ${isMe ? 'ring-2 ring-kh-teal/40' : ''} ${wobble ? 'animate-wobble' : ''}`}
       style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FAF6EF 100%)' }}
     >
       {badge && (
