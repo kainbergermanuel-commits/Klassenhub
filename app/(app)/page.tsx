@@ -72,14 +72,11 @@ export default async function HomePage() {
     ])
 
     const students = allStudents ?? []
-    const studentById = Object.fromEntries(students.map(s => [s.id, s]))
     const studentMap = Object.fromEntries(students.map(s => [s.id, s.full_name.split(' ')[0]]))
-    const dutyLines = duties.map(d => {
-      const names = d.assignee_ids.map((id: string) => studentMap[id] ?? '?').join(', ')
-      return `${d.duty_name}: ${names}`
-    })
-    const dutyStudentIds = [...new Set(duties.flatMap(d => d.assignee_ids))]
-    const dutyStudents = dutyStudentIds.map(id => studentById[id]).filter(Boolean)
+    const dutyEntries = duties.map(d => ({
+      name: d.duty_name,
+      names: d.assignee_ids.map((id: string) => studentMap[id] ?? '?'),
+    }))
     const todoDone = (todoCounts ?? []).length // alle Completions (nicht nur unique todo_ids)
 
     const allConfirmations = (confirmations ?? []) as { student_id: string; milestone: number }[]
@@ -110,6 +107,11 @@ export default async function HomePage() {
     }
     const homeworkWithCounts = homework.map(h => ({ ...h, done: false, completion_count: completionCountByHw.get(h.id) ?? 0 }))
 
+    // Schüler mit mindestens einer offenen HÜ (für Avatar-Stack + Tooltip auf der HÜ-Card)
+    const hwOpenStudents = students.filter(s =>
+      homework.some(h => !(doneByStudent.get(s.id)?.has(h.id)))
+    )
+
     return (
       <TeacherHome
         fullName={profile.full_name}
@@ -119,10 +121,9 @@ export default async function HomePage() {
         homeworkList={homeworkWithCounts}
         hwSubmittedCount={submittedCount ?? 0}
         studentCount={studentCount ?? 0}
-        students={students}
+        hwOpenStudents={hwOpenStudents}
         reminders={upcomingReminders}
-        dutyLines={dutyLines}
-        dutyStudents={dutyStudents}
+        dutyEntries={dutyEntries}
         todoTotal={todoIds.length}
         todoDone={todoDone}
         streakEntries={streakEntries}

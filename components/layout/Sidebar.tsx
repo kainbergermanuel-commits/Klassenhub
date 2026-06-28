@@ -64,12 +64,23 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
   return (
     <>
       <aside className={`hidden md:flex flex-col flex-shrink-0 border-r border-kh-border/60 bg-[#FBF9F4] transition-all duration-300 ${collapsed ? 'w-[72px]' : 'w-[256px]'}`}>
-        {/* Wordmark */}
-        <div className={`flex items-center justify-center gap-2 px-[18px] pt-5 pb-8`}>
-          <div className="w-7 h-7 rounded-[9px] gradient-teal flex items-center justify-center text-white flex-shrink-0">
-            <span className="msym text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
+        {/* Wordmark + Einklappen */}
+        <div className={`px-[18px] pt-5 pb-8 ${collapsed ? 'flex flex-col items-center gap-2.5' : 'flex items-center justify-between'}`}>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-[9px] gradient-teal flex items-center justify-center text-white flex-shrink-0">
+              <span className="msym text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
+            </div>
+            {!collapsed && <span className="font-extrabold text-[15px] text-kh-dark tracking-tight">KlassenHub</span>}
           </div>
-          {!collapsed && <span className="font-extrabold text-[15px] text-kh-dark tracking-tight">KlassenHub</span>}
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            className="w-7 h-7 flex items-center justify-center rounded-full text-kh-border hover:text-kh-muted hover:bg-[#EDEDEC] transition-colors flex-shrink-0"
+            title={collapsed ? 'Ausklappen' : 'Einklappen'}
+          >
+            <span className="msym text-[18px] transition-transform duration-300" style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              chevron_left
+            </span>
+          </button>
         </div>
 
         {/* Profile */}
@@ -197,23 +208,17 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
           })}
         </nav>
 
-        {/* Footer */}
-        <div className={`flex items-center mt-1 mb-3 mx-3 ${collapsed ? 'justify-center flex-col gap-1' : 'justify-between'}`}>
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-kh-border hover:text-kh-muted hover:bg-[#EDEDEC] transition-colors"
-            title={collapsed ? 'Ausklappen' : 'Einklappen'}
-          >
-            <span className="msym text-[18px] transition-transform duration-300" style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-              chevron_left
-            </span>
-          </button>
+        {/* Logout */}
+        <div className={`mt-2 mb-3.5 flex ${collapsed ? 'justify-center px-2' : 'px-3.5'}`}>
           <button
             onClick={handleLogout}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-kh-border hover:text-kh-red hover:bg-red-50 transition-colors"
             title="Abmelden"
+            aria-label="Abmelden"
+            className={`flex items-center py-2.5 rounded-xl text-kh-border hover:text-kh-red hover:bg-red-50 transition-colors ${
+              collapsed ? 'justify-center px-2' : 'px-3.5'
+            }`}
           >
-            <span className="msym text-[18px]">logout</span>
+            <span className="msym text-[22px] flex-shrink-0">logout</span>
           </button>
         </div>
       </aside>

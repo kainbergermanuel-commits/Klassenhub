@@ -29,11 +29,13 @@ interface FeatureCardProps {
   people?: Person[]
   /** Avatare unter dem Meta-Text statt oben rechts */
   peopleInline?: boolean
+  /** Tooltip-Text beim Hover über den Avatar-Stack oben rechts */
+  peopleTooltip?: string
   badge?: string
   footer?: React.ReactNode
 }
 
-export default function FeatureCard({ href, gradient, icon, title, meta, progress, people, peopleInline, badge, footer }: FeatureCardProps) {
+export default function FeatureCard({ href, gradient, icon, title, meta, progress, people, peopleInline, peopleTooltip, badge, footer }: FeatureCardProps) {
   return (
     <Link
       href={href}
@@ -44,7 +46,7 @@ export default function FeatureCard({ href, gradient, icon, title, meta, progres
           <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
         </div>
         {people && people.length > 0 && !peopleInline
-          ? <AvatarStack people={people} max={3} ring="rgba(255,255,255,0.35)" size={28} />
+          ? <span title={peopleTooltip} className="flex-shrink-0"><AvatarStack people={people} max={3} ring="rgba(255,255,255,0.35)" size={28} /></span>
           : badge
             ? <span className="text-[11px] font-bold bg-white/20 px-2.5 py-1 rounded-full">{badge}</span>
             : null}

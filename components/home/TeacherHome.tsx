@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
 import Link from 'next/link'
 import FeatureCard from './FeatureCard'
+import DutyCard, { type DutyEntry } from './DutyCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
@@ -113,10 +114,9 @@ interface TeacherHomeProps {
   homeworkList: HomeworkWithStatus[]
   hwSubmittedCount: number
   studentCount: number
-  students: Person[]
+  hwOpenStudents: Person[]
   reminders: Reminder[]
-  dutyLines: string[]
-  dutyStudents: Person[]
+  dutyEntries: DutyEntry[]
   todoTotal: number
   todoDone: number
   streakEntries: StreakEntry[]
@@ -124,7 +124,7 @@ interface TeacherHomeProps {
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  students, reminders, dutyLines, dutyStudents, todoTotal, todoDone, streakEntries,
+  hwOpenStudents, reminders, dutyEntries, todoTotal, todoDone, streakEntries,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ').slice(-1)[0]
@@ -169,7 +169,12 @@ export default function TeacherHome({
               title="Hausübungen"
               meta={homeworkList.length > 0 ? `${homeworkList.length} aktiv · ${hwSubmittedCount}/${hwSlots} abgegeben` : 'Keine aktiven HÜ'}
               progress={homeworkList.length > 0 ? hwProgress : undefined}
-              people={students}
+              people={hwOpenStudents}
+              peopleTooltip={
+                hwOpenStudents.length > 0
+                  ? `Noch offen: ${hwOpenStudents.map(s => s.full_name.split(' ')[0]).join(', ')}`
+                  : undefined
+              }
             />
             <FeatureCard
               href="/todo" gradient="teal" icon="checklist"
@@ -178,11 +183,9 @@ export default function TeacherHome({
               progress={todoTotal > 0 ? todoProgress : undefined}
               badge={todoTotal > 0 ? `${todoTotal}` : undefined}
             />
-            <FeatureCard
-              href="/dienste" gradient="violet" icon="cleaning_services"
+            <DutyCard
               title={`Dienste · KW ${getWeekNumber(getMondayOfWeek())}`}
-              meta={dutyLines.length > 0 ? dutyLines.join(' · ') : 'Noch keine Dienste vergeben'}
-              people={dutyStudents}
+              entries={dutyEntries}
             />
           </div>
 
