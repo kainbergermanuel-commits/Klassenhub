@@ -35,11 +35,11 @@ export default async function StundenplanPage() {
   }
 
   const supabase = await createClient()
-  const { data: entries } = await supabase
-    .from('timetable_entries')
+  const { data: entries } = await (supabase
+    .from('timetable_entries' as never)
     .select('day,slot,subject')
     .eq('student_id', studentId)
-    .order('day').order('slot')
+    .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string }[] | null }>)
 
   const isReadonly = profile.role === 'parent'
 

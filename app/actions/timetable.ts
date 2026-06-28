@@ -17,18 +17,19 @@ async function getStudentId(): Promise<string> {
 export async function saveTimetableEntry(day: number, slot: number, subject: string) {
   const studentId = await getStudentId()
   const supabase = await createClient()
+  const table = supabase.from('timetable_entries' as never)
 
   if (!subject.trim()) {
-    await supabase.from('timetable_entries').delete()
+    await (table as unknown as ReturnType<typeof supabase.from>).delete()
       .eq('student_id', studentId).eq('day', day).eq('slot', slot)
     return
   }
 
-  const { error } = await supabase.from('timetable_entries').upsert({
+  const { error } = await (table as unknown as ReturnType<typeof supabase.from>).upsert({
     student_id: studentId,
     day,
     slot,
     subject: subject.trim(),
-  }, { onConflict: 'student_id,day,slot' })
+  } as never, { onConflict: 'student_id,day,slot' }) as unknown as Promise<{ error: { message: string } | null }>
   if (error) throw new Error(error.message)
 }
