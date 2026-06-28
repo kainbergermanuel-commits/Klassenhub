@@ -21,7 +21,7 @@ export async function saveTeacherSubjects(subjects: TeacherSubject[]) {
   const supabase = await createClient()
   const { error } = await (supabase
     .from('teacher_classes' as string)
-    .update({ subjects })
+    .update({ subjects } as never)
     .eq('teacher_id', user.id)
     .eq('class_id', activeClassId) as unknown as Promise<{ error: unknown }>)
 
