@@ -104,7 +104,7 @@ export async function createStudent(formData: FormData) {
     avatar_seed: null,
     is_admin: false,
     joined_class_at: new Date().toISOString(),
-  })
+  } as never)
   if (error) {
     await adminFetch(`users/${authUser.id}`, 'DELETE')
     throw new Error(error.message)

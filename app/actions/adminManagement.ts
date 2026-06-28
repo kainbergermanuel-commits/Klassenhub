@@ -132,7 +132,7 @@ export async function adminCreateStudentsForClass(classId: string, names: string
       avatar_seed: null,
       is_admin: false,
       joined_class_at: new Date().toISOString(),
-    })
+    } as never)
 
     if (error) {
       errors.push(`${trimmed}: ${error.message}`)
@@ -233,7 +233,7 @@ export async function adminRenameStudent(profileId: string, fullName: string) {
 export async function adminMoveStudent(profileId: string, classId: string) {
   await assertAdmin()
   const service = createServiceClient()
-  const { error } = await service.from('profiles').update({ class_id: classId, joined_class_at: new Date().toISOString() }).eq('id', profileId)
+  const { error } = await (service.from('profiles').update({ class_id: classId, joined_class_at: new Date().toISOString() } as never).eq('id', profileId) as unknown as Promise<{ error: { message: string } | null }>)
   if (error) throw new Error(error.message)
 }
 

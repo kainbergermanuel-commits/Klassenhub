@@ -66,7 +66,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
   return (
     <>
       {/* Student list with HÜ icon */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
         {students.map(s => (
           <div key={s.id} className="bg-white rounded-2xl px-4 py-3.5 shadow-sm flex items-center gap-3">
             <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={40} />

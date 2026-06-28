@@ -41,8 +41,8 @@ export default function AdminManageBar({
 
   async function handleEditClasses() {
     setOpen(false)
-    setSelectedClassIds(assignedClassIds)
-    setPrimaryClassId(initialPrimaryClassId ?? '')
+    setSelectedClassIds([])
+    setPrimaryClassId('')
     setEditingClasses(true)
   }
 

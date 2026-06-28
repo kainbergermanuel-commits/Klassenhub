@@ -35,14 +35,14 @@ export default function SpecialRolePicker({ studentId, currentRole }: { studentI
       <button
         onClick={() => setOpen(v => !v)}
         disabled={saving}
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold transition-colors ${
+        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-colors ${
           currentRole ? 'text-white' : 'bg-[#F2EFE8] text-kh-muted hover:text-kh-dark'
         }`}
         style={currentRole ? { background: current.color } : {}}
         title="Spezialrolle vergeben"
       >
-        <span className="msym text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>{current.icon}</span>
-        {currentRole ? current.label : 'Rolle vergeben'}
+        <span className="msym text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>{current.icon}</span>
+        {currentRole && <span className="hidden xl:inline">{current.label}</span>}
       </button>
 
       {open && (
