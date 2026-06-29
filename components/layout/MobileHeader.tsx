@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
+import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
 import type { Profile, Class } from '@/lib/types'
 
 interface NavItem {
@@ -24,6 +25,7 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
 
   const roleLabel =
     profile.role === 'teacher' ? 'Lehrperson'
@@ -98,14 +100,19 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
 
         {/* Profil */}
         <div className="flex items-center gap-3 px-5 pb-5 border-b border-kh-border/60">
-          <Avatar
-            name={profile.full_name}
-            color={profile.avatar_color}
-            seed={profile.avatar_seed}
-            hairColor={profile.avatar_hair_color}
-            skinColor={profile.avatar_skin_color}
-            size={44}
-          />
+          <button onClick={() => setShowPicker(true)} className="relative group focus:outline-none flex-shrink-0">
+            <Avatar
+              name={profile.full_name}
+              color={profile.avatar_color}
+              seed={profile.avatar_seed}
+              hairColor={profile.avatar_hair_color}
+              skinColor={profile.avatar_skin_color}
+              size={44}
+            />
+            <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+              <span className="msym text-white text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontVariationSettings: "'FILL' 1" }}>edit</span>
+            </div>
+          </button>
           <div className="min-w-0">
             <div className="font-bold text-[14px] text-kh-dark leading-tight truncate flex items-center gap-1">
               {profile.full_name}
@@ -170,6 +177,16 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
           </button>
         </div>
       </div>
+      {showPicker && (
+        <AvatarPickerModal
+          currentSeed={profile.avatar_seed}
+          currentHairColor={profile.avatar_hair_color}
+          currentSkinColor={profile.avatar_skin_color}
+          userName={profile.full_name}
+          color={profile.avatar_color}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
     </>
   )
 }
