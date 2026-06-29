@@ -29,6 +29,7 @@ export default function AdminManageBar({
   const [editingClasses, setEditingClasses] = useState(false)
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>(assignedClassIds)
   const [primaryClassId, setPrimaryClassId] = useState<string>(initialPrimaryClassId ?? '')
+  const [classError, setClassError] = useState<string | null>(null)
 
   async function handleReset() {
     setLoading('reset')
@@ -48,12 +49,14 @@ export default function AdminManageBar({
 
   async function handleSaveClasses() {
     setLoading('classes')
+    setClassError(null)
     try {
-      // Pass '' explicitly for "no KV"; action distinguishes '' from undefined
       await adminUpdateTeacherClasses(profileId, selectedClassIds, primaryClassId)
       router.refresh()
       setEditingClasses(false)
-    } catch {}
+    } catch (e) {
+      setClassError((e as Error).message ?? 'Unbekannter Fehler')
+    }
     setLoading(null)
   }
 
@@ -132,6 +135,11 @@ export default function AdminManageBar({
             </div>
           )}
         </div>
+        {classError && (
+          <div className="text-[11px] text-red-600 font-semibold bg-red-50 border border-red-200 rounded-lg px-2 py-1 w-full">
+            {classError}
+          </div>
+        )}
         <div className="flex gap-1.5 mt-1">
           <button
             onClick={() => setEditingClasses(false)}
