@@ -137,7 +137,7 @@ export default async function HomePage() {
         todoTotal={todoIds.length}
         todoDone={todoDone}
         streakEntries={streakEntries}
-        recentHomework={recentHw ?? []}
+        recentHomework={(recentHw ?? []).map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
       />
     )
   }

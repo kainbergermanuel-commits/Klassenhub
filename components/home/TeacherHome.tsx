@@ -14,7 +14,9 @@ import type { Class, HomeworkWithStatus, Reminder } from '@/lib/types'
 
 type StudentStatus = { id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }
 
-function HwEyeButton({ hw, classId }: { hw: HomeworkWithStatus; classId: string }) {
+type HwEyeItem = Pick<HomeworkWithStatus, 'id' | 'title' | 'subject_color' | 'subject_short' | 'completion_count'>
+
+function HwEyeButton({ hw, classId }: { hw: HwEyeItem; classId: string }) {
   const [open, setOpen] = useState(false)
   const [students, setStudents] = useState<StudentStatus[] | null>(null)
 
@@ -120,7 +122,7 @@ interface TeacherHomeProps {
   todoTotal: number
   todoDone: number
   streakEntries: StreakEntry[]
-  recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string }[]
+  recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
 }
 
 export default function TeacherHome({
@@ -249,7 +251,7 @@ export default function TeacherHome({
                           {new Date(hw.due_date).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })} · {hw.subject}
                         </div>
                       </div>
-                      <span className="msym text-[16px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      <HwEyeButton hw={hw} classId={classId} />
                     </div>
                   ))}
                 </div>
