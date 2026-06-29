@@ -120,11 +120,12 @@ interface TeacherHomeProps {
   todoTotal: number
   todoDone: number
   streakEntries: StreakEntry[]
+  recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string }[]
 }
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  hwOpenStudents, reminders, dutyEntries, todoTotal, todoDone, streakEntries,
+  hwOpenStudents, reminders, dutyEntries, todoTotal, todoDone, streakEntries, recentHomework,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ').slice(-1)[0]
@@ -189,7 +190,7 @@ export default function TeacherHome({
             />
           </div>
 
-          {/* Upcoming homework */}
+          {/* Upcoming + Recent homework */}
           <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-extrabold text-base text-kh-dark">Demnächst fällig</h2>
@@ -224,6 +225,35 @@ export default function TeacherHome({
                   )
                 })}
               </div>
+            )}
+
+            {recentHomework.length > 0 && (
+              <>
+                <div className="flex items-center gap-2 mt-4 mb-2.5">
+                  <div className="flex-1 h-px bg-kh-border/60" />
+                  <span className="text-[11px] font-bold text-kh-muted uppercase tracking-wide">Kürzlich abgeschlossen</span>
+                  <div className="flex-1 h-px bg-kh-border/60" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {recentHomework.map(hw => (
+                    <div key={hw.id} className="flex items-center gap-3 rounded-xl px-3 py-2 opacity-60">
+                      <div
+                        className="w-7 h-7 rounded-[8px] flex items-center justify-center font-extrabold text-[11px] text-white flex-shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}
+                      >
+                        {hw.subject_short}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[13px] text-kh-dark truncate">{hw.title}</div>
+                        <div className="text-[11px] text-kh-muted font-medium">
+                          {new Date(hw.due_date).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })} · {hw.subject}
+                        </div>
+                      </div>
+                      <span className="msym text-[16px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
 

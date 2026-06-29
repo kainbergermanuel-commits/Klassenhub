@@ -50,6 +50,7 @@ export default async function HomePage() {
       { data: allStudents },
       { data: todoCounts },
       { data: allHwForStreaks },
+      { data: recentHw },
     ] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
       supabase.from('homework_completions').select('homework_id', { count: 'exact', head: true }).in('homework_id', homework.map(h => h.id)),
@@ -58,6 +59,7 @@ export default async function HomePage() {
         ? supabase.from('todo_completions').select('todo_id,student_id').in('todo_id', todoIds)
         : Promise.resolve({ data: [] }),
       supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
+      supabase.from('homework').select('id,title,subject,subject_short,subject_color,due_date').eq('class_id', activeClassId).lte('due_date', today).order('due_date', { ascending: false }).limit(3),
     ])
 
     const allHwIds = (allHwForStreaks ?? []).map(h => h.id)
@@ -135,6 +137,7 @@ export default async function HomePage() {
         todoTotal={todoIds.length}
         todoDone={todoDone}
         streakEntries={streakEntries}
+        recentHomework={recentHw ?? []}
       />
     )
   }
