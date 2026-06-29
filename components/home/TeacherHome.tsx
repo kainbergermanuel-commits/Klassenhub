@@ -238,14 +238,14 @@ export default function TeacherHome({
                 </div>
                 <div className="flex flex-col gap-1.5">
                   {recentHomework.map(hw => (
-                    <div key={hw.id} className="flex items-center gap-3 rounded-xl px-3 py-2 opacity-60">
+                    <div key={hw.id} className="flex items-center gap-3 rounded-xl px-3 py-2">
                       <div
-                        className="w-7 h-7 rounded-[8px] flex items-center justify-center font-extrabold text-[11px] text-white flex-shrink-0"
+                        className="w-7 h-7 rounded-[8px] flex items-center justify-center font-extrabold text-[11px] text-white flex-shrink-0 opacity-50"
                         style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}
                       >
                         {hw.subject_short}
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 opacity-50">
                         <div className="font-semibold text-[13px] text-kh-dark truncate">{hw.title}</div>
                         <div className="text-[11px] text-kh-muted font-medium">
                           {new Date(hw.due_date).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })} · {hw.subject}
