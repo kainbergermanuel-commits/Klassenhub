@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
+import { gendered } from '@/lib/gender'
 import type { Profile, Class } from '@/lib/types'
 
 interface NavItem {
@@ -30,7 +31,7 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
   const roleLabel =
     profile.role === 'teacher' ? 'Lehrperson'
     : profile.role === 'parent' ? 'Elternteil'
-    : 'Schüler:in'
+    : gendered('Schüler', profile.gender)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -182,6 +183,8 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
           currentSeed={profile.avatar_seed}
           currentHairColor={profile.avatar_hair_color}
           currentSkinColor={profile.avatar_skin_color}
+          currentGender={profile.gender}
+          showGender={profile.role === 'student'}
           userName={profile.full_name}
           color={profile.avatar_color}
           onClose={() => setShowPicker(false)}

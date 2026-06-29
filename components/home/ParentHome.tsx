@@ -122,22 +122,26 @@ export default function ParentHome({
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
           {/* Cards */}
           <div className="grid sm:grid-cols-2 gap-4">
-            <FeatureCard
-              href="/hausaufgaben" gradient="blue" icon="assignment"
-              title="Hausübungen"
-              meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
-              progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
-            />
-            <FeatureCard
-              href="/todo" gradient="teal" icon="checklist"
-              title="Wochen-To-Do"
-              meta={todoTotal > 0 ? `${todoDone}/${todoTotal} erledigt` : 'Noch nichts gepostet'}
-              progress={todoTotal > 0 ? todoProgress : undefined}
-            />
+            <div className="animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
+              <FeatureCard
+                href="/hausaufgaben" gradient="blue" icon="assignment"
+                title="Hausübungen"
+                meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
+                progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
+              />
+            </div>
+            <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
+              <FeatureCard
+                href="/todo" gradient="teal" icon="checklist"
+                title="Wochen-To-Do"
+                meta={todoTotal > 0 ? `${todoDone}/${todoTotal} erledigt` : 'Noch nichts gepostet'}
+                progress={todoTotal > 0 ? todoProgress : undefined}
+              />
+            </div>
           </div>
 
           {/* Child's homework */}
-          <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
+          <div className="animate-card-enter bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50" style={{ animationDelay: '180ms' }}>
             <div className="flex items-center justify-between gap-2 mb-3">
               <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark whitespace-nowrap min-w-0">
                 <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
@@ -179,8 +183,12 @@ export default function ParentHome({
           <div className="hidden lg:block absolute top-0 -left-6 w-6 h-6 bg-white rounded-br-[20px]" />
           <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-[20px]" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-[24px] lg:p-5 lg:sticky lg:top-7">
-            <AgendaPanel reminders={reminders} role="parent" />
-            <StreakLeaderCard entries={streakEntries} />
+            <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
+              <AgendaPanel reminders={reminders} role="parent" />
+            </div>
+            <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
+              <StreakLeaderCard entries={streakEntries} />
+            </div>
           </div>
         </div>
       </div>

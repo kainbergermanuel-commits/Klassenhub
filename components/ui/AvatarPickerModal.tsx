@@ -3,6 +3,13 @@
 import { useState, useTransition, useRef, useEffect } from 'react'
 import { avatarUrl } from '@/components/ui/Avatar'
 import { saveAvatarSeed } from '@/app/actions/saveAvatarSeed'
+import type { Gender } from '@/lib/types'
+
+const GENDER_OPTIONS: { value: Gender | null; label: string; icon: string }[] = [
+  { value: 'm', label: 'Männlich', icon: 'male' },
+  { value: 'f', label: 'Weiblich', icon: 'female' },
+  { value: null, label: 'Keine Angabe', icon: 'block' },
+]
 
 const SEEDS = [
   'Felix', 'Anna', 'Lukas', 'Sophie', 'Max', 'Emma', 'Noah', 'Mia',
@@ -118,20 +125,24 @@ interface Props {
   currentSeed: string | null
   currentHairColor: string | null
   currentSkinColor: string | null
+  currentGender?: Gender | null
+  /** Geschlechts-Auswahl anzeigen (nur sinnvoll für Schüler:innen). */
+  showGender?: boolean
   userName: string
   color: string
   onClose: () => void
 }
 
-export default function AvatarPickerModal({ currentSeed, currentHairColor, currentSkinColor, userName, color, onClose }: Props) {
+export default function AvatarPickerModal({ currentSeed, currentHairColor, currentSkinColor, currentGender = null, showGender = false, userName, color, onClose }: Props) {
   const [selected, setSelected] = useState(currentSeed ?? userName)
   const [hairColor, setHairColor] = useState<string | null>(currentHairColor)
   const [skinColor, setSkinColor] = useState<string | null>(currentSkinColor)
+  const [gender, setGender] = useState<Gender | null>(currentGender)
   const [, startTransition] = useTransition()
 
   function confirm() {
     startTransition(async () => {
-      await saveAvatarSeed(selected, hairColor, skinColor)
+      await saveAvatarSeed(selected, hairColor, skinColor, gender)
       onClose()
     })
   }
@@ -146,7 +157,7 @@ export default function AvatarPickerModal({ currentSeed, currentHairColor, curre
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-extrabold text-kh-dark">Avatar wählen</h2>
+          <h2 className="text-lg font-extrabold text-kh-dark">Profil bearbeiten</h2>
           <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
         </div>
 
@@ -160,6 +171,30 @@ export default function AvatarPickerModal({ currentSeed, currentHairColor, curre
             <ColorDropdown label="Hautfarbe"  current={skinColor} colors={SKIN_COLORS}  onSelect={setSkinColor} />
           </div>
         </div>
+
+        {/* Geschlecht (nur Schüler:innen) — passt gender-spezifische Texte an */}
+        {showGender && (
+          <div className="mb-5">
+            <p className="text-[11px] font-bold text-kh-muted uppercase tracking-wider mb-2">Geschlecht</p>
+            <div className="flex gap-2">
+              {GENDER_OPTIONS.map(opt => {
+                const active = gender === opt.value
+                return (
+                  <button
+                    key={opt.label}
+                    onClick={() => setGender(opt.value)}
+                    className={`flex-1 flex items-center justify-center gap-0.5 py-2 rounded-xl text-[12.5px] font-bold border transition-colors ${
+                      active ? 'border-kh-teal bg-kh-teal-light text-kh-dark' : 'border-kh-border bg-[#FAF8F3] text-kh-muted hover:bg-[#F0EDE5]'
+                    }`}
+                  >
+                    <span className={`msym text-[16px] w-[18px] flex items-center justify-center flex-shrink-0 ${opt.value === 'f' || opt.value === 'm' ? '-mr-0.5' : ''}`}>{opt.icon}</span>
+                    <span className={opt.value === null ? 'text-[11px]' : ''}>{opt.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Avatar grid */}
         <p className="text-[11px] font-bold text-kh-muted uppercase tracking-wider mb-2">Gesicht</p>

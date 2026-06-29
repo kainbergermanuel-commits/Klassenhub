@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Avatar from '@/components/ui/Avatar'
 import SpecialRolePicker from './SpecialRolePicker'
 import KlasseManageBar from './KlasseManageBar'
+import { gendered } from '@/lib/gender'
 import type { Homework, Profile } from '@/lib/types'
 
 interface Props {
@@ -73,7 +74,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
             <div className="flex-1 min-w-0">
               <div className="font-bold text-[15px] text-kh-dark truncate">{s.full_name}</div>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span className="text-xs text-kh-muted font-medium">Schüler:in</span>
+                <span className="text-xs text-kh-muted font-medium">{gendered('Schüler', s.gender)}</span>
                 <SpecialRolePicker studentId={s.id} currentRole={s.special_role ?? null} />
               </div>
             </div>

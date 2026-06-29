@@ -167,36 +167,45 @@ export default function TeacherHome({
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
           {/* Feature cards */}
           <div className="grid sm:grid-cols-3 gap-4">
-            <FeatureCard
-              href="/hausaufgaben" gradient="amber" icon="assignment"
-              title="Hausübungen"
-              meta={homeworkList.length > 0 ? `${homeworkList.length} aktiv · ${hwSubmittedCount}/${hwSlots} abgegeben` : 'Keine aktiven HÜ'}
-              progress={homeworkList.length > 0 ? hwProgress : undefined}
-              people={hwOpenStudents}
-              peopleTooltip={
-                hwOpenStudents.length > 0
-                  ? `Noch offen: ${hwOpenStudents.map(s => s.full_name.split(' ')[0]).join(', ')}`
-                  : undefined
-              }
-            />
-            <FeatureCard
-              href="/todo" gradient="teal" icon="checklist"
-              title="Wochen-To-Do"
-              meta={todoTotal > 0 ? `${todoDone}/${todoSlots} erledigt` : 'Noch nichts gepostet'}
-              progress={todoTotal > 0 ? todoProgress : undefined}
-              badge={todoTotal > 0 ? `${todoTotal}` : undefined}
-            />
-            <DutyCard
-              title={`Dienste · KW ${getWeekNumber(getMondayOfWeek())}`}
-              entries={dutyEntries}
-            />
+            <div className="animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
+              <FeatureCard
+                href="/hausaufgaben" gradient="amber" icon="assignment"
+                title="Hausübungen"
+                meta={homeworkList.length > 0 ? `${homeworkList.length} aktiv · ${hwSubmittedCount}/${hwSlots} abgegeben` : 'Keine aktiven HÜ'}
+                progress={homeworkList.length > 0 ? hwProgress : undefined}
+                people={hwOpenStudents}
+                peopleTooltip={
+                  hwOpenStudents.length > 0
+                    ? `Noch offen: ${hwOpenStudents.map(s => s.full_name.split(' ')[0]).join(', ')}`
+                    : undefined
+                }
+              />
+            </div>
+            <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
+              <FeatureCard
+                href="/todo" gradient="teal" icon="checklist"
+                title="Wochen-To-Do"
+                meta={todoTotal > 0 ? `${todoDone}/${todoSlots} erledigt` : 'Noch nichts gepostet'}
+                progress={todoTotal > 0 ? todoProgress : undefined}
+                badge={todoTotal > 0 ? `${todoTotal}` : undefined}
+              />
+            </div>
+            <div className="animate-card-enter h-full" style={{ animationDelay: '120ms' }}>
+              <DutyCard
+                title={`Dienste · KW ${getWeekNumber(getMondayOfWeek())}`}
+                entries={dutyEntries}
+              />
+            </div>
           </div>
 
           {/* Upcoming + Recent homework */}
-          <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-extrabold text-base text-kh-dark">Demnächst fällig</h2>
-              <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline">Alle</Link>
+          <div className="animate-card-enter bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50" style={{ animationDelay: '180ms' }}>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark whitespace-nowrap min-w-0">
+                <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
+                <span className="truncate">Demnächst fällig</span>
+              </h2>
+              <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline flex-shrink-0">Alle</Link>
             </div>
             {upcoming.length === 0 ? (
               <p className="text-sm text-kh-muted font-medium">Keine bevorstehenden Hausübungen.</p>
@@ -265,8 +274,12 @@ export default function TeacherHome({
           <div className="hidden lg:block absolute top-0 -left-6 w-6 h-6 bg-white rounded-br-[20px]" />
           <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-[20px]" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-[24px] lg:p-5 lg:sticky lg:top-7">
-            <AgendaPanel reminders={reminders} role="teacher" classId={classId} userId={userId} />
-            <StreakLeaderCard entries={streakEntries} />
+            <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
+              <AgendaPanel reminders={reminders} role="teacher" classId={classId} userId={userId} />
+            </div>
+            <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
+              <StreakLeaderCard entries={streakEntries} />
+            </div>
           </div>
         </div>
       </div>

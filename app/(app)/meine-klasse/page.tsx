@@ -26,7 +26,7 @@ export default async function MeineKlassePage() {
   const [{ data: studentsRaw }, { data: klass }, { data: teachersRaw }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role')
+      .select('id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role, gender')
       .eq('class_id', profile.class_id)
       .eq('role', 'student')
       .order('full_name'),
@@ -85,6 +85,7 @@ export default async function MeineKlassePage() {
             avatar_hair_color={s.avatar_hair_color ?? null}
             avatar_skin_color={s.avatar_skin_color ?? null}
             special_role={s.special_role ?? null}
+            gender={s.gender ?? null}
             isMe={s.id === user.id}
             index={teachers.length + i}
           />
