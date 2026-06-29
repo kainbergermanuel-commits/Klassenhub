@@ -39,22 +39,22 @@ export default function ParentHome({
 
   return (
     <>
-      <header className="mb-5 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight">Hallo, Familie {fullName.split(' ').slice(-1)[0]}!</h1>
-          <p className="text-sm text-kh-muted font-medium mt-1">{today} · {childFirst}, {className}</p>
+      <header className="mb-5">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight min-w-0">Hallo, Familie {fullName.split(' ').slice(-1)[0]}!</h1>
+          {/* Mobile-only Kompakt-Stats (Web unverändert) */}
+          <div className="md:hidden flex items-center gap-3 flex-shrink-0">
+            <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
+              <span className="msym text-[19px]" style={{ color: '#2F86C5' }}>assignment</span>
+              <span className="text-[13px] font-bold">{hwDone}/{hwTotal}</span>
+            </Link>
+            <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
+              <span className="msym text-[19px]" style={{ color: '#0F8A82' }}>checklist</span>
+              <span className="text-[13px] font-bold">{todoDone}/{todoTotal}</span>
+            </Link>
+          </div>
         </div>
-        {/* Mobile-only Kompakt-Stats (Web unverändert) */}
-        <div className="md:hidden flex items-center gap-3 pt-1.5 flex-shrink-0">
-          <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
-            <span className="msym text-[18px]">assignment</span>
-            <span className="text-[12px] font-bold">{hwDone}/{hwTotal}</span>
-          </Link>
-          <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
-            <span className="msym text-[18px]">checklist</span>
-            <span className="text-[12px] font-bold">{todoDone}/{todoTotal}</span>
-          </Link>
-        </div>
+        <p className="text-sm text-kh-muted font-medium mt-1">{today} · {childFirst}, {className}</p>
       </header>
 
       {/* Child banner */}

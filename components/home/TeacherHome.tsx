@@ -161,16 +161,16 @@ export default function TeacherHome({
 
       {/* Mobile-only Kompakt-Stats (Web unverändert) */}
       <div className="md:hidden flex items-center gap-4 mb-5 -mt-2">
-        <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
-          <span className="msym text-[18px]">assignment</span>
-          <span className="text-[12px] font-bold">{homeworkList.length}</span>
+        <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
+          <span className="msym text-[19px]" style={{ color: '#C98A2B' }}>assignment</span>
+          <span className="text-[13px] font-bold">{homeworkList.length}</span>
         </Link>
-        <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
-          <span className="msym text-[18px]">checklist</span>
-          <span className="text-[12px] font-bold">{todoTotal}</span>
+        <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
+          <span className="msym text-[19px]" style={{ color: '#0F8A82' }}>checklist</span>
+          <span className="text-[13px] font-bold">{todoTotal}</span>
         </Link>
-        <Link href="/dienste" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
-          <span className="msym text-[18px]">cleaning_services</span>
+        <Link href="/dienste" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
+          <span className="msym text-[19px]" style={{ color: '#5965B8' }}>cleaning_services</span>
         </Link>
       </div>
 
