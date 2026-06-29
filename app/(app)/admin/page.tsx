@@ -103,7 +103,7 @@ export default async function AdminPage() {
             const assignedClassIds = teacherClassMap.get(t.id) ?? [] as string[]
             const assignedClasses = assignedClassIds.map(cid => (classes ?? []).find(c => c.id === cid)).filter(Boolean)
             return (
-              <div key={t.id} className="bg-white rounded-2xl px-5 py-4 shadow-sm flex items-center gap-4">
+              <div key={t.id} className="bg-white rounded-2xl px-5 py-4 shadow-sm flex items-center gap-4 flex-wrap">
                 <span className="msym text-[22px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">

@@ -105,7 +105,7 @@ export default function AdminManageBar({
     }
 
     return (
-      <div className="flex flex-col items-end gap-1.5 max-w-[160px]">
+      <div className="flex flex-col items-end gap-1.5 w-full max-w-[160px] md:w-auto">
         <div className="flex w-full items-center mb-0.5">
           <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide flex-1">Klassen</div>
           <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide w-4 text-center">KV</div>
