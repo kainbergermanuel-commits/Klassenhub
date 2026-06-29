@@ -183,12 +183,12 @@ export default function AddReminderModal({ classId, userId, isPending = false, o
             autoFocus value={title} onChange={e => setTitle(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && save()}
             placeholder="Titel *"
-            className="w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
+            className="w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
           />
           <input
             value={description} onChange={e => setDescription(e.target.value)}
             placeholder="Beschreibung (optional)"
-            className="w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
+            className="w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
           />
           <div>
             <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Datum *</label>

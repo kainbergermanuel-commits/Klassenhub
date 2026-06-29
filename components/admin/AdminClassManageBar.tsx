@@ -42,7 +42,7 @@ export default function AdminClassManageBar({ classId, name }: { classId: string
           onChange={e => setNewName(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenaming(false) }}
           autoFocus
-          className="border border-kh-teal rounded-lg px-2.5 py-1 text-sm font-bold text-kh-dark focus:outline-none w-24"
+          className="border border-kh-teal rounded-lg px-2.5 py-1 text-base font-bold text-kh-dark focus:outline-none w-24"
         />
         <button
           onClick={handleRename}

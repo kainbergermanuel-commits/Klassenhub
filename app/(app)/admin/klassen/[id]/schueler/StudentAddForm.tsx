@@ -64,7 +64,7 @@ export default function StudentAddForm({ classId }: { classId: string }) {
         onChange={e => setText(e.target.value)}
         rows={5}
         placeholder={"Anna Schneider\nFelix Wagner\n…"}
-        className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition resize-none"
+        className="w-full rounded-xl border border-kh-border px-4 py-3 text-base font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition resize-none"
       />
       <button
         type="submit"

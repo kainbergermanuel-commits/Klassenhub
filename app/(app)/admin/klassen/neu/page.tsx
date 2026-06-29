@@ -105,7 +105,7 @@ export default function NeueKlassePage() {
             type="text"
             required
             placeholder="z.B. 4a"
-            className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition"
+            className="w-full rounded-xl border border-kh-border px-4 py-3 text-base font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition"
           />
         </div>
 
@@ -117,7 +117,7 @@ export default function NeueKlassePage() {
             name="students"
             rows={8}
             placeholder={"Anna Schneider\nFelix Wagner\nLena Hofer\n…"}
-            className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition resize-none"
+            className="w-full rounded-xl border border-kh-border px-4 py-3 text-base font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition resize-none"
           />
           <p className="text-[11px] text-kh-muted font-medium mt-1 px-1">
             Benutzername und Passwort werden automatisch generiert. Avatar wird beim ersten Login gewählt.

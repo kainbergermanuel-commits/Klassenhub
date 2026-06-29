@@ -111,7 +111,7 @@ export default function AddDutyModal({ classId, userId, weekStart, students, ass
               value={customName}
               onChange={e => setCustomName(e.target.value)}
               placeholder="Dienstname eingeben…"
-              className="mt-2 w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
+              className="mt-2 w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
             />
           )}
         </div>

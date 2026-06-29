@@ -265,7 +265,7 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
                 placeholder="Titel"
-                className="w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
+                className="w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
               />
               <div>
                 <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Fällig am</label>
@@ -273,7 +273,7 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
                   type="date"
                   value={editDate}
                   onChange={e => setEditDate(e.target.value)}
-                  className="w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
+                  className="w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
                 />
               </div>
             </div>
