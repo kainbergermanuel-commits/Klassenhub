@@ -227,19 +227,6 @@ export default function TeacherHome({
             )}
           </div>
 
-          {/* Mini stats */}
-          <div className="grid grid-cols-3 gap-4 max-[480px]:grid-cols-1">
-            {[
-              { val: studentCount, label: 'Schüler:innen', color: 'text-kh-dark' },
-              { val: homeworkList.length, label: 'Aktive HÜ', color: 'text-kh-amber' },
-              { val: `${todoDone}/${todoSlots}`, label: 'To-Do erledigt', color: 'text-kh-teal' },
-            ].map(s => (
-              <div key={s.label} className="bg-white rounded-[18px] p-4 shadow-sm border border-kh-border/50 flex flex-col items-center text-center">
-                <div className={`text-[26px] font-extrabold ${s.color}`}>{s.val}</div>
-                <div className="text-[12.5px] text-kh-muted font-medium mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="relative">
