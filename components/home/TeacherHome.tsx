@@ -159,14 +159,29 @@ export default function TeacherHome({
         </button>
       </header>
 
+      {/* Mobile-only Kompakt-Stats (Web unverändert) */}
+      <div className="md:hidden flex items-center gap-4 mb-5 -mt-2">
+        <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
+          <span className="msym text-[18px]">assignment</span>
+          <span className="text-[12px] font-bold">{homeworkList.length}</span>
+        </Link>
+        <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
+          <span className="msym text-[18px]">checklist</span>
+          <span className="text-[12px] font-bold">{todoTotal}</span>
+        </Link>
+        <Link href="/dienste" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
+          <span className="msym text-[18px]">cleaning_services</span>
+        </Link>
+      </div>
+
       {showModal && (
         <AddHomeworkModal classId={classId} userId={userId} onClose={() => setShowModal(false)} />
       )}
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
-          {/* Feature cards */}
-          <div className="grid sm:grid-cols-3 gap-4">
+          {/* Feature cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
+          <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
             <div className="animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
               <FeatureCard
                 href="/hausaufgaben" gradient="amber" icon="assignment"

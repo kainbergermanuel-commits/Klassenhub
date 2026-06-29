@@ -1,8 +1,10 @@
+import Link from 'next/link'
 import FeatureCard from './FeatureCard'
 import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
+import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder } from '@/lib/types'
 import { dutyIcon } from '@/lib/dutyIcon'
 
@@ -58,15 +60,36 @@ export default function StudentHome({
 
   return (
     <>
-      <header className="mb-6">
-        <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight">Hallo, {firstName}!</h1>
-        <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
+      <header className="mb-6 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight">Hallo, {firstName}!</h1>
+          <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
+        </div>
+        {/* Mobile-only Kompakt-Stats (Web unverändert) */}
+        <div className="md:hidden flex items-center gap-3 pt-1.5 flex-shrink-0">
+          <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
+            <span className="msym text-[18px]">assignment</span>
+            <span className="text-[12px] font-bold">{hwDone}/{hwTotal}</span>
+          </Link>
+          <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
+            <span className="msym text-[18px]">checklist</span>
+            <span className="text-[12px] font-bold">{todoDone}/{todoTotal}</span>
+          </Link>
+          {myDuty && (
+            <Link href="/dienste" className="flex items-center gap-1 text-kh-muted active:text-kh-teal transition-colors">
+              <span className="msym text-[18px]">{dutyIcon(myDuty.name)}</span>
+              {myDuty.partners[0] && (
+                <Avatar name={myDuty.partners[0].full_name} color={myDuty.partners[0].avatar_color} seed={myDuty.partners[0].avatar_seed} hairColor={myDuty.partners[0].avatar_hair_color} skinColor={myDuty.partners[0].avatar_skin_color} size={20} />
+              )}
+            </Link>
+          )}
+        </div>
       </header>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6 mx-auto w-full">
-          {/* Cards */}
-          <div className="grid sm:grid-cols-3 gap-4">
+          {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
+          <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
             {[
               <FeatureCard
                 href="/hausaufgaben" gradient="blue" icon="assignment"
