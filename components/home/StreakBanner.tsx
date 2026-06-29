@@ -1,13 +1,16 @@
 import { flameCount } from '@/lib/streak'
 
 interface Props {
+  /** Eigener Streak – sofort sichtbar (auch unbestätigt). Bestimmt die angezeigte Zahl. */
   streak: number
+  /** Eltern-bestätigter Streak – verdient die Flammen (Live-Spiegel). */
+  confirmedStreak: number
   pendingMilestone: number | null
 }
 
-export default function StreakBanner({ streak, pendingMilestone }: Props) {
+export default function StreakBanner({ streak, confirmedStreak, pendingMilestone }: Props) {
   if (streak === 0) return null
-  const flames = flameCount(streak)
+  const flames = flameCount(confirmedStreak)
 
   return (
     <div className={`rounded-[20px] p-4 flex items-center gap-4 relative overflow-hidden`} style={{ background: pendingMilestone ? 'linear-gradient(to left, #FFFBEE 0%, #FDE68A 100%)' : 'linear-gradient(to left, #F0FAF9 0%, #B2DFDB 100%)', boxShadow: pendingMilestone ? 'inset 0 0 0 1px #F0C040' : 'inset 0 0 0 1px rgba(0,150,136,0.3)' }}>

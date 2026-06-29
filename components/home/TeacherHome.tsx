@@ -130,7 +130,7 @@ export default function TeacherHome({
   hwOpenStudents, reminders, dutyEntries, todoTotal, todoDone, streakEntries, recentHomework,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
-  const firstName = fullName.split(' ').slice(-1)[0]
+  const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
   const todayStr = todayISO()
   const upcoming = [...homeworkList]

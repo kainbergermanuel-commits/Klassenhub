@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import FeatureCard from './FeatureCard'
 import AgendaPanel from './AgendaPanel'
-import StreakConfirmButton from './StreakConfirmButton'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
 import Avatar from '@/components/ui/Avatar'
@@ -10,8 +9,6 @@ import { flameCount } from '@/lib/streak'
 
 interface ParentHomeProps {
   fullName: string
-  parentId: string
-  childId: string
   childName: string
   childColor: string
   childSeed: string | null
@@ -22,15 +19,16 @@ interface ParentHomeProps {
   reminders: Reminder[]
   todoTotal: number
   todoDone: number
+  /** Eigener Streak des Kindes – sofort sichtbar (auch unbestätigt). Bestimmt die Zahl. */
   childStreak: number
-  childConfirmedMilestone: number
-  pendingMilestone: number | null
+  /** Eltern-bestätigter Streak des Kindes – verdient die Flammen (Live-Spiegel). */
+  childConfirmedStreak: number
   pendingConfirmations: PendingConfirmation[]
   streakEntries: StreakEntry[]
 }
 
 export default function ParentHome({
-  fullName, parentId, childId, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, todoTotal, todoDone, childStreak, childConfirmedMilestone, pendingMilestone, pendingConfirmations, streakEntries,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, todoTotal, todoDone, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -99,7 +97,7 @@ export default function ParentHome({
           {childStreak > 0 && (
             <div className="text-right border-r border-white/10 pr-4">
               <div className="flex items-center gap-1 justify-end leading-none" style={{ height: '1.65rem' }}>
-                {flameCount(childConfirmedMilestone) > 0 && Array.from({ length: flameCount(childConfirmedMilestone) }).map((_, i) => (
+                {flameCount(childConfirmedStreak) > 0 && Array.from({ length: flameCount(childConfirmedStreak) }).map((_, i) => (
                   <img key={i} src="/flame.svg" alt="" className="w-5 h-5" style={{ marginLeft: i === 0 ? 0 : '-4px', filter: 'saturate(0.6)' }} />
                 ))}
                 <span className="text-[22px] font-extrabold text-[#7FD4B6]">{childStreak}</span>
@@ -117,20 +115,8 @@ export default function ParentHome({
         </div>
       </div>
 
-      {/* HÜ-Bestätigungen */}
+      {/* HÜ-Bestätigungen – bestätigte HÜ verdienen automatisch die Streak-Flammen */}
       <ParentHwConfirmList items={pendingConfirmations} childFirstName={childFirst} />
-
-      {/* Streak pending confirmation */}
-      {pendingMilestone && childStreak > 0 && (
-        <div className="mb-6">
-          <StreakConfirmButton
-            childId={childId}
-            parentId={parentId}
-            milestone={pendingMilestone}
-            childFirstName={childName.split(' ')[0]}
-          />
-        </div>
-      )}
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
@@ -152,9 +138,12 @@ export default function ParentHome({
 
           {/* Child's homework */}
           <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
-            <div className="flex justify-between items-baseline mb-3">
-              <h2 className="font-extrabold text-base text-kh-dark">{childFirst}s Hausübungen</h2>
-              <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline">Alle</Link>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark whitespace-nowrap min-w-0">
+                <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
+                <span className="truncate">{childFirst}s Hausübungen</span>
+              </h2>
+              <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline flex-shrink-0">Alle</Link>
             </div>
             {childHomework.length === 0 ? (
               <p className="text-sm text-kh-muted font-medium">Keine aktiven Hausübungen 🎉</p>

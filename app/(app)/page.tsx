@@ -11,6 +11,7 @@ import type { HomeworkWithStatus, Reminder, Duty } from '@/lib/types'
 
 export default async function HomePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
+
   if (!user?.id) redirect('/login')
 
   if (!profile || !activeClassId) {
@@ -63,15 +64,9 @@ export default async function HomePage() {
     ])
 
     const allHwIds = (allHwForStreaks ?? []).map(h => h.id)
-    const studentIds = (allStudents ?? []).map(s => s.id)
-    const [{ data: allCompletions }, { data: confirmations }] = await Promise.all([
-      allHwIds.length > 0
-        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
-        : Promise.resolve({ data: [] }),
-      studentIds.length > 0
-        ? supabase.from('streak_confirmations').select('student_id,milestone').in('student_id', studentIds)
-        : Promise.resolve({ data: [] }),
-    ])
+    const { data: allCompletions } = allHwIds.length > 0
+      ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
+      : { data: [] }
 
     const students = allStudents ?? []
     const studentMap = Object.fromEntries(students.map(s => [s.id, s.full_name.split(' ')[0]]))
@@ -81,7 +76,6 @@ export default async function HomePage() {
     }))
     const todoDone = (todoCounts ?? []).length // alle Completions (nicht nur unique todo_ids)
 
-    const allConfirmations = (confirmations ?? []) as { student_id: string; milestone: number }[]
     const doneByStudent = new Map<string, Set<string>>()
     const confirmedByStudent = new Map<string, Set<string>>()
     for (const c of allCompletions ?? []) {
@@ -92,11 +86,8 @@ export default async function HomePage() {
         confirmedByStudent.get(c.student_id)!.add(c.homework_id)
       }
     }
-    const confirmedMilestoneMap = new Map<string, number>()
-    for (const c of allConfirmations) {
-      const prev = confirmedMilestoneMap.get(c.student_id) ?? 0
-      if (c.milestone > prev) confirmedMilestoneMap.set(c.student_id, c.milestone)
-    }
+    // Leaderboard zeigt ausschließlich eltern-bestätigte Streaks; Flammen leiten
+    // sich direkt aus dieser Zahl ab (Live-Spiegel).
     const streakEntries = students
       .map(s => ({
         id: s.id,
@@ -106,7 +97,6 @@ export default async function HomePage() {
         avatar_hair_color: s.avatar_hair_color ?? null,
         avatar_skin_color: s.avatar_skin_color ?? null,
         streak: computeStreak(confirmedByStudent.get(s.id) ?? new Set(), allHwForStreaks ?? [], today),
-        confirmedMilestone: confirmedMilestoneMap.get(s.id) ?? 0,
       }))
       .filter(e => e.streak > 0)
       .sort((a, b) => b.streak - a.streak)
@@ -173,15 +163,8 @@ export default async function HomePage() {
     }
     const myDuty = duties.find(d => d.assignee_ids.includes(user.id)) ?? null
 
+    // Eigener Streak: sofort sichtbar (auch unbestätigt)
     const streak = computeStreak(doneIds, allHwForStreak ?? [], today)
-    let pendingMilestone: number | null = null
-    if (streak >= 5) {
-      const ms = currentMilestone(streak)
-      const { data: confirmation } = await supabase
-        .from('streak_confirmations').select('milestone')
-        .eq('student_id', user.id).eq('milestone', ms).maybeSingle()
-      if (!confirmation) pendingMilestone = ms
-    }
 
     let myDutyPartners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] = []
     if (myDuty) {
@@ -197,42 +180,32 @@ export default async function HomePage() {
       }))
     }
 
-    // Streak leaderboard for all students
+    // Streak leaderboard for all students (nur eltern-bestätigte Streaks)
     const allHwIds = (allHwForStreak ?? []).map(h => h.id)
-    const studentIdsS = (allStudents ?? []).map(s => s.id)
-    const [{ data: allCompletionsStudent }, { data: confirmationsS }] = await Promise.all([
-      allHwIds.length > 0
-        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
-        : Promise.resolve({ data: [] }),
-      studentIdsS.length > 0
-        ? supabase.from('streak_confirmations').select('student_id,milestone').in('student_id', studentIdsS)
-        : Promise.resolve({ data: [] }),
-    ])
-    const allConfirmationsS = (confirmationsS ?? []) as { student_id: string; milestone: number }[]
-    const doneByStudentS = new Map<string, Set<string>>()
+    const { data: allCompletionsStudent } = allHwIds.length > 0
+      ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
+      : { data: [] }
     const confirmedByStudentS = new Map<string, Set<string>>()
     for (const c of allCompletionsStudent ?? []) {
-      if (!doneByStudentS.has(c.student_id)) doneByStudentS.set(c.student_id, new Set())
-      doneByStudentS.get(c.student_id)!.add(c.homework_id)
       if ((c as any).confirmed_by_parent_at) {
         if (!confirmedByStudentS.has(c.student_id)) confirmedByStudentS.set(c.student_id, new Set())
         confirmedByStudentS.get(c.student_id)!.add(c.homework_id)
       }
-    }
-    const confirmedMilestoneMapS = new Map<string, number>()
-    for (const c of allConfirmationsS) {
-      const prev = confirmedMilestoneMapS.get(c.student_id) ?? 0
-      if (c.milestone > prev) confirmedMilestoneMapS.set(c.student_id, c.milestone)
     }
     const streakEntries = (allStudents ?? [])
       .map(s => ({
         id: s.id, full_name: s.full_name, avatar_color: s.avatar_color ?? '#0F8A82', avatar_seed: s.avatar_seed ?? null,
         avatar_hair_color: s.avatar_hair_color ?? null, avatar_skin_color: s.avatar_skin_color ?? null,
         streak: computeStreak(confirmedByStudentS.get(s.id) ?? new Set(), allHwForStreak ?? [], today),
-        confirmedMilestone: confirmedMilestoneMapS.get(s.id) ?? 0,
       }))
       .filter(e => e.streak > 0)
       .sort((a, b) => b.streak - a.streak)
+
+    // Eigener bestätigter Streak → verdient die Flammen. Pending = eigener (actual)
+    // Meilenstein liegt über dem bereits bestätigten ⇒ "warte auf Eltern".
+    const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today)
+    const actualMs = currentMilestone(streak)
+    const pendingMilestone = streak >= 5 && actualMs > currentMilestone(confirmedStreak) ? actualMs : null
 
     return (
       <StudentHome
@@ -247,6 +220,7 @@ export default async function HomePage() {
         todoDone={todoDoneCount}
         myDuty={myDuty ? { name: myDuty.duty_name, partners: myDutyPartners } : null}
         streak={streak}
+        confirmedStreak={confirmedStreak}
         pendingMilestone={pendingMilestone}
         streakEntries={streakEntries}
       />
@@ -261,9 +235,7 @@ export default async function HomePage() {
       ?? allStudents?.[0] // preview fallback: use first student
 
     let childDoneIds = new Set<string>()
-    let childStreak = 0
-    let childConfirmedMilestone = 0
-    let pendingMilestone: number | null = null
+    let childStreak = 0 // actual – eigener Streak des Kindes (auch unbestätigt)
     let allHwForStreak: { id: string; due_date: string }[] = []
     if (child) {
       const [{ data: childCompletions }, { data: hwForStreak }] = await Promise.all([
@@ -273,21 +245,11 @@ export default async function HomePage() {
       allHwForStreak = hwForStreak ?? []
       childDoneIds = new Set((childCompletions ?? []).map(c => c.homework_id))
       childStreak = computeStreak(childDoneIds, allHwForStreak, today)
-      if (childStreak >= 5) {
-        const ms = currentMilestone(childStreak)
-        const { data: childMilestones } = await supabase
-          .from('streak_confirmations').select('milestone')
-          .eq('student_id', child.id)
-        const milestones = (childMilestones ?? []).map(m => m.milestone)
-        childConfirmedMilestone = milestones.length > 0 ? Math.max(...milestones) : 0
-        if (!milestones.includes(ms)) pendingMilestone = ms
-      }
     }
 
-    // Streak leaderboard + pending HW confirmations
+    // Streak leaderboard (nur eltern-bestätigte Streaks) + offene HÜ-Bestätigungen
     const allHwIdsP = allHwForStreak.map(h => h.id)
-    const studentIdsP = (allStudents ?? []).map(s => s.id)
-    const [{ data: allCompletionsParent }, { data: pendingConfs }, { data: confirmationsP }] = await Promise.all([
+    const [{ data: allCompletionsParent }, { data: pendingConfs }] = await Promise.all([
       allHwIdsP.length > 0
         ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIdsP)
         : Promise.resolve({ data: [] }),
@@ -297,35 +259,27 @@ export default async function HomePage() {
             .eq('student_id', child.id)
             .is('confirmed_by_parent_at', null)
         : Promise.resolve({ data: [] }),
-      studentIdsP.length > 0
-        ? supabase.from('streak_confirmations').select('student_id,milestone').in('student_id', studentIdsP)
-        : Promise.resolve({ data: [] }),
     ])
-    const allConfirmationsP = (confirmationsP ?? []) as { student_id: string; milestone: number }[]
-    const doneByStudentP = new Map<string, Set<string>>()
     const confirmedByStudentP = new Map<string, Set<string>>()
     for (const c of allCompletionsParent ?? []) {
-      if (!doneByStudentP.has(c.student_id)) doneByStudentP.set(c.student_id, new Set())
-      doneByStudentP.get(c.student_id)!.add(c.homework_id)
       if ((c as any).confirmed_by_parent_at) {
         if (!confirmedByStudentP.has(c.student_id)) confirmedByStudentP.set(c.student_id, new Set())
         confirmedByStudentP.get(c.student_id)!.add(c.homework_id)
       }
-    }
-    const confirmedMilestoneMapP = new Map<string, number>()
-    for (const c of allConfirmationsP) {
-      const prev = confirmedMilestoneMapP.get(c.student_id) ?? 0
-      if (c.milestone > prev) confirmedMilestoneMapP.set(c.student_id, c.milestone)
     }
     const parentStreakEntries = (allStudents ?? [])
       .map(s => ({
         id: s.id, full_name: s.full_name, avatar_color: s.avatar_color ?? '#0F8A82', avatar_seed: s.avatar_seed ?? null,
         avatar_hair_color: s.avatar_hair_color ?? null, avatar_skin_color: s.avatar_skin_color ?? null,
         streak: computeStreak(confirmedByStudentP.get(s.id) ?? new Set(), allHwForStreak, today),
-        confirmedMilestone: confirmedMilestoneMapP.get(s.id) ?? 0,
       }))
       .filter(e => e.streak > 0)
       .sort((a, b) => b.streak - a.streak)
+
+    // Eltern-bestätigter Streak des Kindes → verdient die Flammen (Live-Spiegel)
+    const childConfirmedStreak = child
+      ? computeStreak(confirmedByStudentP.get(child.id) ?? new Set(), allHwForStreak, today)
+      : 0
 
     const pendingConfirmations = (pendingConfs ?? []).map((c: any) => ({
       homework_id: c.homework_id,
@@ -345,8 +299,6 @@ export default async function HomePage() {
     return (
       <ParentHome
         fullName={profile.full_name}
-        parentId={user.id}
-        childId={child?.id ?? ''}
         childName={child?.full_name ?? 'Kind'}
         childColor={child?.avatar_color ?? '#0F8A82'}
         childSeed={child?.avatar_seed ?? null}
@@ -358,8 +310,7 @@ export default async function HomePage() {
         todoTotal={todoIds.length}
         todoDone={todoDoneCount}
         childStreak={childStreak}
-        childConfirmedMilestone={childConfirmedMilestone}
-        pendingMilestone={pendingMilestone}
+        childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}
         streakEntries={parentStreakEntries}
       />

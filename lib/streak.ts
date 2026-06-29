@@ -36,14 +36,3 @@ export function flameCount(streak: number): number {
 }
 
 export const MILESTONES = [5, 10, 15, 20] as const
-
-/** Highest confirmed milestone for a student, or 0 if none. */
-export function confirmedStreak(
-  studentId: string,
-  confirmations: { student_id: string; milestone: number }[]
-): number {
-  const milestones = confirmations
-    .filter(c => c.student_id === studentId)
-    .map(c => c.milestone)
-  return milestones.length > 0 ? Math.max(...milestones) : 0
-}

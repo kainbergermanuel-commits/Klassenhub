@@ -18,7 +18,6 @@ export type Profile = {
   avatar_skin_color: string | null
   child_id: string | null
   special_role: SpecialRole | null
-  subjects: unknown | null
   is_admin: boolean
   joined_class_at: string | null
 }
@@ -83,7 +82,6 @@ export type Database = {
           avatar_hair_color?: string | null
           avatar_skin_color?: string | null
           child_id?: string | null
-          subjects?: unknown | null
           is_admin?: boolean
           joined_class_at?: string | null
         }

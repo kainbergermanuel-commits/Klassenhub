@@ -12,7 +12,6 @@ interface StudentStreak {
   avatar_skin_color: string | null
   streak: number
   pendingMilestone: number | null
-  confirmedMilestones: Array<{ milestone: number; confirmed_at: string }>
 }
 
 interface MilestoneEvent {
@@ -39,14 +38,6 @@ interface Props {
   daysLeft: number
   prevRace: RaceEntry[]
   prevMonthLabel: string
-}
-
-function MilestoneChip({ value }: { value: number }) {
-  return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-kh-green/15 text-kh-green">
-      ✓ {value} HÜ
-    </span>
-  )
 }
 
 export default function StreakOverview({ role, withStreak, noStreak, milestoneHistory, daysLeft, prevRace, prevMonthLabel }: Props) {
@@ -82,10 +73,6 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
             <div className="flex flex-col gap-4">
               {withStreak.map((s, i) => {
                 const barWidth = Math.round((s.streak / maxStreak) * 100)
-                const confirmedSet = new Set(s.confirmedMilestones.map(c => c.milestone))
-                const milestones = [5, 10, 15, 20].filter(m => confirmedSet.has(m) && m <= s.streak)
-                const topConfirmedMilestone = s.confirmedMilestones.length > 0 ? Math.max(...s.confirmedMilestones.map(c => c.milestone)) : 0
-                const activeMilestone = topConfirmedMilestone <= s.streak ? topConfirmedMilestone : 0
 
                 return (
                   <div key={s.id} className="flex items-start gap-3">
@@ -109,8 +96,8 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
                           {i === 2 && <span className="ml-1.5 text-[16px]">🥉</span>}
                         </span>
                         <span className="flex items-center gap-0.5 text-[13px] font-extrabold text-kh-amber flex-shrink-0">
-                          {flameCount(activeMilestone) > 0
-                            ? Array.from({ length: flameCount(activeMilestone) }).map((_, fi) => (
+                          {flameCount(s.streak) > 0
+                            ? Array.from({ length: flameCount(s.streak) }).map((_, fi) => (
                                 <img key={fi} src="/flame.svg" alt="" className="w-4 h-4" />
                               ))
                             : null}

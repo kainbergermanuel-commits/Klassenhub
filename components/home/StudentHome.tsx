@@ -18,12 +18,13 @@ interface StudentHomeProps {
   todoDone: number
   myDuty: { name: string; partners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] } | null
   streak: number
+  confirmedStreak: number
   pendingMilestone: number | null
   streakEntries: StreakEntry[]
 }
 
 export default function StudentHome({
-  fullName, userId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, todoTotal, todoDone, myDuty, streak, pendingMilestone, streakEntries,
+  fullName, userId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, todoTotal, todoDone, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -98,7 +99,7 @@ export default function StudentHome({
 
           {/* Streak */}
           <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-            <StreakBanner streak={streak} pendingMilestone={pendingMilestone} />
+            <StreakBanner streak={streak} confirmedStreak={confirmedStreak} pendingMilestone={pendingMilestone} />
           </div>
 
           {/* Open homework — all, sorted by urgency */}

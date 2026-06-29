@@ -47,30 +47,16 @@ export default async function StreaksPage() {
     }
   }
 
-  // Confirmed milestone lookup: student_id → Set<milestone>
-  const confirmedByStudent = new Map<string, Set<number>>()
-  for (const c of confirmations ?? []) {
-    if (!confirmedByStudent.has(c.student_id)) confirmedByStudent.set(c.student_id, new Set())
-    confirmedByStudent.get(c.student_id)!.add(c.milestone)
-  }
-
   // Build per-student data
-  const allConfirmationsArr = (confirmations ?? []) as { student_id: string; milestone: number; confirmed_by: string; confirmed_at: string }[]
   const studentData = (students ?? []).map(s => {
     const doneIds = doneByStudent.get(s.id) ?? new Set<string>()
     const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
     const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today)
     const displayStreak = computeStreak(confirmedIds, allHwDesc ?? [], today)
-    const confirmedMilestones = confirmedByStudent.get(s.id) ?? new Set<number>()
 
-    // Pending: current milestone threshold not yet confirmed
-    const milestone = currentMilestone(actualStreak)
-    const pendingMilestone = actualStreak >= 5 && milestone > 0 && !confirmedMilestones.has(milestone) ? milestone : null
-
-    // All confirmed milestone records for this student (for history)
-    const studentConfirmations = allConfirmationsArr
-      .filter(c => c.student_id === s.id)
-      .sort((a, b) => b.milestone - a.milestone)
+    // Pending: erreichter (actual) Meilenstein liegt über dem eltern-bestätigten
+    const actualMilestone = currentMilestone(actualStreak)
+    const pendingMilestone = actualStreak >= 5 && actualMilestone > currentMilestone(displayStreak) ? actualMilestone : null
 
     return {
       id: s.id,
@@ -81,7 +67,6 @@ export default async function StreaksPage() {
       avatar_skin_color: s.avatar_skin_color ?? null,
       streak: displayStreak,
       pendingMilestone,
-      confirmedMilestones: studentConfirmations,
     }
   })
 
