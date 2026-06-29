@@ -105,14 +105,14 @@ export default function AdminManageBar({
     }
 
     return (
-      <div className="flex flex-col items-end gap-1.5 w-[180px]">
-        <div className="flex w-full justify-between items-center mb-0.5">
-          <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide">Klassen</div>
-          <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide">KV</div>
+      <div className="flex flex-col items-end gap-1.5 max-w-[160px]">
+        <div className="flex w-full items-center mb-0.5">
+          <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide flex-1">Klassen</div>
+          <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide w-6 text-center">KV</div>
         </div>
         <div className="flex flex-col gap-0.5 w-full">
           {classes.map(c => (
-            <div key={c.id} className="flex items-center gap-1.5">
+            <div key={c.id} className="flex items-center">
               <label className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0">
                 <input
                   type="checkbox"
@@ -122,25 +122,29 @@ export default function AdminManageBar({
                 />
                 <span className="text-[12px] font-semibold text-kh-dark truncate">{c.name}</span>
               </label>
+              <div className="w-6 flex justify-center">
+                <input
+                  type="radio"
+                  name={`primary-${profileId}`}
+                  checked={primaryClassId === c.id}
+                  onChange={() => setPrimaryClassId(c.id)}
+                  disabled={!selectedClassIds.includes(c.id)}
+                  className="w-3.5 h-3.5 accent-kh-teal shrink-0 disabled:opacity-20"
+                />
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center mt-0.5">
+            <span className="text-[11px] font-medium text-kh-muted flex-1 text-right pr-1.5">Kein KV</span>
+            <div className="w-6 flex justify-center">
               <input
                 type="radio"
                 name={`primary-${profileId}`}
-                checked={primaryClassId === c.id}
-                onChange={() => setPrimaryClassId(c.id)}
-                disabled={!selectedClassIds.includes(c.id)}
-                className="w-3.5 h-3.5 accent-kh-teal shrink-0 disabled:opacity-20"
+                checked={primaryClassId === ''}
+                onChange={() => setPrimaryClassId('')}
+                className="w-3.5 h-3.5 accent-kh-teal shrink-0"
               />
             </div>
-          ))}
-          <div className="flex items-center justify-end gap-1.5 mt-0.5">
-            <span className="text-[11px] font-medium text-kh-muted">Kein KV</span>
-            <input
-              type="radio"
-              name={`primary-${profileId}`}
-              checked={primaryClassId === ''}
-              onChange={() => setPrimaryClassId('')}
-              className="w-3.5 h-3.5 accent-kh-teal shrink-0"
-            />
           </div>
         </div>
         {classError && (
