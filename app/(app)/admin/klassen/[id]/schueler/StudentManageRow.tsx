@@ -95,7 +95,7 @@ export default function StudentManageRow({ student: s, classId, otherClasses }: 
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') run(() => adminRenameStudent(s.id, newName)); if (e.key === 'Escape') close() }}
             autoFocus
-            className="flex-1 rounded-xl border border-kh-border px-3 py-2 text-sm font-medium text-kh-dark focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal"
+            className="flex-1 rounded-xl border border-kh-border px-3 py-2 text-base font-medium text-kh-dark focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal"
           />
           <button onClick={() => run(() => adminRenameStudent(s.id, newName))} disabled={loading} className="text-[12px] font-bold text-white bg-kh-teal px-3 py-2 rounded-xl hover:bg-kh-dark transition disabled:opacity-60">
             {loading ? '…' : 'OK'}
