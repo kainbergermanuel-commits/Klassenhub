@@ -108,7 +108,7 @@ export default function AdminManageBar({
       <div className="flex flex-col items-end gap-1.5 max-w-[160px]">
         <div className="flex w-full items-center mb-0.5">
           <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide flex-1">Klassen</div>
-          <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide w-6 text-center">KV</div>
+          <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide w-4 text-center">KV</div>
         </div>
         <div className="flex flex-col gap-0.5 w-full">
           {classes.map(c => (
@@ -122,7 +122,7 @@ export default function AdminManageBar({
                 />
                 <span className="text-[12px] font-semibold text-kh-dark truncate">{c.name}</span>
               </label>
-              <div className="w-6 flex justify-center">
+              <div className="w-4 flex justify-center">
                 <input
                   type="radio"
                   name={`primary-${profileId}`}
@@ -136,7 +136,7 @@ export default function AdminManageBar({
           ))}
           <div className="flex items-center mt-0.5">
             <span className="text-[11px] font-medium text-kh-muted flex-1 text-right pr-1.5">Kein KV</span>
-            <div className="w-6 flex justify-center">
+            <div className="w-4 flex justify-center">
               <input
                 type="radio"
                 name={`primary-${profileId}`}
