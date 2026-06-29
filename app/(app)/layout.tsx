@@ -5,7 +5,6 @@ import { getAuth, getClass, getTeacherClasses } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, getMondayOfWeek } from '@/lib/date'
 import Sidebar from '@/components/layout/Sidebar'
-import BottomNav from '@/components/layout/BottomNav'
 import MobileHeader from '@/components/layout/MobileHeader'
 import RolePreviewBar from '@/components/layout/RolePreviewBar'
 import type { Profile, Class } from '@/lib/types'
@@ -178,13 +177,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex min-h-[calc(100vh-1.5rem)] md:min-h-[calc(100vh-2rem)] max-md:min-h-screen rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
         <Sidebar profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} isPreview={!!previewRole} />
         <main className="flex-1 min-w-0 overflow-y-auto scrollbar-kh">
-          <MobileHeader profile={profile} klass={klass as Class | null} />
-          <div className="max-w-[1180px] mx-auto px-7 py-7 pb-20 max-md:px-4 max-md:py-5">
+          <MobileHeader profile={profile} klass={klass as Class | null} navItems={all} />
+          <div className="max-w-[1180px] mx-auto px-7 py-7 pb-20 max-md:px-4 max-md:py-5 max-md:pb-6">
             {children}
           </div>
         </main>
       </div>
-      <BottomNav items={bottom} />
       {realProfile.is_admin && (
         <RolePreviewBar currentPreview={previewRole} previewName={previewName} previewStudentId={previewStudentId} previewParentId={previewParentId} students={allStudents} parents={allParents} />
       )}

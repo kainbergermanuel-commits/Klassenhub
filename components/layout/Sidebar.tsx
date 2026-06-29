@@ -162,7 +162,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
         )}
 
         {/* Nav */}
-        <nav className={`flex flex-col gap-0.5 ${collapsed ? 'px-2' : 'px-3.5'}`}>
+        <nav className={`flex flex-col gap-0.5 flex-1 ${collapsed ? 'px-2' : 'px-3.5'}`}>
           {navItems.map(item => {
             const active = pathname === item.href
             return (
@@ -209,16 +209,15 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
         </nav>
 
         {/* Logout */}
-        <div className={`mt-2 mb-3.5 flex ${collapsed ? 'justify-center px-2' : 'px-3.5'}`}>
+        <div className="mt-auto mb-4 flex justify-center">
           <button
             onClick={handleLogout}
             title="Abmelden"
             aria-label="Abmelden"
-            className={`flex items-center py-2.5 rounded-xl text-kh-border hover:text-kh-red hover:bg-red-50 transition-colors ${
-              collapsed ? 'justify-center px-2' : 'px-3.5'
-            }`}
+            className="flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl text-kh-muted hover:text-kh-red hover:bg-red-50 transition-colors"
           >
-            <span className="msym text-[22px] flex-shrink-0">logout</span>
+            <span className="msym text-[20px]">power_settings_new</span>
+            {!collapsed && <span className="text-[10px] font-semibold">Abmelden</span>}
           </button>
         </div>
       </aside>

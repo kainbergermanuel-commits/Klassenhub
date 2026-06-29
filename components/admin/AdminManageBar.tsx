@@ -30,6 +30,7 @@ export default function AdminManageBar({
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>(assignedClassIds)
   const [primaryClassId, setPrimaryClassId] = useState<string>(initialPrimaryClassId ?? '')
   const [classError, setClassError] = useState<string | null>(null)
+  const [classSaved, setClassSaved] = useState(false)
 
   async function handleReset() {
     setLoading('reset')
@@ -53,7 +54,8 @@ export default function AdminManageBar({
     try {
       await adminUpdateTeacherClasses(profileId, selectedClassIds, primaryClassId)
       router.refresh()
-      setEditingClasses(false)
+      setClassSaved(true)
+      setTimeout(() => { setClassSaved(false); setEditingClasses(false) }, 1200)
     } catch (e) {
       setClassError((e as Error).message ?? 'Unbekannter Fehler')
     }
@@ -93,54 +95,60 @@ export default function AdminManageBar({
   }
 
   if (editingClasses) {
+    if (classSaved) {
+      return (
+        <div className="flex items-center gap-1.5 text-kh-green font-semibold text-[12px]">
+          <span className="msym text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+          Gespeichert
+        </div>
+      )
+    }
+
     return (
-      <div className="flex flex-col items-end gap-2 min-w-[220px]">
-        <div className="flex w-full justify-between items-center">
+      <div className="flex flex-col items-end gap-1.5 w-[180px]">
+        <div className="flex w-full justify-between items-center mb-0.5">
           <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide">Klassen</div>
           <div className="text-[10px] text-kh-muted font-bold uppercase tracking-wide">KV</div>
         </div>
-        <div className="flex flex-col gap-1 w-full">
+        <div className="flex flex-col gap-0.5 w-full">
           {classes.map(c => (
-            <div key={c.id} className="flex items-center gap-2">
-              <label className="flex items-center gap-2 cursor-pointer flex-1">
+            <div key={c.id} className="flex items-center gap-1.5">
+              <label className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0">
                 <input
                   type="checkbox"
                   checked={selectedClassIds.includes(c.id)}
                   onChange={() => toggleClass(c.id)}
-                  className="w-3.5 h-3.5 accent-kh-teal"
+                  className="w-3.5 h-3.5 accent-kh-teal shrink-0"
                 />
-                <span className="text-[12px] font-semibold text-kh-dark">{c.name}</span>
+                <span className="text-[12px] font-semibold text-kh-dark truncate">{c.name}</span>
               </label>
-              {selectedClassIds.includes(c.id) && (
-                <input
-                  type="radio"
-                  name={`primary-${profileId}`}
-                  checked={primaryClassId === c.id}
-                  onChange={() => setPrimaryClassId(c.id)}
-                  className="w-3.5 h-3.5 accent-kh-teal"
-                />
-              )}
-            </div>
-          ))}
-          {selectedClassIds.length > 0 && (
-            <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              <span className="text-[11px] font-medium text-kh-muted">Kein KV</span>
               <input
                 type="radio"
                 name={`primary-${profileId}`}
-                checked={primaryClassId === ''}
-                onChange={() => setPrimaryClassId('')}
-                className="w-3.5 h-3.5 accent-kh-teal"
+                checked={primaryClassId === c.id}
+                onChange={() => setPrimaryClassId(c.id)}
+                disabled={!selectedClassIds.includes(c.id)}
+                className="w-3.5 h-3.5 accent-kh-teal shrink-0 disabled:opacity-20"
               />
             </div>
-          )}
+          ))}
+          <div className="flex items-center justify-end gap-1.5 mt-0.5">
+            <span className="text-[11px] font-medium text-kh-muted">Kein KV</span>
+            <input
+              type="radio"
+              name={`primary-${profileId}`}
+              checked={primaryClassId === ''}
+              onChange={() => setPrimaryClassId('')}
+              className="w-3.5 h-3.5 accent-kh-teal shrink-0"
+            />
+          </div>
         </div>
         {classError && (
           <div className="text-[11px] text-red-600 font-semibold bg-red-50 border border-red-200 rounded-lg px-2 py-1 w-full">
             {classError}
           </div>
         )}
-        <div className="flex gap-1.5 mt-1">
+        <div className="flex gap-1.5 mt-0.5">
           <button
             onClick={() => setEditingClasses(false)}
             className="text-[11px] font-bold text-kh-muted hover:text-kh-dark px-2.5 py-1 rounded-lg hover:bg-kh-page transition"
