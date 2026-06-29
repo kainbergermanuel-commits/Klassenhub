@@ -71,10 +71,10 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
     : undefined
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50">
+    <div className="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-50">
       <div className="flex items-center gap-1 bg-kh-dark/90 backdrop-blur-sm text-white rounded-full px-2 py-1.5 shadow-xl">
         <span className="msym text-[15px] text-[#9FC4C0] ml-1.5 mr-0.5">preview</span>
-        <span className="text-[11px] font-semibold text-[#9FC4C0] mr-1">Vorschau</span>
+        <span className="hidden md:inline text-[11px] font-semibold text-[#9FC4C0] mr-1">Vorschau</span>
 
         {/* Lehrer */}
         <button
@@ -84,7 +84,7 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
           }`}
         >
           <span className="msym text-[15px]" style={{ fontVariationSettings: `'FILL' ${active === 'teacher' ? 1 : 0}` }}>school</span>
-          Lehrperson
+          <span className="hidden md:inline">Lehrperson</span>
         </button>
 
         {/* Schüler + Dropup */}
@@ -102,7 +102,8 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
             }`}
           >
             <span className="msym text-[15px]" style={{ fontVariationSettings: `'FILL' ${active === 'student' ? 1 : 0}` }}>face</span>
-            {active === 'student' ? (activeStudentName ?? 'Schüler') : 'Schüler'}
+            <span className="hidden md:inline">{active === 'student' ? (activeStudentName ?? 'Schüler') : 'Schüler'}</span>
+            <span className="md:hidden">{active === 'student' ? (activeStudentName ?? '') : ''}</span>
             {active === 'student' && (
               <span className="msym text-[13px]">{showDropup === 'student' ? 'expand_more' : 'expand_less'}</span>
             )}
@@ -146,7 +147,8 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
             }`}
           >
             <span className="msym text-[15px]" style={{ fontVariationSettings: `'FILL' ${active === 'parent' ? 1 : 0}` }}>family_restroom</span>
-            {active === 'parent' ? (activeParentName ?? 'Elternteil') : 'Elternteil'}
+            <span className="hidden md:inline">{active === 'parent' ? (activeParentName ?? 'Elternteil') : 'Elternteil'}</span>
+            <span className="md:hidden">{active === 'parent' ? (activeParentName ?? '') : ''}</span>
             {active === 'parent' && (
               <span className="msym text-[13px]">{showDropup === 'parent' ? 'expand_more' : 'expand_less'}</span>
             )}
