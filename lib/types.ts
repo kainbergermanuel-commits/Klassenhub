@@ -193,6 +193,21 @@ export type Database = {
         Update: Partial<ReminderView>
         Relationships: []
       }
+      messages: {
+        Row: Message
+        Insert: {
+          id?: string
+          class_id: string
+          parent_id: string
+          sender_id?: string | null
+          body: string
+          created_at?: string
+          seen_at?: string | null
+          broadcast_id?: string | null
+        }
+        Update: Partial<Message>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -256,4 +271,17 @@ export type ReminderView = {
   reminder_id: string
   student_id: string
   seen_at: string
+}
+
+// Mitteilungsheft: eine Nachricht gehoert genau einem Heft (parent_id).
+// sender_id === parent_id  => vom Elternteil; sonst von der Lehrkraft.
+export type Message = {
+  id: string
+  class_id: string
+  parent_id: string
+  sender_id: string | null
+  body: string
+  created_at: string
+  seen_at: string | null
+  broadcast_id: string | null
 }

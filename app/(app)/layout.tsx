@@ -9,7 +9,7 @@ import MobileHeader from '@/components/layout/MobileHeader'
 import RolePreviewBar from '@/components/layout/RolePreviewBar'
 import type { Profile, Class } from '@/lib/types'
 
-function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todoOpen: number) {
+function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todoOpen: number, messageUnread: number) {
   const isTeacher = profile.role === 'teacher'
 
   const all = [
@@ -17,6 +17,9 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
+    ...(profile.role !== 'student' ? [
+      { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined },
+    ] : []),
     { href: '/todo', icon: 'checklist', label: 'Wochen-To-Do', badge: todoOpen || undefined },
     { href: '/streaks', icon: 'local_fire_department', label: 'Streaks' },
     ...(isTeacher ? [
@@ -68,6 +71,26 @@ async function computeReminderBadge(profile: Profile, userId: string, classId: s
     .from('reminder_views').select('reminder_id', { count: 'exact', head: true })
     .eq('student_id', studentId).in('reminder_id', upcomingIds)
   return upcomingIds.length - (count ?? 0)
+}
+
+/** Ungelesene Mitteilungsheft-Nachrichten je Rolle. Schüler haben kein Heft. */
+async function computeMessageBadge(profile: Profile, userId: string, classId: string | null): Promise<number> {
+  if (!classId || profile.role === 'student') return 0
+  const supabase = await createClient()
+
+  if (profile.role === 'parent') {
+    // Eigenes Heft: ungesehene Nachrichten der Lehrkraft (sender ≠ ich).
+    const { data } = await supabase
+      .from('messages').select('sender_id')
+      .eq('parent_id', userId).is('seen_at', null)
+    return (data ?? []).filter(m => m.sender_id !== userId).length
+  }
+
+  // Lehrkraft: ungesehene Eltern-Nachrichten (sender = Heftbesitzer) der Klasse.
+  const { data } = await supabase
+    .from('messages').select('parent_id,sender_id')
+    .eq('class_id', classId).is('seen_at', null)
+  return (data ?? []).filter(m => m.sender_id === m.parent_id).length
 }
 
 /** Anzahl für das HÜ-Badge je Rolle (offen bzw. aktiv). */
@@ -137,12 +160,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const teacherClasses = realProfile.role === 'teacher' ? await getTeacherClasses(realProfile.id) : []
 
-  const [hwOpen, reminderUnread, todoOpen] = await Promise.all([
+  const [hwOpen, reminderUnread, todoOpen, messageUnread] = await Promise.all([
     computeHwBadge(profile, activeClassId),
     computeReminderBadge(profile, user.id, activeClassId),
     computeTodoBadge(profile, user.id, activeClassId),
+    computeMessageBadge(profile, user.id, activeClassId),
   ])
-  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, todoOpen)
+  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, todoOpen, messageUnread)
 
   // Preview bar: nur für echten Lehrer
   let previewRole: string | null = null

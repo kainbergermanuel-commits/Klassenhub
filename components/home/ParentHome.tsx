@@ -164,6 +164,14 @@ export default function ParentHome({
             </div>
             {childHomework.length === 0 ? (
               <p className="text-sm text-kh-muted font-medium">Keine aktiven Hausübungen 🎉</p>
+            ) : hwOpen === 0 ? (
+              <div className="flex flex-col items-center text-center py-5">
+                <span className="msym text-[34px] text-kh-green mb-1.5" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                <p className="font-bold text-[15px] text-kh-dark">Alles erledigt!</p>
+                <p className="text-[13px] text-kh-muted font-medium mt-0.5">
+                  {childFirst} hat {hwTotal === 1 ? 'die Hausübung' : 'alle Hausübungen'} gemacht.
+                </p>
+              </div>
             ) : (
               <div className="flex flex-col gap-2.5">
                 {childHomework.slice(0, 5).map(hw => (

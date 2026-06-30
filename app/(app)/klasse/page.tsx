@@ -83,7 +83,7 @@ export default async function KlassePage() {
           </Link>
         </div>
         {parentList.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:grid-cols-3">
             {parentList.map(p => (
               <div key={p.id} className="bg-white rounded-2xl px-4 py-3.5 shadow-sm flex items-center gap-3">
                 <Avatar name={p.full_name} color={p.avatar_color} seed={p.avatar_seed} hairColor={p.avatar_hair_color} skinColor={p.avatar_skin_color} size={40} />
