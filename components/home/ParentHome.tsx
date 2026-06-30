@@ -104,15 +104,18 @@ export default function ParentHome({
         <Avatar name={childName} color={childColor} seed={childSeed} hairColor={childHairColor} skinColor={childSkinColor} size={52} />
         <div className="flex-1 min-w-0">
           <div className="font-bold text-[17px]">{childName}</div>
-          <div className="text-[12.5px] text-[#9FC4C0] font-medium mt-0.5">{className} · Alles im Blick</div>
+          {flameCount(childConfirmedStreak) > 0 && (
+            <div className="flex items-center gap-0.5 mt-1">
+              {Array.from({ length: flameCount(childConfirmedStreak) }).map((_, i) => (
+                <img key={i} src="/flame.svg" alt="" className="w-[18px] h-[18px]" style={{ marginLeft: i === 0 ? 0 : '-4px', filter: 'saturate(0.6)' }} />
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-4">
           {childStreak > 0 && (
             <div className="text-right border-r border-white/10 pr-4">
               <div className="flex items-center gap-1 justify-end leading-none" style={{ height: '1.65rem' }}>
-                {flameCount(childConfirmedStreak) > 0 && Array.from({ length: flameCount(childConfirmedStreak) }).map((_, i) => (
-                  <img key={i} src="/flame.svg" alt="" className="w-5 h-5" style={{ marginLeft: i === 0 ? 0 : '-4px', filter: 'saturate(0.6)' }} />
-                ))}
                 <span className="text-[22px] font-extrabold text-[#7FD4B6]">{childStreak}</span>
               </div>
               <div className="text-[11.5px] text-[#9FC4C0] mt-0.5 text-right">in Folge</div>
