@@ -89,7 +89,7 @@ export default function StudentOpenHomework({ homework, userId }: Props) {
   const open = homework.filter(h => !h.done).sort((a, b) => a.due_date.localeCompare(b.due_date))
 
   return (
-    <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
+    <div className="rounded-[20px] p-5 shadow-sm" style={{ border: '0.5px solid #C9C3B6', background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
       <div className="flex items-center justify-between gap-2 mb-3">
         <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark whitespace-nowrap min-w-0">
           <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
