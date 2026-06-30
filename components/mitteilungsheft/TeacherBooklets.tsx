@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
@@ -40,6 +41,7 @@ export default function TeacherBooklets({ parents, students, messages, userId, o
   const router = useRouter()
   const [openParentId, setOpenParentId] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
+  const [showBroadcasts, setShowBroadcasts] = useState(false)
 
   const studentName = useMemo(
     () => Object.fromEntries(students.map(s => [s.id, s.full_name])),
@@ -79,13 +81,37 @@ export default function TeacherBooklets({ parents, students, messages, userId, o
         return { parent: p, last, unread }
       })
       .sort((a, b) => {
+        // Ungelesene immer oben, danach nach letztem Eintrag.
+        if ((a.unread > 0) !== (b.unread > 0)) return a.unread > 0 ? -1 : 1
         const ta = a.last ? new Date(a.last.created_at).getTime() : 0
         const tb = b.last ? new Date(b.last.created_at).getTime() : 0
         return tb - ta
       })
   }, [parents, byParent])
 
+  // Sammelnachrichten (Fan-out-Kopien je broadcast_id) mit aggregiertem Gesehen-Status.
+  const broadcasts = useMemo(() => {
+    const groups: Record<string, Message[]> = {}
+    for (const m of messages) if (m.broadcast_id) (groups[m.broadcast_id] ??= []).push(m)
+    return Object.entries(groups)
+      .map(([id, msgs]) => ({
+        id,
+        body: msgs[0].body,
+        created_at: msgs[0].created_at,
+        total: msgs.length,
+        seen: msgs.filter(m => m.seen_at).length,
+        recipients: msgs
+          .map(m => ({ name: senderNames[m.parent_id] ?? '?', seen: !!m.seen_at }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      }))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }, [messages, senderNames])
+
   const openParent = openParentId ? parents.find(p => p.id === openParentId) ?? null : null
+
+  if (showBroadcasts) {
+    return <BroadcastsView broadcasts={broadcasts} onBack={() => setShowBroadcasts(false)} />
+  }
 
   if (openParent) {
     return (
@@ -109,13 +135,24 @@ export default function TeacherBooklets({ parents, students, messages, userId, o
           <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Mitteilungshefte</h1>
           <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{parents.length} Eltern</p>
         </div>
-        <button
-          onClick={() => setComposing(true)}
-          className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
-        >
-          <span className="msym text-[19px]">campaign</span>
-          Sammelnachricht
-        </button>
+        <div className="flex items-center gap-2">
+          {broadcasts.length > 0 && (
+            <button
+              onClick={() => setShowBroadcasts(true)}
+              className="flex items-center gap-1.5 border border-kh-border text-kh-muted px-3.5 py-[10px] rounded-full font-bold text-sm hover:border-kh-teal hover:text-kh-teal transition-colors"
+            >
+              <span className="msym text-[18px]">outgoing_mail</span>
+              Gesendet
+            </button>
+          )}
+          <button
+            onClick={() => setComposing(true)}
+            className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+          >
+            <span className="msym text-[19px]">campaign</span>
+            Sammelnachricht
+          </button>
+        </div>
       </div>
 
       {parents.length === 0 ? (
@@ -153,7 +190,7 @@ export default function TeacherBooklets({ parents, students, messages, userId, o
                 </p>
               </div>
               {unread > 0 && (
-                <span className="min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center bg-kh-teal text-white flex-shrink-0">
+                <span className="gradient-teal text-white min-w-5 h-5 px-2 rounded-full text-[11px] font-bold flex items-center justify-center flex-shrink-0">
                   {unread}
                 </span>
               )}
@@ -260,6 +297,82 @@ function TeacherThread({
   )
 }
 
+type BroadcastSummary = {
+  id: string
+  body: string
+  created_at: string
+  total: number
+  seen: number
+  recipients: { name: string; seen: boolean }[]
+}
+
+function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]; onBack: () => void }) {
+  const [openId, setOpenId] = useState<string | null>(null)
+
+  return (
+    <>
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onBack} aria-label="Zurück" className="w-9 h-9 rounded-full flex items-center justify-center text-kh-muted hover:bg-[#EDEDEC] transition-colors flex-shrink-0">
+          <span className="msym text-[22px]">arrow_back</span>
+        </button>
+        <div>
+          <h1 className="text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Gesendete Sammelnachrichten</h1>
+          <p className="text-[13px] text-kh-muted font-medium">Lesestatus je Mitteilung</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2.5">
+        {broadcasts.map(b => {
+          const open = openId === b.id
+          const allSeen = b.seen === b.total
+          const notSeen = b.recipients.filter(r => !r.seen)
+          return (
+            <div key={b.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <button
+                onClick={() => setOpenId(open ? null : b.id)}
+                className="w-full flex items-center gap-3 p-4 text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] text-kh-dark font-medium line-clamp-2">{b.body}</p>
+                  <p className="text-[12px] text-kh-muted mt-1">
+                    {new Date(b.created_at).toLocaleDateString('de-AT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <span className={`flex items-center gap-1 text-[12.5px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${allSeen ? 'bg-kh-teal-light text-kh-teal' : 'bg-[#F8ECD6] text-kh-amber'}`}>
+                  <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>{allSeen ? 'done_all' : 'visibility'}</span>
+                  {b.seen}/{b.total}
+                </span>
+                <span className="msym text-[20px] text-kh-muted flex-shrink-0">{open ? 'expand_less' : 'expand_more'}</span>
+              </button>
+              {open && (
+                <div className="px-4 pb-4 -mt-1">
+                  <div className="border-t border-kh-border/50 pt-3 flex flex-col gap-1.5">
+                    {b.recipients.map((r, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[13px]">
+                        <span className={`msym text-[16px] ${r.seen ? 'text-kh-teal' : 'text-kh-border'}`} style={{ fontVariationSettings: `'FILL' ${r.seen ? 1 : 0}` }}>
+                          {r.seen ? 'check_circle' : 'radio_button_unchecked'}
+                        </span>
+                        <span className={r.seen ? 'text-kh-dark' : 'text-kh-muted'}>{r.name}</span>
+                        {!r.seen && <span className="text-[11px] text-kh-amber ml-auto">noch nicht gesehen</span>}
+                      </div>
+                    ))}
+                    {notSeen.length === 0 && (
+                      <p className="text-[12.5px] font-semibold text-kh-teal flex items-center gap-1.5">
+                        <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                        Alle haben gesehen
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 function ComposeModal({
   parents, students, userId, classId, onClose,
 }: {
@@ -272,7 +385,6 @@ function ComposeModal({
   const router = useRouter()
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
-  const [mode, setMode] = useState<'all' | 'select'>('all')
   const [picked, setPicked] = useState<Set<string>>(new Set())
 
   // Eltern je Schüler (child_id) gruppieren.
@@ -282,6 +394,8 @@ function ComposeModal({
     return map
   }, [parents])
 
+  // Nur Schüler mit verknüpftem Elternteil sind auswählbar.
+  const selectable = useMemo(() => students.filter(s => parentsByChild[s.id]?.length), [students, parentsByChild])
   const studentsWithoutParent = students.filter(s => !(parentsByChild[s.id]?.length))
 
   function toggle(studentId: string) {
@@ -292,17 +406,13 @@ function ComposeModal({
     })
   }
 
-  // Ziel-Eltern auflösen.
+  // Ziel-Eltern: keine Auswahl = an alle Eltern, sonst Eltern der gewählten Schüler.
   const targetParents: ParentLite[] = useMemo(() => {
-    if (mode === 'all') return parents
+    if (picked.size === 0) return parents
     const out: ParentLite[] = []
     for (const sid of picked) out.push(...(parentsByChild[sid] ?? []))
     return out
-  }, [mode, picked, parents, parentsByChild])
-
-  const missingForPicked = mode === 'select'
-    ? [...picked].filter(sid => !(parentsByChild[sid]?.length)).map(sid => students.find(s => s.id === sid)?.full_name).filter(Boolean)
-    : []
+  }, [picked, parents, parentsByChild])
 
   async function send() {
     const text = body.trim()
@@ -323,10 +433,10 @@ function ComposeModal({
     router.refresh()
   }
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4" onClick={onClose}>
+  const modal = (
+    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40" onClick={onClose}>
       <div
-        className="bg-white w-full md:max-w-md rounded-t-[24px] md:rounded-[24px] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto scrollbar-kh"
+        className="bg-white w-full max-w-md rounded-3xl p-5 max-h-[calc(100vh-90px)] overflow-y-auto scrollbar-kh shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -336,56 +446,48 @@ function ComposeModal({
           </button>
         </div>
 
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setMode('all')}
-            className={`flex-1 py-2 rounded-xl text-[13px] font-bold transition-colors ${mode === 'all' ? 'bg-kh-teal text-white' : 'bg-[#F1EFE8] text-kh-muted'}`}
-          >
-            Alle Eltern
-          </button>
-          <button
-            onClick={() => setMode('select')}
-            className={`flex-1 py-2 rounded-xl text-[13px] font-bold transition-colors ${mode === 'select' ? 'bg-kh-teal text-white' : 'bg-[#F1EFE8] text-kh-muted'}`}
-          >
-            Auswählen
-          </button>
-        </div>
-
-        {mode === 'select' && (
-          <div className="mb-4 flex flex-col gap-1 max-h-52 overflow-y-auto scrollbar-kh">
-            {students.map(s => {
-              const has = !!parentsByChild[s.id]?.length
-              const checked = picked.has(s.id)
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[12px] font-bold text-kh-muted">
+              {picked.size > 0 ? `${picked.size} ausgewählt` : 'An alle Eltern'}
+            </span>
+            <div className="flex gap-1.5">
+              <button type="button" onClick={() => setPicked(new Set(selectable.map(s => s.id)))}
+                className="text-[11px] font-bold px-3 py-1 rounded-full border border-kh-border hover:border-kh-teal hover:text-kh-teal text-kh-muted transition-colors">
+                Alle
+              </button>
+              <button type="button" onClick={() => setPicked(new Set())}
+                className="text-[11px] font-bold px-3 py-1 rounded-full border border-kh-border hover:border-kh-teal hover:text-kh-teal text-kh-muted transition-colors">
+                Keinen
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto scrollbar-kh">
+            {selectable.map(s => {
+              const selected = picked.has(s.id)
+              const firstName = s.full_name.split(' ')[0]
+              const long = firstName.length > 7
               return (
-                <button
-                  key={s.id}
-                  onClick={() => has && toggle(s.id)}
-                  disabled={!has}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-colors ${checked ? 'bg-kh-teal-light' : 'hover:bg-[#F1EFE8]'} ${!has ? 'opacity-40' : ''}`}
-                >
-                  <span className={`msym text-[20px] ${checked ? 'text-kh-teal' : 'text-kh-border'}`} style={{ fontVariationSettings: `'FILL' ${checked ? 1 : 0}` }}>
-                    {checked ? 'check_box' : 'check_box_outline_blank'}
+                <button key={s.id} type="button" onClick={() => toggle(s.id)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all ${
+                    selected ? 'border-kh-teal bg-kh-teal/10' : 'border-kh-border hover:border-kh-teal/50'
+                  }`}>
+                  <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed}
+                    hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={22} />
+                  <span className={`${long ? 'text-[10px]' : 'text-[12px]'} font-semibold leading-tight break-words min-w-0 ${selected ? 'text-kh-teal' : 'text-kh-dark'}`}>
+                    {firstName}
                   </span>
-                  <span className="text-[14px] font-medium text-kh-dark flex-1">{s.full_name}</span>
-                  {!has && <span className="text-[11px] text-kh-amber">kein Elternteil</span>}
                 </button>
               )
             })}
           </div>
-        )}
-
-        {mode === 'all' && studentsWithoutParent.length > 0 && (
-          <p className="mb-3 text-[12px] text-kh-amber flex items-center gap-1.5">
-            <span className="msym text-[15px]">info</span>
-            {studentsWithoutParent.length} Schüler ohne verknüpftes Elternteil erhalten nichts.
-          </p>
-        )}
-        {missingForPicked.length > 0 && (
-          <p className="mb-3 text-[12px] text-kh-amber flex items-center gap-1.5">
-            <span className="msym text-[15px]">info</span>
-            Ohne Elternkontakt: {missingForPicked.join(', ')}
-          </p>
-        )}
+          {studentsWithoutParent.length > 0 && (
+            <p className="mt-2 text-[12px] text-kh-amber flex items-center gap-1.5">
+              <span className="msym text-[15px]">info</span>
+              {studentsWithoutParent.length} Schüler ohne verknüpftes Elternteil (nicht auswählbar).
+            </p>
+          )}
+        </div>
 
         <textarea
           value={body}
@@ -406,4 +508,6 @@ function ComposeModal({
       </div>
     </div>
   )
+
+  return createPortal(modal, document.body)
 }
