@@ -324,9 +324,9 @@ function ComposeModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4" onClick={onClose}>
       <div
-        className="bg-white w-full md:max-w-md rounded-t-[24px] md:rounded-[24px] p-5 max-h-[88vh] overflow-y-auto scrollbar-kh"
+        className="bg-white w-full md:max-w-md rounded-t-[24px] md:rounded-[24px] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto scrollbar-kh"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
