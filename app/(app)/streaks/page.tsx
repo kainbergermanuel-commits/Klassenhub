@@ -12,7 +12,10 @@ export default async function StreaksPage() {
 
   const supabase = await createClient()
   const today = todayISO()
-  const monthEnd = lastDayOfMonthISO()
+  // ⚠️ TEST-HACK: Season bis Ende des NÄCHSTEN Monats verlängert, damit Testdaten
+  // länger erhalten bleiben. TODO(live): vor Go-Live wieder auf lastDayOfMonthISO()
+  // (= aktueller Monat) zurücksetzen.
+  const monthEnd = lastDayOfMonthISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1))
   const prevMonthEnd = lastDayOfPrevMonthISO()
   const prevMonthStart = firstDayOfPrevMonthISO()
   const daysLeft = daysUntil(monthEnd) + 1 // +1: endet zu Mitternacht des letzten Tags
