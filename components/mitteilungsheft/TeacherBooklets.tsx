@@ -43,10 +43,6 @@ export default function TeacherBooklets({ parents, students, messages, userId, o
   const [composing, setComposing] = useState(false)
   const [showBroadcasts, setShowBroadcasts] = useState(false)
 
-  const studentName = useMemo(
-    () => Object.fromEntries(students.map(s => [s.id, s.full_name])),
-    [students],
-  )
   const studentById = useMemo(
     () => Object.fromEntries(students.map(s => [s.id, s])),
     [students],
