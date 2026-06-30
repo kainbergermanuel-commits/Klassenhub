@@ -253,7 +253,7 @@ function TeacherThread({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-9rem)] max-md:h-[calc(100vh-7rem)]">
+    <div className="flex flex-col h-[calc(100dvh-9rem)] max-md:h-[calc(100dvh-7rem)]">
       <div className="flex items-center gap-3 mb-4">
         <button onClick={onBack} aria-label="Zurück" className="w-9 h-9 rounded-full flex items-center justify-center text-kh-muted hover:bg-[#EDEDEC] transition-colors flex-shrink-0">
           <span className="msym text-[22px]">arrow_back</span>
@@ -432,7 +432,7 @@ function ComposeModal({
   const modal = (
     <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40" onClick={onClose}>
       <div
-        className="bg-white w-full max-w-md rounded-3xl p-5 max-h-[calc(100vh-90px)] overflow-y-auto scrollbar-kh shadow-2xl"
+        className="bg-white w-full max-w-md rounded-3xl p-5 max-h-[calc(100dvh-90px)] overflow-y-auto scrollbar-kh shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">

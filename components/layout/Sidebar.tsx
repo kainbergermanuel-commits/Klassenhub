@@ -66,7 +66,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
     <>
       <aside className={`hidden md:flex flex-col flex-shrink-0 border-r border-kh-border/60 bg-[#FBF9F4] transition-all duration-300 ${collapsed ? 'w-[72px]' : 'w-[256px]'}`}>
         {/* Wordmark + Einklappen */}
-        <div className={`px-[18px] pt-5 pb-8 ${collapsed ? 'flex flex-col items-center gap-2.5' : 'flex items-center justify-between'}`}>
+        <div className={`relative px-[18px] pt-5 pb-8 flex items-center ${collapsed ? 'flex-col gap-2.5' : 'justify-center'}`}>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-[9px] gradient-teal flex items-center justify-center text-white flex-shrink-0">
               <span className="msym text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
@@ -75,7 +75,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
           </div>
           <button
             onClick={() => setCollapsed(c => !c)}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-kh-border hover:text-kh-muted hover:bg-[#EDEDEC] transition-colors flex-shrink-0"
+            className={`w-7 h-7 flex items-center justify-center rounded-full text-kh-border hover:text-kh-muted hover:bg-[#EDEDEC] transition-colors flex-shrink-0 ${collapsed ? '' : 'absolute right-[18px] top-5'}`}
             title={collapsed ? 'Ausklappen' : 'Einklappen'}
           >
             <span className="msym text-[18px] transition-transform duration-300" style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}>
@@ -175,12 +175,13 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                   collapsed ? 'justify-center px-2' : 'px-3.5'
                 } ${
                   active
-                    ? 'bg-kh-teal-light text-kh-dark'
+                    ? 'text-kh-dark shadow-sm'
                     : 'text-kh-muted hover:bg-[#EDEDEC] hover:-translate-y-[2.5px] hover:shadow-sm'
                 }`}
+                style={active ? { background: 'linear-gradient(to bottom right, #C2E6DF 0%, #E4F3F0 100%)' } : undefined}
               >
                 {active && (
-                  <span className="absolute left-0 top-0 bottom-0 w-[3.8px] gradient-teal" />
+                  <span className="absolute left-0 top-0 bottom-0 w-[3.8px]" style={{ background: 'linear-gradient(to top, #0F8A82 0%, #3DB5AC 100%)' }} />
                 )}
                 <span
                   className="msym text-[22px] transition-all duration-200 flex-shrink-0"

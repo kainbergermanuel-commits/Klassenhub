@@ -60,7 +60,7 @@ export default async function MeineKlassePage() {
         {klass && <p className="text-sm text-kh-muted font-medium mt-1">Klasse {klass.name} · {students.length} Schüler:innen</p>}
       </header>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {teachers.map((t, i) => (
           <TeacherCard
             key={t.id}

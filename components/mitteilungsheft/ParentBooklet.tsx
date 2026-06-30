@@ -48,7 +48,7 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-9rem)] max-md:h-[calc(100vh-7rem)]">
+    <div className="flex flex-col h-[calc(100dvh-9rem)] max-md:h-[calc(100dvh-7rem)]">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-11 h-11 rounded-[14px] gradient-teal flex items-center justify-center text-white flex-shrink-0">
           <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>

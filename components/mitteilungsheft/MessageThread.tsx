@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Avatar from '@/components/ui/Avatar'
 import type { Message } from '@/lib/types'
 
@@ -44,9 +44,16 @@ function dayLabel(iso: string) {
   return new Date(iso).toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
+const INITIAL_COUNT = 4
+
 export default function MessageThread({ messages, side, senderNames = {}, senderAvatars = {} }: Props) {
   const endRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }) }, [messages.length])
+  const [expanded, setExpanded] = useState(false)
+  useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }) }, [messages.length, expanded])
+
+  // Standardmäßig nur die letzten 5 Nachrichten zeigen.
+  const hiddenCount = Math.max(0, messages.length - INITIAL_COUNT)
+  const visible = expanded ? messages : messages.slice(-INITIAL_COUNT)
 
   if (messages.length === 0) {
     return (
@@ -61,8 +68,19 @@ export default function MessageThread({ messages, side, senderNames = {}, sender
   let lastDay: number | null = null
 
   return (
-    <div className="flex flex-col gap-4 py-2">
-      {messages.map(m => {
+    <div className="flex flex-col gap-4 py-2 pr-5">
+      {hiddenCount > 0 && !expanded && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setExpanded(true)}
+            className="flex items-center gap-1.5 text-[12.5px] font-semibold text-kh-teal bg-kh-teal-light px-3.5 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+          >
+            <span className="msym text-[16px]">expand_less</span>
+            Ältere Nachrichten anzeigen ({hiddenCount})
+          </button>
+        </div>
+      )}
+      {visible.map(m => {
         const own = fromTeacherSide(m) === (side === 'teacher')
         const name = m.sender_id ? senderNames[m.sender_id] : undefined
         const avatar = m.sender_id ? senderAvatars[m.sender_id] : undefined

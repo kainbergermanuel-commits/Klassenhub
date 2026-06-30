@@ -15,8 +15,11 @@
     line-height: 1;
     user-select: none;
   }
-  .scrollbar-kh::-webkit-scrollbar { width: 8px; }
-  .scrollbar-kh::-webkit-scrollbar-thumb { background: #D8D0C2; border-radius: 8px; }
+  .scrollbar-kh { scrollbar-width: thin; scrollbar-color: #A9D6CD transparent; }
+  .scrollbar-kh::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-kh::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-kh::-webkit-scrollbar-thumb { background: #A9D6CD; border-radius: 8px; }
+  .scrollbar-kh::-webkit-scrollbar-thumb:hover { background: #0F8A82; }
   .gradient-teal { background: linear-gradient(135deg, #0F8A82 0%, #3DB5AC 100%); }
   .gradient-amber { background: linear-gradient(135deg, #C98A2B 0%, #E0A94B 100%); }
   .gradient-violet { background: linear-gradient(135deg, #5965B8 0%, #7C86D6 100%); }

@@ -15,6 +15,17 @@ interface Props {
   index: number
 }
 
+// Lange Namen abkürzen, damit sie in der schmalen Karte nicht umbrechen:
+// "Manuel Kainberger" → "M. Kainberger".
+function displayName(full: string) {
+  if (full.length <= 15) return full
+  const parts = full.trim().split(/\s+/)
+  if (parts.length < 2) return full
+  const last = parts[parts.length - 1]
+  const initials = parts.slice(0, -1).map(p => `${p[0].toUpperCase()}.`).join(' ')
+  return `${initials} ${last}`
+}
+
 export default function TeacherCard({ full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, subjects, is_admin, is_homeroom, index }: Props) {
   const primary = subjects.find(s => s.primary) ?? subjects[0]
   const gradientColor = primary?.color ?? '#0F8A82'
@@ -35,13 +46,11 @@ export default function TeacherCard({ full_name, avatar_color, avatar_seed, avat
         className="shadow-sm"
       />
       <div className="flex flex-col items-center gap-0.5">
-        <div className="flex items-center gap-1 justify-center">
-          <div className="font-bold text-[14.5px] text-kh-dark leading-tight">{full_name}</div>
-          {is_admin && (
-            <span className="msym text-[15px] text-kh-teal" title="Administrator" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
-          )}
-        </div>
+        <div className="font-bold text-[14.5px] text-kh-dark leading-tight">{displayName(full_name)}</div>
         <div className="text-[11px] font-medium text-kh-muted">{is_homeroom ? 'Klassenvorstand' : 'Lehrperson'}</div>
+        {is_admin && (
+          <span className="msym text-[15px] text-kh-teal mt-0.5" title="Administrator" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
+        )}
       </div>
 
       {subjects.length > 0 && (

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import AddDutyModal from './AddDutyModal'
+import Avatar from '@/components/ui/Avatar'
 import type { Duty, Profile, Role } from '@/lib/types'
 
 interface Props {
@@ -77,6 +78,15 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
   // My duty (for student/parent view)
   const myDuties = duties.filter(d => d.assignee_ids.includes(userId))
 
+  // Wochentage als Chips: vergangene mit Häkchen, heute/künftige noch offen.
+  const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
+  const weekStartDate = new Date(`${weekStart}T00:00:00`)
+  const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0)
+  const weekDays = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(weekStartDate); d.setDate(d.getDate() + i)
+    return { label: WEEKDAY_LABELS[i], date: d.getDate(), passed: d.getTime() < todayMidnight.getTime(), isToday: d.getTime() === todayMidnight.getTime() }
+  })
+
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
@@ -105,6 +115,32 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
         )}
       </div>
 
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        {weekDays.map((d, i) => (
+          <div
+            key={i}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-semibold border transition-colors ${
+              d.passed
+                ? 'bg-kh-teal-light text-kh-teal border-transparent'
+                : d.isToday
+                ? 'border-kh-teal text-kh-teal'
+                : 'border-kh-border text-kh-muted'
+            }`}
+          >
+            <span>{d.label}</span>
+            <span className="opacity-60">{d.date}</span>
+            <span className="msym text-[14px]" style={{ fontVariationSettings: `'FILL' ${d.passed ? 1 : 0}` }}>
+              {d.passed ? 'check_circle' : 'radio_button_unchecked'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+
+      <div className="flex items-start gap-2.5 mb-5 px-3.5 py-3 rounded-xl bg-[#F6F3ED] text-[12.5px] text-kh-muted leading-relaxed">
+        <span className="msym text-[18px] text-kh-teal flex-shrink-0 mt-px" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
+        <span>Die Dienste werden in der Regel nach dem Zufallsprinzip vergeben. Gerne darf sich ein nicht-zugeteiltes Kind anbieten, um mit jemandem den Dienst zu tauschen. Mithelfen ist in jedem Fall erlaubt und gerne gesehen.</span>
+      </div>
 
       {duties.length === 0 ? (
         <div className="text-center py-16 text-kh-muted">
@@ -112,14 +148,14 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
           <p className="font-medium">Noch keine Dienste für diese Woche.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {duties.map(duty => {
             const assignees = duty.assignee_ids.map(id => studentMap[id]).filter(Boolean)
             const isMyDuty = duty.assignee_ids.includes(userId)
             return (
               <div
                 key={duty.id}
-                className="rounded-2xl p-4 shadow-sm flex items-center gap-4 group"
+                className="rounded-2xl p-4 shadow-sm flex items-center gap-4 group min-w-0"
                 style={isMyDuty && role === 'student'
                   ? { background: 'linear-gradient(135deg, #0F8A82 0%, #3DB5AC 100%)' }
                   : { background: 'white' }}
@@ -127,7 +163,7 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
                 <div className="w-12 h-12 rounded-[14px] flex items-center justify-center flex-shrink-0"
                   style={isMyDuty && role === 'student'
                     ? { background: 'rgba(255,255,255,0.2)' }
-                    : { background: '#E0F0EE' }
+                    : { background: 'linear-gradient(135deg, #C2E6DF 0%, #E4F3F0 100%)' }
                   }
                 >
                   <span
@@ -147,11 +183,12 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
                     {assignees.map(s => (
                       <span
                         key={s.id}
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                        className="text-xs font-semibold pl-1 pr-2.5 py-1 rounded-full flex items-center gap-1.5"
                         style={isMyDuty && role === 'student'
                           ? { background: 'rgba(255,255,255,0.2)', color: 'white' }
                           : { background: '#E0F0EE', color: '#0F8A82' }}
                       >
+                        <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
                         {s.full_name.split(' ')[0]}
                       </span>
                     ))}
