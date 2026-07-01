@@ -20,13 +20,31 @@ interface Props {
   profile: Profile
   klass: Class | null
   navItems: NavItem[]
+  teacherClasses?: Class[]
+  activeClassId?: string | null
 }
 
-export default function MobileHeader({ profile, klass, navItems }: Props) {
+export default function MobileHeader({ profile, klass, navItems, teacherClasses = [], activeClassId }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
+  const [switchingClass, setSwitchingClass] = useState(false)
+
+  const showClassSwitcher = profile.role === 'teacher' && teacherClasses.length > 1
+
+  async function handleSwitchClass(classId: string) {
+    if (switchingClass || classId === activeClassId) return
+    setSwitchingClass(true)
+    await fetch('/api/active-class', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ classId }),
+    })
+    setSwitchingClass(false)
+    setOpen(false)
+    router.refresh()
+  }
 
   const roleLabel =
     profile.role === 'teacher' ? 'Lehrperson'
@@ -63,7 +81,7 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
       )}
 
       {/* Drawer */}
-      <div className={`md:hidden fixed inset-y-0 left-0 z-50 w-[280px] bg-[#FBF9F4] flex flex-col shadow-2xl transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`md:hidden fixed top-3 bottom-3 left-3 z-50 w-[272px] bg-gradient-to-bl from-[#FFFDF8] to-[#F0E8D6] flex flex-col rounded-[32px] overflow-hidden shadow-[0_20px_60px_rgba(20,40,45,.45)] transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-[115%]'}`}>
         {/* Header im Drawer */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4">
           <div className="flex items-center gap-2">
@@ -81,7 +99,7 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
         </div>
 
         {/* Profil */}
-        <div className="flex items-center gap-3 px-5 pb-5 border-b border-kh-border/60">
+        <div className="flex items-center gap-3 px-5 pb-5">
           <button onClick={() => setShowPicker(true)} className="relative group focus:outline-none flex-shrink-0">
             <Avatar
               name={profile.full_name}
@@ -107,6 +125,32 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Klassen-Wechsler */}
+        {showClassSwitcher && (
+          <div className="px-4 pt-3">
+            <span className="text-[11px] font-bold text-kh-muted/70 block mb-1.5">Klasse</span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {teacherClasses.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => handleSwitchClass(c.id)}
+                  disabled={switchingClass}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold transition-all ${
+                    c.id === activeClassId
+                      ? 'gradient-teal text-white shadow-sm'
+                      : 'text-kh-muted hover:bg-kh-border/20'
+                  }`}
+                >
+                  <span className="msym text-[15px]" style={{ fontVariationSettings: `'FILL' ${c.id === activeClassId ? 1 : 0}` }}>
+                    group
+                  </span>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Nav */}
         <nav className="flex flex-col gap-0.5 px-3 pt-3 flex-1 overflow-y-auto">

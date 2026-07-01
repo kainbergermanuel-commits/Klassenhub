@@ -129,9 +129,9 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                     key={c.id}
                     onClick={() => handleSwitchClass(c.id)}
                     title={c.name}
-                    className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all ${
+                    className={`w-7 h-7 rounded-full text-[10px] font-bold transition-all ${
                       c.id === activeClassId
-                        ? 'bg-kh-teal/15 text-kh-teal'
+                        ? 'gradient-teal text-white shadow-sm'
                         : 'text-kh-muted/60 hover:text-kh-muted hover:bg-kh-border/30'
                     }`}
                   >
@@ -145,9 +145,9 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                   <button
                     key={c.id}
                     onClick={() => handleSwitchClass(c.id)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold transition-all ${
                       c.id === activeClassId
-                        ? 'bg-kh-teal/12 text-kh-teal'
+                        ? 'gradient-teal text-white shadow-sm'
                         : 'text-kh-muted/60 hover:text-kh-muted hover:bg-kh-border/20'
                     }`}
                   >

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
+import { getTeacherClasses } from '@/lib/auth'
 import ParentBooklet from '@/components/mitteilungsheft/ParentBooklet'
 import TeacherBooklets from '@/components/mitteilungsheft/TeacherBooklets'
 import type { SenderAvatar } from '@/components/mitteilungsheft/MessageThread'
@@ -46,18 +47,32 @@ export default async function MitteilungsheftPage() {
     )
   }
 
-  // Lehrkraft: alle Hefte (Eltern) der aktiven Klasse + deren Nachrichten
-  const [{ data: parents }, { data: students }, { data: messages }] = await Promise.all([
-    supabase.from('profiles').select('id,full_name,child_id,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'parent').order('full_name'),
-    supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
+  // Lehrkraft: Hefte der aktiven Klasse + deren Nachrichten.
+  // Für die Sammelnachricht zusätzlich Eltern/Schüler ALLER eigenen Klassen.
+  const teacherClasses = await getTeacherClasses(profile.id)
+  const classIds = teacherClasses.map(c => c.id)
+
+  const [{ data: allParents }, { data: allStudents }, { data: messages }, { data: broadcastMessages }] = await Promise.all([
+    supabase.from('profiles').select('id,full_name,child_id,class_id,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').in('class_id', classIds).eq('role', 'parent').order('full_name'),
+    supabase.from('profiles').select('id,full_name,class_id,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').in('class_id', classIds).eq('role', 'student').order('full_name'),
     supabase.from('messages').select('*').eq('class_id', activeClassId).order('created_at', { ascending: true }),
+    // Sammelnachrichten über ALLE eigenen Klassen (für die klassenübergreifende Übersicht).
+    supabase.from('messages').select('*').in('class_id', classIds).not('broadcast_id', 'is', null).order('created_at', { ascending: true }),
   ])
+
+  // Heft-Liste zeigt weiterhin nur die aktive Klasse.
+  const parents = (allParents ?? []).filter(p => p.class_id === activeClassId)
+  const students = (allStudents ?? []).filter(s => s.class_id === activeClassId)
 
   return (
     <TeacherBooklets
-      parents={parents ?? []}
-      students={students ?? []}
+      parents={parents}
+      students={students}
+      allParents={allParents ?? []}
+      allStudents={allStudents ?? []}
+      classes={teacherClasses.map(c => ({ id: c.id, name: c.name }))}
       messages={(messages ?? []) as Message[]}
+      broadcastMessages={(broadcastMessages ?? []) as Message[]}
       userId={user.id}
       ownName={profile.full_name}
       classId={activeClassId}

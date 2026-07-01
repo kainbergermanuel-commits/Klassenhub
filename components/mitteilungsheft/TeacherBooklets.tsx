@@ -12,6 +12,7 @@ type ParentLite = {
   id: string
   full_name: string
   child_id: string | null
+  class_id?: string | null
   avatar_color: string
   avatar_seed: string | null
   avatar_hair_color: string | null
@@ -20,16 +21,22 @@ type ParentLite = {
 type StudentLite = {
   id: string
   full_name: string
+  class_id?: string | null
   avatar_color: string
   avatar_seed: string | null
   avatar_hair_color: string | null
   avatar_skin_color: string | null
 }
+type ClassLite = { id: string; name: string }
 
 interface Props {
   parents: ParentLite[]
   students: StudentLite[]
+  allParents: ParentLite[]
+  allStudents: StudentLite[]
+  classes: ClassLite[]
   messages: Message[]
+  broadcastMessages: Message[]
   userId: string
   ownName: string
   classId: string
@@ -37,7 +44,7 @@ interface Props {
 
 function firstName(full: string) { return full.split(' ')[0] }
 
-export default function TeacherBooklets({ parents, students, messages, userId, ownName, classId }: Props) {
+export default function TeacherBooklets({ parents, students, allParents, allStudents, classes, messages, broadcastMessages, userId, ownName, classId }: Props) {
   const router = useRouter()
   const [openParentId, setOpenParentId] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
@@ -86,9 +93,18 @@ export default function TeacherBooklets({ parents, students, messages, userId, o
   }, [parents, byParent])
 
   // Sammelnachrichten (Fan-out-Kopien je broadcast_id) mit aggregiertem Gesehen-Status.
+  // Klassenübergreifend: Quelle ist broadcastMessages (alle eigenen Klassen).
+  const broadcastNames = useMemo(
+    () => Object.fromEntries(allParents.map(p => [p.id, p.full_name])),
+    [allParents],
+  )
+  const classNameById = useMemo(
+    () => Object.fromEntries(classes.map(c => [c.id, c.name])),
+    [classes],
+  )
   const broadcasts = useMemo(() => {
     const groups: Record<string, Message[]> = {}
-    for (const m of messages) if (m.broadcast_id) (groups[m.broadcast_id] ??= []).push(m)
+    for (const m of broadcastMessages) if (m.broadcast_id) (groups[m.broadcast_id] ??= []).push(m)
     return Object.entries(groups)
       .map(([id, msgs]) => ({
         id,
@@ -96,12 +112,13 @@ export default function TeacherBooklets({ parents, students, messages, userId, o
         created_at: msgs[0].created_at,
         total: msgs.length,
         seen: msgs.filter(m => m.seen_at).length,
+        classNames: [...new Set(msgs.map(m => classNameById[m.class_id]).filter(Boolean))].sort(),
         recipients: msgs
-          .map(m => ({ name: senderNames[m.parent_id] ?? '?', seen: !!m.seen_at }))
+          .map(m => ({ name: broadcastNames[m.parent_id] ?? '?', seen: !!m.seen_at }))
           .sort((a, b) => a.name.localeCompare(b.name)),
       }))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-  }, [messages, senderNames])
+  }, [broadcastMessages, broadcastNames, classNameById])
 
   const openParent = openParentId ? parents.find(p => p.id === openParentId) ?? null : null
 
@@ -197,10 +214,11 @@ export default function TeacherBooklets({ parents, students, messages, userId, o
 
       {composing && (
         <ComposeModal
-          parents={parents}
-          students={students}
+          allParents={allParents}
+          allStudents={allStudents}
+          classes={classes}
+          activeClassId={classId}
           userId={userId}
-          classId={classId}
           onClose={() => setComposing(false)}
         />
       )}
@@ -299,6 +317,7 @@ type BroadcastSummary = {
   created_at: string
   total: number
   seen: number
+  classNames: string[]
   recipients: { name: string; seen: boolean }[]
 }
 
@@ -334,6 +353,12 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
                     {new Date(b.created_at).toLocaleDateString('de-AT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
+                {b.classNames.length > 0 && (
+                  <span className="flex items-center gap-1 text-[12px] font-semibold text-kh-muted flex-shrink-0">
+                    <span className="msym text-[15px]">group</span>
+                    {b.classNames.join(', ')}
+                  </span>
+                )}
                 <span className={`flex items-center gap-1 text-[12.5px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${allSeen ? 'bg-kh-teal-light text-kh-teal' : 'bg-[#F8ECD6] text-kh-amber'}`}>
                   <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>{allSeen ? 'done_all' : 'visibility'}</span>
                   {b.seen}/{b.total}
@@ -370,29 +395,38 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
 }
 
 function ComposeModal({
-  parents, students, userId, classId, onClose,
+  allParents, allStudents, classes, activeClassId, userId, onClose,
 }: {
-  parents: ParentLite[]
-  students: StudentLite[]
+  allParents: ParentLite[]
+  allStudents: StudentLite[]
+  classes: ClassLite[]
+  activeClassId: string
   userId: string
-  classId: string
   onClose: () => void
 }) {
   const router = useRouter()
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
   const [picked, setPicked] = useState<Set<string>>(new Set())
+  // Standardmäßig nur die aktive Klasse gewählt.
+  const [pickedClasses, setPickedClasses] = useState<Set<string>>(new Set([activeClassId]))
 
-  // Eltern je Schüler (child_id) gruppieren.
+  // Eltern je Schüler (child_id) gruppieren – über alle Klassen.
   const parentsByChild = useMemo(() => {
     const map: Record<string, ParentLite[]> = {}
-    for (const p of parents) if (p.child_id) (map[p.child_id] ??= []).push(p)
+    for (const p of allParents) if (p.child_id) (map[p.child_id] ??= []).push(p)
     return map
-  }, [parents])
+  }, [allParents])
 
-  // Nur Schüler mit verknüpftem Elternteil sind auswählbar.
-  const selectable = useMemo(() => students.filter(s => parentsByChild[s.id]?.length), [students, parentsByChild])
-  const studentsWithoutParent = students.filter(s => !(parentsByChild[s.id]?.length))
+  // Auswählbare Schüler = mit verknüpftem Elternteil UND in einer gewählten Klasse.
+  const selectable = useMemo(
+    () => allStudents.filter(s => parentsByChild[s.id]?.length && s.class_id && pickedClasses.has(s.class_id)),
+    [allStudents, parentsByChild, pickedClasses],
+  )
+  const studentsWithoutParent = useMemo(
+    () => allStudents.filter(s => s.class_id && pickedClasses.has(s.class_id) && !(parentsByChild[s.id]?.length)),
+    [allStudents, parentsByChild, pickedClasses],
+  )
 
   function toggle(studentId: string) {
     setPicked(prev => {
@@ -402,13 +436,30 @@ function ComposeModal({
     })
   }
 
-  // Ziel-Eltern: keine Auswahl = an alle Eltern, sonst Eltern der gewählten Schüler.
+  function toggleClass(cid: string) {
+    setPickedClasses(prev => {
+      const next = new Set(prev)
+      if (next.has(cid)) { if (next.size > 1) next.delete(cid) } // mind. eine Klasse bleibt gewählt
+      else next.add(cid)
+      return next
+    })
+  }
+
+  // Eltern der aktuell gewählten Klassen (Basis für "an alle").
+  const parentsInClasses = useMemo(
+    () => allParents.filter(p => p.class_id && pickedClasses.has(p.class_id)),
+    [allParents, pickedClasses],
+  )
+
+  // Ziel-Eltern: keine Schülerauswahl = an alle Eltern der gewählten Klassen;
+  // sonst Eltern der ausgewählten (und noch sichtbaren) Schüler.
   const targetParents: ParentLite[] = useMemo(() => {
-    if (picked.size === 0) return parents
+    if (picked.size === 0) return parentsInClasses
     const out: ParentLite[] = []
-    for (const sid of picked) out.push(...(parentsByChild[sid] ?? []))
+    const visible = new Set(selectable.map(s => s.id))
+    for (const sid of picked) if (visible.has(sid)) out.push(...(parentsByChild[sid] ?? []))
     return out
-  }, [picked, parents, parentsByChild])
+  }, [picked, parentsInClasses, selectable, parentsByChild])
 
   async function send() {
     const text = body.trim()
@@ -416,13 +467,16 @@ function ComposeModal({
     setSending(true)
     const supabase = createClient()
     const broadcastId = targetParents.length > 1 ? crypto.randomUUID() : null
-    const rows = targetParents.map(p => ({
-      class_id: classId,
-      parent_id: p.id,
-      sender_id: userId,
-      body: text,
-      broadcast_id: broadcastId,
-    }))
+    // Jede Zeile trägt die EIGENE Klasse des Elternteils (RLS-Anforderung).
+    const rows = targetParents
+      .filter(p => p.class_id)
+      .map(p => ({
+        class_id: p.class_id as string,
+        parent_id: p.id,
+        sender_id: userId,
+        body: text,
+        broadcast_id: broadcastId,
+      }))
     await supabase.from('messages').insert(rows)
     setSending(false)
     onClose()
@@ -442,10 +496,30 @@ function ComposeModal({
           </button>
         </div>
 
+        {/* Klassen-Picker (nur bei mehreren Klassen) */}
+        {classes.length > 1 && (
+          <div className="mb-4">
+            <span className="text-[12px] font-bold text-kh-muted block mb-2">Klassen</span>
+            <div className="flex flex-wrap gap-1.5">
+              {classes.map(c => {
+                const on = pickedClasses.has(c.id)
+                return (
+                  <button key={c.id} type="button" onClick={() => toggleClass(c.id)}
+                    className={`text-[12px] font-bold px-3 py-1.5 rounded-full border transition-colors ${
+                      on ? 'border-kh-teal bg-kh-teal/10 text-kh-teal' : 'border-kh-border text-kh-muted hover:border-kh-teal/50'
+                    }`}>
+                    {c.name}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[12px] font-bold text-kh-muted">
-              {picked.size > 0 ? `${picked.size} ausgewählt` : 'An alle Eltern'}
+              {picked.size > 0 ? `${targetParents.length} Empfänger` : 'An alle Eltern der gewählten Klassen'}
             </span>
             <div className="flex gap-1.5">
               <button type="button" onClick={() => setPicked(new Set(selectable.map(s => s.id)))}
@@ -458,22 +532,36 @@ function ComposeModal({
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto scrollbar-kh">
-            {selectable.map(s => {
-              const selected = picked.has(s.id)
-              const firstName = s.full_name.split(' ')[0].split('-')[0]
-              const long = firstName.length >= 8
+          <div className="max-h-56 overflow-y-auto scrollbar-kh flex flex-col gap-3">
+            {classes.filter(c => pickedClasses.has(c.id)).map(c => {
+              const group = selectable.filter(s => s.class_id === c.id)
+              if (group.length === 0) return null
+              const showHeading = pickedClasses.size > 1
               return (
-                <button key={s.id} type="button" onClick={() => toggle(s.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all min-w-0 ${
-                    selected ? 'border-kh-teal bg-kh-teal/10' : 'border-kh-border hover:border-kh-teal/50'
-                  }`}>
-                  <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed}
-                    hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={22} />
-                  <span className={`${long ? 'text-[10px]' : 'text-[12px]'} font-semibold leading-tight truncate min-w-0 ${selected ? 'text-kh-teal' : 'text-kh-dark'}`}>
-                    {firstName}
-                  </span>
-                </button>
+                <div key={c.id}>
+                  {showHeading && (
+                    <span className="text-[11px] font-bold text-kh-muted/80 block mb-1.5">{c.name}</span>
+                  )}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {group.map(s => {
+                      const selected = picked.has(s.id)
+                      const first = s.full_name.split(' ')[0].split('-')[0]
+                      const long = first.length >= 8
+                      return (
+                        <button key={s.id} type="button" onClick={() => toggle(s.id)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all min-w-0 ${
+                            selected ? 'border-kh-teal bg-kh-teal/10' : 'border-kh-border hover:border-kh-teal/50'
+                          }`}>
+                          <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed}
+                            hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={22} />
+                          <span className={`${long ? 'text-[10px]' : 'text-[12px]'} font-semibold leading-tight truncate min-w-0 ${selected ? 'text-kh-teal' : 'text-kh-dark'}`}>
+                            {first}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               )
             })}
           </div>
