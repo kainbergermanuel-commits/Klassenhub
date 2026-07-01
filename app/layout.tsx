@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Hanken_Grotesk } from 'next/font/google'
+import ServiceWorkerRegister from '@/components/layout/ServiceWorkerRegister'
 import './globals.css'
 
 const hanken = Hanken_Grotesk({
@@ -35,7 +36,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ServiceWorkerRegister />
+      </body>
     </html>
   )
 }
