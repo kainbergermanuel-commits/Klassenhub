@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
 import Link from 'next/link'
@@ -19,6 +20,8 @@ type HwEyeItem = Pick<HomeworkWithStatus, 'id' | 'title' | 'subject_color' | 'su
 function HwEyeButton({ hw, classId }: { hw: HwEyeItem; classId: string }) {
   const [open, setOpen] = useState(false)
   const [students, setStudents] = useState<StudentStatus[] | null>(null)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const openPopup = useCallback(async () => {
     setOpen(true)
@@ -38,8 +41,8 @@ function HwEyeButton({ hw, classId }: { hw: HwEyeItem; classId: string }) {
         <span className="text-xs font-bold text-kh-teal">{hw.completion_count ?? 0} gemacht</span>
         <button onClick={openPopup} className="msym text-[17px] text-kh-teal/60 hover:text-kh-teal transition-colors leading-none">visibility</button>
       </div>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setOpen(false)}>
+      {open && mounted && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setOpen(false)}>
           <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -93,7 +96,8 @@ function HwEyeButton({ hw, classId }: { hw: HwEyeItem; classId: string }) {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )
