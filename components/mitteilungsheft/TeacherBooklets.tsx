@@ -271,7 +271,7 @@ function TeacherThread({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-70px)] -mb-20 max-md:h-[calc(100vh-env(safe-area-inset-top)-20px)] max-md:-mb-6">
+    <div className="flex flex-col h-[calc(100dvh-70px)] -mb-20 max-md:h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-20px)] max-md:-mb-6">
       <div className="flex items-center gap-3 mb-4">
         <button onClick={onBack} aria-label="Zurück" className="w-9 h-9 rounded-full flex items-center justify-center text-kh-muted hover:bg-[#EDEDEC] transition-colors flex-shrink-0">
           <span className="msym text-[22px]">arrow_back</span>
