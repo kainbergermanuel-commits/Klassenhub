@@ -81,7 +81,7 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
       )}
 
       {/* Drawer */}
-      <div className={`md:hidden fixed top-3 bottom-3 left-3 z-50 w-[272px] bg-gradient-to-bl from-[#FFFDF8] to-[#F0E8D6] flex flex-col rounded-[32px] overflow-hidden shadow-[0_20px_60px_rgba(20,40,45,.45)] transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-[115%]'}`}>
+      <div className={`md:hidden fixed top-3 bottom-3 left-3 z-50 w-[272px] bg-gradient-to-bl from-[#FFFDF8] to-[#F4EEE0] flex flex-col rounded-[32px] overflow-hidden shadow-[0_20px_60px_rgba(20,40,45,.45)] transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-[115%]'}`}>
         {/* Header im Drawer */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4">
           <div className="flex items-center gap-2">
