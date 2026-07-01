@@ -458,19 +458,19 @@ function ComposeModal({
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto scrollbar-kh">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto scrollbar-kh">
             {selectable.map(s => {
               const selected = picked.has(s.id)
-              const firstName = s.full_name.split(' ')[0]
-              const long = firstName.length > 7
+              const firstName = s.full_name.split(' ')[0].split('-')[0]
+              const long = firstName.length >= 8
               return (
                 <button key={s.id} type="button" onClick={() => toggle(s.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all min-w-0 ${
                     selected ? 'border-kh-teal bg-kh-teal/10' : 'border-kh-border hover:border-kh-teal/50'
                   }`}>
                   <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed}
                     hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={22} />
-                  <span className={`${long ? 'text-[10px]' : 'text-[12px]'} font-semibold leading-tight break-words min-w-0 ${selected ? 'text-kh-teal' : 'text-kh-dark'}`}>
+                  <span className={`${long ? 'text-[10px]' : 'text-[12px]'} font-semibold leading-tight truncate min-w-0 ${selected ? 'text-kh-teal' : 'text-kh-dark'}`}>
                     {firstName}
                   </span>
                 </button>
