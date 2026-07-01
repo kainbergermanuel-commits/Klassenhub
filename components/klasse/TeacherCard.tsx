@@ -48,8 +48,20 @@ export default function TeacherCard({ full_name, avatar_color, avatar_seed, avat
       <div className="flex flex-col items-center gap-0.5">
         <div className="font-bold text-[14.5px] text-kh-dark leading-tight">{displayName(full_name)}</div>
         <div className="text-[11px] font-medium text-kh-muted">{is_homeroom ? 'Klassenvorstand' : 'Lehrperson'}</div>
-        {is_admin && (
-          <span className="msym text-[15px] text-kh-teal mt-0.5" title="Administrator" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
+        {(is_homeroom || is_admin) && (
+          <div className="flex items-center gap-1 mt-0.5">
+            {is_homeroom && (
+              <span title="KV" className="text-kh-amber flex items-center" aria-label="Klassenvorstand">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                  <path d="M5 16 3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5Z" />
+                  <rect x="5" y="17.5" width="14" height="2.2" rx="1" />
+                </svg>
+              </span>
+            )}
+            {is_admin && (
+              <span className="msym text-[15px] text-kh-teal" title="Administrator" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
+            )}
+          </div>
         )}
       </div>
 
