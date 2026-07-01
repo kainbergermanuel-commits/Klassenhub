@@ -152,12 +152,21 @@ export default function TeacherHome({
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 gradient-teal text-white px-[18px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shadow-sm"
+          className="max-md:hidden flex items-center gap-2 gradient-teal text-white px-[18px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shadow-sm"
         >
           <span className="msym text-[19px]">add</span>
           Neue Hausübung
         </button>
       </header>
+
+      {/* Schwebender „Neue HÜ"-Button unter dem Burger (nur Mobile, nur Startseite) */}
+      <button
+        onClick={() => setShowModal(true)}
+        className="md:hidden fixed top-[68px] right-4 z-30 w-11 h-11 flex items-center justify-center rounded-2xl gradient-teal text-white shadow-[0_2px_10px_rgba(20,40,45,.18)] active:scale-95 transition-transform"
+        aria-label="Neue Hausübung"
+      >
+        <span className="msym text-[23px]">assignment_add</span>
+      </button>
 
       {/* Mobile-only Kompakt-Stats (Web unverändert) */}
       <div className="md:hidden flex items-center gap-4 mb-5 -mt-2">

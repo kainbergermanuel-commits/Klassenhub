@@ -107,13 +107,24 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
         {canCreate && (
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+            className="max-md:hidden flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
           >
             <span className="msym text-[19px]">add</span>
             Neue Hausübung
           </button>
         )}
       </div>
+
+      {/* Schwebender „Neue HÜ"-Button unter dem Burger (nur Mobile) */}
+      {canCreate && (
+        <button
+          onClick={() => setShowModal(true)}
+          className="md:hidden fixed top-[68px] right-4 z-30 w-11 h-11 flex items-center justify-center rounded-2xl gradient-teal text-white shadow-[0_2px_10px_rgba(20,40,45,.18)] active:scale-95 transition-transform"
+          aria-label="Neue Hausübung"
+        >
+          <span className="msym text-[23px]">assignment_add</span>
+        </button>
+      )}
 
       {homework.length === 0 ? (
         <div className="text-center text-kh-muted py-16 font-medium">

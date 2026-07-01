@@ -76,13 +76,27 @@ export default function ReminderList({ reminders, role, specialRole, userId, cla
         {canCreate && (
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+            className="max-md:hidden flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
           >
             <span className="msym text-[19px]">add</span>
             Neue Erinnerung
           </button>
         )}
       </div>
+
+      {/* Schwebender „Neue Erinnerung"-Button unter dem Burger (nur Mobile) */}
+      {canCreate && (
+        <button
+          onClick={() => setShowModal(true)}
+          className="md:hidden fixed top-[68px] right-4 z-30 w-11 h-11 flex items-center justify-center rounded-2xl gradient-teal text-white shadow-[0_2px_10px_rgba(20,40,45,.18)] active:scale-95 transition-transform"
+          aria-label="Neue Erinnerung"
+        >
+          <span className="relative flex items-center justify-center">
+            <span className="msym text-[22px]">push_pin</span>
+            <span className="msym text-[13px] absolute -right-1.5 -bottom-1.5 bg-white text-kh-teal rounded-full" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
+          </span>
+        </button>
+      )}
 
       {upcoming.length === 0 && past.length === 0 && pending.length === 0 ? (
         <div className="text-center py-16 text-kh-muted">
