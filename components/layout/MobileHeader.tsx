@@ -45,33 +45,14 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
 
   return (
     <>
-      {/* Header */}
-      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-white/90 backdrop-blur-sm border-b border-kh-border/60">
-        <button
-          onClick={() => setOpen(true)}
-          className="w-9 h-9 flex items-center justify-center rounded-xl text-kh-muted hover:bg-kh-page transition-colors flex-shrink-0"
-          aria-label="Menü öffnen"
-        >
-          <span className="msym text-[24px]">menu</span>
-        </button>
-        <div className="w-px h-5 bg-kh-border/60 flex-shrink-0" />
-        <div className="min-w-0 flex-1">
-          <div className="font-extrabold text-[15px] text-kh-dark leading-tight">KlassenHub</div>
-          <div className="text-[11.5px] text-kh-muted font-medium truncate">
-            {klass ? `${klass.name} · ${klass.school}` : roleLabel}
-          </div>
-        </div>
-        <div className="w-8 h-8 flex-shrink-0">
-          <Avatar
-            name={profile.full_name}
-            color={profile.avatar_color}
-            seed={profile.avatar_seed}
-            hairColor={profile.avatar_hair_color}
-            skinColor={profile.avatar_skin_color}
-            size={32}
-          />
-        </div>
-      </div>
+      {/* Schwebender Burger (nur Mobile) */}
+      <button
+        onClick={() => setOpen(true)}
+        className="md:hidden fixed top-3 right-3 z-30 w-11 h-11 flex items-center justify-center rounded-2xl bg-white/95 backdrop-blur-sm text-kh-dark shadow-[0_2px_10px_rgba(20,40,45,.12)] active:scale-95 transition-transform"
+        aria-label="Menü öffnen"
+      >
+        <span className="msym text-[24px]">menu</span>
+      </button>
 
       {/* Backdrop */}
       {open && (
