@@ -201,7 +201,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-kh-page p-3 md:p-4 md:px-[26px] md:py-[21px] max-md:p-0">
       {/* iOS: Notch-/Statusbar-Zone auf Mobile weiß färben (Login bleibt beige) */}
       <BodyTheme color="#ffffff" />
-      <div className="flex min-h-[calc(100vh-1.5rem)] md:min-h-[calc(100vh-2rem)] max-md:min-h-screen rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
+      <div className="flex min-h-[calc(100vh-1.5rem)] md:min-h-[calc(100vh-42px)] max-md:min-h-screen rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
         <Sidebar profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} isPreview={!!previewRole} />
         <main className="flex-1 min-w-0 overflow-y-auto scrollbar-kh">
           <MobileHeader profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} />
