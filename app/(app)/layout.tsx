@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAuth, getClass, getTeacherClasses } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, getMondayOfWeek } from '@/lib/date'
+import BodyTheme from '@/components/layout/BodyTheme'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileHeader from '@/components/layout/MobileHeader'
 import RolePreviewBar from '@/components/layout/RolePreviewBar'
@@ -198,11 +199,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-kh-page p-3 md:p-4 md:px-[26px] md:py-[21px] max-md:p-0">
+      {/* iOS: Notch-/Statusbar-Zone auf Mobile weiß färben (Login bleibt beige) */}
+      <BodyTheme color="#ffffff" />
       <div className="flex min-h-[calc(100vh-1.5rem)] md:min-h-[calc(100vh-2rem)] max-md:min-h-screen rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
         <Sidebar profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} isPreview={!!previewRole} />
         <main className="flex-1 min-w-0 overflow-y-auto scrollbar-kh">
-          {/* Füllt die Notch-Zone im iOS-Vollbild weiß, damit keine beige Kante entsteht */}
-          <div className="md:hidden fixed top-0 inset-x-0 h-[env(safe-area-inset-top)] bg-white z-40 pointer-events-none" />
           <MobileHeader profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} />
           <div className="max-w-[1180px] mx-auto px-7 py-7 pb-20 max-md:px-4 max-md:py-5 max-md:pb-6 max-md:pt-[calc(env(safe-area-inset-top)+1.25rem)]">
             {children}
