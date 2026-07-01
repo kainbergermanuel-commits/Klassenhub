@@ -63,27 +63,27 @@ export default function StudentHome({
       <header className="mb-6">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight min-w-0">Hallo, {firstName}!</h1>
-          {/* Mobile-only Kompakt-Stats (Web unverändert) */}
-          <div className="md:hidden flex items-center gap-3 flex-shrink-0">
-            <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-              <span className="msym text-[19px]" style={{ color: '#2F86C5' }}>assignment</span>
-              <span className="text-[13px] font-bold">{hwDone}/{hwTotal}</span>
-            </Link>
-            <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-              <span className="msym text-[19px]" style={{ color: '#0F8A82' }}>checklist</span>
-              <span className="text-[13px] font-bold">{todoDone}/{todoTotal}</span>
-            </Link>
-            {myDuty && (
-              <Link href="/dienste" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-                <span className="msym text-[19px]" style={{ color: '#5965B8' }}>{dutyIcon(myDuty.name)}</span>
-                {myDuty.partners[0] && (
-                  <Avatar name={myDuty.partners[0].full_name} color={myDuty.partners[0].avatar_color} seed={myDuty.partners[0].avatar_seed} hairColor={myDuty.partners[0].avatar_hair_color} skinColor={myDuty.partners[0].avatar_skin_color} size={20} />
-                )}
-              </Link>
-            )}
-          </div>
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
+        {/* Mobile-only Kompakt-Stats (Web unverändert) — unter dem Namens-Header, damit sie nicht unter dem Burger liegen */}
+        <div className="md:hidden flex items-center gap-3 mt-3">
+          <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
+            <span className="msym text-[19px]" style={{ color: '#2F86C5' }}>assignment</span>
+            <span className="text-[13px] font-bold">{hwDone}/{hwTotal}</span>
+          </Link>
+          <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
+            <span className="msym text-[19px]" style={{ color: '#0F8A82' }}>checklist</span>
+            <span className="text-[13px] font-bold">{todoDone}/{todoTotal}</span>
+          </Link>
+          {myDuty && (
+            <Link href="/dienste" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
+              <span className="msym text-[19px]" style={{ color: '#5965B8' }}>{dutyIcon(myDuty.name)}</span>
+              {myDuty.partners[0] && (
+                <Avatar name={myDuty.partners[0].full_name} color={myDuty.partners[0].avatar_color} seed={myDuty.partners[0].avatar_seed} hairColor={myDuty.partners[0].avatar_hair_color} skinColor={myDuty.partners[0].avatar_skin_color} size={20} />
+              )}
+            </Link>
+          )}
+        </div>
       </header>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">

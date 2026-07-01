@@ -115,11 +115,11 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
         )}
       </div>
 
-      <div className="flex flex-wrap gap-1.5 mb-5">
+      <div className="grid grid-cols-5 gap-1.5 mb-5 md:flex md:flex-wrap">
         {weekDays.map((d, i) => (
           <div
             key={i}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-semibold border transition-colors ${
+            className={`flex items-center justify-center gap-1 px-2.5 max-md:px-1 py-1 rounded-full text-[12px] font-semibold border transition-colors ${
               d.passed
                 ? 'bg-kh-teal-light text-kh-teal border-transparent'
                 : d.isToday

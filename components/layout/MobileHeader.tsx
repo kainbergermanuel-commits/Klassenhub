@@ -48,7 +48,7 @@ export default function MobileHeader({ profile, klass, navItems }: Props) {
       {/* Schwebender Burger (nur Mobile) */}
       <button
         onClick={() => setOpen(true)}
-        className="md:hidden fixed top-3 right-3 z-30 w-11 h-11 flex items-center justify-center rounded-2xl bg-white/95 backdrop-blur-sm text-kh-dark shadow-[0_2px_10px_rgba(20,40,45,.12)] active:scale-95 transition-transform"
+        className="md:hidden fixed top-4 right-4 z-30 w-11 h-11 flex items-center justify-center rounded-2xl bg-white/95 backdrop-blur-sm text-kh-dark shadow-[0_2px_10px_rgba(20,40,45,.12)] active:scale-95 transition-transform"
         aria-label="Menü öffnen"
       >
         <span className="msym text-[24px]">menu</span>
