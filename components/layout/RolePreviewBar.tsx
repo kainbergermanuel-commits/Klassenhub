@@ -71,7 +71,7 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
     : undefined
 
   return (
-    <div className="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-50">
+    <div className="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-30 md:z-50">
       <div className="flex items-center gap-1 bg-kh-dark/90 backdrop-blur-sm text-white rounded-full px-2 py-1.5 shadow-xl">
         <span className="msym text-[15px] text-[#9FC4C0] ml-1.5 mr-0.5">preview</span>
         <span className="hidden md:inline text-[11px] font-semibold text-[#9FC4C0] mr-1">Vorschau</span>
