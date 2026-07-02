@@ -105,9 +105,9 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
   return (
     <>
       <div
-        className="rounded-2xl p-4 flex gap-3 items-start shadow-[0_2px_10px_rgba(20,50,55,.04)]"
+        className="rounded-2xl p-4 flex gap-3 items-start shadow-[0_8px_16px_rgba(20,40,45,.10)]"
         style={{
-          background: `linear-gradient(135deg, ${hw.subject_color}12 0%, ${hw.subject_color}06 100%)`,
+          background: `linear-gradient(135deg, #ffffff 0%, #ffffff 55%, ${hw.subject_color}29 100%)`,
           border: status.cardBorder,
         }}
       >

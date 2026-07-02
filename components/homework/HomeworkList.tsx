@@ -65,8 +65,12 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
-        <div>
-          <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Hausübungen</h1>
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 max-md:w-10 max-md:h-10 rounded-2xl gradient-amber shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
+            <span className="msym text-[24px] max-md:text-[22px] text-white">assignment</span>
+          </div>
+          <div>
+          <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight">Hausübungen</h1>
           {stats ? (
             <div className="mt-2">
               <div className="flex items-center gap-2 flex-wrap">
@@ -103,6 +107,7 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
           ) : (
             <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{subtitle}</p>
           )}
+          </div>
         </div>
         {canCreate && (
           <button
