@@ -251,7 +251,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
             <div className="relative">
               <button onClick={() => setPickerOpen(o => !o)}
                 className="h-8 px-3 rounded-lg bg-gradient-to-br from-kh-teal to-emerald-400 shadow-sm flex items-center gap-1 text-[12px] font-bold text-white hover:brightness-110 transition-all">
-                <span className="material-symbols-rounded text-[13px]">add</span>Fach
+                <span className="material-symbols-rounded text-[11px]">add</span>Fach
               </button>
               {pickerOpen && (
                 <div ref={pickerRef} className="absolute right-0 top-10 z-20 bg-white rounded-xl shadow-lg p-2 w-52 max-h-64 overflow-y-auto scrollbar-kh">
