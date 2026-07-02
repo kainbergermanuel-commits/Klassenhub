@@ -47,7 +47,7 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
   return (
     <>
       <header className="mb-6 flex items-center gap-3.5">
-        <div className="w-11 h-11 max-md:w-10 max-md:h-10 rounded-2xl bg-gradient-to-br from-kh-amber to-[#E0A94B] shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
+        <div className="w-11 h-11 max-md:w-10 max-md:h-10 rounded-2xl bg-gradient-to-br from-[#B8721E] to-[#F5C842] shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
           <img src="/flame.svg" alt="" className="w-6 h-6" />
         </div>
         <div className="min-w-0">

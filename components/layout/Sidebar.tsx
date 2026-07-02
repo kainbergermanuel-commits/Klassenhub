@@ -198,7 +198,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                   </span>
                 )}
                 {!collapsed && item.badge ? (
-                  <span className="min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center bg-kh-amber-light text-kh-amber">
+                  <span className="min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center gradient-amber text-white shadow-[0_2px_6px_rgba(201,138,43,.4)]">
                     {item.badge}
                   </span>
                 ) : null}

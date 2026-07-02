@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getRelevantMondayOfWeek, getMondayOfWeek, getWeekNumber, addDaysISO } from '@/lib/date'
 import PlanungWeek from './PlanungWeek'
+import PageHeader from '@/components/layout/PageHeader'
 
 interface Note { day: number; subject: string; content: string }
 
@@ -36,12 +37,7 @@ export default async function PlanungPage({ searchParams }: { searchParams: Prom
 
   return (
     <div>
-      <header className="mb-6">
-        <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight">Planung</h1>
-        <p className="text-sm text-kh-muted font-medium mt-1">
-          KW {kw} · {fmt(monday)} – {fmt(friday)}
-        </p>
-      </header>
+      <PageHeader icon="edit_calendar" title="Planung" subtitle={`KW ${kw} · ${fmt(monday)} – ${fmt(friday)}`} />
       <PlanungWeek
         key={weekStart}
         weekStart={weekStart}
