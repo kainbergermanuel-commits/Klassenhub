@@ -171,7 +171,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                 key={item.href}
                 href={item.href}
                 title={collapsed ? item.label : undefined}
-                className={`relative flex items-center gap-3 py-2.5 rounded-xl overflow-hidden transition-all duration-200 ${
+                className={`group relative flex items-center gap-3 py-2.5 rounded-xl overflow-hidden transition-all duration-200 ${
                   collapsed ? 'justify-center px-2' : 'px-3.5'
                 } ${
                   active
@@ -184,7 +184,9 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                   <span className="absolute left-0 top-0 bottom-0 w-[3.8px]" style={{ background: 'linear-gradient(to top, #0F8A82 0%, #3DB5AC 100%)' }} />
                 )}
                 <span
-                  className="msym text-[22px] transition-all duration-200 flex-shrink-0"
+                  className={`msym text-[20.5px] transition-all duration-200 flex-shrink-0 ${
+                    active ? '' : 'text-[#9AA6A7] group-hover:text-[#6E7E80]'
+                  }`}
                   style={{
                     fontVariationSettings: `'FILL' ${active ? 1 : 0}`,
                     color: active ? '#0F8A82' : undefined,
@@ -193,7 +195,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                   {item.icon}
                 </span>
                 {!collapsed && (
-                  <span className={`flex-1 text-[14.5px] ${active ? 'font-bold' : 'font-semibold'}`}>
+                  <span className={`flex-1 text-[14px] ${active ? 'font-bold' : 'font-semibold'}`}>
                     {item.label}
                   </span>
                 )}
