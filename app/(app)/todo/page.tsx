@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild } from '@/lib/auth'
 import { getMondayOfWeek, getWeekNumber } from '@/lib/date'
 import TodoList from '@/components/todo/TodoList'
+import PageHeader from '@/components/layout/PageHeader'
 import type { TodoWithStatus } from '@/lib/types'
 
 export default async function TodoPage() {
@@ -65,10 +66,7 @@ export default async function TodoPage() {
 
   return (
     <>
-      <div className="mb-5">
-        <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Wochen-To-Do</h1>
-        <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{weekLabel}</p>
-      </div>
+      <PageHeader icon="checklist" title="Wochen-To-Do" subtitle={weekLabel} />
       <TodoList
         todos={todosWithStatus}
         role={profile.role}

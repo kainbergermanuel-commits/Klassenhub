@@ -48,3 +48,18 @@
   }
   .animate-wobble { animation: wobble 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
 }
+
+@layer components {
+  /* Standard-Card: hebt sich per Gradient + Schatten von der weißen Fläche ab.
+     Padding/Rundung-Overrides bleiben der jeweiligen Card überlassen. */
+  .kh-card {
+    @apply rounded-2xl bg-gradient-to-br from-white via-white to-kh-page;
+    box-shadow: 0 8px 16px rgba(20, 40, 45, 0.10);
+  }
+  /* Flache Variante für Listenzeilen/verschachtelte Cards: nur dezenter Schatten,
+     kein zweiter Gradient (vermeidet „Card-in-Card"-Unruhe). */
+  .kh-card-flat {
+    @apply rounded-2xl bg-white;
+    box-shadow: 0 4px 12px rgba(20, 40, 45, 0.07);
+  }
+}

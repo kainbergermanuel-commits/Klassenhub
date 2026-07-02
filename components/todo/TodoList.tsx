@@ -71,7 +71,7 @@ export default function TodoList({ todos: initial, role, userId, classId, weekSt
   return (
     <div>
       {/* Progress */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm mb-5">
+      <div className="kh-card p-5 mb-5">
         <div className="flex justify-between items-baseline mb-3">
           <span className="font-extrabold text-kh-dark text-base">
             {role === 'teacher' ? 'Aufgaben diese Woche' : 'Mein Fortschritt'}
@@ -152,7 +152,7 @@ function TodoRow({ todo, role, studentCount, onToggle, onDelete }: {
   onDelete: (id: string) => void
 }) {
   return (
-    <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm group">
+    <div className="flex items-center gap-3 kh-card-flat px-4 py-3 group">
       {/* Checkbox — nur für Schüler klickbar */}
       <button
         onClick={() => role === 'student' && onToggle(todo.id)}
