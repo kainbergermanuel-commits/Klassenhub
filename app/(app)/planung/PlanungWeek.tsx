@@ -232,7 +232,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
 
         {weekEmpty && (
           <button onClick={onCopyWeek} disabled={copying}
-            className="mt-3 w-full h-9 rounded-xl bg-kh-page flex items-center justify-center gap-1.5 text-[12px] font-bold text-kh-dark hover:bg-kh-page/70 transition-colors disabled:opacity-50">
+            className="mt-3 w-full h-9 rounded-xl bg-gradient-to-br from-kh-page to-kh-teal-light flex items-center justify-center gap-1.5 text-[12px] font-bold text-kh-dark hover:brightness-95 transition-colors disabled:opacity-50">
             <span className="material-symbols-rounded text-[16px]">content_copy</span>
             {copying ? 'Kopiere …' : 'Vorwoche übernehmen'}
           </button>
