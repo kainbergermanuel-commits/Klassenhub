@@ -250,7 +250,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
             <span aria-live="polite" className={`text-xs font-semibold ${statusView.cls}`}>{statusView.text}</span>
             <div className="relative">
               <button onClick={() => setPickerOpen(o => !o)}
-                className="h-8 px-3 rounded-lg bg-gradient-to-br from-kh-teal to-kh-dark shadow-sm flex items-center gap-1 text-[12px] font-bold text-white hover:brightness-110 transition-all">
+                className="h-8 px-3 rounded-lg bg-gradient-to-br from-kh-teal to-emerald-400 shadow-sm flex items-center gap-1 text-[12px] font-bold text-white hover:brightness-110 transition-all">
                 <span className="material-symbols-rounded text-[16px]">add</span>Fach
               </button>
               {pickerOpen && (
