@@ -55,7 +55,7 @@ function GrowingTextarea({ value, onChange, placeholder, autoFocus }: {
       placeholder={placeholder}
       autoFocus={autoFocus}
       rows={2}
-      className="w-full resize-none bg-transparent text-sm leading-relaxed text-kh-dark placeholder:text-kh-muted/50 outline-none"
+      className="w-full resize-none bg-transparent text-base md:text-sm leading-relaxed text-kh-dark placeholder:text-kh-muted/50 outline-none"
     />
   )
 }
