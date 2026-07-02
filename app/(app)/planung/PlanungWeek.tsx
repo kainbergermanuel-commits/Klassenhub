@@ -173,7 +173,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
     <div className="grid grid-cols-1 md:grid-cols-[264px_1fr] gap-4 items-start">
 
       {/* Linke Card: Woche + Tagesliste + Wochennotiz */}
-      <div className="bg-gradient-to-br from-white via-white to-kh-teal-light rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.12)] p-4 md:sticky md:top-4">
+      <div className="bg-gradient-to-br from-white via-white to-kh-teal-light rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)] p-4 md:sticky md:top-4">
         <div className="flex items-center justify-between mb-3">
           <Link href={`/planung?w=${prevWeek}`} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Vorherige Woche">
             <span className="material-symbols-rounded text-[20px]">chevron_left</span>
@@ -240,7 +240,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
       </div>
 
       {/* Rechte Card: Tagesplanung */}
-      <div className="rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.12)] p-6 max-md:p-5 min-h-[420px] bg-gradient-to-br from-white via-white to-kh-page">
+      <div className="rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)] p-6 max-md:p-5 min-h-[420px] bg-gradient-to-br from-white via-white to-kh-page">
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
             <h2 className="text-[19px] font-extrabold text-kh-dark tracking-tight">{DAY_LABELS[selectedDay - 1]}</h2>
