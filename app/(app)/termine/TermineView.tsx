@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { monthLabel } from '@/lib/date'
+import { monthLabel, addDaysISO } from '@/lib/date'
 import { eventCategoryMeta } from '@/lib/eventCategories'
 import { deleteEvent } from '@/app/actions/events'
 import AddEventModal from './AddEventModal'
@@ -104,8 +104,7 @@ export default function TermineView({ events, role, today }: Props) {
       while (cur <= e.end_date) {
         if (!map.has(cur)) map.set(cur, [])
         map.get(cur)!.push(e)
-        const d = new Date(`${cur}T00:00:00`); d.setDate(d.getDate() + 1)
-        cur = d.toISOString().slice(0, 10)
+        cur = addDaysISO(1, new Date(`${cur}T00:00:00`))
       }
     }
     return map
