@@ -18,6 +18,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
+    { href: '/termine', icon: 'calendar_month', label: 'Termine' },
     ...(profile.role !== 'student' ? [
       { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined },
     ] : []),
@@ -44,7 +45,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     { href: '/', icon: 'home', label: 'Start' },
     { href: '/hausaufgaben', icon: 'assignment', label: 'HÜ', badge: hwOpen || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
-    { href: '/erinnerungen', icon: 'push_pin', label: 'Termine' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerung' },
     { href: '/todo', icon: 'checklist', label: 'To-Do', badge: todoOpen || undefined },
   ]
 

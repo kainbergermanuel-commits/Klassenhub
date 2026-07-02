@@ -42,6 +42,22 @@ export type Class = {
   school: string
 }
 
+export type Event = {
+  id: string
+  class_id: string
+  created_by: string
+  title: string
+  description: string
+  start_date: string
+  end_date: string
+  all_day: boolean
+  start_time: string | null
+  end_time: string | null
+  location: string
+  category: string
+  created_at: string
+}
+
 export type Homework = {
   id: string
   class_id: string
