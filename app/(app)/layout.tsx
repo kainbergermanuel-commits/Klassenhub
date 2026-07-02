@@ -24,6 +24,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     { href: '/todo', icon: 'checklist', label: 'Wochen-To-Do', badge: todoOpen || undefined },
     { href: '/streaks', icon: 'local_fire_department', label: 'Streaks' },
     ...(isTeacher ? [
+      { href: '/planung', icon: 'edit_calendar', label: 'Planung' },
       { href: '/klasse', icon: 'groups', label: 'Klasse' },
     ] : []),
     ...(profile.is_admin ? [
