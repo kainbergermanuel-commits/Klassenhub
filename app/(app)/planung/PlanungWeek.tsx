@@ -247,7 +247,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
             <p className="text-[13px] text-kh-muted font-medium flex items-center gap-1.5">
               {selDateLabel}
               {isToday(selDate) && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-br from-[#2F86C5] to-[#56AEE6]">Heute</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-br from-[#1E5FA8] to-[#3FA9F5]">Heute</span>
               )}
             </p>
           </div>
