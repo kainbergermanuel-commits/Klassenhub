@@ -210,13 +210,24 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="mt-auto mb-4 flex justify-center">
+        {/* Einstellungen + Abmelden */}
+        <div className={`mt-auto mb-4 flex justify-center gap-1 ${collapsed ? 'flex-col items-center' : ''}`}>
+          <Link
+            href="/einstellungen"
+            title="Einstellungen"
+            aria-label="Einstellungen"
+            className={`flex flex-col items-center gap-0.5 py-2 ${collapsed ? 'px-2' : 'px-3'} rounded-xl transition-colors ${
+              pathname === '/einstellungen' ? 'text-kh-teal' : 'text-kh-muted hover:text-kh-dark hover:bg-[#EDEDEC]'
+            }`}
+          >
+            <span className="msym text-[20px]" style={{ fontVariationSettings: `'FILL' ${pathname === '/einstellungen' ? 1 : 0}` }}>settings</span>
+            {!collapsed && <span className="text-[10px] font-semibold">Einstellungen</span>}
+          </Link>
           <button
             onClick={handleLogout}
             title="Abmelden"
             aria-label="Abmelden"
-            className="flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl text-kh-muted hover:text-kh-red hover:bg-red-50 transition-colors"
+            className={`flex flex-col items-center gap-0.5 py-2 ${collapsed ? 'px-2' : 'px-3'} rounded-xl text-kh-muted hover:text-kh-red hover:bg-red-50 transition-colors`}
           >
             <span className="msym text-[20px]">power_settings_new</span>
             {!collapsed && <span className="text-[10px] font-semibold">Abmelden</span>}

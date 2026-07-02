@@ -192,11 +192,21 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-kh-border/60">
+        {/* Einstellungen + Abmelden */}
+        <div className="p-4 border-t border-kh-border/60 flex gap-2">
+          <Link
+            href="/einstellungen"
+            onClick={() => setOpen(false)}
+            className={`flex-1 flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl transition-colors ${
+              pathname === '/einstellungen' ? 'bg-kh-teal-light text-kh-dark' : 'text-kh-muted hover:bg-[#EDEDEC]'
+            }`}
+          >
+            <span className="msym text-[20px]" style={{ fontVariationSettings: `'FILL' ${pathname === '/einstellungen' ? 1 : 0}` }}>settings</span>
+            <span className="text-[14px] font-semibold">Einstellungen</span>
+          </Link>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-kh-muted hover:text-kh-red hover:bg-red-50 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-kh-muted hover:text-kh-red hover:bg-red-50 transition-colors"
           >
             <span className="msym text-[20px]">power_settings_new</span>
             <span className="text-[14px] font-semibold">Abmelden</span>

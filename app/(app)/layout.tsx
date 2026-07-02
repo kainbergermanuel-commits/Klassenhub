@@ -38,7 +38,8 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     ...(profile.role === 'parent' ? [
       { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
     ] : []),
-    { href: '/einstellungen', icon: 'settings', label: 'Einstellungen' },
+    // Einstellungen wird bewusst NICHT hier gelistet, sondern unten neben
+    // "Abmelden" gerendert (Sidebar/MobileHeader).
   ]
 
   const bottom = [
