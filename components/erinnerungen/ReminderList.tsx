@@ -251,9 +251,9 @@ function ReminderCard({
         {role === 'teacher' && !isPending && allStudentNames.length > 0 && (
           <div className="mt-3 flex flex-col gap-1.5">
             {viewers.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="msym text-[14px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>visibility</span>
-                <span className="text-[12px] font-semibold text-kh-teal">
+              <div className="flex items-start gap-2 flex-wrap">
+                <span className="msym text-[14px] text-kh-teal flex-shrink-0 mt-px" style={{ fontVariationSettings: "'FILL' 1" }}>visibility</span>
+                <span className="text-[12px] font-semibold text-kh-teal flex-shrink-0 whitespace-nowrap">
                   Gesehen ({viewers.length}/{allStudentNames.length}):
                 </span>
                 <span className="text-[11.5px] text-kh-muted">
@@ -264,17 +264,19 @@ function ReminderCard({
             {(() => {
               const notSeen = allStudentNames.filter(n => !viewers.includes(n))
               return notSeen.length > 0 ? (
-                <div className="flex items-center gap-2">
-                  <span className="msym text-[14px] text-kh-amber">schedule</span>
-                  <span className="text-[12px] font-semibold text-kh-amber">
-                    Noch nicht gesehen ({notSeen.length}):
+                <div className="flex items-start gap-2 flex-wrap">
+                  <span className="msym text-[14px] text-kh-amber flex-shrink-0 mt-px">schedule</span>
+                  <span className="text-[12px] font-semibold text-kh-amber flex-shrink-0 whitespace-nowrap">
+                    <span className="max-md:hidden">Noch nicht gesehen</span>
+                    <span className="md:hidden">Nicht ges.</span>
+                    {' '}({notSeen.length}):
                   </span>
                   <span className="text-[11.5px] text-kh-muted">
                     {notSeen.join(', ')}
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-2 flex-wrap">
                   <span className="msym text-[14px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                   <span className="text-[12px] font-semibold text-kh-teal">Alle haben gesehen</span>
                 </div>
