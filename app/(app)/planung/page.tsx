@@ -48,6 +48,7 @@ export default async function PlanungPage({ searchParams }: { searchParams: Prom
         prevWeek={addDaysISO(-7, monday)}
         nextWeek={addDaysISO(7, monday)}
         currentWeek={getRelevantMondayOfWeek()}
+        weekLabel={`KW ${kw}`}
         initialNotes={notes}
       />
     </div>

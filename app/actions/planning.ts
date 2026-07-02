@@ -23,9 +23,10 @@ export async function savePlanningNote(weekStart: string, day: number, subject: 
   const table = (supabase as any).from('planning_notes')
 
   if (!content.trim()) {
-    await table.delete()
+    const { error } = await table.delete()
       .eq('class_id', classId).eq('week_start', weekStart)
       .eq('day', day).eq('subject', subject)
+    if (error) throw new Error(error.message)
     return
   }
 
