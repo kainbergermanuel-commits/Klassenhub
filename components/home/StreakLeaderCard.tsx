@@ -22,7 +22,7 @@ export default function StreakLeaderCard({ entries }: Props) {
 
   if (top5.length === 0) {
     return (
-      <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
+      <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50 max-md:bg-gradient-to-br max-md:from-white max-md:via-white max-md:to-kh-page max-md:shadow-[0_8px_16px_rgba(20,40,45,.10)]">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <img src="/flame.svg" alt="" className="w-6 h-6" />
@@ -35,7 +35,7 @@ export default function StreakLeaderCard({ entries }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
+    <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50 max-md:bg-gradient-to-br max-md:from-white max-md:via-white max-md:to-kh-page max-md:shadow-[0_8px_16px_rgba(20,40,45,.10)]">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <img src="/flame.svg" alt="" className="w-6 h-6" />
