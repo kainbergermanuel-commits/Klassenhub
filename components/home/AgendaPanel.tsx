@@ -53,7 +53,7 @@ export default function AgendaPanel({ reminders, role, userId, classId, myViewed
 
   return (
     <>
-    <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50 max-md:bg-gradient-to-br max-md:from-white max-md:via-white max-md:to-kh-page max-md:shadow-[0_8px_16px_rgba(20,40,45,.10)]">
+    <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50 max-md:rounded-2xl max-md:border-transparent max-md:bg-gradient-to-br max-md:from-white max-md:via-white max-md:to-kh-page max-md:shadow-[0_8px_16px_rgba(20,40,45,.10)]">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-extrabold text-[17px] text-kh-dark flex items-center gap-1.5">
           <span className="msym text-[22px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>push_pin</span>
