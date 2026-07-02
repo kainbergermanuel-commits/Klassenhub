@@ -161,7 +161,7 @@ export default function TermineView({ events, role, today }: Props) {
                 key={day}
                 onClick={() => setSelectedDate(isSelected ? null : iso)}
                 className={`h-9 w-full rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ${
-                  isSelected ? 'bg-kh-dark text-white' : isToday ? 'border border-kh-teal text-kh-teal font-bold' : 'hover:bg-kh-page text-kh-dark'
+                  isSelected ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white' : isToday ? 'border border-kh-teal text-kh-teal font-bold' : 'hover:bg-kh-page text-kh-dark'
                 }`}
               >
                 <span className="text-[12.5px] font-semibold leading-none">{day}</span>
