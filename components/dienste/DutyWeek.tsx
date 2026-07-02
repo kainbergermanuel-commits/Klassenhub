@@ -91,7 +91,7 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
-        <PageHeader icon="cleaning_services" title="Dienste" subtitle={weekLabel} gradient="from-kh-violet to-[#7C86D6]" />
+        <PageHeader icon="cleaning_services" title="Dienste" subtitle={weekLabel} gradient="from-kh-violet to-[#7C86D6]" className="" />
         {role === 'teacher' && (
           <div className="flex items-center gap-2">
             <button

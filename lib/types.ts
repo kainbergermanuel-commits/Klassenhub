@@ -42,7 +42,7 @@ export type Class = {
   school: string
 }
 
-export type Event = {
+export type CalendarEvent = {
   id: string
   class_id: string
   created_by: string

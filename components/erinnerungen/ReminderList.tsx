@@ -68,7 +68,7 @@ export default function ReminderList({ reminders, role, specialRole, userId, cla
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
-        <PageHeader icon="push_pin" title="Erinnerungen" subtitle={`${upcoming.length} bevorstehend`} gradient="from-[#2F86C5] to-[#56AEE6]" />
+        <PageHeader icon="push_pin" title="Erinnerungen" subtitle={`${upcoming.length} bevorstehend`} gradient="from-[#2F86C5] to-[#56AEE6]" className="" />
         {canCreate && (
           <button
             onClick={() => setShowModal(true)}

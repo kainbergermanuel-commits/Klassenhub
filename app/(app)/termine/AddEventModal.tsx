@@ -204,12 +204,12 @@ export default function AddEventModal({ today, onClose }: Props) {
               <div className="flex-1">
                 <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Von</label>
                 <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-                  className="w-full border border-kh-border rounded-xl px-3 py-2.5 text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors" />
+                  className="w-full border border-kh-border rounded-xl px-3 py-2.5 text-base md:text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors" />
               </div>
               <div className="flex-1">
                 <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Bis (optional)</label>
                 <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
-                  className="w-full border border-kh-border rounded-xl px-3 py-2.5 text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors" />
+                  className="w-full border border-kh-border rounded-xl px-3 py-2.5 text-base md:text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors" />
               </div>
             </div>
           )}

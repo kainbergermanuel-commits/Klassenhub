@@ -145,7 +145,7 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
-        <PageHeader icon="menu_book" title="Mitteilungshefte" subtitle={`${parents.length} Eltern`} gradient="from-kh-violet to-[#7C86D6]" />
+        <PageHeader icon="menu_book" title="Mitteilungshefte" subtitle={`${parents.length} Eltern`} gradient="from-kh-violet to-[#7C86D6]" className="" />
         <div className="flex items-center gap-2">
           {broadcasts.length > 0 && (
             <button

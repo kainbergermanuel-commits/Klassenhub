@@ -6,13 +6,13 @@ import { monthLabel, addDaysISO } from '@/lib/date'
 import { eventCategoryMeta } from '@/lib/eventCategories'
 import { deleteEvent } from '@/app/actions/events'
 import AddEventModal from './AddEventModal'
-import type { Event, Role } from '@/lib/types'
+import type { CalendarEvent, Role } from '@/lib/types'
 
 const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 
 interface Props {
-  events: Event[]
+  events: CalendarEvent[]
   role: Role
   today: string
 }
@@ -26,7 +26,7 @@ function dateBadge(dateISO: string) {
   return { month: d.toLocaleDateString('de-AT', { month: 'short' }).toUpperCase().replace('.', ''), day: d.getDate() }
 }
 
-function EventRow({ event, canDelete, onDelete }: { event: Event; canDelete: boolean; onDelete: (id: string) => void }) {
+function EventRow({ event, canDelete, onDelete }: { event: CalendarEvent; canDelete: boolean; onDelete: (id: string) => void }) {
   const meta = eventCategoryMeta(event.category)
   const badge = dateBadge(event.start_date)
   const multiDay = event.end_date !== event.start_date
@@ -98,7 +98,7 @@ export default function TermineView({ events, role, today }: Props) {
   }
 
   const eventsByDay = useMemo(() => {
-    const map = new Map<string, Event[]>()
+    const map = new Map<string, CalendarEvent[]>()
     for (const e of events) {
       let cur = e.start_date
       while (cur <= e.end_date) {
@@ -114,7 +114,7 @@ export default function TermineView({ events, role, today }: Props) {
   const past = useMemo(() => events.filter(e => e.end_date < today).sort((a, b) => b.start_date.localeCompare(a.start_date)), [events, today])
 
   const pastGroups = useMemo(() => {
-    const groups: { label: string; items: Event[] }[] = []
+    const groups: { label: string; items: CalendarEvent[] }[] = []
     for (const e of past) {
       const label = monthLabel(e.start_date)
       const last = groups[groups.length - 1]

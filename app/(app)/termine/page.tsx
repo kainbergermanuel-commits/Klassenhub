@@ -4,7 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO } from '@/lib/date'
 import PageHeader from '@/components/layout/PageHeader'
 import TermineView from './TermineView'
-import type { Event } from '@/lib/types'
+import type { CalendarEvent } from '@/lib/types'
 
 export default async function TerminePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -18,7 +18,7 @@ export default async function TerminePage() {
     .from('events' as never)
     .select('*')
     .eq('class_id', activeClassId)
-    .order('start_date', { ascending: true }) as unknown as Promise<{ data: Event[] | null }>)
+    .order('start_date', { ascending: true }) as unknown as Promise<{ data: CalendarEvent[] | null }>)
 
   const events = data ?? []
   const upcomingCount = events.filter(e => e.end_date >= today).length
