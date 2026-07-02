@@ -244,7 +244,12 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
             <h2 className="text-[19px] font-extrabold text-kh-dark tracking-tight">{DAY_LABELS[selectedDay - 1]}</h2>
-            <p className="text-[13px] text-kh-muted font-medium">{selDateLabel}{isToday(selDate) ? ' · Heute' : ''}</p>
+            <p className="text-[13px] text-kh-muted font-medium flex items-center gap-1.5">
+              {selDateLabel}
+              {isToday(selDate) && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-br from-kh-teal to-emerald-400">Heute</span>
+              )}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <span aria-live="polite" className={`text-xs font-semibold ${statusView.cls}`}>{statusView.text}</span>
