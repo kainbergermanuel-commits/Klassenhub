@@ -240,7 +240,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
       </div>
 
       {/* Rechte Card: Tagesplanung */}
-      <div className="rounded-2xl shadow-sm p-6 max-md:p-5 min-h-[420px] bg-gradient-to-br from-kh-bg via-kh-bg to-kh-page">
+      <div className="rounded-2xl shadow-sm p-6 max-md:p-5 min-h-[420px] bg-gradient-to-br from-kh-bg via-kh-page to-kh-border">
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
             <h2 className="text-[19px] font-extrabold text-kh-dark tracking-tight">{DAY_LABELS[selectedDay - 1]}</h2>
