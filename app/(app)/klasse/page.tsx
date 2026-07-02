@@ -6,6 +6,7 @@ import { getClass } from '@/lib/auth'
 import StudentHomeworkPanel from '@/components/klasse/StudentHomeworkPanel'
 import KlasseManageBar from '@/components/klasse/KlasseManageBar'
 import Avatar from '@/components/ui/Avatar'
+import PageHeader from '@/components/layout/PageHeader'
 import type { Profile, Homework } from '@/lib/types'
 
 export default async function KlassePage() {
@@ -40,12 +41,12 @@ export default async function KlassePage() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Klasse {klass?.name}</h1>
-        <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">
-          {klass?.school} · {studentList.length} Schüler:innen · {parentList.length} Elternteile
-        </p>
-      </div>
+      <PageHeader
+        icon="groups"
+        title={`Klasse ${klass?.name ?? ''}`}
+        subtitle={`${klass?.school} · ${studentList.length} Schüler:innen · ${parentList.length} Elternteile`}
+        gradient="from-kh-violet to-[#7C86D6]"
+      />
 
       {/* Schüler */}
       <div className="mb-6">

@@ -33,7 +33,7 @@ export default function TeacherCard({ full_name, avatar_color, avatar_seed, avat
   return (
     <div className="h-full animate-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
     <div
-      className="relative h-full rounded-[20px] p-5 shadow-sm flex flex-col items-center text-center gap-3 select-none overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+      className="relative h-full rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)] flex flex-col items-center text-center gap-3 select-none overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
       style={{ background: `linear-gradient(135deg, ${gradientColor}22 0%, ${gradientColor}55 100%)` }}
     >
       <Avatar

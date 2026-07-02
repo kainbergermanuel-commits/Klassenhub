@@ -5,6 +5,7 @@ import { getTeacherClasses } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import ChangePasswordForm from '@/components/settings/ChangePasswordForm'
 import TeacherSubjectsEditor from '@/components/settings/TeacherSubjectsEditor'
+import PageHeader from '@/components/layout/PageHeader'
 import type { TeacherSubject } from '@/app/actions/saveTeacherSubjects'
 
 export default async function SettingsPage() {
@@ -31,10 +32,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <div className="mb-5">
-        <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Einstellungen</h1>
-        <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{user.email}</p>
-      </div>
+      <PageHeader icon="settings" title="Einstellungen" subtitle={user.email} gradient="from-kh-muted to-[#8A9896]" />
       <div className="flex flex-col gap-4">
         {realProfile?.role === 'teacher' && effectiveProfile?.role === 'teacher' && (
           <TeacherSubjectsEditor

@@ -36,7 +36,7 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-[20px] p-6 shadow-sm border border-kh-border/50 max-w-md">
+    <form onSubmit={handleSubmit} className="kh-card p-6 max-w-md">
       <div className="flex items-center gap-3 mb-5">
         <div className="w-11 h-11 rounded-[13px] bg-kh-teal-light text-kh-teal flex items-center justify-center flex-shrink-0">
           <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>

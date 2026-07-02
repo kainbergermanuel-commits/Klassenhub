@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import AddDutyModal from './AddDutyModal'
 import Avatar from '@/components/ui/Avatar'
+import PageHeader from '@/components/layout/PageHeader'
 import type { Duty, Profile, Role } from '@/lib/types'
 
 interface Props {
@@ -90,10 +91,7 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
-        <div>
-          <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Dienste</h1>
-          <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{weekLabel}</p>
-        </div>
+        <PageHeader icon="cleaning_services" title="Dienste" subtitle={weekLabel} gradient="from-kh-violet to-[#7C86D6]" />
         {role === 'teacher' && (
           <div className="flex items-center gap-2">
             <button
@@ -155,10 +153,10 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
             return (
               <div
                 key={duty.id}
-                className="rounded-2xl p-4 shadow-sm flex items-center gap-4 group min-w-0"
+                className="rounded-2xl p-4 shadow-[0_8px_16px_rgba(20,40,45,.10)] flex items-center gap-4 group min-w-0"
                 style={isMyDuty && role === 'student'
                   ? { background: 'linear-gradient(135deg, #0F8A82 0%, #3DB5AC 100%)' }
-                  : { background: 'white' }}
+                  : { background: 'linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #EFEAE0 100%)' }}
               >
                 <div className="w-12 h-12 rounded-[14px] flex items-center justify-center flex-shrink-0"
                   style={isMyDuty && role === 'student'

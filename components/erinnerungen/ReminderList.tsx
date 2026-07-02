@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { daysUntil } from '@/lib/date'
 import AddReminderModal from './AddReminderModal'
+import PageHeader from '@/components/layout/PageHeader'
 import type { Reminder, Role, SpecialRole } from '@/lib/types'
 
 interface Props {
@@ -67,12 +68,7 @@ export default function ReminderList({ reminders, role, specialRole, userId, cla
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
-        <div>
-          <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Erinnerungen</h1>
-          <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">
-            {upcoming.length} bevorstehend
-          </p>
-        </div>
+        <PageHeader icon="push_pin" title="Erinnerungen" subtitle={`${upcoming.length} bevorstehend`} gradient="from-[#2F86C5] to-[#56AEE6]" />
         {canCreate && (
           <button
             onClick={() => setShowModal(true)}
@@ -202,7 +198,7 @@ function ReminderCard({
   const isPast = days < 0
 
   return (
-    <div className={`rounded-2xl p-5 shadow-sm flex gap-4 items-start group ${isPending ? 'bg-[#FFFBF2] border border-kh-amber/30' : 'bg-white'}`}>
+    <div className={`rounded-2xl p-5 flex gap-4 items-start group ${isPending ? 'shadow-sm bg-[#FFFBF2] border border-kh-amber/30' : 'kh-card-flat'}`}>
       <div className="w-12 h-12 rounded-[14px] gradient-teal flex flex-col items-center justify-center text-white flex-shrink-0">
         <span className="text-[10px] font-bold uppercase opacity-80">
           {new Date(r.event_date).toLocaleDateString('de-AT', { month: 'short' })}

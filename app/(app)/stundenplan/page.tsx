@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getRelevantMondayOfWeek, getWeekNumber } from '@/lib/date'
 import TimetableGrid from './TimetableGrid'
+import PageHeader from '@/components/layout/PageHeader'
 
 function weekLabel(): string {
   const mondayStr = getRelevantMondayOfWeek()
@@ -28,8 +29,8 @@ export default async function StundenplanPage() {
   if (!studentId) {
     return (
       <div>
-        <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight mb-2">Mein Stundenplan</h1>
-        <p className="text-sm text-kh-muted font-medium">Kein Kind verknüpft.</p>
+        <PageHeader icon="calendar_view_week" title="Mein Stundenplan" gradient="from-[#2F86C5] to-[#56AEE6]" />
+        <p className="text-sm text-kh-muted font-medium -mt-4">Kein Kind verknüpft.</p>
       </div>
     )
   }
@@ -45,13 +46,13 @@ export default async function StundenplanPage() {
 
   return (
     <div>
-      <header className="mb-6">
-        <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight">Mein Stundenplan</h1>
-        <p className="text-sm text-kh-muted font-medium mt-1">
-          {weekLabel()}{isReadonly ? ' · Ansicht deines Kindes' : ''}
-        </p>
-      </header>
-      <div className="bg-white rounded-2xl shadow-sm px-5 py-5">
+      <PageHeader
+        icon="calendar_view_week"
+        title="Mein Stundenplan"
+        subtitle={`${weekLabel()}${isReadonly ? ' · Ansicht deines Kindes' : ''}`}
+        gradient="from-[#2F86C5] to-[#56AEE6]"
+      />
+      <div className="kh-card px-5 py-5">
         <TimetableGrid entries={entries ?? []} readonly={isReadonly} />
       </div>
     </div>

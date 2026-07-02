@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAuth } from '@/lib/auth'
 import AdminManageBar from '@/components/admin/AdminManageBar'
 import AdminClassManageBar from '@/components/admin/AdminClassManageBar'
+import PageHeader from '@/components/layout/PageHeader'
 
 export default async function AdminPage() {
   const { user, profile } = await getAuth()
@@ -43,10 +44,7 @@ export default async function AdminPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Administration</h1>
-        <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">Klassen und Lehrpersonen verwalten</p>
-      </div>
+      <PageHeader icon="admin_panel_settings" title="Administration" subtitle="Klassen und Lehrpersonen verwalten" gradient="from-kh-dark to-[#2A4A55]" />
 
       {/* Klassen */}
       <div className="mb-8">

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
 import MessageThread, { type SenderAvatar } from './MessageThread'
+import PageHeader from '@/components/layout/PageHeader'
 import type { Message } from '@/lib/types'
 
 type ParentLite = {
@@ -144,10 +145,7 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
-        <div>
-          <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Mitteilungshefte</h1>
-          <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{parents.length} Eltern</p>
-        </div>
+        <PageHeader icon="menu_book" title="Mitteilungshefte" subtitle={`${parents.length} Eltern`} gradient="from-kh-violet to-[#7C86D6]" />
         <div className="flex items-center gap-2">
           {broadcasts.length > 0 && (
             <button
@@ -179,7 +177,7 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
             <button
               key={parent.id}
               onClick={() => setOpenParentId(parent.id)}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white shadow-sm hover:-translate-y-[2px] hover:shadow-md transition-all text-left min-w-0"
+              className="flex items-center gap-3 p-3.5 rounded-2xl kh-card-flat hover:-translate-y-[2px] hover:shadow-md transition-all text-left min-w-0"
             >
               {(() => {
                 const child = parent.child_id ? studentById[parent.child_id] : undefined
@@ -342,7 +340,7 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
           const allSeen = b.seen === b.total
           const notSeen = b.recipients.filter(r => !r.seen)
           return (
-            <div key={b.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div key={b.id} className="kh-card-flat rounded-2xl overflow-hidden">
               <button
                 onClick={() => setOpenId(open ? null : b.id)}
                 className="w-full flex items-center gap-3 p-4 text-left"

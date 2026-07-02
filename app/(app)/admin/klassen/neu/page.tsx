@@ -53,7 +53,7 @@ export default function NeueKlassePage() {
         </div>
 
         {results.students.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
+          <div className="kh-card-flat overflow-hidden mb-4">
             <div className="px-4 py-2.5 border-b border-kh-border grid grid-cols-3 gap-2">
               <span className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide">Name</span>
               <span className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide">Benutzername</span>

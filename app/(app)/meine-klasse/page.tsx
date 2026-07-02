@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import StudentCard from '@/components/klasse/StudentCard'
 import TeacherCard from '@/components/klasse/TeacherCard'
+import PageHeader from '@/components/layout/PageHeader'
 import type { TeacherSubject } from '@/app/actions/saveTeacherSubjects'
 
 export default async function MeineKlassePage() {
@@ -55,10 +56,12 @@ export default async function MeineKlassePage() {
 
   return (
     <div>
-      <header className="mb-6">
-        <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight">Meine Klasse</h1>
-        {klass && <p className="text-sm text-kh-muted font-medium mt-1">Klasse {klass.name} · {students.length} Schüler:innen</p>}
-      </header>
+      <PageHeader
+        icon="groups"
+        title="Meine Klasse"
+        subtitle={klass ? `Klasse ${klass.name} · ${students.length} Schüler:innen` : undefined}
+        gradient="from-kh-violet to-[#7C86D6]"
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {teachers.map((t, i) => (

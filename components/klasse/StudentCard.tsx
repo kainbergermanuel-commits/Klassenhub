@@ -47,7 +47,7 @@ export default function StudentCard({ id, full_name, avatar_color, avatar_seed, 
     <div className="h-full animate-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
     <div
       onClick={handleClick}
-      className={`relative h-full rounded-[20px] p-5 shadow-sm border border-kh-border/50 flex flex-col items-center text-center gap-3 select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-95 ${isMe ? '' : 'cursor-pointer'} ${isMe ? 'ring-2 ring-kh-teal/40' : ''} ${wobble ? 'animate-wobble' : ''}`}
+      className={`relative h-full rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)] flex flex-col items-center text-center gap-3 select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-95 ${isMe ? '' : 'cursor-pointer'} ${isMe ? 'ring-2 ring-kh-teal/40' : ''} ${wobble ? 'animate-wobble' : ''}`}
       style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FAF6EF 100%)' }}
     >
       {badge && (

@@ -46,19 +46,21 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
 
   return (
     <>
-      <header className="mb-6">
-        <div className="flex items-center gap-2.5 mb-1">
-          <img src="/flame.svg" alt="" className="w-8 h-8" />
-          <h1 className="text-[25px] font-extrabold text-kh-dark tracking-tight">Streaks</h1>
+      <header className="mb-6 flex items-center gap-3.5">
+        <div className="w-11 h-11 max-md:w-10 max-md:h-10 rounded-2xl bg-gradient-to-br from-kh-amber to-[#E0A94B] shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
+          <img src="/flame.svg" alt="" className="w-6 h-6" />
         </div>
-        <p className="text-[13.5px] text-kh-muted font-medium">
-          Aufeinanderfolgende erledigte Hausübungen · {withStreak.length} aktive Streaks
-        </p>
+        <div className="min-w-0">
+          <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Streaks</h1>
+          <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">
+            Aufeinanderfolgende erledigte Hausübungen · {withStreak.length} aktive Streaks
+          </p>
+        </div>
       </header>
 
       <div className="flex flex-col gap-6">
         {/* Active streaks */}
-        <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
+        <div className="kh-card p-5">
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="font-extrabold text-base text-kh-dark">Aktuelle Streaks</h2>
             <span className="flex items-center gap-1 text-[12px] font-semibold text-kh-muted">
@@ -131,7 +133,7 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
 
         {/* Milestone history */}
         {sortedMonths.length > 0 && (
-          <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
+          <div className="kh-card p-5">
             <h2 className="font-extrabold text-base text-kh-dark mb-4">Bestätigte Meilensteine</h2>
             <div className="flex flex-col gap-5">
               {sortedMonths.map(month => (
@@ -165,7 +167,7 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
 
         {/* Previous month race */}
         {prevRace.length > 0 && (
-          <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
+          <div className="kh-card p-5">
             <div className="flex items-baseline justify-between mb-4">
               <h2 className="font-extrabold text-base text-kh-dark">Letztes Race</h2>
               <span className="text-[12px] font-semibold text-kh-muted">{monthLabel(prevMonthLabel + '-01')}</span>
@@ -210,7 +212,7 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
 
         {/* Students without streak (teacher only) */}
         {role === 'teacher' && noStreak.length > 0 && (
-          <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50">
+          <div className="kh-card p-5">
             <h2 className="font-extrabold text-base text-kh-dark mb-3">Ohne aktive Streak</h2>
             <div className="flex flex-wrap gap-2">
               {noStreak.map(s => (

@@ -30,7 +30,7 @@ export default function NeueLehrkraftForm({ classes }: Props) {
   if (result) {
     return (
       <div className="max-w-md">
-        <div className="bg-white rounded-2xl px-6 py-6 shadow-sm">
+        <div className="kh-card px-6 py-6">
           <div className="flex items-center gap-3 mb-4">
             <span className="msym text-[28px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             <div>
