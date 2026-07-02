@@ -157,7 +157,7 @@ export default function ParentHome({
           </div>
 
           {/* Child's homework */}
-          <div className="animate-card-enter rounded-[20px] p-5 shadow-sm" style={{ animationDelay: '180ms', border: '0.5px solid #C9C3B6', background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
+          <div className="animate-card-enter rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ animationDelay: '180ms', background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
             <div className="flex items-center justify-between gap-2 mb-3">
               <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark whitespace-nowrap min-w-0">
                 <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
@@ -204,9 +204,9 @@ export default function ParentHome({
         </div>
 
         <div className="relative">
-          <div className="hidden lg:block absolute top-0 -left-6 w-6 h-6 bg-white rounded-br-[20px]" />
-          <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-[20px]" />
-          <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-[24px] lg:p-5 lg:sticky lg:top-7">
+          <div className="hidden lg:block absolute top-0 -left-6 w-6 h-6 bg-white rounded-br-2xl" />
+          <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-2xl" />
+          <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} role="parent" />
             </div>

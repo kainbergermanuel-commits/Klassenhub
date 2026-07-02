@@ -39,7 +39,7 @@ export default function FeatureCard({ href, gradient, icon, title, meta, progres
   return (
     <Link
       href={href}
-      className={`${GRADIENT[gradient]} rounded-[20px] p-[18px] text-white flex flex-col gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full`}
+      className={`${GRADIENT[gradient]} rounded-2xl p-[18px] text-white flex flex-col gap-3 shadow-[0_8px_16px_rgba(20,40,45,.10)] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full`}
     >
       <div className="flex items-start justify-between">
         <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">

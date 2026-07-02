@@ -25,7 +25,7 @@ export default function DutyCard({ title, entries }: { title: string; entries: D
   return (
     <Link
       href="/dienste"
-      className="gradient-violet rounded-[20px] p-[18px] text-white flex flex-col gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full"
+      className="gradient-violet rounded-2xl p-[18px] text-white flex flex-col gap-3 shadow-[0_8px_16px_rgba(20,40,45,.10)] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full"
     >
       <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
         <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>cleaning_services</span>
