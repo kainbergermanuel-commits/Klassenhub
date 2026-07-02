@@ -199,7 +199,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
             return (
               <button key={day} onClick={() => setSelectedDay(day)}
                 className={`flex-1 md:w-full flex md:items-center max-md:flex-col max-md:items-center gap-0.5 md:gap-3 rounded-xl px-2 md:px-3.5 py-2 md:py-2.5 text-left transition-colors ${
-                  active ? 'bg-kh-dark text-white' : 'hover:bg-kh-page text-kh-dark'
+                  active ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white' : 'hover:bg-kh-page text-kh-dark'
                 }`}>
                 <span className={`text-[15px] font-extrabold w-auto md:w-7 ${active ? 'text-white' : today ? 'text-kh-teal' : ''}`}>
                   {DAY_SHORT[day - 1]}
