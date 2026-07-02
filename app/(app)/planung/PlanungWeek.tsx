@@ -173,7 +173,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
     <div className="grid grid-cols-1 md:grid-cols-[264px_1fr] gap-4 items-start">
 
       {/* Linke Card: Woche + Tagesliste + Wochennotiz */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 md:sticky md:top-4">
+      <div className="bg-gradient-to-br from-white via-white to-kh-teal-light rounded-2xl shadow-sm p-4 md:sticky md:top-4">
         <div className="flex items-center justify-between mb-3">
           <Link href={`/planung?w=${prevWeek}`} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Vorherige Woche">
             <span className="material-symbols-rounded text-[20px]">chevron_left</span>
