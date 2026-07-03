@@ -41,7 +41,12 @@ export default function ParentHome({
     <>
       <header className="mb-5">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-[26px] font-extrabold text-kh-dark tracking-tight min-w-0">Hallo, Familie {fullName.split(' ').slice(-1)[0]}!</h1>
+          <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
+            <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
+              <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
+            </div>
+            <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">Hallo, Familie {fullName.split(' ').slice(-1)[0]}!</h1>
+          </div>
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today} · {childFirst}, {className}</p>
         {/* Mobile-only Kompakt-Stats (Web unverändert) — unter dem Namens-Header, damit sie nicht unter dem Burger liegen */}
