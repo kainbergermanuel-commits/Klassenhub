@@ -30,7 +30,7 @@ function DueBadge({ label }: { label: string }) {
       </defs>
       <path
         d="M10.2 3.6c.77-1.37 2.83-1.37 3.6 0l8.3 14.7c.75 1.33-.2 3-1.8 3H3.7c-1.6 0-2.55-1.67-1.8-3z"
-        fill="url(#dueBadgeGrad)" stroke="white" strokeWidth="1.2" strokeLinejoin="round"
+        fill="url(#dueBadgeGrad)" stroke="white" strokeOpacity="0.7" strokeWidth="0.9" strokeLinejoin="round"
       />
       <rect x="11.1" y="9" width="1.8" height="6" rx="0.9" fill="white" />
       <circle cx="12" cy="17.3" r="1.05" fill="white" />
