@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getRelevantMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from '@/lib/date'
+import { getStundenplanMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from '@/lib/date'
 import TimetableGrid from './TimetableGrid'
 import PageHeader from '@/components/layout/PageHeader'
 
 function weekLabel(): string {
-  const mondayStr = getRelevantMondayOfWeek()
+  const mondayStr = getStundenplanMondayOfWeek()
   const monday = new Date(`${mondayStr}T00:00:00`)
   const friday = new Date(monday)
   friday.setDate(monday.getDate() + 4)
@@ -46,7 +46,7 @@ export default async function StundenplanPage() {
 
   // HÜ-Marker: offene Hausübungen dieser Woche pro Wochentag+Fach, für die
   // Darstellung direkt im Stundenplan ("morgen fällig" am jeweiligen Fach).
-  const monday = getRelevantMondayOfWeek()
+  const monday = getStundenplanMondayOfWeek()
   const friday = addDaysISO(4, new Date(`${monday}T00:00:00`))
   const today = todayISO()
 

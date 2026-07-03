@@ -49,6 +49,21 @@ export function getRelevantMondayOfWeek(from: Date = new Date()): string {
   return getMondayOfWeek(d)
 }
 
+/**
+ * Montag der "relevanten" Woche für den Stundenplan: ab Freitag (Fr/Sa/So)
+ * bereits die kommende Woche, weil der Unterricht für die aktuelle Woche
+ * gelaufen ist. Bewusst eine eigene Funktion statt getRelevantMondayOfWeek()
+ * zu ändern — die wird auch von Dienste/Planung/Startseite genutzt, wo
+ * "ab Freitag nächste Woche" nicht gewünscht ist.
+ */
+export function getStundenplanMondayOfWeek(from: Date = new Date()): string {
+  const d = new Date(from)
+  const day = d.getDay() // 0=So, 5=Fr, 6=Sa
+  const daysToNextMonday: Record<number, number> = { 5: 3, 6: 2, 0: 1 }
+  if (day in daysToNextMonday) d.setDate(d.getDate() + daysToNextMonday[day])
+  return getMondayOfWeek(d)
+}
+
 /** Kalenderwoche eines YYYY-MM-DD Datums. */
 export function getWeekNumber(dateStr: string): number {
   const d = new Date(`${dateStr}T00:00:00`)
