@@ -114,10 +114,10 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
                       </button>
                       {dueTitles && (
                         <span
-                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-kh-amber border-2 border-white flex items-center justify-center pointer-events-none"
+                          className="absolute -top-1.5 -right-1.5 h-4 px-1 rounded-full gradient-amber border-2 border-white flex items-center justify-center pointer-events-none shadow-sm"
                           aria-label={`Hausübung fällig: ${dueTitles.join(', ')}`}
                         >
-                          <span className="msym text-[9px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>priority_high</span>
+                          <span className="msym text-[10px] text-white leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
                         </span>
                       )}
                     </div>
