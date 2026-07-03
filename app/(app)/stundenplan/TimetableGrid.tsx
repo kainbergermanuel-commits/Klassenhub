@@ -9,9 +9,16 @@ const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40', '14:35', '15:30', '16:25']
 
 interface Entry { day: number; slot: number; subject: string }
-interface Props { entries: Entry[]; readonly?: boolean }
+interface DueMarker { day: number; subject: string; title: string }
+interface Props { entries: Entry[]; readonly?: boolean; dueMarkers?: DueMarker[] }
 
-export default function TimetableGrid({ entries, readonly = false }: Props) {
+export default function TimetableGrid({ entries, readonly = false, dueMarkers = [] }: Props) {
+  const dueByDaySubject = new Map<string, string[]>()
+  for (const m of dueMarkers) {
+    const k = `${m.day}-${m.subject}`
+    if (!dueByDaySubject.has(k)) dueByDaySubject.set(k, [])
+    dueByDaySubject.get(k)!.push(m.title)
+  }
   const [grid, setGrid] = useState<Map<string, string>>(() => {
     const m = new Map<string, string>()
     for (const e of entries) m.set(`${e.day}-${e.slot}`, e.subject)
@@ -81,27 +88,39 @@ export default function TimetableGrid({ entries, readonly = false }: Props) {
                 const value = grid.get(k) ?? ''
                 const isSaving = saving === k
                 const subj = SUBJECTS.find(s => s.label === value)
+                const dueTitles = value ? dueByDaySubject.get(`${day}-${value}`) : undefined
 
                 return (
                   <td key={day} className="p-0.5">
-                    <button
-                      onClick={() => !readonly && setPopup({ day, slot })}
-                      disabled={readonly || isSaving}
-                      className={`w-full rounded-lg px-2 py-2.5 text-[12px] font-bold text-center transition min-h-[40px] ${
-                        value
-                          ? 'text-white hover:opacity-75 transition-opacity'
-                          : readonly
-                          ? 'bg-transparent'
-                          : 'bg-transparent text-transparent hover:bg-kh-teal/10 hover:text-kh-teal transition-colors'
-                      } disabled:cursor-default`}
-                      style={value && subj
-                        ? { background: `linear-gradient(180deg, ${subj.color}ee 0%, ${subj.color}99 100%)` }
-                        : value
-                        ? { background: 'linear-gradient(180deg, #6E7E80ee 0%, #6E7E8099 100%)' }
-                        : undefined}
-                    >
-                      {isSaving ? '…' : value ? (subj?.short ?? value) : readonly ? '' : '+'}
-                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => !readonly && setPopup({ day, slot })}
+                        disabled={readonly || isSaving}
+                        title={dueTitles ? `Fällig: ${dueTitles.join(', ')}` : undefined}
+                        className={`w-full rounded-lg px-2 py-2.5 text-[12px] font-bold text-center transition min-h-[40px] ${
+                          value
+                            ? 'text-white hover:opacity-75 transition-opacity'
+                            : readonly
+                            ? 'bg-transparent'
+                            : 'bg-transparent text-transparent hover:bg-kh-teal/10 hover:text-kh-teal transition-colors'
+                        } disabled:cursor-default`}
+                        style={value && subj
+                          ? { background: `linear-gradient(180deg, ${subj.color}ee 0%, ${subj.color}99 100%)` }
+                          : value
+                          ? { background: 'linear-gradient(180deg, #6E7E80ee 0%, #6E7E8099 100%)' }
+                          : undefined}
+                      >
+                        {isSaving ? '…' : value ? (subj?.short ?? value) : readonly ? '' : '+'}
+                      </button>
+                      {dueTitles && (
+                        <span
+                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-kh-amber border-2 border-white flex items-center justify-center pointer-events-none"
+                          aria-label={`Hausübung fällig: ${dueTitles.join(', ')}`}
+                        >
+                          <span className="msym text-[9px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>priority_high</span>
+                        </span>
+                      )}
+                    </div>
                   </td>
                 )
               })}

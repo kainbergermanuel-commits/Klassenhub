@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getRelevantMondayOfWeek, getWeekNumber } from '@/lib/date'
+import { getRelevantMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from '@/lib/date'
 import TimetableGrid from './TimetableGrid'
 import PageHeader from '@/components/layout/PageHeader'
 
@@ -44,6 +44,41 @@ export default async function StundenplanPage() {
 
   const isReadonly = profile.role === 'parent'
 
+  // HÜ-Marker: offene Hausübungen dieser Woche pro Wochentag+Fach, für die
+  // Darstellung direkt im Stundenplan ("morgen fällig" am jeweiligen Fach).
+  const monday = getRelevantMondayOfWeek()
+  const friday = addDaysISO(4, new Date(`${monday}T00:00:00`))
+  const today = todayISO()
+
+  const { data: studentProfile } = await supabase
+    .from('profiles').select('class_id').eq('id', studentId).single()
+  const classId = studentProfile?.class_id ?? null
+
+  let dueMarkers: { day: number; subject: string; title: string }[] = []
+  if (classId) {
+    const { data: weekHomework } = await supabase
+      .from('homework')
+      .select('id,subject,title,due_date')
+      .eq('class_id', classId)
+      .gte('due_date', monday <= today ? today : monday)
+      .lte('due_date', friday)
+
+    const homework = weekHomework ?? []
+    const hwIds = homework.map(h => h.id)
+    const { data: completions } = hwIds.length > 0
+      ? await supabase.from('homework_completions').select('homework_id').eq('student_id', studentId).in('homework_id', hwIds)
+      : { data: [] }
+    const doneIds = new Set((completions ?? []).map(c => c.homework_id))
+
+    dueMarkers = homework
+      .filter(h => !doneIds.has(h.id))
+      .map(h => {
+        const dayOffset = Math.round((new Date(`${h.due_date}T00:00:00`).getTime() - new Date(`${monday}T00:00:00`).getTime()) / 86400000)
+        return { day: dayOffset + 1, subject: h.subject, title: h.title }
+      })
+      .filter(m => m.day >= 1 && m.day <= 5)
+  }
+
   return (
     <div>
       <PageHeader
@@ -53,7 +88,7 @@ export default async function StundenplanPage() {
         gradient="from-[#2F86C5] to-[#56AEE6]"
       />
       <div className="kh-card px-5 py-5">
-        <TimetableGrid entries={entries ?? []} readonly={isReadonly} />
+        <TimetableGrid entries={entries ?? []} readonly={isReadonly} dueMarkers={dueMarkers} />
       </div>
     </div>
   )
