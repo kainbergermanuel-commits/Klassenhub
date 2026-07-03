@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Hanken_Grotesk } from 'next/font/google'
+import { Hanken_Grotesk, Bricolage_Grotesque } from 'next/font/google'
 import ServiceWorkerRegister from '@/components/layout/ServiceWorkerRegister'
 import './globals.css'
 
@@ -7,6 +7,13 @@ const hanken = Hanken_Grotesk({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-hanken',
+})
+
+// Display-Schrift nur für Seiten-Titel/Begrüßungen (h1), Body bleibt Hanken.
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-display',
 })
 
 export const metadata: Metadata = {
@@ -29,7 +36,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" className={hanken.variable}>
+    <html lang="de" className={`${hanken.variable} ${bricolage.variable}`}>
       <head>
         <link
           rel="stylesheet"

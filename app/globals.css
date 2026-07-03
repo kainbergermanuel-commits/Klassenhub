@@ -6,6 +6,8 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
   body { background: #EFEAE0; font-family: var(--font-hanken), sans-serif; -webkit-font-smoothing: antialiased; }
+  /* Seiten-Titel/Begrüßungen: Display-Schrift (Bricolage Grotesque). Body bleibt Hanken. */
+  h1 { font-family: var(--font-display), var(--font-hanken), sans-serif; }
 }
 
 @layer utilities {

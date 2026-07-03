@@ -26,6 +26,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['var(--font-hanken)', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-hanken)', 'sans-serif'],
       },
     },
   },
