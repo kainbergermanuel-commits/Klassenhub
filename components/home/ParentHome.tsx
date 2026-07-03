@@ -32,6 +32,7 @@ export default function ParentHome({
   fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, todoTotal, todoDone, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
+  const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
   const hwTotal = childHomework.length
   const hwOpen = childHomework.filter(h => !h.done).length
@@ -109,7 +110,7 @@ export default function ParentHome({
         </svg>
         <Avatar name={childName} color={childColor} seed={childSeed} hairColor={childHairColor} skinColor={childSkinColor} size={52} />
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-[17px]">{childName}</div>
+          <div className={`font-bold ${childNameSize} truncate`} title={childName}>{childName}</div>
           {flameCount(childConfirmedStreak) > 0 && (
             <div className="flex items-center gap-0.5 mt-1">
               {Array.from({ length: flameCount(childConfirmedStreak) }).map((_, i) => (
