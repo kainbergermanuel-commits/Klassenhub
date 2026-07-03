@@ -12,6 +12,32 @@ interface Entry { day: number; slot: number; subject: string }
 interface DueMarker { day: number; subject: string; title: string }
 interface Props { entries: Entry[]; readonly?: boolean; dueMarkers?: DueMarker[] }
 
+/** Warndreieck mit echtem SVG-Gradient (kein background-clip-Trick nötig). */
+function DueBadge({ label }: { label: string }) {
+  return (
+    <svg
+      className="absolute top-0.5 right-0.5 pointer-events-none"
+      width="17" height="17" viewBox="0 0 24 24"
+      style={{ filter: 'drop-shadow(0 1px 1.5px rgba(0,0,0,.25))' }}
+      role="img"
+      aria-label={label}
+    >
+      <defs>
+        <linearGradient id="dueBadgeGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#E06B57" />
+          <stop offset="100%" stopColor="#F2907E" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M10.2 3.6c.77-1.37 2.83-1.37 3.6 0l8.3 14.7c.75 1.33-.2 3-1.8 3H3.7c-1.6 0-2.55-1.67-1.8-3z"
+        fill="url(#dueBadgeGrad)" stroke="white" strokeWidth="1.2" strokeLinejoin="round"
+      />
+      <rect x="11.1" y="9" width="1.8" height="6" rx="0.9" fill="white" />
+      <circle cx="12" cy="17.3" r="1.05" fill="white" />
+    </svg>
+  )
+}
+
 export default function TimetableGrid({ entries, readonly = false, dueMarkers = [] }: Props) {
   const dueByDaySubject = new Map<string, string[]>()
   for (const m of dueMarkers) {
@@ -113,12 +139,7 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
                         {isSaving ? '…' : value ? (subj?.short ?? value) : readonly ? '' : '+'}
                       </button>
                       {dueTitles && (
-                        <span
-                          className="absolute top-0 right-0 h-4 px-1 rounded-full gradient-amber border-2 border-white flex items-center justify-center pointer-events-none shadow-sm"
-                          aria-label={`Hausübung fällig: ${dueTitles.join(', ')}`}
-                        >
-                          <span className="msym text-[10px] text-white leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
-                        </span>
+                        <DueBadge label={`Hausübung fällig: ${dueTitles.join(', ')}`} />
                       )}
                     </div>
                   </td>
