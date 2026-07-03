@@ -7,6 +7,7 @@ import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder } from '@/lib/types'
 import { dutyIcon } from '@/lib/dutyIcon'
+import { greeting } from '@/lib/date'
 
 interface StudentHomeProps {
   fullName: string
@@ -66,7 +67,7 @@ export default function StudentHome({
             <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
               <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
             </div>
-            <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">Hallo, {firstName}!</h1>
+            <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">{greeting()}, {firstName}!</h1>
           </div>
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>

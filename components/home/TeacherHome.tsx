@@ -10,7 +10,7 @@ import DutyCard, { type DutyEntry } from './DutyCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
-import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber } from '@/lib/date'
+import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber, greeting } from '@/lib/date'
 import type { Class, HomeworkWithStatus, Reminder } from '@/lib/types'
 
 type StudentStatus = { id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }
@@ -155,7 +155,7 @@ export default function TeacherHome({
             <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
           </div>
           <div className="min-w-0">
-            <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight">Guten Morgen, {firstName}!</h1>
+            <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight">{greeting()}, {firstName}!</h1>
             <p className="text-sm text-kh-muted font-medium mt-1">{today} · Klasse {klass?.name}</p>
           </div>
         </div>

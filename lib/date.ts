@@ -95,3 +95,11 @@ export function daysUntilLabel(dateStr: string): string {
   if (days < 0) return 'Vorbei'
   return `in ${days} Tagen`
 }
+
+/** Tageszeitabhängige Begrüßung ("Guten Morgen/Tag/Abend", lokale Zeit). */
+export function greeting(from: Date = new Date()): string {
+  const h = from.getHours()
+  if (h < 12) return 'Guten Morgen'
+  if (h < 18) return 'Guten Tag'
+  return 'Guten Abend'
+}
