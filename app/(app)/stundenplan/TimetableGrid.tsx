@@ -16,7 +16,7 @@ interface Props { entries: Entry[]; readonly?: boolean; dueMarkers?: DueMarker[]
 function DueBadge({ label }: { label: string }) {
   return (
     <svg
-      className="absolute top-0.5 right-0.5 pointer-events-none"
+      className="absolute bottom-0.5 right-0.5 pointer-events-none"
       width="17" height="17" viewBox="0 0 24 24"
       style={{ filter: 'drop-shadow(0 1px 1.5px rgba(0,0,0,.25))' }}
       role="img"
