@@ -12,15 +12,36 @@ interface Entry { day: number; slot: number; subject: string }
 interface DueMarker { day: number; subject: string; title: string; done: boolean }
 interface Props { entries: Entry[]; readonly?: boolean; dueMarkers?: DueMarker[] }
 
+/**
+ * Eigenes, gestyltes Tooltip statt title-Attribut (native Browser-Tooltips
+ * lassen sich nicht stylen). Erscheint oberhalb des Badges bei Hover/Fokus.
+ */
+function BadgeTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span tabIndex={0} className="absolute bottom-0.5 right-0.5 group/badge outline-none">
+      {children}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full right-0 mb-1.5 z-30 w-max max-w-[180px] whitespace-normal rounded-lg px-2.5 py-1.5 text-[11px] font-semibold leading-snug text-white opacity-0 scale-95 origin-bottom-right transition-all duration-150 shadow-lg group-hover/badge:opacity-100 group-hover/badge:scale-100 group-focus-visible/badge:opacity-100 group-focus-visible/badge:scale-100"
+        style={{ background: 'linear-gradient(135deg, #17404B 0%, #0F2E37 100%)' }}
+      >
+        {label}
+        <span
+          className="absolute top-full right-2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px]"
+          style={{ borderTopColor: '#123640' }}
+        />
+      </span>
+    </span>
+  )
+}
+
 /** Warndreieck mit echtem SVG-Gradient (kein background-clip-Trick nötig). */
-function DueBadge({ label }: { label: string }) {
+function DueBadge() {
   return (
     <svg
-      className="absolute bottom-0.5 right-0.5 pointer-events-none"
       width="17" height="17" viewBox="0 0 24 24"
       style={{ filter: 'drop-shadow(0 1px 1.5px rgba(0,0,0,.25))' }}
-      role="img"
-      aria-label={label}
+      aria-hidden="true"
     >
       <defs>
         <linearGradient id="dueBadgeGrad" x1="0" y1="0" x2="1" y2="1">
@@ -39,14 +60,12 @@ function DueBadge({ label }: { label: string }) {
 }
 
 /** Dezenter Haken für bereits erledigte HÜ — kein Container/Chip, nur der Strich selbst. */
-function DoneBadge({ label }: { label: string }) {
+function DoneBadge() {
   return (
     <svg
-      className="absolute bottom-0.5 right-0.5 pointer-events-none"
       width="15" height="15" viewBox="0 0 24 24"
       style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.2))' }}
-      role="img"
-      aria-label={label}
+      aria-hidden="true"
     >
       <path
         d="M4 12.5l5 5.5L20 6"
@@ -142,7 +161,6 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
                       <button
                         onClick={() => !readonly && setPopup({ day, slot })}
                         disabled={readonly || isSaving}
-                        title={openEntries?.length ? `Fällig: ${openEntries.map(e => e.title).join(', ')}` : doneEntries?.length ? `Erledigt: ${doneEntries.map(e => e.title).join(', ')}` : undefined}
                         className={`w-full rounded-lg px-2 py-2.5 text-[12px] font-bold text-center transition min-h-[40px] ${
                           value
                             ? 'text-white hover:opacity-75 transition-opacity'
@@ -159,9 +177,13 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
                         {isSaving ? '…' : value ? (subj?.short ?? value) : readonly ? '' : '+'}
                       </button>
                       {openEntries && openEntries.length > 0 ? (
-                        <DueBadge label={`Hausübung fällig: ${openEntries.map(e => e.title).join(', ')}`} />
+                        <BadgeTooltip label={`Fällig: ${openEntries.map(e => e.title).join(', ')}`}>
+                          <DueBadge />
+                        </BadgeTooltip>
                       ) : doneEntries && doneEntries.length > 0 ? (
-                        <DoneBadge label={`Hausübung erledigt: ${doneEntries.map(e => e.title).join(', ')}`} />
+                        <BadgeTooltip label={`Erledigt: ${doneEntries.map(e => e.title).join(', ')}`}>
+                          <DoneBadge />
+                        </BadgeTooltip>
                       ) : null}
                     </div>
                   </td>
