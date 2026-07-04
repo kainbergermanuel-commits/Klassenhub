@@ -78,6 +78,26 @@ export default async function StundenplanPage() {
       .filter(m => m.day >= 1 && m.day <= 5)
   }
 
+  // Erinnerungs-Marker: nicht fachgebunden, daher neben dem Tages-Kürzel
+  // statt an einer einzelnen Fach-Zelle. RLS filtert Targeting/Sichtbarkeit
+  // (target_student_ids, status=published) bereits serverseitig pro Nutzer.
+  let reminderMarkers: { day: number; title: string }[] = []
+  if (classId) {
+    const { data: weekReminders } = await supabase
+      .from('reminders')
+      .select('event_date,title')
+      .eq('class_id', classId)
+      .gte('event_date', monday <= today ? today : monday)
+      .lte('event_date', friday)
+
+    reminderMarkers = (weekReminders ?? [])
+      .map(r => {
+        const dayOffset = Math.round((new Date(`${r.event_date}T00:00:00`).getTime() - new Date(`${monday}T00:00:00`).getTime()) / 86400000)
+        return { day: dayOffset + 1, title: r.title }
+      })
+      .filter(m => m.day >= 1 && m.day <= 5)
+  }
+
   return (
     <div>
       <PageHeader
@@ -87,7 +107,7 @@ export default async function StundenplanPage() {
         gradient="from-[#2F86C5] to-[#56AEE6]"
       />
       <div className="kh-card px-5 py-5">
-        <TimetableGrid entries={entries ?? []} readonly={isReadonly} dueMarkers={dueMarkers} />
+        <TimetableGrid entries={entries ?? []} readonly={isReadonly} dueMarkers={dueMarkers} reminderMarkers={reminderMarkers} />
       </div>
     </div>
   )

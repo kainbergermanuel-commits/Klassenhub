@@ -10,25 +10,41 @@ const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40',
 
 interface Entry { day: number; slot: number; subject: string }
 interface DueMarker { day: number; subject: string; title: string; done: boolean }
-interface Props { entries: Entry[]; readonly?: boolean; dueMarkers?: DueMarker[] }
+interface ReminderMarker { day: number; title: string }
+interface Props { entries: Entry[]; readonly?: boolean; dueMarkers?: DueMarker[]; reminderMarkers?: ReminderMarker[] }
 
 /**
  * Eigenes, gestyltes Tooltip statt title-Attribut (native Browser-Tooltips
- * lassen sich nicht stylen). Erscheint oberhalb des Badges bei Hover/Fokus.
+ * lassen sich nicht stylen). placement='top': für Ecke-Badges in Zellen
+ * (Tooltip erscheint darüber). placement='bottom': für den Erinnerungs-Pin
+ * im Tabellenkopf ganz oben (Tooltip erscheint darunter, sonst würde er über
+ * die Card hinausragen).
  */
-function BadgeTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+function BadgeTooltip({
+  label, children, anchorClassName = 'absolute bottom-0.5 right-0.5', placement = 'top',
+}: {
+  label: string
+  children: React.ReactNode
+  anchorClassName?: string
+  placement?: 'top' | 'bottom'
+}) {
+  const isTop = placement === 'top'
   return (
-    <span tabIndex={0} className="absolute bottom-0.5 right-0.5 group/badge outline-none">
+    <span tabIndex={0} className={`group/badge outline-none ${anchorClassName}`}>
       {children}
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full right-0 mb-1.5 z-30 w-max max-w-[180px] whitespace-normal rounded-lg px-2.5 py-1.5 text-[11px] font-semibold leading-snug text-white opacity-0 scale-95 origin-bottom-right transition-all duration-150 shadow-lg group-hover/badge:opacity-100 group-hover/badge:scale-100 group-focus-visible/badge:opacity-100 group-focus-visible/badge:scale-100"
+        className={`pointer-events-none absolute right-0 z-30 w-max max-w-[180px] whitespace-normal rounded-lg px-2.5 py-1.5 text-[11px] font-semibold leading-snug text-white opacity-0 scale-95 transition-all duration-150 shadow-lg group-hover/badge:opacity-100 group-hover/badge:scale-100 group-focus-visible/badge:opacity-100 group-focus-visible/badge:scale-100 ${
+          isTop ? 'bottom-full mb-1.5 origin-bottom-right' : 'top-full mt-1.5 origin-top-right'
+        }`}
         style={{ background: 'linear-gradient(135deg, #17404B 0%, #0F2E37 100%)' }}
       >
         {label}
         <span
-          className="absolute top-full right-2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px]"
-          style={{ borderTopColor: '#123640' }}
+          className={`absolute right-2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent ${
+            isTop ? 'top-full border-t-[5px]' : 'bottom-full border-b-[5px]'
+          }`}
+          style={isTop ? { borderTopColor: '#123640' } : { borderBottomColor: '#17404B' }}
         />
       </span>
     </span>
@@ -75,7 +91,35 @@ function DoneBadge() {
   )
 }
 
-export default function TimetableGrid({ entries, readonly = false, dueMarkers = [] }: Props) {
+/** Erinnerungs-Pin (nicht fachgebunden) für den Tages-Header, Farbe wie das Erinnerungen-Modul. */
+function ReminderPin() {
+  return (
+    <svg
+      width="13" height="13" viewBox="0 0 24 24"
+      style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.18))' }}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="reminderPinGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2F86C5" />
+          <stop offset="100%" stopColor="#56AEE6" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+        fill="url(#reminderPinGrad)"
+      />
+      <circle cx="12" cy="9" r="2.6" fill="white" />
+    </svg>
+  )
+}
+
+export default function TimetableGrid({ entries, readonly = false, dueMarkers = [], reminderMarkers = [] }: Props) {
+  const reminderByDay = new Map<number, string[]>()
+  for (const m of reminderMarkers) {
+    if (!reminderByDay.has(m.day)) reminderByDay.set(m.day, [])
+    reminderByDay.get(m.day)!.push(m.title)
+  }
   const dueByDaySubject = new Map<string, { title: string; done: boolean }[]>()
   for (const m of dueMarkers) {
     const k = `${m.day}-${m.subject}`
@@ -131,11 +175,26 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
         <thead>
           <tr>
             <th className="w-8 pb-3" />
-            {DAYS.map(d => (
-              <th key={d} className="pb-3 text-center text-[11px] font-bold text-kh-muted uppercase tracking-wide">
-                {d}
-              </th>
-            ))}
+            {DAYS.map((d, di) => {
+              const day = di + 1
+              const reminderTitles = reminderByDay.get(day)
+              return (
+                <th key={d} className="pb-3 text-center text-[11px] font-bold text-kh-muted uppercase tracking-wide">
+                  <span className="relative inline-flex items-center gap-1">
+                    {d}
+                    {reminderTitles && reminderTitles.length > 0 && (
+                      <BadgeTooltip
+                        label={`Erinnerung: ${reminderTitles.join(', ')}`}
+                        anchorClassName="relative inline-flex"
+                        placement="bottom"
+                      >
+                        <ReminderPin />
+                      </BadgeTooltip>
+                    )}
+                  </span>
+                </th>
+              )
+            })}
           </tr>
         </thead>
         <tbody>
