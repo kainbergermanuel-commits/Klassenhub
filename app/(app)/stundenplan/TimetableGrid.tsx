@@ -9,7 +9,7 @@ const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40', '14:35', '15:30', '16:25']
 
 interface Entry { day: number; slot: number; subject: string }
-interface DueMarker { day: number; subject: string; title: string }
+interface DueMarker { day: number; subject: string; title: string; done: boolean }
 interface Props { entries: Entry[]; readonly?: boolean; dueMarkers?: DueMarker[] }
 
 /** Warndreieck mit echtem SVG-Gradient (kein background-clip-Trick nötig). */
@@ -38,12 +38,30 @@ function DueBadge({ label }: { label: string }) {
   )
 }
 
+/** Dezenter Haken für bereits erledigte HÜ — kein Container/Chip, nur der Strich selbst. */
+function DoneBadge({ label }: { label: string }) {
+  return (
+    <svg
+      className="absolute bottom-0.5 right-0.5 pointer-events-none"
+      width="15" height="15" viewBox="0 0 24 24"
+      style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.2))' }}
+      role="img"
+      aria-label={label}
+    >
+      <path
+        d="M4 12.5l5 5.5L20 6"
+        fill="none" stroke="#8FCBAE" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.9"
+      />
+    </svg>
+  )
+}
+
 export default function TimetableGrid({ entries, readonly = false, dueMarkers = [] }: Props) {
-  const dueByDaySubject = new Map<string, string[]>()
+  const dueByDaySubject = new Map<string, { title: string; done: boolean }[]>()
   for (const m of dueMarkers) {
     const k = `${m.day}-${m.subject}`
     if (!dueByDaySubject.has(k)) dueByDaySubject.set(k, [])
-    dueByDaySubject.get(k)!.push(m.title)
+    dueByDaySubject.get(k)!.push({ title: m.title, done: m.done })
   }
   const [grid, setGrid] = useState<Map<string, string>>(() => {
     const m = new Map<string, string>()
@@ -114,7 +132,9 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
                 const value = grid.get(k) ?? ''
                 const isSaving = saving === k
                 const subj = SUBJECTS.find(s => s.label === value)
-                const dueTitles = value ? dueByDaySubject.get(`${day}-${value}`) : undefined
+                const dueEntries = value ? dueByDaySubject.get(`${day}-${value}`) : undefined
+                const openEntries = dueEntries?.filter(e => !e.done)
+                const doneEntries = dueEntries?.filter(e => e.done)
 
                 return (
                   <td key={day} className="p-0.5">
@@ -122,7 +142,7 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
                       <button
                         onClick={() => !readonly && setPopup({ day, slot })}
                         disabled={readonly || isSaving}
-                        title={dueTitles ? `Fällig: ${dueTitles.join(', ')}` : undefined}
+                        title={openEntries?.length ? `Fällig: ${openEntries.map(e => e.title).join(', ')}` : doneEntries?.length ? `Erledigt: ${doneEntries.map(e => e.title).join(', ')}` : undefined}
                         className={`w-full rounded-lg px-2 py-2.5 text-[12px] font-bold text-center transition min-h-[40px] ${
                           value
                             ? 'text-white hover:opacity-75 transition-opacity'
@@ -138,9 +158,11 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
                       >
                         {isSaving ? '…' : value ? (subj?.short ?? value) : readonly ? '' : '+'}
                       </button>
-                      {dueTitles && (
-                        <DueBadge label={`Hausübung fällig: ${dueTitles.join(', ')}`} />
-                      )}
+                      {openEntries && openEntries.length > 0 ? (
+                        <DueBadge label={`Hausübung fällig: ${openEntries.map(e => e.title).join(', ')}`} />
+                      ) : doneEntries && doneEntries.length > 0 ? (
+                        <DoneBadge label={`Hausübung erledigt: ${doneEntries.map(e => e.title).join(', ')}`} />
+                      ) : null}
                     </div>
                   </td>
                 )

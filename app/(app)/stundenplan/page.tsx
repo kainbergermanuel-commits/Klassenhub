@@ -54,7 +54,7 @@ export default async function StundenplanPage() {
     .from('profiles').select('class_id').eq('id', studentId).single()
   const classId = studentProfile?.class_id ?? null
 
-  let dueMarkers: { day: number; subject: string; title: string }[] = []
+  let dueMarkers: { day: number; subject: string; title: string; done: boolean }[] = []
   if (classId) {
     const { data: weekHomework } = await supabase
       .from('homework')
@@ -71,10 +71,9 @@ export default async function StundenplanPage() {
     const doneIds = new Set((completions ?? []).map(c => c.homework_id))
 
     dueMarkers = homework
-      .filter(h => !doneIds.has(h.id))
       .map(h => {
         const dayOffset = Math.round((new Date(`${h.due_date}T00:00:00`).getTime() - new Date(`${monday}T00:00:00`).getTime()) / 86400000)
-        return { day: dayOffset + 1, subject: h.subject, title: h.title }
+        return { day: dayOffset + 1, subject: h.subject, title: h.title, done: doneIds.has(h.id) }
       })
       .filter(m => m.day >= 1 && m.day <= 5)
   }
