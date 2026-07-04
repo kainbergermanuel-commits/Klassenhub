@@ -91,7 +91,7 @@ function DoneBadge() {
   )
 }
 
-/** Erinnerungs-Pin (nicht fachgebunden) für den Tages-Header, Farbe wie das Erinnerungen-Modul. */
+/** Erinnerungs-Pin (nicht fachgebunden) für den Tages-Header — Stecknadel-Form wie das push_pin-Icon der App, Farbe wie das Erinnerungen-Modul. */
 function ReminderPin() {
   return (
     <svg
@@ -106,10 +106,9 @@ function ReminderPin() {
         </linearGradient>
       </defs>
       <path
-        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+        d="M14 4v5c0 1.12.37 2.16 1 3H9c.65-.86 1-1.9 1-3V4h4m3-2H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3V4h1c.55 0 1-.45 1-1s-.45-1-1-1z"
         fill="url(#reminderPinGrad)"
       />
-      <circle cx="12" cy="9" r="2.6" fill="white" />
     </svg>
   )
 }
