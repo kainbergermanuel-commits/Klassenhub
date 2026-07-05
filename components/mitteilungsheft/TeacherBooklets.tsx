@@ -113,9 +113,11 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
         created_at: msgs[0].created_at,
         total: msgs.length,
         seen: msgs.filter(m => m.seen_at).length,
+        requiresAck: !!msgs[0].requires_ack,
+        acked: msgs.filter(m => m.acknowledged_at).length,
         classNames: [...new Set(msgs.map(m => classNameById[m.class_id]).filter(Boolean))].sort(),
         recipients: msgs
-          .map(m => ({ name: broadcastNames[m.parent_id] ?? '?', seen: !!m.seen_at }))
+          .map(m => ({ name: broadcastNames[m.parent_id] ?? '?', seen: !!m.seen_at, acked: !!m.acknowledged_at }))
           .sort((a, b) => a.name.localeCompare(b.name)),
       }))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -315,8 +317,10 @@ type BroadcastSummary = {
   created_at: string
   total: number
   seen: number
+  requiresAck: boolean
+  acked: number
   classNames: string[]
-  recipients: { name: string; seen: boolean }[]
+  recipients: { name: string; seen: boolean; acked: boolean }[]
 }
 
 function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]; onBack: () => void }) {
@@ -337,8 +341,10 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
       <div className="flex flex-col gap-2.5">
         {broadcasts.map(b => {
           const open = openId === b.id
-          const allSeen = b.seen === b.total
-          const notSeen = b.recipients.filter(r => !r.seen)
+          // Bei angeforderter Bestätigung ist "bestätigt" die relevante Kennzahl, sonst "gesehen".
+          const count = b.requiresAck ? b.acked : b.seen
+          const allDone = count === b.total
+          const pending = b.recipients.filter(r => !(b.requiresAck ? r.acked : r.seen))
           return (
             <div key={b.id} className="kh-card-flat rounded-2xl overflow-hidden">
               <button
@@ -347,9 +353,17 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] text-kh-dark font-medium line-clamp-2">{b.body}</p>
-                  <p className="text-[12px] text-kh-muted mt-1">
-                    {new Date(b.created_at).toLocaleDateString('de-AT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-[12px] text-kh-muted">
+                      {new Date(b.created_at).toLocaleDateString('de-AT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    {b.requiresAck && (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-kh-teal">
+                        <span className="msym text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                        Bestätigung
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {b.classNames.length > 0 && (
                   <span className="flex items-center gap-1 text-[12px] font-semibold text-kh-muted flex-shrink-0">
@@ -357,28 +371,33 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
                     {b.classNames.join(', ')}
                   </span>
                 )}
-                <span className={`flex items-center gap-1 text-[12.5px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${allSeen ? 'bg-kh-teal-light text-kh-teal' : 'bg-[#F8ECD6] text-kh-amber'}`}>
-                  <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>{allSeen ? 'done_all' : 'visibility'}</span>
-                  {b.seen}/{b.total}
+                <span className={`flex items-center gap-1 text-[12.5px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${allDone ? 'bg-kh-teal-light text-kh-teal' : 'bg-[#F8ECD6] text-kh-amber'}`}>
+                  <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    {b.requiresAck ? (allDone ? 'task_alt' : 'pending_actions') : (allDone ? 'done_all' : 'visibility')}
+                  </span>
+                  {count}/{b.total}
                 </span>
                 <span className="msym text-[20px] text-kh-muted flex-shrink-0">{open ? 'expand_less' : 'expand_more'}</span>
               </button>
               {open && (
                 <div className="px-4 pb-4 -mt-1">
                   <div className="border-t border-kh-border/50 pt-3 flex flex-col gap-1.5">
-                    {b.recipients.map((r, i) => (
-                      <div key={i} className="flex items-center gap-2 text-[13px]">
-                        <span className={`msym text-[16px] ${r.seen ? 'text-kh-teal' : 'text-kh-border'}`} style={{ fontVariationSettings: `'FILL' ${r.seen ? 1 : 0}` }}>
-                          {r.seen ? 'check_circle' : 'radio_button_unchecked'}
-                        </span>
-                        <span className={r.seen ? 'text-kh-dark' : 'text-kh-muted'}>{r.name}</span>
-                        {!r.seen && <span className="text-[11px] text-kh-amber ml-auto">noch nicht gesehen</span>}
-                      </div>
-                    ))}
-                    {notSeen.length === 0 && (
+                    {b.recipients.map((r, i) => {
+                      const done = b.requiresAck ? r.acked : r.seen
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-[13px]">
+                          <span className={`msym text-[16px] ${done ? 'text-kh-teal' : 'text-kh-border'}`} style={{ fontVariationSettings: `'FILL' ${done ? 1 : 0}` }}>
+                            {done ? 'check_circle' : 'radio_button_unchecked'}
+                          </span>
+                          <span className={done ? 'text-kh-dark' : 'text-kh-muted'}>{r.name}</span>
+                          {!done && <span className="text-[11px] text-kh-amber ml-auto">{b.requiresAck ? 'noch nicht bestätigt' : 'noch nicht gesehen'}</span>}
+                        </div>
+                      )
+                    })}
+                    {pending.length === 0 && (
                       <p className="text-[12.5px] font-semibold text-kh-teal flex items-center gap-1.5">
                         <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                        Alle haben gesehen
+                        {b.requiresAck ? 'Alle haben bestätigt' : 'Alle haben gesehen'}
                       </p>
                     )}
                   </div>
@@ -405,6 +424,7 @@ function ComposeModal({
   const router = useRouter()
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
+  const [requiresAck, setRequiresAck] = useState(false)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   // Standardmäßig nur die aktive Klasse gewählt.
   const [pickedClasses, setPickedClasses] = useState<Set<string>>(new Set([activeClassId]))
@@ -474,6 +494,9 @@ function ComposeModal({
         sender_id: userId,
         body: text,
         broadcast_id: broadcastId,
+        // Nur mitschicken, wenn aktiv angefordert — so bleibt der Insert
+        // rückwärtskompatibel, falls die Migration noch nicht eingespielt ist.
+        ...(requiresAck ? { requires_ack: true } : {}),
       }))
     await supabase.from('messages').insert(rows)
     setSending(false)
@@ -576,8 +599,23 @@ function ComposeModal({
           onChange={e => setBody(e.target.value)}
           rows={4}
           placeholder="Nachricht an die ausgewählten Hefte…"
-          className="w-full resize-none rounded-[16px] border border-kh-border/70 px-4 py-3 text-[14px] focus:outline-none focus:border-kh-teal mb-4"
+          className="w-full resize-none rounded-[16px] border border-kh-border/70 px-4 py-3 text-[14px] focus:outline-none focus:border-kh-teal mb-3"
         />
+
+        {/* Bestätigung anfordern: Eltern müssen aktiv "Zur Kenntnis genommen" klicken. */}
+        <button
+          type="button"
+          onClick={() => setRequiresAck(v => !v)}
+          className="w-full flex items-center gap-3 mb-4 px-3.5 py-2.5 rounded-[16px] border border-kh-border/70 text-left hover:border-kh-teal/50 transition-colors"
+        >
+          <span className={`w-5 h-5 rounded-[7px] flex items-center justify-center flex-shrink-0 transition-colors ${requiresAck ? 'gradient-teal' : 'border-2 border-kh-border'}`}>
+            {requiresAck && <span className="msym text-[15px] text-white" style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}>check</span>}
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13px] font-bold text-kh-dark">Bestätigung anfordern</span>
+            <span className="block text-[11.5px] text-kh-muted leading-snug">Eltern müssen aktiv „Zur Kenntnis genommen" bestätigen.</span>
+          </span>
+        </button>
 
         <button
           onClick={send}

@@ -220,6 +220,8 @@ export type Database = {
           created_at?: string
           seen_at?: string | null
           broadcast_id?: string | null
+          requires_ack?: boolean
+          acknowledged_at?: string | null
         }
         Update: Partial<Message>
         Relationships: []
@@ -300,4 +302,6 @@ export type Message = {
   created_at: string
   seen_at: string | null
   broadcast_id: string | null
+  requires_ack: boolean
+  acknowledged_at: string | null
 }

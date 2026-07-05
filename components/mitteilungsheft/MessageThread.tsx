@@ -20,6 +20,8 @@ interface Props {
   senderNames?: Record<string, string>
   // Avatar je Absender-ID — fuer eingehende Nachrichten.
   senderAvatars?: Record<string, SenderAvatar>
+  // Elternteil bestaetigt eine Nachricht ("Zur Kenntnis genommen").
+  onAcknowledge?: (id: string) => void
 }
 
 function fromTeacherSide(m: Message) {
@@ -46,9 +48,11 @@ function dayLabel(iso: string) {
 
 const INITIAL_COUNT = 4
 
-export default function MessageThread({ messages, side, senderNames = {}, senderAvatars = {} }: Props) {
+export default function MessageThread({ messages, side, senderNames = {}, senderAvatars = {}, onAcknowledge }: Props) {
   const endRef = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState(false)
+  // Optimistisch: sofort als bestätigt anzeigen, bevor der Server-Refresh durch ist.
+  const [ackedLocal, setAckedLocal] = useState<Set<string>>(new Set())
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }) }, [messages.length, expanded])
 
   // Standardmäßig nur die letzten 5 Nachrichten zeigen.
@@ -129,6 +133,36 @@ export default function MessageThread({ messages, side, senderNames = {}, sender
                 >
                   {m.body}
                 </div>
+                {m.requires_ack && (() => {
+                  const acked = !!m.acknowledged_at || ackedLocal.has(m.id)
+                  // Elternteil, eingehende Lehrer-Nachricht: aktiver Bestätigungs-Button.
+                  if (!own && side === 'parent') {
+                    return acked ? (
+                      <span className="mt-1.5 flex items-center gap-1 text-[11.5px] font-semibold text-kh-teal">
+                        <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                        Zur Kenntnis genommen
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => { setAckedLocal(prev => new Set(prev).add(m.id)); onAcknowledge?.(m.id) }}
+                        className="mt-1.5 flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full gradient-teal text-white hover:opacity-90 transition-opacity"
+                      >
+                        <span className="msym text-[15px]">task_alt</span>
+                        Zur Kenntnis genommen
+                      </button>
+                    )
+                  }
+                  // Lehrer-Sicht auf die eigene Nachricht: Bestätigungs-Status dieses Hefts.
+                  if (own && side === 'teacher') {
+                    return (
+                      <span className={`mt-1.5 flex items-center gap-1 text-[11px] font-semibold ${acked ? 'text-kh-teal' : 'text-kh-muted'}`}>
+                        <span className="msym text-[14px]" style={{ fontVariationSettings: `'FILL' ${acked ? 1 : 0}` }}>{acked ? 'task_alt' : 'pending_actions'}</span>
+                        {acked ? 'Bestätigt' : 'Bestätigung ausstehend'}
+                      </span>
+                    )
+                  }
+                  return null
+                })()}
               </div>
             </div>
           </div>

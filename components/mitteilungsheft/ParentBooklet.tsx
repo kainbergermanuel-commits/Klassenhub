@@ -47,6 +47,12 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
     router.refresh()
   }
 
+  async function acknowledge(id: string) {
+    const supabase = createClient()
+    await supabase.from('messages').update({ acknowledged_at: new Date().toISOString() }).eq('id', id)
+    router.refresh()
+  }
+
   return (
     <div className="flex flex-col h-[calc(100dvh-70px)] -mb-20 max-md:h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-20px)] max-md:-mb-6">
       <div className="flex items-center gap-3 mb-4">
@@ -60,7 +66,7 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-kh -mx-1 px-1">
-        <MessageThread messages={messages} side="parent" senderNames={senderNames} senderAvatars={senderAvatars} />
+        <MessageThread messages={messages} side="parent" senderNames={senderNames} senderAvatars={senderAvatars} onAcknowledge={acknowledge} />
       </div>
 
       <div className="flex items-end gap-2 pt-3 border-t border-kh-border/50">
