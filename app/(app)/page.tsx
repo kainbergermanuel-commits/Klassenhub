@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
-import { todayISO, getMondayOfWeek, getRelevantMondayOfWeek, schoolYearStartISO } from '@/lib/date'
+import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO } from '@/lib/date'
 import { computeStreak, currentMilestone } from '@/lib/streak'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
@@ -22,7 +22,6 @@ export default async function HomePage() {
   const klass = await getClass(activeClassId)
 
   const today = todayISO()
-  const weekStart = getMondayOfWeek()
   const dutyWeekStart = getRelevantMondayOfWeek()
   const schoolYearStart = schoolYearStartISO()
 
@@ -30,18 +29,15 @@ export default async function HomePage() {
     { data: homeworkRaw },
     { data: remindersArr },
     { data: weekDuties },
-    { data: weekTodos },
   ] = await Promise.all([
     supabase.from('homework').select('*').eq('class_id', activeClassId).gt('due_date', today).order('due_date'),
     supabase.from('reminders').select('*').eq('class_id', activeClassId).gte('event_date', today).order('event_date').limit(8),
     supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', dutyWeekStart),
-    supabase.from('todos').select('id').eq('class_id', activeClassId).eq('week_start', weekStart),
   ])
 
   const homework = homeworkRaw ?? []
   const upcomingReminders: Reminder[] = remindersArr ?? []
   const duties: Duty[] = weekDuties ?? []
-  const todoIds = (weekTodos ?? []).map(t => t.id)
 
   // ─── TEACHER ────────────────────────────────────────────────────────────────
   if (profile.role === 'teacher') {
@@ -49,16 +45,12 @@ export default async function HomePage() {
       { count: studentCount },
       { count: submittedCount },
       { data: allStudents },
-      { data: todoCounts },
       { data: allHwForStreaks },
       { data: recentHw },
     ] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
       supabase.from('homework_completions').select('homework_id', { count: 'exact', head: true }).in('homework_id', homework.map(h => h.id)),
       supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
-      todoIds.length > 0
-        ? supabase.from('todo_completions').select('todo_id,student_id').in('todo_id', todoIds)
-        : Promise.resolve({ data: [] }),
       supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
       supabase.from('homework').select('id,title,subject,subject_short,subject_color,due_date').eq('class_id', activeClassId).lte('due_date', today).order('due_date', { ascending: false }).limit(3),
     ])
@@ -74,7 +66,6 @@ export default async function HomePage() {
       name: d.duty_name,
       names: d.assignee_ids.map((id: string) => studentMap[id] ?? '?'),
     }))
-    const todoDone = (todoCounts ?? []).length // alle Completions (nicht nur unique todo_ids)
 
     const doneByStudent = new Map<string, Set<string>>()
     const confirmedByStudent = new Map<string, Set<string>>()
@@ -124,8 +115,6 @@ export default async function HomePage() {
         hwOpenStudents={hwOpenStudents}
         reminders={upcomingReminders}
         dutyEntries={dutyEntries}
-        todoTotal={todoIds.length}
-        todoDone={todoDone}
         streakEntries={streakEntries}
         recentHomework={(recentHw ?? []).map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
       />
@@ -136,14 +125,10 @@ export default async function HomePage() {
   if (profile.role === 'student') {
     const [
       { data: completions },
-      { data: todoCompletions },
       { data: allHwForStreak },
       { data: allStudents },
     ] = await Promise.all([
       supabase.from('homework_completions').select('homework_id').eq('student_id', user.id),
-      todoIds.length > 0
-        ? supabase.from('todo_completions').select('todo_id').eq('student_id', user.id).in('todo_id', todoIds)
-        : Promise.resolve({ data: [] }),
       supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
       supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
     ])
@@ -151,7 +136,6 @@ export default async function HomePage() {
     const doneIds = new Set((completions ?? []).map(c => c.homework_id))
     const homeworkWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: doneIds.has(h.id) }))
     const hwOpenCount = homeworkWithStatus.filter(h => !h.done).length
-    const todoDoneCount = (todoCompletions ?? []).length
 
     const reminderIds = upcomingReminders.map(r => r.id)
     const myViewedIds: string[] = []
@@ -216,8 +200,6 @@ export default async function HomePage() {
         hwTotal={homeworkWithStatus.length}
         reminders={upcomingReminders}
         myViewedIds={myViewedIds}
-        todoTotal={todoIds.length}
-        todoDone={todoDoneCount}
         myDuty={myDuty ? { name: myDuty.duty_name, partners: myDutyPartners } : null}
         streak={streak}
         confirmedStreak={confirmedStreak}
@@ -292,9 +274,6 @@ export default async function HomePage() {
     }))
 
     const childHwWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: childDoneIds.has(h.id) }))
-    const todoDoneCount = todoIds.length > 0 && child
-      ? (await supabase.from('todo_completions').select('todo_id', { count: 'exact', head: true }).eq('student_id', child.id).in('todo_id', todoIds)).count ?? 0
-      : 0
 
     return (
       <ParentHome
@@ -307,8 +286,6 @@ export default async function HomePage() {
         className={klass?.name ?? ''}
         childHomework={childHwWithStatus}
         reminders={upcomingReminders}
-        todoTotal={todoIds.length}
-        todoDone={todoDoneCount}
         childStreak={childStreak}
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}

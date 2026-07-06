@@ -134,25 +134,6 @@ export type Database = {
         Update: Partial<HomeworkCompletion>
         Relationships: []
       }
-      todos: {
-        Row: Todo
-        Insert: {
-          id?: string
-          class_id: string
-          title: string
-          week_start: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Update: Partial<Todo>
-        Relationships: []
-      }
-      todo_completions: {
-        Row: { todo_id: string; student_id: string; completed_at: string }
-        Insert: { todo_id: string; student_id: string; completed_at?: string }
-        Update: Partial<{ todo_id: string; student_id: string; completed_at: string }>
-        Relationships: []
-      }
       reminders: {
         Row: Reminder
         Insert: {
@@ -238,20 +219,6 @@ export type Database = {
 export type HomeworkWithStatus = Homework & {
   done: boolean
   completion_count?: number // only visible to teacher
-}
-
-export type Todo = {
-  id: string
-  class_id: string
-  title: string
-  week_start: string
-  created_by: string | null
-  created_at: string
-}
-
-export type TodoWithStatus = Todo & {
-  done: boolean
-  completion_count?: number // nur für Lehrer
 }
 
 export type Reminder = {

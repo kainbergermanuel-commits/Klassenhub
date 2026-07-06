@@ -18,8 +18,6 @@ interface ParentHomeProps {
   className: string
   childHomework: HomeworkWithStatus[]
   reminders: Reminder[]
-  todoTotal: number
-  todoDone: number
   /** Eigener Streak des Kindes – sofort sichtbar (auch unbestätigt). Bestimmt die Zahl. */
   childStreak: number
   /** Eltern-bestätigter Streak des Kindes – verdient die Flammen (Live-Spiegel). */
@@ -29,7 +27,7 @@ interface ParentHomeProps {
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, todoTotal, todoDone, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
@@ -37,7 +35,6 @@ export default function ParentHome({
   const hwTotal = childHomework.length
   const hwOpen = childHomework.filter(h => !h.done).length
   const hwDone = hwTotal - hwOpen
-  const todoProgress = todoTotal > 0 ? (todoDone / todoTotal) * 100 : 0
 
   return (
     <>
@@ -51,17 +48,6 @@ export default function ParentHome({
           </div>
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today} · {childFirst}, {className}</p>
-        {/* Mobile-only Kompakt-Stats (Web unverändert) — unter dem Namens-Header, damit sie nicht unter dem Burger liegen */}
-        <div className="md:hidden flex items-center gap-3 mt-3">
-          <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-            <span className="msym text-[19px]" style={{ color: '#2F86C5' }}>assignment</span>
-            <span className="text-[13px] font-bold">{hwDone}/{hwTotal}</span>
-          </Link>
-          <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-            <span className="msym text-[19px]" style={{ color: '#0F8A82' }}>checklist</span>
-            <span className="text-[13px] font-bold">{todoDone}/{todoTotal}</span>
-          </Link>
-        </div>
       </header>
 
       {/* Child banner */}
@@ -151,14 +137,6 @@ export default function ParentHome({
                 title="Hausübungen"
                 meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
                 progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
-              />
-            </div>
-            <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
-              <FeatureCard
-                href="/todo" gradient="teal" icon="checklist"
-                title="Wochen-To-Do"
-                meta={todoTotal > 0 ? `${todoDone}/${todoTotal} erledigt` : 'Noch nichts gepostet'}
-                progress={todoTotal > 0 ? todoProgress : undefined}
               />
             </div>
           </div>

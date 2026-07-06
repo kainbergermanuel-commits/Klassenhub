@@ -3,14 +3,14 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getAuth, getClass, getTeacherClasses } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO, getMondayOfWeek } from '@/lib/date'
+import { todayISO } from '@/lib/date'
 import BodyTheme from '@/components/layout/BodyTheme'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileHeader from '@/components/layout/MobileHeader'
 import RolePreviewBar from '@/components/layout/RolePreviewBar'
 import type { Profile, Class } from '@/lib/types'
 
-function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todoOpen: number, messageUnread: number) {
+function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, messageUnread: number) {
   const isTeacher = profile.role === 'teacher'
 
   const all = [
@@ -22,7 +22,6 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     ...(profile.role !== 'student' ? [
       { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined },
     ] : []),
-    { href: '/todo', icon: 'checklist', label: 'Wochen-To-Do', badge: todoOpen || undefined },
     { href: '/streaks', icon: 'local_fire_department', label: 'Streaks' },
     ...(isTeacher ? [
       { href: '/planung', icon: 'edit_calendar', label: 'Planung' },
@@ -47,7 +46,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, todo
     { href: '/hausaufgaben', icon: 'assignment', label: 'HÜ', badge: hwOpen || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerung' },
-    { href: '/todo', icon: 'checklist', label: 'To-Do', badge: todoOpen || undefined },
+    { href: '/termine', icon: 'calendar_month', label: 'Termine' },
   ]
 
   return { all, bottom }
@@ -127,31 +126,6 @@ async function computeHwBadge(profile: Profile, classId: string | null): Promise
   return upcomingIds.length - (count ?? 0)
 }
 
-/** Offene To-Dos dieser Woche je Rolle. */
-async function computeTodoBadge(profile: Profile, userId: string, classId: string | null): Promise<number> {
-  if (!classId) return 0
-  const supabase = await createClient()
-  const weekStart = getMondayOfWeek()
-
-  const { data: todos } = await supabase
-    .from('todos').select('id').eq('class_id', classId).eq('week_start', weekStart)
-  const todoIds = (todos ?? []).map(t => t.id)
-  if (todoIds.length === 0) return 0
-
-  if (profile.role === 'teacher') return todoIds.length
-
-  let studentId = userId
-  if (profile.role === 'parent') {
-    if (!profile.child_id) return 0
-    studentId = profile.child_id
-  }
-
-  const { count } = await supabase
-    .from('todo_completions').select('todo_id', { count: 'exact', head: true })
-    .eq('student_id', studentId).in('todo_id', todoIds)
-  return todoIds.length - (count ?? 0)
-}
-
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // realProfile: echter Lehrer — nur für Preview-Bar-Sichtbarkeit
   const { user: realUser, profile: realProfile } = await getAuth()
@@ -164,13 +138,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const teacherClasses = realProfile.role === 'teacher' ? await getTeacherClasses(realProfile.id) : []
 
-  const [hwOpen, reminderUnread, todoOpen, messageUnread] = await Promise.all([
+  const [hwOpen, reminderUnread, messageUnread] = await Promise.all([
     computeHwBadge(profile, activeClassId),
     computeReminderBadge(profile, user.id, activeClassId),
-    computeTodoBadge(profile, user.id, activeClassId),
     computeMessageBadge(profile, user.id, activeClassId),
   ])
-  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, todoOpen, messageUnread)
+  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, messageUnread)
 
   // Preview bar: nur für echten Lehrer
   let previewRole: string | null = null

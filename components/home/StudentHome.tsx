@@ -1,10 +1,8 @@
-import Link from 'next/link'
 import FeatureCard from './FeatureCard'
 import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
-import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder } from '@/lib/types'
 import { dutyIcon } from '@/lib/dutyIcon'
 import { greeting } from '@/lib/date'
@@ -17,8 +15,6 @@ interface StudentHomeProps {
   hwTotal: number
   reminders: Reminder[]
   myViewedIds: string[]
-  todoTotal: number
-  todoDone: number
   myDuty: { name: string; partners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] } | null
   streak: number
   confirmedStreak: number
@@ -27,12 +23,11 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, todoTotal, todoDone, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
+  fullName, userId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
   const hwDone = hwTotal - hwOpenCount
-  const todoProgress = todoTotal > 0 ? (todoDone / todoTotal) * 100 : 0
 
   // Duty week day pills
   const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
@@ -71,25 +66,6 @@ export default function StudentHome({
           </div>
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
-        {/* Mobile-only Kompakt-Stats (Web unverändert) — unter dem Namens-Header, damit sie nicht unter dem Burger liegen */}
-        <div className="md:hidden flex items-center gap-3 mt-3">
-          <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-            <span className="msym text-[19px]" style={{ color: '#2F86C5' }}>assignment</span>
-            <span className="text-[13px] font-bold">{hwDone}/{hwTotal}</span>
-          </Link>
-          <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-            <span className="msym text-[19px]" style={{ color: '#0F8A82' }}>checklist</span>
-            <span className="text-[13px] font-bold">{todoDone}/{todoTotal}</span>
-          </Link>
-          {myDuty && (
-            <Link href="/dienste" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-              <span className="msym text-[19px]" style={{ color: '#5965B8' }}>{dutyIcon(myDuty.name)}</span>
-              {myDuty.partners[0] && (
-                <Avatar name={myDuty.partners[0].full_name} color={myDuty.partners[0].avatar_color} seed={myDuty.partners[0].avatar_seed} hairColor={myDuty.partners[0].avatar_hair_color} skinColor={myDuty.partners[0].avatar_skin_color} size={20} />
-              )}
-            </Link>
-          )}
-        </div>
       </header>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
@@ -102,12 +78,6 @@ export default function StudentHome({
                 title="Hausübungen"
                 meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
                 progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
-              />,
-              <FeatureCard
-                href="/todo" gradient="teal" icon="checklist"
-                title="Wochen-To-Do"
-                meta={todoTotal > 0 ? `${todoDone}/${todoTotal} erledigt` : 'Noch nichts gepostet'}
-                progress={todoTotal > 0 ? todoProgress : undefined}
               />,
               <FeatureCard
                 href="/dienste" gradient="violet" icon={myDuty ? dutyIcon(myDuty.name) : 'cleaning_services'}

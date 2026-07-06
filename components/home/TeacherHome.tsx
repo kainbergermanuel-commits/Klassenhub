@@ -123,15 +123,13 @@ interface TeacherHomeProps {
   hwOpenStudents: Person[]
   reminders: Reminder[]
   dutyEntries: DutyEntry[]
-  todoTotal: number
-  todoDone: number
   streakEntries: StreakEntry[]
   recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
 }
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  hwOpenStudents, reminders, dutyEntries, todoTotal, todoDone, streakEntries, recentHomework,
+  hwOpenStudents, reminders, dutyEntries, streakEntries, recentHomework,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -144,8 +142,6 @@ export default function TeacherHome({
 
   const hwSlots = studentCount * homeworkList.length
   const hwProgress = hwSlots > 0 ? (hwSubmittedCount / hwSlots) * 100 : 0
-  const todoSlots = todoTotal * studentCount
-  const todoProgress = todoSlots > 0 ? (todoDone / todoSlots) * 100 : 0
 
   return (
     <>
@@ -177,20 +173,6 @@ export default function TeacherHome({
         <span className="msym text-[23px]">assignment_add</span>
       </button>
 
-      {/* Mobile-only Kompakt-Stats (Web unverändert) */}
-      <div className="md:hidden flex items-center gap-4 mb-5 -mt-2">
-        <Link href="/hausaufgaben" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-          <span className="msym text-[19px]" style={{ color: '#C98A2B' }}>assignment</span>
-          <span className="text-[13px] font-bold">{homeworkList.length}</span>
-        </Link>
-        <Link href="/todo" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-          <span className="msym text-[19px]" style={{ color: '#0F8A82' }}>checklist</span>
-          <span className="text-[13px] font-bold">{todoTotal}</span>
-        </Link>
-        <Link href="/dienste" className="flex items-center gap-1 text-kh-muted active:opacity-70 transition-opacity">
-          <span className="msym text-[19px]" style={{ color: '#5965B8' }}>cleaning_services</span>
-        </Link>
-      </div>
 
       {showModal && (
         <AddHomeworkModal classId={classId} userId={userId} onClose={() => setShowModal(false)} />
@@ -212,15 +194,6 @@ export default function TeacherHome({
                     ? `Noch offen: ${hwOpenStudents.map(s => s.full_name.split(' ')[0]).join(', ')}`
                     : undefined
                 }
-              />
-            </div>
-            <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
-              <FeatureCard
-                href="/todo" gradient="teal" icon="checklist"
-                title="Wochen-To-Do"
-                meta={todoTotal > 0 ? `${todoDone}/${todoSlots} erledigt` : 'Noch nichts gepostet'}
-                progress={todoTotal > 0 ? todoProgress : undefined}
-                badge={todoTotal > 0 ? `${todoTotal}` : undefined}
               />
             </div>
             <div className="animate-card-enter h-full" style={{ animationDelay: '120ms' }}>
