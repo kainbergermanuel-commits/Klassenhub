@@ -29,7 +29,7 @@ export default async function TerminePage() {
         icon="calendar_month"
         title="Termine"
         subtitle={`${upcomingCount} bevorstehend`}
-        gradient="from-kh-red to-[#F2907E]"
+        gradient="from-[#4C93C9] to-[#7EB8E5]"
       />
       <TermineView events={events} role={profile.role} today={today} />
     </div>

@@ -1,4 +1,5 @@
 import FeatureCard from './FeatureCard'
+import TermineCard, { type NextEvent } from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
@@ -15,6 +16,8 @@ interface StudentHomeProps {
   hwTotal: number
   reminders: Reminder[]
   myViewedIds: string[]
+  nextEvent: NextEvent | null
+  moreEventCount: number
   myDuty: { name: string; partners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] } | null
   streak: number
   confirmedStreak: number
@@ -23,7 +26,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
+  fullName, userId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, nextEvent, moreEventCount, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -74,7 +77,7 @@ export default function StudentHome({
           <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
             {[
               <FeatureCard
-                href="/hausaufgaben" gradient="blue" icon="assignment"
+                href="/hausaufgaben" gradient="amber" icon="assignment"
                 title="Hausübungen"
                 meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
                 progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
@@ -89,6 +92,7 @@ export default function StudentHome({
                 peopleInline
                 footer={dutyDayFooter}
               />,
+              <TermineCard nextEvent={nextEvent} moreCount={moreEventCount} />,
             ].map((card, i) => (
               <div key={i} className="animate-card-enter h-full" style={{ animationDelay: `${i * 60}ms` }}>
                 {card}

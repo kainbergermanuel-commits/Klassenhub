@@ -180,7 +180,7 @@ export default function TermineView({ events, role, today }: Props) {
         {canManage && (
           <button
             onClick={() => setShowModal(true)}
-            className="mt-4 w-full h-10 rounded-xl bg-gradient-to-br from-kh-red to-[#F2907E] text-white flex items-center justify-center gap-1.5 text-[13px] font-bold hover:brightness-105 transition-all"
+            className="mt-4 w-full h-10 rounded-xl bg-gradient-to-br from-[#4C93C9] to-[#7EB8E5] text-white flex items-center justify-center gap-1.5 text-[13px] font-bold hover:brightness-105 transition-all"
           >
             <span className="text-[16px] leading-none">+</span>Neuer Termin
           </button>

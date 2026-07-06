@@ -222,7 +222,7 @@ export default function AddEventModal({ today, onClose }: Props) {
             Abbrechen
           </button>
           <button onClick={save} disabled={!canPost || saving}
-            className="flex-1 py-3 rounded-full bg-gradient-to-br from-kh-red to-[#F2907E] text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40">
+            className="flex-1 py-3 rounded-full bg-gradient-to-br from-[#4C93C9] to-[#7EB8E5] text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40">
             {saving ? 'Speichern…' : 'Termin anlegen'}
           </button>
         </div>

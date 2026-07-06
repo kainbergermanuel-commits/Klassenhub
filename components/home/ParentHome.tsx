@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import FeatureCard from './FeatureCard'
+import TermineCard, { type NextEvent } from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
@@ -18,6 +19,8 @@ interface ParentHomeProps {
   className: string
   childHomework: HomeworkWithStatus[]
   reminders: Reminder[]
+  nextEvent: NextEvent | null
+  moreEventCount: number
   /** Eigener Streak des Kindes – sofort sichtbar (auch unbestätigt). Bestimmt die Zahl. */
   childStreak: number
   /** Eltern-bestätigter Streak des Kindes – verdient die Flammen (Live-Spiegel). */
@@ -27,7 +30,7 @@ interface ParentHomeProps {
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, nextEvent, moreEventCount, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
@@ -133,11 +136,14 @@ export default function ParentHome({
           <div className="grid sm:grid-cols-2 gap-4 max-md:hidden">
             <div className="animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
               <FeatureCard
-                href="/hausaufgaben" gradient="blue" icon="assignment"
+                href="/hausaufgaben" gradient="amber" icon="assignment"
                 title="Hausübungen"
                 meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
                 progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
               />
+            </div>
+            <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
+              <TermineCard nextEvent={nextEvent} moreCount={moreEventCount} />
             </div>
           </div>
 
