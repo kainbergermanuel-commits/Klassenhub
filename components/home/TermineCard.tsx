@@ -22,26 +22,24 @@ export default function TermineCard({ nextEvent, moreCount }: { nextEvent: NextE
     >
       {nextEvent ? (
         <>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-[10px] bg-white/20 flex items-center justify-center flex-shrink-0">
-                <span className="msym text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>calendar_month</span>
-              </div>
-              <span className="text-[11px] font-bold tracking-[.6px] text-white/85">TERMINE</span>
+          <div className="flex items-start justify-between">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+              <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>calendar_month</span>
             </div>
             {moreCount > 0 && (
               <span className="text-[11px] font-bold bg-white/20 px-2.5 py-1 rounded-full flex-shrink-0">+{moreCount} weitere</span>
             )}
           </div>
-          <div className="mt-auto">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              {meta && <span className="msym text-[14px] text-white/85">{meta.icon}</span>}
-              <span className="font-extrabold text-[16px] leading-tight truncate">{nextEvent.title}</span>
+          <div className="mt-1">
+            <div className="font-extrabold text-[17px] leading-tight">Termine</div>
+            <div className="flex items-center gap-1.5 mt-1">
+              {meta && <span className="msym text-[13px] text-white/85 flex-shrink-0">{meta.icon}</span>}
+              <span className="text-[13px] font-semibold text-white/85 truncate">{nextEvent.title}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white/85">
-              <span className="msym text-[14px]">schedule</span>
-              {nextEvent.countdownLabel} · {nextEvent.dateLabel}
-            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-[12px] font-semibold text-white/75 mt-auto pt-1">
+            <span className="msym text-[13px]">schedule</span>
+            {nextEvent.countdownLabel} · {nextEvent.dateLabel}
           </div>
         </>
       ) : (
