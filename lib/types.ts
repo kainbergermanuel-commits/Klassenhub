@@ -56,6 +56,7 @@ export type CalendarEvent = {
   location: string
   category: string
   created_at: string
+  target_student_ids: string[] | null
 }
 
 export type Homework = {

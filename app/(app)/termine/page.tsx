@@ -31,7 +31,7 @@ export default async function TerminePage() {
         subtitle={`${upcomingCount} bevorstehend`}
         gradient="from-[#4C93C9] to-[#7EB8E5]"
       />
-      <TermineView events={events} role={profile.role} today={today} />
+      <TermineView events={events} role={profile.role} today={today} classId={activeClassId} />
     </div>
   )
 }

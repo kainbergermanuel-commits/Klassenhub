@@ -3,12 +3,24 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { createEvent } from '@/app/actions/events'
 import { EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
+import Avatar from '@/components/ui/Avatar'
 
 interface Props {
   today: string
+  classId: string
   onClose: () => void
+}
+
+interface Student {
+  id: string
+  full_name: string
+  avatar_color: string
+  avatar_seed: string | null
+  avatar_hair_color: string | null
+  avatar_skin_color: string | null
 }
 
 const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
@@ -93,7 +105,7 @@ function DatePicker({ value, min, onChange }: { value: string; min: string; onCh
   )
 }
 
-export default function AddEventModal({ today, onClose }: Props) {
+export default function AddEventModal({ today, classId, onClose }: Props) {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -107,13 +119,33 @@ export default function AddEventModal({ today, onClose }: Props) {
   const [endTime, setEndTime] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showTargeting, setShowTargeting] = useState(false)
+  const [students, setStudents] = useState<Student[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!showTargeting || students.length > 0) return
+    createClient()
+      .from('profiles')
+      .select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color')
+      .eq('class_id', classId).eq('role', 'student').order('full_name')
+      .then(({ data }) => setStudents(data ?? []))
+  }, [showTargeting, classId, students.length])
+
+  function toggleStudent(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   function onStartDateChange(v: string) {
     setStartDate(v)
     if (!multiDay || v > endDate) setEndDate(v)
   }
 
-  const canPost = title.trim().length > 0 && startDate && endDate >= startDate
+  const canPost = title.trim().length > 0 && startDate && endDate >= startDate && (!showTargeting || selectedIds.size > 0)
 
   async function save() {
     if (!canPost || saving) return
@@ -124,6 +156,7 @@ export default function AddEventModal({ today, onClose }: Props) {
         title, description, location, category,
         startDate, endDate: multiDay ? endDate : startDate,
         allDay, startTime: allDay ? null : startTime, endTime: allDay ? null : (endTime || null),
+        targetStudentIds: selectedIds.size > 0 ? [...selectedIds] : null,
       })
       router.refresh()
       onClose()
@@ -213,6 +246,49 @@ export default function AddEventModal({ today, onClose }: Props) {
               </div>
             </div>
           )}
+
+          {/* Zielgruppe */}
+          <div>
+            <button type="button" onClick={() => setShowTargeting(v => !v)}
+              className="flex items-center gap-1.5 text-[12px] font-bold text-kh-muted hover:text-kh-dark transition-colors">
+              <span className="msym text-[15px]">{showTargeting ? 'expand_less' : 'expand_more'}</span>
+              {selectedIds.size > 0 ? `${selectedIds.size} Schüler:in ausgewählt · Persönlicher Termin` : 'Für die ganze Klasse · Empfänger einschränken'}
+            </button>
+
+            {showTargeting && (
+              <>
+                <div className="flex gap-1.5 mt-2 mb-1">
+                  <button type="button" onClick={() => setSelectedIds(new Set(students.map(s => s.id)))}
+                    className="text-[11px] font-bold px-3 py-1 rounded-full border border-kh-border hover:border-kh-teal hover:text-kh-teal text-kh-muted transition-colors">
+                    Alle
+                  </button>
+                  <button type="button" onClick={() => setSelectedIds(new Set())}
+                    className="text-[11px] font-bold px-3 py-1 rounded-full border border-kh-border hover:border-kh-teal hover:text-kh-teal text-kh-muted transition-colors">
+                    Keinen
+                  </button>
+                </div>
+                <div className="mt-1 grid grid-cols-4 gap-2">
+                  {students.map(s => {
+                    const selected = selectedIds.has(s.id)
+                    const firstName = s.full_name.split(' ')[0]
+                    const long = firstName.length > 7
+                    return (
+                      <button key={s.id} type="button" onClick={() => toggleStudent(s.id)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all ${
+                          selected ? 'border-kh-teal bg-kh-teal/10' : 'border-kh-border hover:border-kh-teal/50'
+                        }`}>
+                        <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed}
+                          hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={22} />
+                        <span className={`${long ? 'text-[10px]' : 'text-[12px]'} font-semibold leading-tight break-words min-w-0 ${selected ? 'text-kh-teal' : 'text-kh-dark'}`}>
+                          {firstName}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {error && <div className="mt-4 text-sm font-semibold text-kh-red bg-kh-red-light px-3.5 py-2.5 rounded-xl">{error}</div>}

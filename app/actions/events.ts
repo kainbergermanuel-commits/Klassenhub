@@ -22,6 +22,7 @@ export async function createEvent(input: {
   endTime: string | null
   location: string
   category: EventCategory
+  targetStudentIds?: string[] | null
 }) {
   const { userId, classId } = await getTeacherClassId()
   if (!input.title.trim()) throw new Error('Titel fehlt')
@@ -41,6 +42,7 @@ export async function createEvent(input: {
     end_time: input.allDay ? null : input.endTime,
     location: input.location.trim(),
     category: input.category,
+    target_student_ids: input.targetStudentIds && input.targetStudentIds.length > 0 ? input.targetStudentIds : null,
   })
   if (error) throw new Error(error.message)
 }

@@ -15,7 +15,10 @@ interface Props {
   events: CalendarEvent[]
   role: Role
   today: string
+  classId: string
 }
+
+type Filter = 'alle' | 'klasse' | 'persoenlich'
 
 function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
 function getFirstWeekday(y: number, m: number) { return (new Date(y, m, 1).getDay() + 6) % 7 }
@@ -29,6 +32,7 @@ function dateBadge(dateISO: string) {
 function EventRow({ event, canDelete, onDelete }: { event: CalendarEvent; canDelete: boolean; onDelete: (id: string) => void }) {
   const meta = eventCategoryMeta(event.category)
   const badge = dateBadge(event.start_date)
+  const isPersonal = !!event.target_student_ids
   const multiDay = event.end_date !== event.start_date
   const dateLabel = multiDay
     ? `${new Date(`${event.start_date}T00:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })} – ${new Date(`${event.end_date}T00:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })}`
@@ -44,9 +48,14 @@ function EventRow({ event, canDelete, onDelete }: { event: CalendarEvent; canDel
         <span className="text-[18px] font-extrabold leading-none">{badge.day}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
+        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
           <span className="msym text-[13px]" style={{ color: meta.color }}>{meta.icon}</span>
           <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: meta.color }}>{meta.label}</span>
+          {isPersonal && (
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-[#8B5CF6] bg-[#8B5CF6]/10 px-1.5 py-0.5 rounded-full">
+              <span className="msym text-[11px]">person</span>Persönlich
+            </span>
+          )}
         </div>
         <div className="font-bold text-[15px] text-kh-dark leading-tight">{event.title}</div>
         {event.description && <div className="text-[13px] text-kh-muted font-medium mt-0.5">{event.description}</div>}
@@ -79,7 +88,7 @@ function EventRow({ event, canDelete, onDelete }: { event: CalendarEvent; canDel
   )
 }
 
-export default function TermineView({ events, role, today }: Props) {
+export default function TermineView({ events, role, today, classId }: Props) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -87,8 +96,10 @@ export default function TermineView({ events, role, today }: Props) {
   const [viewYear, setViewYear] = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
   const [showPast, setShowPast] = useState(false)
+  const [filter, setFilter] = useState<Filter>('alle')
 
   const canManage = role === 'teacher'
+  const personalCount = useMemo(() => events.filter(e => e.target_student_ids).length, [events])
 
   async function handleDelete(id: string) {
     try {
@@ -97,9 +108,15 @@ export default function TermineView({ events, role, today }: Props) {
     } catch {}
   }
 
+  const filteredEvents = useMemo(() => {
+    if (filter === 'klasse') return events.filter(e => !e.target_student_ids)
+    if (filter === 'persoenlich') return events.filter(e => e.target_student_ids)
+    return events
+  }, [events, filter])
+
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>()
-    for (const e of events) {
+    for (const e of filteredEvents) {
       let cur = e.start_date
       while (cur <= e.end_date) {
         if (!map.has(cur)) map.set(cur, [])
@@ -108,10 +125,10 @@ export default function TermineView({ events, role, today }: Props) {
       }
     }
     return map
-  }, [events])
+  }, [filteredEvents])
 
-  const upcoming = useMemo(() => events.filter(e => e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date)), [events, today])
-  const past = useMemo(() => events.filter(e => e.end_date < today).sort((a, b) => b.start_date.localeCompare(a.start_date)), [events, today])
+  const upcoming = useMemo(() => filteredEvents.filter(e => e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date)), [filteredEvents, today])
+  const past = useMemo(() => filteredEvents.filter(e => e.end_date < today).sort((a, b) => b.start_date.localeCompare(a.start_date)), [filteredEvents, today])
 
   const pastGroups = useMemo(() => {
     const groups: { label: string; items: CalendarEvent[] }[] = []
@@ -189,6 +206,25 @@ export default function TermineView({ events, role, today }: Props) {
 
       {/* Liste */}
       <div className="flex flex-col gap-4">
+        {personalCount > 0 && (
+          <div className="flex gap-1.5">
+            {([
+              { key: 'alle', label: 'Alle' },
+              { key: 'klasse', label: 'Klasse' },
+              { key: 'persoenlich', label: 'Persönlich' },
+            ] as const).map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-bold transition-all ${
+                  filter === f.key ? 'bg-kh-dark text-white' : 'bg-kh-page text-kh-muted hover:text-kh-dark'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
         {selectedDate ? (
           <>
             <div className="flex items-center justify-between">
@@ -246,7 +282,7 @@ export default function TermineView({ events, role, today }: Props) {
       </div>
 
       {showModal && (
-        <AddEventModal today={today} onClose={() => setShowModal(false)} />
+        <AddEventModal today={today} classId={classId} onClose={() => setShowModal(false)} />
       )}
     </div>
   )
