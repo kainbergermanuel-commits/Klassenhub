@@ -41,7 +41,7 @@ export default function TermineCard({ events }: { events: AgendaEvent[] }) {
               const timeLabel = !ev.all_day && ev.start_time ? ev.start_time : null
               return (
                 <span key={ev.id} className="relative group/ev">
-                  <span className="inline-flex items-center gap-1 bg-white/20 group-hover/ev:bg-white/30 text-white text-[11px] font-bold px-2 py-1 rounded-full transition-colors">
+                  <span className="inline-flex items-center justify-center gap-1 w-[72px] bg-white/20 group-hover/ev:bg-white/30 text-white text-[11px] font-bold py-1 rounded-full transition-colors">
                     <span className="msym text-[12px]">{meta.icon}</span>
                     {pillLabel(ev.start_date)}
                   </span>
