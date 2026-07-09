@@ -4,13 +4,14 @@ import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
-import type { HomeworkWithStatus, Reminder } from '@/lib/types'
+import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { dutyIcon } from '@/lib/dutyIcon'
 import { greeting } from '@/lib/date'
 
 interface StudentHomeProps {
   fullName: string
   userId: string
+  classId: string
   allHomework: HomeworkWithStatus[]
   hwOpenCount: number
   hwTotal: number
@@ -18,6 +19,7 @@ interface StudentHomeProps {
   myViewedIds: string[]
   nextEvent: NextEvent | null
   moreEventCount: number
+  upcomingEvents: AgendaEvent[]
   myDuty: { name: string; partners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] } | null
   streak: number
   confirmedStreak: number
@@ -26,7 +28,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, nextEvent, moreEventCount, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, nextEvent, moreEventCount, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -116,7 +118,7 @@ export default function StudentHome({
           <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-2xl" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
-              <AgendaPanel reminders={reminders} role="student" userId={userId} myViewedIds={myViewedIds} />
+              <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
             </div>
             <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
               <StreakLeaderCard entries={streakEntries} />

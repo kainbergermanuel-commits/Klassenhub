@@ -5,7 +5,7 @@ import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
 import Avatar from '@/components/ui/Avatar'
-import type { HomeworkWithStatus, Reminder } from '@/lib/types'
+import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { flameCount } from '@/lib/streak'
 import { greeting } from '@/lib/date'
 
@@ -21,6 +21,7 @@ interface ParentHomeProps {
   reminders: Reminder[]
   nextEvent: NextEvent | null
   moreEventCount: number
+  upcomingEvents: AgendaEvent[]
   /** Eigener Streak des Kindes – sofort sichtbar (auch unbestätigt). Bestimmt die Zahl. */
   childStreak: number
   /** Eltern-bestätigter Streak des Kindes – verdient die Flammen (Live-Spiegel). */
@@ -30,7 +31,7 @@ interface ParentHomeProps {
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, nextEvent, moreEventCount, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, nextEvent, moreEventCount, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
@@ -199,7 +200,7 @@ export default function ParentHome({
           <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-2xl" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
-              <AgendaPanel reminders={reminders} role="parent" />
+              <AgendaPanel reminders={reminders} events={upcomingEvents} role="parent" />
             </div>
             <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
               <StreakLeaderCard entries={streakEntries} />

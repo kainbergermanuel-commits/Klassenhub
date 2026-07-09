@@ -8,9 +8,9 @@ import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
 import type { NextEvent } from '@/components/home/TermineCard'
-import type { HomeworkWithStatus, Reminder, Duty } from '@/lib/types'
+import type { HomeworkWithStatus, Reminder, Duty, AgendaEvent } from '@/lib/types'
 
-type EventRow = { title: string; start_date: string; end_date: string; all_day: boolean; start_time: string | null; category: string }
+type EventRow = { id: string; title: string; start_date: string; end_date: string; all_day: boolean; start_time: string | null; category: string; target_student_ids: string[] | null }
 
 export default async function HomePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -38,7 +38,7 @@ export default async function HomePage() {
     supabase.from('reminders').select('*').eq('class_id', activeClassId).gte('event_date', today).order('event_date').limit(8),
     supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', dutyWeekStart),
     (supabase.from('events' as never)
-      .select('title,start_date,end_date,all_day,start_time,category')
+      .select('id,title,start_date,end_date,all_day,start_time,category,target_student_ids')
       .eq('class_id', activeClassId)
       .gte('end_date', today)
       .order('start_date', { ascending: true })
@@ -64,6 +64,18 @@ export default async function HomePage() {
       }
     : null
   const moreCount = Math.max(0, inHorizon.length - 1)
+
+  // Volle Terminliste fürs kombinierte Agenda-Panel (Umschalter Erinnerungen/Termine).
+  const upcomingEvents: AgendaEvent[] = events.map(e => ({
+    id: e.id,
+    title: e.title,
+    category: e.category,
+    start_date: e.start_date,
+    end_date: e.end_date,
+    all_day: e.all_day,
+    start_time: e.start_time,
+    target_student_ids: e.target_student_ids,
+  }))
 
   // ─── TEACHER ────────────────────────────────────────────────────────────────
   if (profile.role === 'teacher') {
@@ -143,6 +155,7 @@ export default async function HomePage() {
         dutyEntries={dutyEntries}
         nextEvent={nextEvent}
         moreEventCount={moreCount}
+        upcomingEvents={upcomingEvents}
         streakEntries={streakEntries}
         recentHomework={(recentHw ?? []).map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
       />
@@ -223,6 +236,7 @@ export default async function HomePage() {
       <StudentHome
         fullName={profile.full_name}
         userId={user.id}
+        classId={activeClassId}
         allHomework={homeworkWithStatus}
         hwOpenCount={hwOpenCount}
         hwTotal={homeworkWithStatus.length}
@@ -230,6 +244,7 @@ export default async function HomePage() {
         myViewedIds={myViewedIds}
         nextEvent={nextEvent}
         moreEventCount={moreCount}
+        upcomingEvents={upcomingEvents}
         myDuty={myDuty ? { name: myDuty.duty_name, partners: myDutyPartners } : null}
         streak={streak}
         confirmedStreak={confirmedStreak}
@@ -318,6 +333,7 @@ export default async function HomePage() {
         reminders={upcomingReminders}
         nextEvent={nextEvent}
         moreEventCount={moreCount}
+        upcomingEvents={upcomingEvents}
         childStreak={childStreak}
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}

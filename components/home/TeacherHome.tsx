@@ -12,7 +12,7 @@ import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
 import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber, greeting } from '@/lib/date'
-import type { Class, HomeworkWithStatus, Reminder } from '@/lib/types'
+import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 
 type StudentStatus = { id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }
 
@@ -126,13 +126,14 @@ interface TeacherHomeProps {
   dutyEntries: DutyEntry[]
   nextEvent: NextEvent | null
   moreEventCount: number
+  upcomingEvents: AgendaEvent[]
   streakEntries: StreakEntry[]
   recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
 }
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  hwOpenStudents, reminders, dutyEntries, nextEvent, moreEventCount, streakEntries, recentHomework,
+  hwOpenStudents, reminders, dutyEntries, nextEvent, moreEventCount, upcomingEvents, streakEntries, recentHomework,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -287,7 +288,7 @@ export default function TeacherHome({
           <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-2xl" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
-              <AgendaPanel reminders={reminders} role="teacher" classId={classId} userId={userId} />
+              <AgendaPanel reminders={reminders} events={upcomingEvents} role="teacher" classId={classId} userId={userId} />
             </div>
             <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
               <StreakLeaderCard entries={streakEntries} />

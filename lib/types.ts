@@ -59,6 +59,18 @@ export type CalendarEvent = {
   target_student_ids: string[] | null
 }
 
+/** Schlanke Termin-Repräsentation für die Startseiten-Agenda. */
+export type AgendaEvent = {
+  id: string
+  title: string
+  category: string
+  start_date: string
+  end_date: string
+  all_day: boolean
+  start_time: string | null
+  target_student_ids: string[] | null
+}
+
 export type Homework = {
   id: string
   class_id: string
