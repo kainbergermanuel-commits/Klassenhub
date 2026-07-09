@@ -124,6 +124,9 @@ function NextEventCard({ event, today }: { event: CalendarEvent; today: string }
           <span className="text-[11px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full text-white" style={{ background: meta.color }}>
             {relativeLabel(event, today)}
           </span>
+          <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide" style={{ color: meta.color }}>
+            <span className="msym text-[13px]">{meta.icon}</span>{meta.label}
+          </span>
           {isPersonal && (
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-[#8B5CF6] bg-[#8B5CF6]/10 px-1.5 py-0.5 rounded-full">
               <span className="msym text-[11px]">person</span>Persönlich
