@@ -249,13 +249,13 @@ export default function TermineView({ events, role, today, classId, userId }: Pr
         <div className="flex gap-0.5 mb-3 p-0.5 rounded-lg bg-gradient-to-b from-[#ECE7DD] to-white">
           <button
             onClick={() => setCalMode('monat')}
-            className={`flex-1 py-1.5 rounded-md text-[12px] font-bold transition-all ${calMode === 'monat' ? 'bg-white/70 text-kh-dark shadow-sm' : 'text-kh-muted hover:text-kh-dark'}`}
+            className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all ${calMode === 'monat' ? 'bg-white/70 text-kh-dark shadow-sm' : 'text-kh-muted hover:text-kh-dark'}`}
           >
             Monat
           </button>
           <button
             onClick={() => setCalMode('woche')}
-            className={`flex-1 py-1.5 rounded-md text-[12px] font-bold transition-all ${calMode === 'woche' ? 'bg-white/70 text-kh-dark shadow-sm' : 'text-kh-muted hover:text-kh-dark'}`}
+            className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all ${calMode === 'woche' ? 'bg-white/70 text-kh-dark shadow-sm' : 'text-kh-muted hover:text-kh-dark'}`}
           >
             Woche
           </button>
