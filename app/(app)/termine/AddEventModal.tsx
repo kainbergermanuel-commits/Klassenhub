@@ -4,13 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { createEvent } from '@/app/actions/events'
+import { createEvent, createOwnEvent } from '@/app/actions/events'
 import { EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
 import Avatar from '@/components/ui/Avatar'
 
 interface Props {
   today: string
   classId: string
+  mode?: 'teacher' | 'student'
   onClose: () => void
 }
 
@@ -105,7 +106,8 @@ function DatePicker({ value, min, onChange }: { value: string; min: string; onCh
   )
 }
 
-export default function AddEventModal({ today, classId, onClose }: Props) {
+export default function AddEventModal({ today, classId, mode = 'teacher', onClose }: Props) {
+  const isStudent = mode === 'student'
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -124,13 +126,13 @@ export default function AddEventModal({ today, classId, onClose }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    if (!showTargeting || students.length > 0) return
+    if (isStudent || !showTargeting || students.length > 0) return
     createClient()
       .from('profiles')
       .select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color')
       .eq('class_id', classId).eq('role', 'student').order('full_name')
       .then(({ data }) => setStudents(data ?? []))
-  }, [showTargeting, classId, students.length])
+  }, [isStudent, showTargeting, classId, students.length])
 
   function toggleStudent(id: string) {
     setSelectedIds(prev => {
@@ -145,19 +147,20 @@ export default function AddEventModal({ today, classId, onClose }: Props) {
     if (!multiDay || v > endDate) setEndDate(v)
   }
 
-  const canPost = title.trim().length > 0 && startDate && endDate >= startDate && (!showTargeting || selectedIds.size > 0)
+  const canPost = title.trim().length > 0 && startDate && endDate >= startDate && (isStudent || !showTargeting || selectedIds.size > 0)
 
   async function save() {
     if (!canPost || saving) return
     setSaving(true)
     setError(null)
     try {
-      await createEvent({
+      const base = {
         title, description, location, category,
         startDate, endDate: multiDay ? endDate : startDate,
         allDay, startTime: allDay ? null : startTime, endTime: allDay ? null : (endTime || null),
-        targetStudentIds: selectedIds.size > 0 ? [...selectedIds] : null,
-      })
+      }
+      if (isStudent) await createOwnEvent(base)
+      else await createEvent({ ...base, targetStudentIds: selectedIds.size > 0 ? [...selectedIds] : null })
       router.refresh()
       onClose()
     } catch {
@@ -170,7 +173,10 @@ export default function AddEventModal({ today, classId, onClose }: Props) {
     <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
       <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl my-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-extrabold text-kh-dark">Neuer Termin</h2>
+          <div>
+            <h2 className="text-lg font-extrabold text-kh-dark">{isStudent ? 'Neuer persönlicher Termin' : 'Neuer Termin'}</h2>
+            {isStudent && <p className="text-xs text-kh-muted font-semibold mt-0.5">Nur für dich sichtbar</p>}
+          </div>
           <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
         </div>
 
@@ -248,6 +254,7 @@ export default function AddEventModal({ today, classId, onClose }: Props) {
           )}
 
           {/* Zielgruppe */}
+          {!isStudent && (
           <div>
             <button type="button" onClick={() => setShowTargeting(v => !v)}
               className="flex items-center gap-1.5 text-[12px] font-bold text-kh-muted hover:text-kh-dark transition-colors">
@@ -289,6 +296,7 @@ export default function AddEventModal({ today, classId, onClose }: Props) {
               </>
             )}
           </div>
+          )}
         </div>
 
         {error && <div className="mt-4 text-sm font-semibold text-kh-red bg-kh-red-light px-3.5 py-2.5 rounded-xl">{error}</div>}
@@ -299,7 +307,7 @@ export default function AddEventModal({ today, classId, onClose }: Props) {
           </button>
           <button onClick={save} disabled={!canPost || saving}
             className="flex-1 py-3 rounded-full bg-gradient-to-br from-[#4C93C9] to-[#7EB8E5] text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40">
-            {saving ? 'Speichern…' : 'Termin anlegen'}
+            {saving ? 'Speichern…' : isStudent ? 'Persönlich anlegen' : 'Termin anlegen'}
           </button>
         </div>
       </div>

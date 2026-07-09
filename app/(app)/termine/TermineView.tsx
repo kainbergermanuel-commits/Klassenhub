@@ -16,6 +16,7 @@ interface Props {
   role: Role
   today: string
   classId: string
+  userId: string
 }
 
 type Filter = 'alle' | 'klasse' | 'persoenlich'
@@ -88,7 +89,7 @@ function EventRow({ event, canDelete, onDelete }: { event: CalendarEvent; canDel
   )
 }
 
-export default function TermineView({ events, role, today, classId }: Props) {
+export default function TermineView({ events, role, today, classId, userId }: Props) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -99,7 +100,12 @@ export default function TermineView({ events, role, today, classId }: Props) {
   const [filter, setFilter] = useState<Filter>('alle')
 
   const canManage = role === 'teacher'
+  const canCreateOwn = role === 'student'
   const personalCount = useMemo(() => events.filter(e => e.target_student_ids).length, [events])
+
+  function canDeleteEvent(e: CalendarEvent) {
+    return canManage || (role === 'student' && e.created_by === userId)
+  }
 
   async function handleDelete(id: string) {
     try {
@@ -194,12 +200,12 @@ export default function TermineView({ events, role, today, classId }: Props) {
           })}
         </div>
 
-        {canManage && (
+        {(canManage || canCreateOwn) && (
           <button
             onClick={() => setShowModal(true)}
             className="mt-4 w-full h-10 rounded-xl bg-gradient-to-br from-[#4C93C9] to-[#7EB8E5] text-white flex items-center justify-center gap-1.5 text-[13px] font-bold hover:brightness-105 transition-all"
           >
-            <span className="text-[16px] leading-none">+</span>Neuer Termin
+            <span className="text-[16px] leading-none">+</span>{canManage ? 'Neuer Termin' : 'Persönlicher Termin'}
           </button>
         )}
       </div>
@@ -234,7 +240,7 @@ export default function TermineView({ events, role, today, classId }: Props) {
               <button onClick={() => setSelectedDate(null)} className="text-[12px] font-bold text-kh-teal hover:underline">Alle Termine</button>
             </div>
             {selectedDayEvents && selectedDayEvents.length > 0 ? (
-              selectedDayEvents.map(e => <EventRow key={e.id} event={e} canDelete={canManage} onDelete={handleDelete} />)
+              selectedDayEvents.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} onDelete={handleDelete} />)
             ) : (
               <p className="text-sm text-kh-muted font-medium">Keine Termine an diesem Tag.</p>
             )}
@@ -252,7 +258,7 @@ export default function TermineView({ events, role, today, classId }: Props) {
                 </div>
               ) : (
                 <div className="flex flex-col gap-2.5">
-                  {upcoming.map(e => <EventRow key={e.id} event={e} canDelete={canManage} onDelete={handleDelete} />)}
+                  {upcoming.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} onDelete={handleDelete} />)}
                 </div>
               )}
             </div>
@@ -269,7 +275,7 @@ export default function TermineView({ events, role, today, classId }: Props) {
                       <div key={g.label}>
                         <div className="text-[11px] font-bold text-kh-muted uppercase tracking-wide mb-2 opacity-70">{g.label}</div>
                         <div className="flex flex-col gap-2.5 opacity-70">
-                          {g.items.map(e => <EventRow key={e.id} event={e} canDelete={canManage} onDelete={handleDelete} />)}
+                          {g.items.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} onDelete={handleDelete} />)}
                         </div>
                       </div>
                     ))}
@@ -282,7 +288,7 @@ export default function TermineView({ events, role, today, classId }: Props) {
       </div>
 
       {showModal && (
-        <AddEventModal today={today} classId={classId} onClose={() => setShowModal(false)} />
+        <AddEventModal today={today} classId={classId} mode={canManage ? 'teacher' : 'student'} onClose={() => setShowModal(false)} />
       )}
     </div>
   )
