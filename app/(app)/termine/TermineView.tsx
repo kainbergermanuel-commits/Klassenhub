@@ -304,7 +304,7 @@ export default function TermineView({ events, role, today, classId, userId }: Pr
             <button
               onClick={() => setCategoryFilter('alle')}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[12.5px] font-bold transition-all border ${
-                categoryFilter === 'alle' ? 'bg-kh-dark text-white border-kh-dark' : 'border-kh-border text-kh-muted hover:text-kh-dark hover:border-kh-teal/50'
+                categoryFilter === 'alle' ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white border-transparent' : 'border-kh-border text-kh-muted hover:text-kh-dark hover:border-kh-teal/50'
               }`}
             >
               Alle Kategorien
