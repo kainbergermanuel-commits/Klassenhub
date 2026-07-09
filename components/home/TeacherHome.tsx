@@ -191,11 +191,7 @@ export default function TeacherHome({
                 meta={homeworkList.length > 0 ? `${homeworkList.length} aktiv · ${hwSubmittedCount}/${hwSlots} abgegeben` : 'Keine aktiven HÜ'}
                 progress={homeworkList.length > 0 ? hwProgress : undefined}
                 people={hwOpenStudents}
-                peopleTooltip={
-                  hwOpenStudents.length > 0
-                    ? `Noch offen: ${hwOpenStudents.map(s => s.full_name.split(' ')[0]).join(', ')}`
-                    : undefined
-                }
+                peopleTooltip={hwOpenStudents.length > 0 ? 'Noch offen' : undefined}
               />
             </div>
             <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>

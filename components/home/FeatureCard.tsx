@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import AvatarStack from './AvatarStack'
+import Avatar from '@/components/ui/Avatar'
 
 type GradientKey = 'teal' | 'amber' | 'violet' | 'blue'
 
@@ -29,7 +30,7 @@ interface FeatureCardProps {
   people?: Person[]
   /** Avatare unter dem Meta-Text statt oben rechts */
   peopleInline?: boolean
-  /** Tooltip-Text beim Hover über den Avatar-Stack oben rechts */
+  /** Überschrift des Hover-Overlays über den Avatar-Stack oben rechts (z.B. "Noch offen") */
   peopleTooltip?: string
   badge?: string
   footer?: React.ReactNode
@@ -46,7 +47,24 @@ export default function FeatureCard({ href, gradient, icon, title, meta, progres
           <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
         </div>
         {people && people.length > 0 && !peopleInline
-          ? <span title={peopleTooltip} className="flex-shrink-0"><AvatarStack people={people} max={3} ring="rgba(255,255,255,0.35)" size={28} /></span>
+          ? (
+            <span className="relative group/people flex-shrink-0">
+              <AvatarStack people={people} max={3} ring="rgba(255,255,255,0.35)" size={28} />
+              {peopleTooltip && (
+                <span className="pointer-events-none absolute top-full right-0 mt-1.5 z-20 hidden group-hover/people:block w-max max-w-[210px] bg-white rounded-xl shadow-[0_8px_20px_rgba(20,40,45,.22)] p-2.5 text-left">
+                  <span className="block text-[10.5px] font-bold uppercase tracking-wide text-kh-muted mb-1.5">{peopleTooltip}</span>
+                  <span className="flex flex-col gap-1.5">
+                    {people.map((p, i) => (
+                      <span key={i} className="flex items-center gap-1.5 min-w-0">
+                        <Avatar name={p.full_name} color={p.avatar_color ?? '#0F8A82'} seed={p.avatar_seed} hairColor={p.avatar_hair_color} skinColor={p.avatar_skin_color} size={18} />
+                        <span className="text-[12px] font-semibold text-kh-dark truncate">{p.full_name.split(' ')[0]}</span>
+                      </span>
+                    ))}
+                  </span>
+                </span>
+              )}
+            </span>
+          )
           : badge
             ? <span className="text-[11px] font-bold bg-white/20 px-2.5 py-1 rounded-full">{badge}</span>
             : null}
