@@ -104,6 +104,7 @@ function EventRow({ event, canDelete, onDelete }: { event: CalendarEvent; canDel
 
 function NextEventCard({ event, today }: { event: CalendarEvent; today: string }) {
   const meta = eventCategoryMeta(event.category)
+  const badge = dateBadge(event.start_date)
   const isPersonal = !!event.target_student_ids
   const timeLabel = !event.all_day && event.start_time
     ? `${event.start_time}${event.end_time ? ` – ${event.end_time}` : ''}`
@@ -111,23 +112,26 @@ function NextEventCard({ event, today }: { event: CalendarEvent; today: string }
 
   return (
     <div
-      className="rounded-2xl p-4 flex items-center gap-3.5 text-white"
-      style={{ background: `linear-gradient(135deg, ${meta.color}ee 0%, ${meta.color}bb 100%)` }}
+      className="rounded-2xl p-4 flex gap-3.5 items-start border"
+      style={{ background: `${meta.color}12`, borderColor: `${meta.color}33` }}
     >
-      <span className="msym text-[32px] flex-shrink-0 opacity-90">{meta.icon}</span>
+      <div className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-white flex-shrink-0" style={{ background: `linear-gradient(135deg, ${meta.color}ee 0%, ${meta.color}99 100%)` }}>
+        <span className="text-[10px] font-bold uppercase opacity-80">{badge.month}</span>
+        <span className="text-[18px] font-extrabold leading-none">{badge.day}</span>
+      </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-          <span className="text-[11px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full bg-white/25">
+          <span className="text-[11px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full text-white" style={{ background: meta.color }}>
             {relativeLabel(event, today)}
           </span>
           {isPersonal && (
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/25">
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-[#8B5CF6] bg-[#8B5CF6]/10 px-1.5 py-0.5 rounded-full">
               <span className="msym text-[11px]">person</span>Persönlich
             </span>
           )}
         </div>
-        <div className="font-extrabold text-[16px] leading-tight truncate">{event.title}</div>
-        <div className="flex items-center gap-3 mt-0.5 flex-wrap text-[12px] font-semibold opacity-90">
+        <div className="font-extrabold text-[16px] leading-tight text-kh-dark truncate">{event.title}</div>
+        <div className="flex items-center gap-3 mt-0.5 flex-wrap text-[12px] font-semibold text-kh-muted">
           {timeLabel && <span className="flex items-center gap-1"><span className="msym text-[13px]">schedule</span>{timeLabel}</span>}
           {event.location && <span className="flex items-center gap-1"><span className="msym text-[13px]">location_on</span>{event.location}</span>}
         </div>
