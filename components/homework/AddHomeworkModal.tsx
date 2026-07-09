@@ -102,7 +102,7 @@ function DatePicker({ value, min, onChange }: DatePickerProps) {
       </button>
 
       {open && (
-        <div className="absolute z-50 left-full ml-3 top-0 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
+        <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <button type="button" onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F6F3ED] text-kh-muted transition">
