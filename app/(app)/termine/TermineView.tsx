@@ -106,6 +106,10 @@ function NextEventCard({ event, today }: { event: CalendarEvent; today: string }
   const meta = eventCategoryMeta(event.category)
   const badge = dateBadge(event.start_date)
   const isPersonal = !!event.target_student_ids
+  const multiDay = event.end_date !== event.start_date
+  const dateLabel = multiDay
+    ? `${new Date(`${event.start_date}T00:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })} – ${new Date(`${event.end_date}T00:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })}`
+    : new Date(`${event.start_date}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })
   const timeLabel = !event.all_day && event.start_time
     ? `${event.start_time}${event.end_time ? ` – ${event.end_time}` : ''}`
     : null
@@ -135,6 +139,7 @@ function NextEventCard({ event, today }: { event: CalendarEvent; today: string }
         </div>
         <div className="font-extrabold text-[16px] leading-tight text-kh-dark truncate">{event.title}</div>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap text-[12px] font-semibold text-kh-muted">
+          <span className="flex items-center gap-1"><span className="msym text-[13px]">event</span>{dateLabel}</span>
           {timeLabel && <span className="flex items-center gap-1"><span className="msym text-[13px]">schedule</span>{timeLabel}</span>}
           {event.location && <span className="flex items-center gap-1"><span className="msym text-[13px]">location_on</span>{event.location}</span>}
         </div>
