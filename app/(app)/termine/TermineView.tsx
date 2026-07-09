@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { monthLabel, addDaysISO } from '@/lib/date'
+import { monthLabel, addDaysISO, getMondayOfWeek } from '@/lib/date'
 import { eventCategoryMeta, EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
 import { deleteEvent } from '@/app/actions/events'
 import AddEventModal from './AddEventModal'
@@ -21,6 +21,7 @@ interface Props {
 
 type Filter = 'alle' | 'klasse' | 'persoenlich'
 type CategoryFilter = EventCategory | 'alle'
+type CalMode = 'monat' | 'woche'
 
 function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
 function getFirstWeekday(y: number, m: number) { return (new Date(y, m, 1).getDay() + 6) % 7 }
@@ -29,6 +30,16 @@ function toISO(y: number, m: number, d: number) { return `${y}-${String(m + 1).p
 function dateBadge(dateISO: string) {
   const d = new Date(`${dateISO}T00:00:00`)
   return { month: d.toLocaleDateString('de-AT', { month: 'short' }).toUpperCase().replace('.', ''), day: d.getDate() }
+}
+
+function weekRangeLabel(mondayISO: string) {
+  const start = new Date(`${mondayISO}T00:00:00`)
+  const end = new Date(`${addDaysISO(6, start)}T00:00:00`)
+  const startDay = start.getDate()
+  const endDay = end.getDate()
+  return start.getMonth() === end.getMonth()
+    ? `${startDay}. – ${endDay}. ${MONTHS[end.getMonth()]}`
+    : `${startDay}. ${MONTHS[start.getMonth()]} – ${endDay}. ${MONTHS[end.getMonth()]}`
 }
 
 function daysBetween(fromISO: string, toISO: string) {
@@ -155,6 +166,8 @@ export default function TermineView({ events, role, today, classId, userId }: Pr
   const now = new Date(`${today}T00:00:00`)
   const [viewYear, setViewYear] = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
+  const [calMode, setCalMode] = useState<CalMode>('monat')
+  const [weekMonday, setWeekMonday] = useState(getMondayOfWeek(now))
   const [showPast, setShowPast] = useState(false)
   const [filter, setFilter] = useState<Filter>('alle')
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('alle')
@@ -219,54 +232,130 @@ export default function TermineView({ events, role, today, classId, userId }: Pr
 
   function prevMonth() { if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) } else setViewMonth(m => m - 1) }
   function nextMonth() { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) } else setViewMonth(m => m + 1) }
+  function prevWeek() { setWeekMonday(w => addDaysISO(-7, new Date(`${w}T00:00:00`))) }
+  function nextWeek() { setWeekMonday(w => addDaysISO(7, new Date(`${w}T00:00:00`))) }
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
   const firstWeekday = getFirstWeekday(viewYear, viewMonth)
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDaysISO(i, new Date(`${weekMonday}T00:00:00`))),
+    [weekMonday]
+  )
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 items-start">
       {/* Mini-Kalender */}
       <div className="kh-card p-4 md:sticky md:top-4">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Vorheriger Monat">
-            <span className="msym text-[20px]">chevron_left</span>
+        <div className="flex gap-1.5 mb-3">
+          <button
+            onClick={() => setCalMode('monat')}
+            className={`flex-1 py-1.5 rounded-lg text-[12px] font-bold transition-all ${calMode === 'monat' ? 'bg-kh-dark text-white' : 'bg-kh-page text-kh-muted hover:text-kh-dark'}`}
+          >
+            Monat
           </button>
-          <span className="text-[13px] font-extrabold text-kh-dark">{MONTHS[viewMonth]} {viewYear}</span>
-          <button onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Nächster Monat">
-            <span className="msym text-[20px]">chevron_right</span>
+          <button
+            onClick={() => setCalMode('woche')}
+            className={`flex-1 py-1.5 rounded-lg text-[12px] font-bold transition-all ${calMode === 'woche' ? 'bg-kh-dark text-white' : 'bg-kh-page text-kh-muted hover:text-kh-dark'}`}
+          >
+            Woche
           </button>
         </div>
-        <div className="grid grid-cols-7 mb-1">
-          {WEEKDAYS.map(d => <div key={d} className="text-center text-[10.5px] font-bold text-kh-muted py-1">{d}</div>)}
-        </div>
-        <div className="grid grid-cols-7 gap-y-1">
-          {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1
-            const iso = toISO(viewYear, viewMonth, day)
-            const dayEvents = eventsByDay.get(iso) ?? []
-            const isToday = iso === today
-            const isSelected = iso === selectedDate
-            return (
-              <button
-                key={day}
-                onClick={() => setSelectedDate(isSelected ? null : iso)}
-                className={`h-9 w-full rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ${
-                  isSelected ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white' : isToday ? 'border border-kh-teal text-kh-teal font-bold' : 'hover:bg-kh-page text-kh-dark'
-                }`}
-              >
-                <span className="text-[12.5px] font-semibold leading-none">{day}</span>
-                {dayEvents.length > 0 && (
-                  <span className="flex gap-0.5">
-                    {dayEvents.slice(0, 3).map((e, idx) => (
-                      <span key={idx} className="w-1 h-1 rounded-full" style={{ background: isSelected ? 'rgba(255,255,255,.8)' : eventCategoryMeta(e.category).color }} />
-                    ))}
-                  </span>
-                )}
+
+        {calMode === 'monat' ? (
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Vorheriger Monat">
+                <span className="msym text-[20px]">chevron_left</span>
               </button>
-            )
-          })}
-        </div>
+              <span className="text-[13px] font-extrabold text-kh-dark">{MONTHS[viewMonth]} {viewYear}</span>
+              <button onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Nächster Monat">
+                <span className="msym text-[20px]">chevron_right</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-7 mb-1">
+              {WEEKDAYS.map(d => <div key={d} className="text-center text-[10.5px] font-bold text-kh-muted py-1">{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-y-1">
+              {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1
+                const iso = toISO(viewYear, viewMonth, day)
+                const dayEvents = eventsByDay.get(iso) ?? []
+                const isToday = iso === today
+                const isSelected = iso === selectedDate
+                return (
+                  <button
+                    key={day}
+                    onClick={() => setSelectedDate(isSelected ? null : iso)}
+                    className={`h-9 w-full rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ${
+                      isSelected ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white' : isToday ? 'border border-kh-teal text-kh-teal font-bold' : 'hover:bg-kh-page text-kh-dark'
+                    }`}
+                  >
+                    <span className="text-[12.5px] font-semibold leading-none">{day}</span>
+                    {dayEvents.length > 0 && (
+                      <span className="flex gap-0.5">
+                        {dayEvents.slice(0, 3).map((e, idx) => (
+                          <span key={idx} className="w-1 h-1 rounded-full" style={{ background: isSelected ? 'rgba(255,255,255,.8)' : eventCategoryMeta(e.category).color }} />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={prevWeek} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Vorherige Woche">
+                <span className="msym text-[20px]">chevron_left</span>
+              </button>
+              <span className="text-[13px] font-extrabold text-kh-dark">{weekRangeLabel(weekMonday)}</span>
+              <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Nächste Woche">
+                <span className="msym text-[20px]">chevron_right</span>
+              </button>
+            </div>
+            <div className="flex flex-col gap-1">
+              {weekDays.map((iso, i) => {
+                const dayEvents = eventsByDay.get(iso) ?? []
+                const isToday = iso === today
+                const isSelected = iso === selectedDate
+                const d = new Date(`${iso}T00:00:00`)
+                return (
+                  <button
+                    key={iso}
+                    onClick={() => setSelectedDate(isSelected ? null : iso)}
+                    className={`w-full text-left rounded-lg px-2 py-1.5 flex items-center gap-2.5 transition-all ${
+                      isSelected ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white' : isToday ? 'border border-kh-teal' : 'hover:bg-kh-page'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center w-8 flex-shrink-0">
+                      <span className={`text-[9px] font-bold uppercase ${isSelected ? 'opacity-80' : 'text-kh-muted'}`}>{WEEKDAYS[i]}</span>
+                      <span className={`text-[14px] font-extrabold leading-none ${isSelected ? '' : isToday ? 'text-kh-teal' : 'text-kh-dark'}`}>{d.getDate()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-wrap gap-1">
+                      {dayEvents.slice(0, 2).map(e => (
+                        <span
+                          key={e.id}
+                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full truncate max-w-[110px]"
+                          style={{
+                            background: isSelected ? 'rgba(255,255,255,.25)' : `${eventCategoryMeta(e.category).color}1a`,
+                            color: isSelected ? '#fff' : eventCategoryMeta(e.category).color,
+                          }}
+                        >
+                          {e.title}
+                        </span>
+                      ))}
+                      {dayEvents.length > 2 && (
+                        <span className={`text-[10px] font-bold self-center ${isSelected ? 'opacity-80' : 'text-kh-muted'}`}>+{dayEvents.length - 2}</span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
 
         {(canManage || canCreateOwn) && (
           <button
