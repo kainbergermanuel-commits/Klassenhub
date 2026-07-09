@@ -202,8 +202,8 @@ export default function AddHomeworkModal({ classId, userId, asPending = false, o
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40" onClick={onClose}>
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl my-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-extrabold text-kh-dark">Neue Hausübung</h2>
