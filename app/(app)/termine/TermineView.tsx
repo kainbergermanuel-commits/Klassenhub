@@ -246,7 +246,7 @@ export default function TermineView({ events, role, today, classId, userId }: Pr
     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 items-start">
       {/* Mini-Kalender */}
       <div className="kh-card p-4 md:sticky md:top-4">
-        <div className="flex gap-0.5 mb-3 p-0.5 rounded-lg bg-gradient-to-br from-kh-border to-white">
+        <div className="flex gap-0.5 mb-3 p-0.5 rounded-lg bg-gradient-to-b from-kh-border to-white">
           <button
             onClick={() => setCalMode('monat')}
             className={`flex-1 py-1.5 rounded-md text-[12px] font-bold transition-all ${calMode === 'monat' ? 'bg-white text-kh-dark shadow-sm' : 'text-kh-muted hover:text-kh-dark'}`}
