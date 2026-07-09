@@ -2,12 +2,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
-import { todayISO, addDaysISO, daysUntilLabel, getRelevantMondayOfWeek, schoolYearStartISO } from '@/lib/date'
+import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO } from '@/lib/date'
 import { computeStreak, currentMilestone } from '@/lib/streak'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
-import type { NextEvent } from '@/components/home/TermineCard'
 import type { HomeworkWithStatus, Reminder, Duty, AgendaEvent } from '@/lib/types'
 
 type EventRow = { id: string; title: string; start_date: string; end_date: string; all_day: boolean; start_time: string | null; category: string; target_student_ids: string[] | null }
@@ -49,23 +48,9 @@ export default async function HomePage() {
   const upcomingReminders: Reminder[] = remindersArr ?? []
   const duties: Duty[] = weekDuties ?? []
 
-  // Termine-Minicard: nächsten Termin featuren (auch jenseits des Horizonts,
-  // damit die Card nie leer wirkt), Badge zählt weitere innerhalb von 14 Tagen.
+  // Terminliste für die Startseite (Minicard mit Datum-Pillen + kombiniertes
+  // Agenda-Panel mit Umschalter Erinnerungen/Termine).
   const events = eventsRaw ?? []
-  const horizon = addDaysISO(14)
-  const inHorizon = events.filter(e => e.start_date <= horizon)
-  const first = events[0]
-  const nextEvent: NextEvent | null = first
-    ? {
-        title: first.title,
-        category: first.category,
-        countdownLabel: first.start_date <= today && first.end_date >= today ? 'Heute' : daysUntilLabel(first.start_date),
-        dateLabel: `${new Date(`${first.start_date}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })}${!first.all_day && first.start_time ? ` · ${first.start_time}` : ''}`,
-      }
-    : null
-  const moreCount = Math.max(0, inHorizon.length - 1)
-
-  // Volle Terminliste fürs kombinierte Agenda-Panel (Umschalter Erinnerungen/Termine).
   const upcomingEvents: AgendaEvent[] = events.map(e => ({
     id: e.id,
     title: e.title,
@@ -153,8 +138,6 @@ export default async function HomePage() {
         hwOpenStudents={hwOpenStudents}
         reminders={upcomingReminders}
         dutyEntries={dutyEntries}
-        nextEvent={nextEvent}
-        moreEventCount={moreCount}
         upcomingEvents={upcomingEvents}
         streakEntries={streakEntries}
         recentHomework={(recentHw ?? []).map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
@@ -242,8 +225,6 @@ export default async function HomePage() {
         hwTotal={homeworkWithStatus.length}
         reminders={upcomingReminders}
         myViewedIds={myViewedIds}
-        nextEvent={nextEvent}
-        moreEventCount={moreCount}
         upcomingEvents={upcomingEvents}
         myDuty={myDuty ? { name: myDuty.duty_name, partners: myDutyPartners } : null}
         streak={streak}
@@ -331,8 +312,6 @@ export default async function HomePage() {
         className={klass?.name ?? ''}
         childHomework={childHwWithStatus}
         reminders={upcomingReminders}
-        nextEvent={nextEvent}
-        moreEventCount={moreCount}
         upcomingEvents={upcomingEvents}
         childStreak={childStreak}
         childConfirmedStreak={childConfirmedStreak}

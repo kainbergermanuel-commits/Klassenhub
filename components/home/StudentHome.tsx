@@ -1,5 +1,5 @@
 import FeatureCard from './FeatureCard'
-import TermineCard, { type NextEvent } from './TermineCard'
+import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
@@ -17,8 +17,6 @@ interface StudentHomeProps {
   hwTotal: number
   reminders: Reminder[]
   myViewedIds: string[]
-  nextEvent: NextEvent | null
-  moreEventCount: number
   upcomingEvents: AgendaEvent[]
   myDuty: { name: string; partners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] } | null
   streak: number
@@ -28,7 +26,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, nextEvent, moreEventCount, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -94,7 +92,7 @@ export default function StudentHome({
                 peopleInline
                 footer={dutyDayFooter}
               />,
-              <TermineCard nextEvent={nextEvent} moreCount={moreEventCount} />,
+              <TermineCard events={upcomingEvents} />,
             ].map((card, i) => (
               <div key={i} className="animate-card-enter h-full" style={{ animationDelay: `${i * 60}ms` }}>
                 {card}

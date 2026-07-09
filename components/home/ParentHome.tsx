@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import FeatureCard from './FeatureCard'
-import TermineCard, { type NextEvent } from './TermineCard'
+import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
@@ -19,8 +19,6 @@ interface ParentHomeProps {
   className: string
   childHomework: HomeworkWithStatus[]
   reminders: Reminder[]
-  nextEvent: NextEvent | null
-  moreEventCount: number
   upcomingEvents: AgendaEvent[]
   /** Eigener Streak des Kindes – sofort sichtbar (auch unbestätigt). Bestimmt die Zahl. */
   childStreak: number
@@ -31,7 +29,7 @@ interface ParentHomeProps {
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, nextEvent, moreEventCount, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
@@ -144,7 +142,7 @@ export default function ParentHome({
               />
             </div>
             <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
-              <TermineCard nextEvent={nextEvent} moreCount={moreEventCount} />
+              <TermineCard events={upcomingEvents} />
             </div>
           </div>
 

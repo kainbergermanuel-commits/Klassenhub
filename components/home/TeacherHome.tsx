@@ -7,7 +7,7 @@ import Avatar from '@/components/ui/Avatar'
 import Link from 'next/link'
 import FeatureCard from './FeatureCard'
 import DutyCard, { type DutyEntry } from './DutyCard'
-import TermineCard, { type NextEvent } from './TermineCard'
+import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
@@ -124,8 +124,6 @@ interface TeacherHomeProps {
   hwOpenStudents: Person[]
   reminders: Reminder[]
   dutyEntries: DutyEntry[]
-  nextEvent: NextEvent | null
-  moreEventCount: number
   upcomingEvents: AgendaEvent[]
   streakEntries: StreakEntry[]
   recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
@@ -133,7 +131,7 @@ interface TeacherHomeProps {
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  hwOpenStudents, reminders, dutyEntries, nextEvent, moreEventCount, upcomingEvents, streakEntries, recentHomework,
+  hwOpenStudents, reminders, dutyEntries, upcomingEvents, streakEntries, recentHomework,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -201,7 +199,7 @@ export default function TeacherHome({
               />
             </div>
             <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
-              <TermineCard nextEvent={nextEvent} moreCount={moreEventCount} />
+              <TermineCard events={upcomingEvents} />
             </div>
             <div className="animate-card-enter h-full" style={{ animationDelay: '120ms' }}>
               <DutyCard
