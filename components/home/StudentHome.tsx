@@ -94,7 +94,7 @@ export default function StudentHome({
               />,
               <TermineCard events={upcomingEvents} />,
             ].map((card, i) => (
-              <div key={i} className="animate-card-enter h-full" style={{ animationDelay: `${i * 60}ms` }}>
+              <div key={i} className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: `${i * 60}ms` }}>
                 {card}
               </div>
             ))}

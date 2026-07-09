@@ -133,7 +133,7 @@ export default function ParentHome({
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
           {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-2 gap-4 max-md:hidden">
-            <div className="animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
+            <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
               <FeatureCard
                 href="/hausaufgaben" gradient="amber" icon="assignment"
                 title="Hausübungen"
@@ -141,7 +141,7 @@ export default function ParentHome({
                 progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
               />
             </div>
-            <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
+            <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
               <TermineCard events={upcomingEvents} />
             </div>
           </div>

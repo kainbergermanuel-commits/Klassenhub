@@ -184,7 +184,7 @@ export default function TeacherHome({
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
           {/* Feature cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
-            <div className="animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
+            <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
               <FeatureCard
                 href="/hausaufgaben" gradient="amber" icon="assignment"
                 title="Hausübungen"
@@ -194,10 +194,10 @@ export default function TeacherHome({
                 peopleTooltip={hwOpenStudents.length > 0 ? 'Noch offen' : undefined}
               />
             </div>
-            <div className="animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
+            <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
               <TermineCard events={upcomingEvents} />
             </div>
-            <div className="animate-card-enter h-full" style={{ animationDelay: '120ms' }}>
+            <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '120ms' }}>
               <DutyCard
                 title={`Dienste · KW ${getWeekNumber(getMondayOfWeek())}`}
                 entries={dutyEntries}
