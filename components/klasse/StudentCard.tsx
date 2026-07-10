@@ -51,24 +51,26 @@ export default function StudentCard({ id, full_name, avatar_color, avatar_seed, 
       className={`relative h-full rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)] flex flex-col items-center text-center gap-3 select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-95 ${isMe ? '' : 'cursor-pointer'} ${isMe ? 'ring-2 ring-kh-teal/40' : ''} ${wobble ? 'animate-wobble' : ''}`}
       style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FAF6EF 100%)' }}
     >
-      {badge && (
-        <span
-          title={gendered(badge.base, gender)}
-          className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-sm"
-          style={{ background: `linear-gradient(135deg, ${badge.color}ee 0%, ${badge.color}99 100%)` }}
-        >
-          <span className="msym text-[14px] text-white" style={{ fontVariationSettings: `'FILL' ${badge.fill ? 1 : 0}` }}>{badge.icon}</span>
-        </span>
-      )}
-      {isVeteran && (
-        <span
-          title="HÜ-Veteran · 15 HÜ in Folge bestätigt — Erledigungen werden nicht mehr von den Eltern bestätigt"
-          className="absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center shadow-sm"
-          style={{ background: 'linear-gradient(135deg, #E8A020ee 0%, #F5C84299 100%)' }}
-        >
-          <span className="msym text-[14px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
-        </span>
-      )}
+      <div className="absolute top-2 right-2 flex items-center gap-1.5">
+        {isVeteran && (
+          <span
+            title="HÜ-Veteran · 15 HÜ in Folge bestätigt — Erledigungen werden nicht mehr von den Eltern bestätigt"
+            className="w-6 h-6 rounded-full flex items-center justify-center shadow-sm flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #E8A020ee 0%, #F5C84299 100%)' }}
+          >
+            <span className="msym text-[14px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
+          </span>
+        )}
+        {badge && (
+          <span
+            title={gendered(badge.base, gender)}
+            className="w-6 h-6 rounded-full flex items-center justify-center shadow-sm flex-shrink-0"
+            style={{ background: `linear-gradient(135deg, ${badge.color}ee 0%, ${badge.color}99 100%)` }}
+          >
+            <span className="msym text-[14px] text-white" style={{ fontVariationSettings: `'FILL' ${badge.fill ? 1 : 0}` }}>{badge.icon}</span>
+          </span>
+        )}
+      </div>
       {reaction && (
         <div className="absolute top-[74px] left-1/2 -translate-x-1/2 -ml-[5px] z-10 pointer-events-none">
           <div className="relative bg-white border border-kh-border shadow-lg rounded-2xl px-3 py-1.5 text-[13px] font-extrabold text-kh-dark whitespace-nowrap animate-pop-shake">

@@ -8,9 +8,10 @@ interface Props {
   streak: number
   broken: boolean
   jokerAvailable: boolean
+  jokerUsedThisSeason: boolean
 }
 
-export default function MyStreakPanel({ streak, broken, jokerAvailable }: Props) {
+export default function MyStreakPanel({ streak, broken, jokerAvailable, jokerUsedThisSeason }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState(false)
@@ -60,9 +61,17 @@ export default function MyStreakPanel({ streak, broken, jokerAvailable }: Props)
           Deine Streak ist gerissen — der Joker für diese Season ist bereits verbraucht.
         </p>
       ) : (
-        <p className="text-[13.5px] font-semibold text-kh-dark">
-          Deine Streak läuft: {streak} {streak === 1 ? 'HÜ' : 'HÜ'} in Folge. Weiter so! 🔥
-        </p>
+        <div>
+          <p className="text-[13.5px] font-semibold text-kh-dark">
+            Deine Streak läuft: {streak} {streak === 1 ? 'HÜ' : 'HÜ'} in Folge. Weiter so! 🔥
+          </p>
+          <p className="text-[12px] text-kh-muted font-medium mt-1 flex items-center gap-1">
+            <span className="msym text-[14px]" style={{ fontVariationSettings: `'FILL' ${jokerUsedThisSeason ? 0 : 1}` }}>ac_unit</span>
+            {jokerUsedThisSeason
+              ? 'Joker für diese Season bereits verbraucht.'
+              : 'Noch 1 Joker diese Season in Reserve.'}
+          </p>
+        </div>
       )}
 
       {error && <p className="text-[12px] font-semibold text-kh-red mt-2">Der Joker konnte nicht eingesetzt werden.</p>}

@@ -99,14 +99,15 @@ export default async function StreaksPage() {
   })
 
   // ─── DEIN STREAK (nur für eingeloggten Schüler) ──────────────────────────────
-  let myStreak: { streak: number; broken: boolean; jokerAvailable: boolean } | null = null
+  let myStreak: { streak: number; broken: boolean; jokerAvailable: boolean; jokerUsedThisSeason: boolean } | null = null
   if (profile.role === 'student') {
     const myConfirmedIds = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const myFrozenIds = frozenByStudent.get(profile.id)
     const myDisplayStreak = computeStreak(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds)
     const broken = findBreakingHomework(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds) !== null
-    const jokerAvailable = broken && !freezeUsedThisSeasonByStudent.has(profile.id)
-    myStreak = { streak: myDisplayStreak, broken, jokerAvailable }
+    const jokerUsedThisSeason = freezeUsedThisSeasonByStudent.has(profile.id)
+    const jokerAvailable = broken && !jokerUsedThisSeason
+    myStreak = { streak: myDisplayStreak, broken, jokerAvailable, jokerUsedThisSeason }
   }
 
   // ─── VORMONAT-RANGLISTE ──────────────────────────────────────────────────────
