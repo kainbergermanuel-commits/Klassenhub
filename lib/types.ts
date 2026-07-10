@@ -203,6 +203,18 @@ export type Database = {
         Update: Partial<ReminderView>
         Relationships: []
       }
+      class_goals: {
+        Row: ClassGoal
+        Insert: { id?: string; class_id: string; season: string; target: number; reward?: string | null; updated_by?: string | null; updated_at?: string }
+        Update: Partial<ClassGoal>
+        Relationships: []
+      }
+      streak_freezes: {
+        Row: StreakFreeze
+        Insert: { id?: string; student_id: string; homework_id: string; created_at?: string }
+        Update: Partial<StreakFreeze>
+        Relationships: []
+      }
       messages: {
         Row: Message
         Insert: {
@@ -269,6 +281,23 @@ export type ReminderView = {
   reminder_id: string
   student_id: string
   seen_at: string
+}
+
+export type ClassGoal = {
+  id: string
+  class_id: string
+  season: string
+  target: number
+  reward: string | null
+  updated_by: string | null
+  updated_at: string
+}
+
+export type StreakFreeze = {
+  id: string
+  student_id: string
+  homework_id: string
+  created_at: string
 }
 
 // Mitteilungsheft: eine Nachricht gehoert genau einem Heft (parent_id).

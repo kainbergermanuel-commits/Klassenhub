@@ -4,7 +4,6 @@ import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
-import ClassGoalBadge from './ClassGoalBadge'
 import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { flameCount } from '@/lib/streak'
@@ -44,14 +43,11 @@ export default function ParentHome({
   return (
     <>
       <header className="mb-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
-            <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
-              <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
-            </div>
-            <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">{greeting()}, Familie {fullName.split(' ').slice(-1)[0]}!</h1>
+        <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
+          <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
+            <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
           </div>
-          <ClassGoalBadge goal={classGoal} done={classGoalDone} className="max-md:hidden" />
+          <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">{greeting()}, Familie {fullName.split(' ').slice(-1)[0]}!</h1>
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today} · {childFirst}, {className}</p>
       </header>

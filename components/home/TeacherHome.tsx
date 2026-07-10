@@ -150,7 +150,7 @@ export default function TeacherHome({
 
   return (
     <>
-      <header className="flex items-start justify-between gap-3 mb-6 flex-wrap">
+      <header className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start mb-6">
         <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
           <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
             <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
@@ -160,16 +160,7 @@ export default function TeacherHome({
             <p className="text-sm text-kh-muted font-medium mt-1">{today} · Klasse {klass?.name}</p>
           </div>
         </div>
-        <div className="hidden lg:block">
-          <ClassGoalBadge goal={classGoal} done={classGoalDone} />
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="max-md:hidden flex items-center gap-2 gradient-teal text-white px-[18px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shadow-sm"
-        >
-          <span className="msym text-[19px]">add</span>
-          Neue Hausübung
-        </button>
+        <ClassGoalBadge goal={classGoal} done={classGoalDone} className="max-md:hidden" />
       </header>
 
       {/* Schwebender „Neue HÜ"-Button unter dem Burger (nur Mobile, nur Startseite) */}
@@ -218,7 +209,16 @@ export default function TeacherHome({
                 <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
                 <span className="truncate">Demnächst fällig</span>
               </h2>
-              <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline flex-shrink-0">Alle</Link>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="flex items-center gap-1.5 gradient-teal text-white px-3.5 py-1.5 rounded-full font-bold text-[12.5px] hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <span className="msym text-[16px]">add</span>
+                  Neue Hausübung
+                </button>
+                <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline flex-shrink-0">Alle</Link>
+              </div>
             </div>
             {upcoming.length === 0 ? (
               <p className="text-sm text-kh-muted font-medium">Keine bevorstehenden Hausübungen.</p>
