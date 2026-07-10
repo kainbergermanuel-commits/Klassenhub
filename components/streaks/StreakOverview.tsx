@@ -2,6 +2,8 @@ import { flameCount } from '@/lib/streak'
 import { monthLabel } from '@/lib/date'
 import type { Role } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
+import ClassGoalCard from '@/components/streaks/ClassGoalCard'
+import MyStreakPanel from '@/components/streaks/MyStreakPanel'
 
 interface StudentStreak {
   id: string
@@ -38,9 +40,13 @@ interface Props {
   daysLeft: number
   prevRace: RaceEntry[]
   prevMonthLabel: string
+  classGoal: { target: number; reward: string | null } | null
+  classGoalDone: number
+  currentSeason: string
+  myStreak: { streak: number; broken: boolean; jokerAvailable: boolean } | null
 }
 
-export default function StreakOverview({ role, withStreak, noStreak, milestoneHistory, daysLeft, prevRace, prevMonthLabel }: Props) {
+export default function StreakOverview({ role, withStreak, noStreak, milestoneHistory, daysLeft, prevRace, prevMonthLabel, classGoal, classGoalDone, currentSeason, myStreak }: Props) {
   const maxStreak = withStreak[0]?.streak ?? 1
   const sortedMonths = Object.keys(milestoneHistory).sort((a, b) => b.localeCompare(a))
 
@@ -59,6 +65,10 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
       </header>
 
       <div className="flex flex-col gap-6">
+        <ClassGoalCard role={role} goal={classGoal} done={classGoalDone} season={currentSeason} />
+
+        {myStreak && <MyStreakPanel streak={myStreak.streak} broken={myStreak.broken} jokerAvailable={myStreak.jokerAvailable} />}
+
         {/* Active streaks */}
         <div className="kh-card p-5">
           <div className="flex items-baseline justify-between mb-4">

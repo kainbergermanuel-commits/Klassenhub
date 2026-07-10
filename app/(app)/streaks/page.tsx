@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO, lastDayOfMonthISO, lastDayOfPrevMonthISO, firstDayOfPrevMonthISO, daysUntil } from '@/lib/date'
-import { computeStreak, currentMilestone } from '@/lib/streak'
+import { todayISO, lastDayOfMonthISO, lastDayOfPrevMonthISO, firstDayOfPrevMonthISO, firstDayOfMonthISO, daysUntil } from '@/lib/date'
+import { computeStreak, currentMilestone, findBreakingHomework } from '@/lib/streak'
 import StreakOverview from '@/components/streaks/StreakOverview'
 
 export default async function StreaksPage() {
@@ -20,10 +20,13 @@ export default async function StreaksPage() {
   const prevMonthStart = firstDayOfPrevMonthISO()
   const daysLeft = daysUntil(monthEnd) + 1 // +1: endet zu Mitternacht des letzten Tags
 
+  const currentSeason = today.slice(0, 7) // 'YYYY-MM', unabhängig vom Test-Hack
+
   const [
     { data: students },
     { data: allHwDesc },
     { data: confirmations },
+    { data: classGoal },
   ] = await Promise.all([
     supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
     supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).order('due_date', { ascending: false }),
@@ -31,7 +34,21 @@ export default async function StreaksPage() {
       'student_id',
       (await supabase.from('profiles').select('id').eq('class_id', activeClassId).eq('role', 'student')).data?.map(s => s.id) ?? []
     ),
+    supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
   ])
+
+  const studentIds = (students ?? []).map(s => s.id)
+  const { data: allFreezes } = studentIds.length > 0
+    ? await supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIds)
+    : { data: [] }
+
+  const frozenByStudent = new Map<string, Set<string>>()
+  const freezeUsedThisSeasonByStudent = new Set<string>()
+  for (const f of allFreezes ?? []) {
+    if (!frozenByStudent.has(f.student_id)) frozenByStudent.set(f.student_id, new Set())
+    frozenByStudent.get(f.student_id)!.add(f.homework_id)
+    if (f.created_at.slice(0, 7) === currentSeason) freezeUsedThisSeasonByStudent.add(f.student_id)
+  }
 
   const allHwIds = (allHwDesc ?? []).map(h => h.id)
   const { data: allCompletions } = allHwIds.length > 0
@@ -50,12 +67,20 @@ export default async function StreaksPage() {
     }
   }
 
+  // ─── KLASSENZIEL (aktueller Monat, nur eltern-bestätigte Erledigungen) ───────
+  const seasonStart = firstDayOfMonthISO()
+  const seasonHwIds = new Set((allHwDesc ?? []).filter(h => h.due_date >= seasonStart && h.due_date <= monthEnd).map(h => h.id))
+  const classGoalConfirmedDone = (allCompletions ?? []).filter(
+    c => seasonHwIds.has(c.homework_id) && (c as any).confirmed_by_parent_at
+  ).length
+
   // Build per-student data
   const studentData = (students ?? []).map(s => {
     const doneIds = doneByStudent.get(s.id) ?? new Set<string>()
     const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
-    const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today)
-    const displayStreak = computeStreak(confirmedIds, allHwDesc ?? [], today)
+    const frozenIds = frozenByStudent.get(s.id)
+    const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today, frozenIds)
+    const displayStreak = computeStreak(confirmedIds, allHwDesc ?? [], today, frozenIds)
 
     // Pending: erreichter (actual) Meilenstein liegt über dem eltern-bestätigten
     const actualMilestone = currentMilestone(actualStreak)
@@ -72,6 +97,17 @@ export default async function StreaksPage() {
       pendingMilestone,
     }
   })
+
+  // ─── DEIN STREAK (nur für eingeloggten Schüler) ──────────────────────────────
+  let myStreak: { streak: number; broken: boolean; jokerAvailable: boolean } | null = null
+  if (profile.role === 'student') {
+    const myConfirmedIds = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
+    const myFrozenIds = frozenByStudent.get(profile.id)
+    const myDisplayStreak = computeStreak(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds)
+    const broken = findBreakingHomework(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds) !== null
+    const jokerAvailable = broken && !freezeUsedThisSeasonByStudent.has(profile.id)
+    myStreak = { streak: myDisplayStreak, broken, jokerAvailable }
+  }
 
   // ─── VORMONAT-RANGLISTE ──────────────────────────────────────────────────────
   const prevMonthHw = (allHwDesc ?? []).filter(h => h.due_date >= prevMonthStart && h.due_date <= prevMonthEnd)
@@ -128,6 +164,10 @@ export default async function StreaksPage() {
       daysLeft={daysLeft}
       prevRace={prevRace}
       prevMonthLabel={prevMonthEnd.slice(0, 7)}
+      classGoal={classGoal ? { target: classGoal.target, reward: classGoal.reward } : null}
+      classGoalDone={classGoalConfirmedDone}
+      currentSeason={currentSeason}
+      myStreak={myStreak}
     />
   )
 }

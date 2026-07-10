@@ -77,6 +77,11 @@ export function lastDayOfMonthISO(from: Date = new Date()): string {
   return toISODateLocal(d)
 }
 
+/** Erster Tag des aktuellen Monats als YYYY-MM-DD (lokal). */
+export function firstDayOfMonthISO(from: Date = new Date()): string {
+  return toISODateLocal(new Date(from.getFullYear(), from.getMonth(), 1))
+}
+
 /** Letzter Tag des Vormonats als YYYY-MM-DD (lokal). */
 export function lastDayOfPrevMonthISO(from: Date = new Date()): string {
   const d = new Date(from.getFullYear(), from.getMonth(), 0)
