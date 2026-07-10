@@ -4,6 +4,7 @@ import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
+import ClassGoalBadge from './ClassGoalBadge'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { dutyIcon } from '@/lib/dutyIcon'
 import { greeting } from '@/lib/date'
@@ -23,10 +24,12 @@ interface StudentHomeProps {
   confirmedStreak: number
   pendingMilestone: number | null
   streakEntries: StreakEntry[]
+  classGoal: { target: number; reward: string | null } | null
+  classGoalDone: number
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries, classGoal, classGoalDone,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -67,6 +70,7 @@ export default function StudentHome({
             </div>
             <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">{greeting()}, {firstName}!</h1>
           </div>
+          <ClassGoalBadge goal={classGoal} done={classGoalDone} className="max-md:hidden" />
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
       </header>
@@ -112,8 +116,6 @@ export default function StudentHome({
         </div>
 
         <div className="relative">
-          <div className="hidden lg:block absolute top-0 -left-6 w-6 h-6 bg-white rounded-br-2xl" />
-          <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-2xl" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />

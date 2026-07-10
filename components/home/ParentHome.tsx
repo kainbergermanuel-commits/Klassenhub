@@ -4,6 +4,7 @@ import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
+import ClassGoalBadge from './ClassGoalBadge'
 import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { flameCount } from '@/lib/streak'
@@ -26,10 +27,12 @@ interface ParentHomeProps {
   childConfirmedStreak: number
   pendingConfirmations: PendingConfirmation[]
   streakEntries: StreakEntry[]
+  classGoal: { target: number; reward: string | null } | null
+  classGoalDone: number
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries, classGoal, classGoalDone,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
@@ -48,6 +51,7 @@ export default function ParentHome({
             </div>
             <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">{greeting()}, Familie {fullName.split(' ').slice(-1)[0]}!</h1>
           </div>
+          <ClassGoalBadge goal={classGoal} done={classGoalDone} className="max-md:hidden" />
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today} · {childFirst}, {className}</p>
       </header>
@@ -194,8 +198,6 @@ export default function ParentHome({
         </div>
 
         <div className="relative">
-          <div className="hidden lg:block absolute top-0 -left-6 w-6 h-6 bg-white rounded-br-2xl" />
-          <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-2xl" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="parent" />

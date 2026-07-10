@@ -8,6 +8,7 @@ import BodyTheme from '@/components/layout/BodyTheme'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileHeader from '@/components/layout/MobileHeader'
 import RolePreviewBar from '@/components/layout/RolePreviewBar'
+import ClassGoalWatermark from '@/components/home/ClassGoalWatermark'
 import type { Profile, Class } from '@/lib/types'
 
 function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, messageUnread: number) {
@@ -177,9 +178,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-[100dvh] bg-kh-page p-3 md:p-4 md:px-[26px] md:py-[21px] max-md:p-0">
       {/* iOS: Notch-/Statusbar-Zone auf Mobile weiß färben (Login bleibt beige) */}
       <BodyTheme color="#ffffff" />
-      <div className="flex min-h-[calc(100dvh-1.5rem)] md:min-h-[calc(100dvh-42px)] max-md:min-h-[100dvh] rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
+      <div className="relative flex min-h-[calc(100dvh-1.5rem)] md:min-h-[calc(100dvh-42px)] max-md:min-h-[100dvh] rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
+        <ClassGoalWatermark />
         <Sidebar profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} isPreview={!!previewRole} />
-        <main className="flex-1 min-w-0 overflow-y-auto scrollbar-kh">
+        <main className="relative z-10 flex-1 min-w-0 overflow-y-auto scrollbar-kh">
           <MobileHeader profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} />
           <div className="max-w-[1180px] mx-auto px-7 py-7 pb-20 max-md:px-4 max-md:py-5 max-md:pb-6 max-md:pt-[calc(env(safe-area-inset-top)+1.25rem)]">
             {children}

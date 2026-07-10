@@ -10,6 +10,7 @@ import DutyCard, { type DutyEntry } from './DutyCard'
 import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
+import ClassGoalBadge from './ClassGoalBadge'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
 import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber, greeting } from '@/lib/date'
 import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
@@ -127,11 +128,13 @@ interface TeacherHomeProps {
   upcomingEvents: AgendaEvent[]
   streakEntries: StreakEntry[]
   recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
+  classGoal: { target: number; reward: string | null } | null
+  classGoalDone: number
 }
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  hwOpenStudents, reminders, dutyEntries, upcomingEvents, streakEntries, recentHomework,
+  hwOpenStudents, reminders, dutyEntries, upcomingEvents, streakEntries, recentHomework, classGoal, classGoalDone,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -156,6 +159,9 @@ export default function TeacherHome({
             <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight">{greeting()}, {firstName}!</h1>
             <p className="text-sm text-kh-muted font-medium mt-1">{today} · Klasse {klass?.name}</p>
           </div>
+        </div>
+        <div className="hidden lg:block">
+          <ClassGoalBadge goal={classGoal} done={classGoalDone} />
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -278,8 +284,6 @@ export default function TeacherHome({
         </div>
 
         <div className="relative">
-          <div className="hidden lg:block absolute top-0 -left-6 w-6 h-6 bg-white rounded-br-2xl" />
-          <div className="hidden lg:block absolute bottom-0 -left-6 w-6 h-6 bg-white rounded-tr-2xl" />
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="teacher" classId={classId} userId={userId} />

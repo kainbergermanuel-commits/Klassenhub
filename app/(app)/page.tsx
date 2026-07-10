@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO } from '@/lib/date'
 import { computeStreak, currentMilestone } from '@/lib/streak'
+import { getClassGoalProgress } from '@/lib/classGoal'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -22,6 +23,7 @@ export default async function HomePage() {
 
   const supabase = await createClient()
   const klass = await getClass(activeClassId)
+  const classGoalProgress = await getClassGoalProgress(supabase, activeClassId)
 
   const today = todayISO()
   const dutyWeekStart = getRelevantMondayOfWeek()
@@ -141,6 +143,8 @@ export default async function HomePage() {
         upcomingEvents={upcomingEvents}
         streakEntries={streakEntries}
         recentHomework={(recentHw ?? []).map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
+        classGoal={classGoalProgress.goal}
+        classGoalDone={classGoalProgress.done}
       />
     )
   }
@@ -231,6 +235,8 @@ export default async function HomePage() {
         confirmedStreak={confirmedStreak}
         pendingMilestone={pendingMilestone}
         streakEntries={streakEntries}
+        classGoal={classGoalProgress.goal}
+        classGoalDone={classGoalProgress.done}
       />
     )
   }
@@ -317,6 +323,8 @@ export default async function HomePage() {
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}
         streakEntries={parentStreakEntries}
+        classGoal={classGoalProgress.goal}
+        classGoalDone={classGoalProgress.done}
       />
     )
   }
