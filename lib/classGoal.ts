@@ -1,47 +1,34 @@
-import { createClient } from '@/lib/supabase/server'
-import { todayISO, firstDayOfMonthISO, lastDayOfMonthISO } from '@/lib/date'
+import { firstDayOfMonthISO, lastDayOfMonthISO } from '@/lib/date'
 
-export interface ClassGoalProgress {
-  goal: { target: number; reward: string | null } | null
-  done: number
-  season: string
+/**
+ * Aktuelles Season-Fenster [erster Tag des Monats .. monthEnd].
+ * ⚠️ TEST-HACK: monthEnd bis Ende des NÄCHSTEN Monats verlängert (identisch zu
+ * streaks/page.tsx), damit Testdaten länger erhalten bleiben.
+ * TODO(live): vor Go-Live an beiden Stellen auf den aktuellen Monat zurücksetzen.
+ */
+function currentSeasonWindow(): { start: string; end: string } {
+  const start = firstDayOfMonthISO()
+  const end = lastDayOfMonthISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1))
+  return { start, end }
 }
 
 /**
- * Lädt Klassenziel + bestätigten Season-Fortschritt für eine Klasse.
- * Gemeinsame Quelle für Streaks-Seite und Startseite, damit beide immer
- * dieselbe Zahl zeigen.
- * ⚠️ TEST-HACK: monthEnd bis Ende des NÄCHSTEN Monats verlängert (wie in
- * streaks/page.tsx) — beide Stellen vor Go-Live gemeinsam zurücksetzen.
+ * Zählt die eltern-bestätigten Erledigungen, deren Hausübung in der laufenden
+ * Season liegt (= Klassenziel-Fortschritt). Rein rechnerisch aus bereits
+ * geladenen Daten — macht KEINE eigene DB-Abfrage.
  */
-export async function getClassGoalProgress(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  classId: string,
-): Promise<ClassGoalProgress> {
-  const today = todayISO()
-  const season = today.slice(0, 7)
-  const seasonStart = firstDayOfMonthISO()
-  const monthEnd = lastDayOfMonthISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1))
-
-  const [{ data: goalRow }, { data: seasonHw }] = await Promise.all([
-    supabase.from('class_goals').select('target,reward').eq('class_id', classId).eq('season', season).maybeSingle(),
-    supabase.from('homework').select('id').eq('class_id', classId).gte('due_date', seasonStart).lte('due_date', monthEnd),
-  ])
-
-  const seasonHwIds = (seasonHw ?? []).map(h => h.id)
+export function countClassGoalDone(
+  allHomework: { id: string; due_date: string }[],
+  completions: { homework_id: string; confirmed_by_parent_at: string | null }[],
+): number {
+  const { start, end } = currentSeasonWindow()
+  const seasonHwIds = new Set(
+    allHomework.filter(h => h.due_date >= start && h.due_date <= end).map(h => h.id),
+  )
+  if (seasonHwIds.size === 0) return 0
   let done = 0
-  if (seasonHwIds.length > 0) {
-    const { data: completions } = await supabase
-      .from('homework_completions')
-      .select('confirmed_by_parent_at')
-      .in('homework_id', seasonHwIds)
-      .not('confirmed_by_parent_at', 'is', null)
-    done = completions?.length ?? 0
+  for (const c of completions) {
+    if (c.confirmed_by_parent_at && seasonHwIds.has(c.homework_id)) done++
   }
-
-  return {
-    goal: goalRow ? { target: goalRow.target, reward: goalRow.reward } : null,
-    done,
-    season,
-  }
+  return done
 }

@@ -3,14 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO } from '@/lib/date'
-import { computeStreak, currentMilestone } from '@/lib/streak'
-import { getClassGoalProgress } from '@/lib/classGoal'
+import { computeStreak, currentMilestone, groupFrozenByStudent } from '@/lib/streak'
+import { countClassGoalDone } from '@/lib/classGoal'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
 import type { HomeworkWithStatus, Reminder, Duty, AgendaEvent } from '@/lib/types'
-
-type EventRow = { id: string; title: string; start_date: string; end_date: string; all_day: boolean; start_time: string | null; category: string; target_student_ids: string[] | null }
 
 export default async function HomePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -23,28 +21,32 @@ export default async function HomePage() {
 
   const supabase = await createClient()
   const klass = await getClass(activeClassId)
-  const classGoalProgress = await getClassGoalProgress(supabase, activeClassId)
 
   const today = todayISO()
   const dutyWeekStart = getRelevantMondayOfWeek()
   const schoolYearStart = schoolYearStartISO()
+  const currentSeason = today.slice(0, 7)
 
   const [
     { data: homeworkRaw },
     { data: remindersArr },
     { data: weekDuties },
     { data: eventsRaw },
+    { data: classGoalRow },
   ] = await Promise.all([
     supabase.from('homework').select('*').eq('class_id', activeClassId).gt('due_date', today).order('due_date'),
     supabase.from('reminders').select('*').eq('class_id', activeClassId).gte('event_date', today).order('event_date').limit(8),
     supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', dutyWeekStart),
-    (supabase.from('events' as never)
+    supabase.from('events')
       .select('id,title,start_date,end_date,all_day,start_time,category,target_student_ids')
       .eq('class_id', activeClassId)
       .gte('end_date', today)
       .order('start_date', { ascending: true })
-      .limit(6) as unknown as Promise<{ data: EventRow[] | null }>),
+      .limit(6),
+    supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
   ])
+
+  const classGoal = classGoalRow ? { target: classGoalRow.target, reward: classGoalRow.reward } : null
 
   const homework = homeworkRaw ?? []
   const upcomingReminders: Reminder[] = remindersArr ?? []
@@ -81,9 +83,16 @@ export default async function HomePage() {
     ])
 
     const allHwIds = (allHwForStreaks ?? []).map(h => h.id)
-    const { data: allCompletions } = allHwIds.length > 0
-      ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
-      : { data: [] }
+    const studentIdsT = (allStudents ?? []).map(s => s.id)
+    const [{ data: allCompletions }, { data: freezesT }] = await Promise.all([
+      allHwIds.length > 0
+        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
+        : Promise.resolve({ data: [] }),
+      studentIdsT.length > 0
+        ? supabase.from('streak_freezes').select('student_id,homework_id').in('student_id', studentIdsT)
+        : Promise.resolve({ data: [] }),
+    ])
+    const frozenByStudentT = groupFrozenByStudent(freezesT ?? [])
 
     const students = allStudents ?? []
     const studentMap = Object.fromEntries(students.map(s => [s.id, s.full_name.split(' ')[0]]))
@@ -112,7 +121,7 @@ export default async function HomePage() {
         avatar_seed: s.avatar_seed ?? null,
         avatar_hair_color: s.avatar_hair_color ?? null,
         avatar_skin_color: s.avatar_skin_color ?? null,
-        streak: computeStreak(confirmedByStudent.get(s.id) ?? new Set(), allHwForStreaks ?? [], today),
+        streak: computeStreak(confirmedByStudent.get(s.id) ?? new Set(), allHwForStreaks ?? [], today, frozenByStudentT.get(s.id)),
       }))
       .filter(e => e.streak > 0)
       .sort((a, b) => b.streak - a.streak)
@@ -143,8 +152,8 @@ export default async function HomePage() {
         upcomingEvents={upcomingEvents}
         streakEntries={streakEntries}
         recentHomework={(recentHw ?? []).map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
-        classGoal={classGoalProgress.goal}
-        classGoalDone={classGoalProgress.done}
+        classGoal={classGoal}
+        classGoalDone={countClassGoalDone(allHwForStreaks ?? [], allCompletions ?? [])}
       />
     )
   }
@@ -165,6 +174,12 @@ export default async function HomePage() {
     const homeworkWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: doneIds.has(h.id) }))
     const hwOpenCount = homeworkWithStatus.filter(h => !h.done).length
 
+    const studentIdsS = (allStudents ?? []).map(s => s.id)
+    const { data: freezesS } = studentIdsS.length > 0
+      ? await supabase.from('streak_freezes').select('student_id,homework_id').in('student_id', studentIdsS)
+      : { data: [] }
+    const frozenByStudentS = groupFrozenByStudent(freezesS ?? [])
+
     const reminderIds = upcomingReminders.map(r => r.id)
     const myViewedIds: string[] = []
     if (reminderIds.length > 0) {
@@ -176,7 +191,7 @@ export default async function HomePage() {
     const myDuty = duties.find(d => d.assignee_ids.includes(user.id)) ?? null
 
     // Eigener Streak: sofort sichtbar (auch unbestätigt)
-    const streak = computeStreak(doneIds, allHwForStreak ?? [], today)
+    const streak = computeStreak(doneIds, allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
 
     let myDutyPartners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] = []
     if (myDuty) {
@@ -208,14 +223,14 @@ export default async function HomePage() {
       .map(s => ({
         id: s.id, full_name: s.full_name, avatar_color: s.avatar_color ?? '#0F8A82', avatar_seed: s.avatar_seed ?? null,
         avatar_hair_color: s.avatar_hair_color ?? null, avatar_skin_color: s.avatar_skin_color ?? null,
-        streak: computeStreak(confirmedByStudentS.get(s.id) ?? new Set(), allHwForStreak ?? [], today),
+        streak: computeStreak(confirmedByStudentS.get(s.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(s.id)),
       }))
       .filter(e => e.streak > 0)
       .sort((a, b) => b.streak - a.streak)
 
     // Eigener bestätigter Streak → verdient die Flammen. Pending = eigener (actual)
     // Meilenstein liegt über dem bereits bestätigten ⇒ "warte auf Eltern".
-    const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today)
+    const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
     const actualMs = currentMilestone(streak)
     const pendingMilestone = streak >= 5 && actualMs > currentMilestone(confirmedStreak) ? actualMs : null
 
@@ -235,8 +250,8 @@ export default async function HomePage() {
         confirmedStreak={confirmedStreak}
         pendingMilestone={pendingMilestone}
         streakEntries={streakEntries}
-        classGoal={classGoalProgress.goal}
-        classGoalDone={classGoalProgress.done}
+        classGoal={classGoal}
+        classGoalDone={countClassGoalDone(allHwForStreak ?? [], allCompletionsStudent ?? [])}
       />
     )
   }
@@ -258,7 +273,16 @@ export default async function HomePage() {
       ])
       allHwForStreak = hwForStreak ?? []
       childDoneIds = new Set((childCompletions ?? []).map(c => c.homework_id))
-      childStreak = computeStreak(childDoneIds, allHwForStreak, today)
+    }
+
+    const studentIdsP = (allStudents ?? []).map(s => s.id)
+    const { data: freezesP } = studentIdsP.length > 0
+      ? await supabase.from('streak_freezes').select('student_id,homework_id').in('student_id', studentIdsP)
+      : { data: [] }
+    const frozenByStudentP = groupFrozenByStudent(freezesP ?? [])
+
+    if (child) {
+      childStreak = computeStreak(childDoneIds, allHwForStreak, today, frozenByStudentP.get(child.id))
     }
 
     // Streak leaderboard (nur eltern-bestätigte Streaks) + offene HÜ-Bestätigungen
@@ -285,14 +309,14 @@ export default async function HomePage() {
       .map(s => ({
         id: s.id, full_name: s.full_name, avatar_color: s.avatar_color ?? '#0F8A82', avatar_seed: s.avatar_seed ?? null,
         avatar_hair_color: s.avatar_hair_color ?? null, avatar_skin_color: s.avatar_skin_color ?? null,
-        streak: computeStreak(confirmedByStudentP.get(s.id) ?? new Set(), allHwForStreak, today),
+        streak: computeStreak(confirmedByStudentP.get(s.id) ?? new Set(), allHwForStreak, today, frozenByStudentP.get(s.id)),
       }))
       .filter(e => e.streak > 0)
       .sort((a, b) => b.streak - a.streak)
 
     // Eltern-bestätigter Streak des Kindes → verdient die Flammen (Live-Spiegel)
     const childConfirmedStreak = child
-      ? computeStreak(confirmedByStudentP.get(child.id) ?? new Set(), allHwForStreak, today)
+      ? computeStreak(confirmedByStudentP.get(child.id) ?? new Set(), allHwForStreak, today, frozenByStudentP.get(child.id))
       : 0
 
     const pendingConfirmations = (pendingConfs ?? []).map((c: any) => ({
@@ -323,8 +347,8 @@ export default async function HomePage() {
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}
         streakEntries={parentStreakEntries}
-        classGoal={classGoalProgress.goal}
-        classGoalDone={classGoalProgress.done}
+        classGoal={classGoal}
+        classGoalDone={countClassGoalDone(allHwForStreak, allCompletionsParent ?? [])}
       />
     )
   }

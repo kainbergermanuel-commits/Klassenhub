@@ -45,6 +45,19 @@ export function findBreakingHomework(
   return null
 }
 
+/** Gruppiert geladene streak_freezes-Zeilen zu einer Map student_id -> Set<homework_id>,
+ *  fürs Durchreichen an computeStreak() als frozenIds. */
+export function groupFrozenByStudent(
+  freezes: { student_id: string; homework_id: string }[]
+): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>()
+  for (const f of freezes) {
+    if (!map.has(f.student_id)) map.set(f.student_id, new Set())
+    map.get(f.student_id)!.add(f.homework_id)
+  }
+  return map
+}
+
 /** Returns the current milestone threshold (5, 10, 15, …) for a given streak. */
 export function currentMilestone(streak: number): number {
   return Math.floor(streak / 5) * 5

@@ -232,6 +232,27 @@ export type Database = {
         Update: Partial<Message>
         Relationships: []
       }
+      events: {
+        Row: AppEvent
+        Insert: {
+          id?: string
+          class_id: string
+          created_by: string
+          title: string
+          description?: string
+          start_date: string
+          end_date: string
+          all_day?: boolean
+          start_time?: string | null
+          end_time?: string | null
+          location?: string
+          category?: string
+          target_student_ids?: string[] | null
+          created_at?: string
+        }
+        Update: Partial<AppEvent>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -297,6 +318,24 @@ export type StreakFreeze = {
   id: string
   student_id: string
   homework_id: string
+  created_at: string
+}
+
+// Termine ("events"). AppEvent statt Event, um Kollision mit dem DOM-Event zu vermeiden.
+export type AppEvent = {
+  id: string
+  class_id: string
+  created_by: string
+  title: string
+  description: string
+  start_date: string
+  end_date: string
+  all_day: boolean
+  start_time: string | null
+  end_time: string | null
+  location: string
+  category: string
+  target_student_ids: string[] | null
   created_at: string
 }
 
