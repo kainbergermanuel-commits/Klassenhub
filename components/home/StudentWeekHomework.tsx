@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { todayISO, addDaysISO } from '@/lib/date'
 import type { HomeworkWithStatus } from '@/lib/types'
+import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
 
 const TODAY = todayISO()
 const TOMORROW = addDaysISO(1)
@@ -26,12 +26,7 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
     if (!canToggle) return
     const next = !done
     setDone(next)
-    const supabase = createClient()
-    if (next) {
-      await supabase.from('homework_completions').upsert({ homework_id: hw.id, student_id: userId })
-    } else {
-      await supabase.from('homework_completions').delete().match({ homework_id: hw.id, student_id: userId })
-    }
+    await toggleHomeworkCompletion(hw.id, next)
     startTransition(() => router.refresh())
   }
 

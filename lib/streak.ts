@@ -77,3 +77,8 @@ export function flameCount(streak: number): number {
 }
 
 export const MILESTONES = [5, 10, 15, 20] as const
+
+/** Ab diesem (jemals erreichten) Meilenstein gilt ein Schüler dauerhaft als
+ *  "HÜ-Veteran": eigene Erledigungen werden nicht mehr von den Eltern
+ *  bestätigt, sondern automatisch — als verdientes Privileg. */
+export const VETERAN_MILESTONE = 15

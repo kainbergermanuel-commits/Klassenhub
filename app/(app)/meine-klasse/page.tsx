@@ -5,6 +5,7 @@ import StudentCard from '@/components/klasse/StudentCard'
 import TeacherCard from '@/components/klasse/TeacherCard'
 import PageHeader from '@/components/layout/PageHeader'
 import type { TeacherSubject } from '@/app/actions/saveTeacherSubjects'
+import { VETERAN_MILESTONE } from '@/lib/streak'
 
 export default async function MeineKlassePage() {
   const { user, profile } = await getEffectiveAuth()
@@ -42,6 +43,12 @@ export default async function MeineKlassePage() {
   ])
 
   const teachers = teachersRaw ?? []
+  const studentIds = (studentsRaw ?? []).map(s => s.id)
+
+  const { data: veteranRows } = studentIds.length > 0
+    ? await supabase.from('streak_confirmations').select('student_id').in('student_id', studentIds).gte('milestone', VETERAN_MILESTONE)
+    : { data: [] }
+  const veteranIds = new Set((veteranRows ?? []).map(v => v.student_id))
 
   // Sortierung: eigene Card zuerst, dann Klassensprecher:in, dann Stv., dann Rest (alphabetisch)
   const priority = (s: { id: string; special_role: string | null }) => {
@@ -89,6 +96,7 @@ export default async function MeineKlassePage() {
             avatar_skin_color={s.avatar_skin_color ?? null}
             special_role={s.special_role ?? null}
             gender={s.gender ?? null}
+            isVeteran={veteranIds.has(s.id)}
             isMe={s.id === user.id}
             index={teachers.length + i}
           />

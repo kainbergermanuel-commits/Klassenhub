@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { todayISO, addDaysISO } from '@/lib/date'
 import type { HomeworkWithStatus, Role } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
+import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
 
 interface Props {
   hw: HomeworkWithStatus
@@ -152,12 +153,7 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
     if (role !== 'student' || !status.canToggle) return
     const next = !optimisticDone
     setOptimisticDone(next)
-    const supabase = createClient()
-    if (next) {
-      await supabase.from('homework_completions').upsert({ homework_id: hw.id, student_id: userId })
-    } else {
-      await supabase.from('homework_completions').delete().match({ homework_id: hw.id, student_id: userId })
-    }
+    await toggleHomeworkCompletion(hw.id, next)
     startTransition(() => router.refresh())
   }
 

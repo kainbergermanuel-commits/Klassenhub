@@ -20,11 +20,12 @@ interface Props {
   avatar_skin_color: string | null
   special_role: SpecialRole | null
   gender: Gender | null
+  isVeteran?: boolean
   isMe: boolean
   index: number
 }
 
-export default function StudentCard({ id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role, gender, isMe, index }: Props) {
+export default function StudentCard({ id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color, special_role, gender, isVeteran, isMe, index }: Props) {
   const reactions = ['Autsch! 😖', 'Hey! 😤', 'Hihi 😄', 'Hehe 😏', 'Wer war das? 👀', 'Ey!! 😠', 'Nicht jetzt 😴', 'Bruh 💀', '??']
   const [reaction, setReaction] = useState('')
   const [wobble, setWobble] = useState(false)
@@ -57,6 +58,15 @@ export default function StudentCard({ id, full_name, avatar_color, avatar_seed, 
           style={{ background: `linear-gradient(135deg, ${badge.color}ee 0%, ${badge.color}99 100%)` }}
         >
           <span className="msym text-[14px] text-white" style={{ fontVariationSettings: `'FILL' ${badge.fill ? 1 : 0}` }}>{badge.icon}</span>
+        </span>
+      )}
+      {isVeteran && (
+        <span
+          title="HÜ-Veteran · 15 HÜ in Folge bestätigt — Erledigungen werden nicht mehr von den Eltern bestätigt"
+          className="absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center shadow-sm"
+          style={{ background: 'linear-gradient(135deg, #E8A020ee 0%, #F5C84299 100%)' }}
+        >
+          <span className="msym text-[14px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
         </span>
       )}
       {reaction && (
