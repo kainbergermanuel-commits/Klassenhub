@@ -18,11 +18,11 @@ export default function ClassGoalWatermark() {
         aria-hidden="true"
         className="w-full h-full object-cover"
         style={{
-          objectPosition: '58% 100%',
-          opacity: 0.85,
-          filter: 'saturate(0.8)',
-          maskImage: 'linear-gradient(to left, black 48%, transparent 99%), linear-gradient(to bottom, black 30%, transparent 92%)',
-          WebkitMaskImage: 'linear-gradient(to left, black 48%, transparent 99%), linear-gradient(to bottom, black 30%, transparent 92%)',
+          objectPosition: '58% calc(100% - 20px)',
+          opacity: 0.74,
+          filter: 'saturate(1.1)',
+          maskImage: 'linear-gradient(to left, black 60%, transparent 99%), linear-gradient(to bottom, black 20%, transparent 90%)',
+          WebkitMaskImage: 'linear-gradient(to left, black 60%, transparent 99%), linear-gradient(to bottom, black 20%, transparent 90%)',
           maskComposite: 'intersect',
           WebkitMaskComposite: 'source-in',
         }}

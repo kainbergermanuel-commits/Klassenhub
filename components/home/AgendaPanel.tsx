@@ -194,19 +194,17 @@ export default function AgendaPanel({ reminders, events = [], role, userId, clas
                 <div className="flex flex-col gap-2.5">
                   {g.items.map(e => {
                     const meta = eventCategoryMeta(e.category)
-                    const days = daysUntil(e.start_date)
-                    const badge = badgeStyle(days)
                     const isPersonal = !!e.target_student_ids
                     const timeLabel = !e.all_day && e.start_time ? e.start_time : null
                     return (
                       <div key={e.id} className="flex gap-3 items-start">
                         <span className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: meta.color }} />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <span className="msym text-[13px] flex-shrink-0" style={{ color: meta.color }}>{meta.icon}</span>
-                            <span className="font-bold text-[14px] text-kh-dark leading-snug">{e.title}</span>
+                            <span className="font-bold text-[14px] text-kh-dark leading-snug truncate min-w-0">{e.title}</span>
                             {isPersonal && (
-                              <span className="flex items-center gap-0.5 text-[9.5px] font-bold uppercase tracking-wide text-[#8B5CF6] bg-[#8B5CF6]/10 px-1.5 py-0.5 rounded-full">
+                              <span className="flex items-center gap-0.5 text-[9.5px] font-bold uppercase tracking-wide text-[#8B5CF6] bg-[#8B5CF6]/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
                                 <span className="msym text-[11px]">person</span>Persönlich
                               </span>
                             )}
@@ -216,12 +214,6 @@ export default function AgendaPanel({ reminders, events = [], role, userId, clas
                             {timeLabel && <span className="flex items-center gap-0.5"><span className="msym text-[12px]">schedule</span>{timeLabel}</span>}
                           </div>
                         </div>
-                        <span
-                          className="text-[10.5px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5"
-                          style={{ color: badge.color, background: badge.bg }}
-                        >
-                          {days <= 0 ? 'Heute' : daysUntilLabel(e.start_date)}
-                        </span>
                       </div>
                     )
                   })}
