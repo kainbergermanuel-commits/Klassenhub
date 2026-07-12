@@ -5,6 +5,8 @@ import { todayISO, lastDayOfMonthISO, lastDayOfPrevMonthISO, firstDayOfPrevMonth
 import { computeStreak, currentMilestone, findBreakingHomework } from '@/lib/streak'
 import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateKeys, type QuestContext, type QuestResult } from '@/lib/quests'
 import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
+import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
+import type { GuildMember } from '@/components/home/GuildQuestCard'
 import StreakOverview from '@/components/streaks/StreakOverview'
 import type { RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 
@@ -116,6 +118,7 @@ export default async function StreaksPage() {
   // ─── QUESTS (nur für eingeloggten Schüler, siehe lib/quests.ts) ──────────────
   const weekStart = getRelevantMondayOfWeek()
   let questsForMe: QuestResult[] = []
+  let guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null = null
   if (profile.role === 'student') {
     const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
 
@@ -181,6 +184,34 @@ export default async function StreaksPage() {
       .map(key => findQuestTemplate(key))
       .filter((t): t is NonNullable<typeof t> => !!t)
       .map(t => computeQuestProgress(t, questCtx, choiceByTemplate.get(t.key)))
+
+    // ─── GILDEN (Phase 3): kooperative Wochen-Quest in Kleingruppe ────────────
+    const allStudentIds = (students ?? []).map(s => s.id)
+    const guilds = assignGuilds(activeClassId, currentSeason, allStudentIds)
+    const myGuild = findMyGuild(guilds, profile.id)
+    if (myGuild) {
+      const dutyAssignedByStudent = new Set((weekDuty ?? []).flatMap(d => d.assignee_ids))
+      const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart))
+      if (guildTemplate) {
+        const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
+          weekHomeworkIds: weekHw.map(h => h.id),
+          doneByStudent,
+          confirmedByStudent: confirmedDoneByStudent,
+          dutyAssignedByStudent,
+        })
+        const members: GuildMember[] = (students ?? [])
+          .filter(s => myGuild.memberIds.includes(s.id))
+          .map(s => ({
+            id: s.id,
+            full_name: s.full_name,
+            avatar_color: s.avatar_color ?? '#0F8A82',
+            avatar_seed: s.avatar_seed ?? null,
+            avatar_hair_color: s.avatar_hair_color ?? null,
+            avatar_skin_color: s.avatar_skin_color ?? null,
+          }))
+        guildSection = { guild: myGuild, members, quest: guildQuest }
+      }
+    }
   }
 
   // ─── SPIELLEITER-REGIE (nur Lehrer): Wochen-Quests sehen & tauschen ──────────
@@ -264,6 +295,7 @@ export default async function StreaksPage() {
       quests={questsForMe}
       questWeekStart={weekStart}
       teacherRegie={teacherRegie}
+      guildSection={guildSection}
     />
   )
 }

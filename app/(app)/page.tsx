@@ -7,6 +7,8 @@ import { computeStreak, currentMilestone, groupFrozenByStudent } from '@/lib/str
 import { countClassGoalDone } from '@/lib/classGoal'
 import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestContext, type QuestResult } from '@/lib/quests'
 import { findQuestTemplate } from '@/lib/questVault'
+import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
+import type { GuildMember } from '@/components/home/GuildQuestCard'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -264,6 +266,47 @@ export default async function HomePage() {
       .from('streak_confirmations').select('milestone,confirmed_at')
       .eq('student_id', user.id).order('confirmed_at', { ascending: false })
 
+    // ─── GILDEN (Phase 3): kooperative Wochen-Quest in Kleingruppe ──────────
+    // Komplett aus bereits geladenen Daten berechnet, keine neue Query.
+    const allStudentIds = (allStudents ?? []).map(s => s.id)
+    const guilds = assignGuilds(activeClassId, currentSeason, allStudentIds)
+    const myGuild = findMyGuild(guilds, user.id)
+
+    let guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null = null
+    if (myGuild) {
+      const doneByStudentAll = new Map<string, Set<string>>()
+      const confirmedByStudentAll = new Map<string, Set<string>>()
+      for (const c of allCompletionsStudent ?? []) {
+        if (!doneByStudentAll.has(c.student_id)) doneByStudentAll.set(c.student_id, new Set())
+        doneByStudentAll.get(c.student_id)!.add(c.homework_id)
+        if ((c as any).confirmed_by_parent_at) {
+          if (!confirmedByStudentAll.has(c.student_id)) confirmedByStudentAll.set(c.student_id, new Set())
+          confirmedByStudentAll.get(c.student_id)!.add(c.homework_id)
+        }
+      }
+      const dutyAssignedByStudent = new Set(duties.flatMap(d => d.assignee_ids))
+      const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart))
+      if (guildTemplate) {
+        const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
+          weekHomeworkIds: weekHw.map(h => h.id),
+          doneByStudent: doneByStudentAll,
+          confirmedByStudent: confirmedByStudentAll,
+          dutyAssignedByStudent,
+        })
+        const members: GuildMember[] = (allStudents ?? [])
+          .filter(s => myGuild.memberIds.includes(s.id))
+          .map(s => ({
+            id: s.id,
+            full_name: s.full_name,
+            avatar_color: s.avatar_color ?? '#0F8A82',
+            avatar_seed: s.avatar_seed ?? null,
+            avatar_hair_color: s.avatar_hair_color ?? null,
+            avatar_skin_color: s.avatar_skin_color ?? null,
+          }))
+        guildSection = { guild: myGuild, members, quest: guildQuest }
+      }
+    }
+
     return (
       <StudentHome
         fullName={profile.full_name}
@@ -286,6 +329,7 @@ export default async function HomePage() {
         questWeekStart={weekStart}
         socialProofPct={socialProofPct}
         myMilestones={myMilestones ?? []}
+        guildSection={guildSection}
       />
     )
   }

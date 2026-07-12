@@ -6,7 +6,9 @@ import Avatar from '@/components/ui/Avatar'
 import ClassGoalCard from '@/components/streaks/ClassGoalCard'
 import MyStreakPanel from '@/components/streaks/MyStreakPanel'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
+import GuildQuestCard, { type GuildMember } from '@/components/home/GuildQuestCard'
 import TeacherQuestRegie, { type RegieQuest } from '@/components/streaks/TeacherQuestRegie'
+import type { Guild, GuildQuestResult } from '@/lib/guilds'
 
 interface StudentStreak {
   id: string
@@ -50,9 +52,10 @@ interface Props {
   quests: QuestResult[]
   questWeekStart: string
   teacherRegie: { activeQuests: RegieQuest[]; allTemplates: { key: string; title: string }[]; isOverride: boolean } | null
+  guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
 }
 
-export default function StreakOverview({ role, withStreak, noStreak, milestoneHistory, daysLeft, prevRace, prevMonthLabel, classGoal, classGoalDone, currentSeason, myStreak, quests, questWeekStart, teacherRegie }: Props) {
+export default function StreakOverview({ role, withStreak, noStreak, milestoneHistory, daysLeft, prevRace, prevMonthLabel, classGoal, classGoalDone, currentSeason, myStreak, quests, questWeekStart, teacherRegie, guildSection }: Props) {
   const maxStreak = withStreak[0]?.streak ?? 1
   const sortedMonths = Object.keys(milestoneHistory).sort((a, b) => b.localeCompare(a))
 
@@ -76,6 +79,10 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
         {myStreak && <MyStreakPanel streak={myStreak.streak} broken={myStreak.broken} jokerAvailable={myStreak.jokerAvailable} jokerUsedThisSeason={myStreak.jokerUsedThisSeason} />}
 
         {quests.length > 0 && <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} />}
+
+        {guildSection && (
+          <GuildQuestCard guild={guildSection.guild} members={guildSection.members} quest={guildSection.quest} season={currentSeason} />
+        )}
 
         {teacherRegie && (
           <TeacherQuestRegie

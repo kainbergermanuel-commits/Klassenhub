@@ -6,8 +6,10 @@ import StreakBanner from './StreakBanner'
 import ClassGoalBadge from './ClassGoalBadge'
 import WeeklyQuestCard from './WeeklyQuestCard'
 import HeldenbuchCard from './HeldenbuchCard'
+import GuildQuestCard, { type GuildMember } from './GuildQuestCard'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { QuestResult } from '@/lib/quests'
+import type { Guild, GuildQuestResult } from '@/lib/guilds'
 import { dutyIcon } from '@/lib/dutyIcon'
 import { greeting } from '@/lib/date'
 
@@ -33,10 +35,11 @@ interface StudentHomeProps {
   /** Anteil der Klasse mit mind. 1 Erledigung diese Woche, anonym (keine Namen). `null` = zu kleine Klasse. */
   socialProofPct: number | null
   myMilestones: { milestone: number; confirmed_at: string }[]
+  guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -95,6 +98,12 @@ export default function StudentHome({
               <p className="text-[13px] font-semibold text-kh-dark">
                 {socialProofPct}&nbsp;% deiner Klasse sind diese Woche schon dabei — schließ dich an!
               </p>
+            </div>
+          )}
+
+          {guildSection && (
+            <div className="animate-card-enter" style={{ animationDelay: '105ms' }}>
+              <GuildQuestCard guild={guildSection.guild} members={guildSection.members} quest={guildSection.quest} season={season} />
             </div>
           )}
 
