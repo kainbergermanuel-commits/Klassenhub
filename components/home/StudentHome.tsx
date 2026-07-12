@@ -5,6 +5,7 @@ import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
 import ClassGoalBadge from './ClassGoalBadge'
 import WeeklyQuestCard from './WeeklyQuestCard'
+import HeldenbuchCard from './HeldenbuchCard'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { QuestResult } from '@/lib/quests'
 import { dutyIcon } from '@/lib/dutyIcon'
@@ -31,10 +32,11 @@ interface StudentHomeProps {
   questWeekStart: string
   /** Anteil der Klasse mit mind. 1 Erledigung diese Woche, anonym (keine Namen). `null` = zu kleine Klasse. */
   socialProofPct: number | null
+  myMilestones: { milestone: number; confirmed_at: string }[]
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -138,6 +140,9 @@ export default function StudentHome({
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
+            </div>
+            <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
+              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} milestones={myMilestones} season={season} />
             </div>
           </div>
         </div>

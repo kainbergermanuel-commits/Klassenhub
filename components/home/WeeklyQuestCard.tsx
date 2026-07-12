@@ -4,6 +4,8 @@ import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSeasonTheme } from '@/lib/seasonTheme'
 import { chooseQuestPath } from '@/app/actions/chooseQuestPath'
+import { weeklyFocusTag } from '@/lib/quests'
+import { QUEST_FOCUS_LABELS } from '@/lib/questVault'
 import type { QuestResult } from '@/lib/quests'
 
 interface Props {
@@ -46,13 +48,20 @@ function ChoiceButtons({ questKey, weekStart, choices }: { questKey: string; wee
 export default function WeeklyQuestCard({ quests, weekStart, season }: Props) {
   if (quests.length === 0) return null
   const theme = getSeasonTheme(season)
+  const focus = weeklyFocusTag(weekStart)
 
   return (
     <div className="kh-card p-5">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1">
         <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>
         <h2 className="font-extrabold text-base text-kh-dark">Wochen-Quests</h2>
         <span className="text-[12px] font-semibold text-kh-muted ml-auto">{theme.guide}</span>
+      </div>
+      <div className="mb-3">
+        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-kh-teal bg-kh-teal/10 px-2 py-0.5 rounded-full">
+          <span className="msym text-[12px]">bolt</span>
+          Fokus: {QUEST_FOCUS_LABELS[focus]}
+        </span>
       </div>
 
       <div className="flex flex-col gap-2.5">

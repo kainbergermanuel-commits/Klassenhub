@@ -1,5 +1,5 @@
-import type { QuestSignal, QuestTemplate } from '@/lib/questVault'
-import { QUEST_VAULT } from '@/lib/questVault'
+import type { QuestFocusTag, QuestSignal, QuestTemplate } from '@/lib/questVault'
+import { QUEST_VAULT, QUEST_FOCUS_ROTATION } from '@/lib/questVault'
 
 /** Alle Daten, die zur Fortschritts-Berechnung eines Schülers nötig sind —
  *  bewusst aus bereits geladenen Daten zusammengesetzt (keine Extra-Queries
@@ -92,23 +92,44 @@ function signalLabel(signal: QuestSignal): string {
   }
 }
 
+/** Wochen-Fokus gegen den Novelty-Effekt: rotiert stabil anhand der Anzahl
+ *  Wochen seit einem festen Referenz-Montag — unabhängig von Kalenderjahr
+ *  oder Uhrzeit, läuft beliebig lange weiter. */
+export function weeklyFocusTag(weekStart: string): QuestFocusTag {
+  const ref = new Date('2026-01-05T00:00:00') // Referenz-Montag (beliebig, nur stabil)
+  const d = new Date(`${weekStart}T00:00:00`)
+  const weeksSinceRef = Math.round((d.getTime() - ref.getTime()) / (7 * 86400000))
+  const len = QUEST_FOCUS_ROTATION.length
+  const idx = ((weeksSinceRef % len) + len) % len
+  return QUEST_FOCUS_ROTATION[idx]
+}
+
 /** Wählt deterministisch `count` Vorlagen aus dem Vorrat — abhängig von
  *  Klasse+Woche, damit alle Mitglieder derselben Klasse dieselben Quests
- *  sehen und ein Seitenreload nicht neu würfelt. Reiner Zufall ohne
- *  DB-Zustand: kein Wiederholungsschutz über Wochen hinweg (P1-Grenze,
- *  spätere Phase kann History-Tracking ergänzen). */
+ *  sehen und ein Seitenreload nicht neu würfelt. Garantiert (falls
+ *  vorhanden) mindestens eine Quest mit dem Fokus dieser Woche, der Rest
+ *  wird deterministisch aus dem gesamten Vorrat aufgefüllt. Kein
+ *  Wiederholungsschutz über Wochen hinweg (P1/P2-Grenze). */
 export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, count = 3): string[] {
   const seed = `${classId}-${weekStart}`
   let hash = 0
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
-
-  const pool = QUEST_VAULT.map(t => t.key)
-  const picked: string[] = []
   let h = hash
+  function nextIndex(len: number): number {
+    h = (h * 1103515245 + 12345) >>> 0
+    return h % len
+  }
+
+  const focus = weeklyFocusTag(weekStart)
+  const focusedKeys = QUEST_VAULT.filter(t => t.focusTag === focus).map(t => t.key)
+  const pool = QUEST_VAULT.map(t => t.key)
+
+  const picked: string[] = []
+  if (focusedKeys.length > 0) picked.push(focusedKeys[nextIndex(focusedKeys.length)])
+
   let guard = 0
   while (picked.length < Math.min(count, pool.length) && guard < 100) {
-    h = (h * 1103515245 + 12345) >>> 0
-    const key = pool[h % pool.length]
+    const key = pool[nextIndex(pool.length)]
     if (!picked.includes(key)) picked.push(key)
     guard++
   }

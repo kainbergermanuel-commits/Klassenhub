@@ -5,6 +5,19 @@
 
 export type QuestFocusTag = 'puenktlichkeit' | 'ausdauer' | 'verantwortung' | 'zusammenhalt' | 'aufmerksamkeit'
 
+export const QUEST_FOCUS_LABELS: Record<QuestFocusTag, string> = {
+  puenktlichkeit: 'Pünktlichkeit',
+  ausdauer: 'Ausdauer',
+  verantwortung: 'Verantwortung',
+  zusammenhalt: 'Zusammenhalt',
+  aufmerksamkeit: 'Aufmerksamkeit',
+}
+
+/** Rotationsreihenfolge für den Wochen-Fokus (gegen den Novelty-Effekt,
+ *  siehe Gamification-Plan). Reihenfolge bewusst gewählt: sanfter Einstieg
+ *  (Pünktlichkeit) vor anspruchsvolleren Themen (Zusammenhalt). */
+export const QUEST_FOCUS_ROTATION: QuestFocusTag[] = ['puenktlichkeit', 'ausdauer', 'verantwortung', 'zusammenhalt', 'aufmerksamkeit']
+
 export type QuestSignal =
   | { type: 'homework'; targetCount: number }
   /** Hausübung erledigt, bevor sie fällig war. */
@@ -36,6 +49,13 @@ export interface QuestTemplate {
 }
 
 export const QUEST_VAULT: QuestTemplate[] = [
+  {
+    key: 'hw_early',
+    title: 'Vor der Zeit',
+    narrative: '{guide}: reiche eine Hausübung ab, bevor sie fällig ist.',
+    focusTag: 'puenktlichkeit',
+    signals: [{ type: 'homework_early', targetCount: 1 }],
+  },
   {
     key: 'hw_x3',
     title: 'Fleißige Woche',

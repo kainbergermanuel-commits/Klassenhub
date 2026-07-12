@@ -259,6 +259,11 @@ export default async function HomePage() {
     const classSize = (allStudents ?? []).length
     const socialProofPct = classSize >= 3 ? Math.round((studentsActiveThisWeek.size / classSize) * 100) : null
 
+    // ─── HELDENBUCH (eigene Meilensteine, keine Klasse-Ansicht) ──────────────
+    const { data: myMilestones } = await supabase
+      .from('streak_confirmations').select('milestone,confirmed_at')
+      .eq('student_id', user.id).order('confirmed_at', { ascending: false })
+
     return (
       <StudentHome
         fullName={profile.full_name}
@@ -280,6 +285,7 @@ export default async function HomePage() {
         quests={quests}
         questWeekStart={weekStart}
         socialProofPct={socialProofPct}
+        myMilestones={myMilestones ?? []}
       />
     )
   }

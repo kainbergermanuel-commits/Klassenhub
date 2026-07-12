@@ -6,6 +6,7 @@ import Avatar from '@/components/ui/Avatar'
 import ClassGoalCard from '@/components/streaks/ClassGoalCard'
 import MyStreakPanel from '@/components/streaks/MyStreakPanel'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
+import TeacherQuestRegie, { type RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 
 interface StudentStreak {
   id: string
@@ -48,9 +49,10 @@ interface Props {
   myStreak: { streak: number; broken: boolean; jokerAvailable: boolean; jokerUsedThisSeason: boolean } | null
   quests: QuestResult[]
   questWeekStart: string
+  teacherRegie: { activeQuests: RegieQuest[]; allTemplates: { key: string; title: string }[]; isOverride: boolean } | null
 }
 
-export default function StreakOverview({ role, withStreak, noStreak, milestoneHistory, daysLeft, prevRace, prevMonthLabel, classGoal, classGoalDone, currentSeason, myStreak, quests, questWeekStart }: Props) {
+export default function StreakOverview({ role, withStreak, noStreak, milestoneHistory, daysLeft, prevRace, prevMonthLabel, classGoal, classGoalDone, currentSeason, myStreak, quests, questWeekStart, teacherRegie }: Props) {
   const maxStreak = withStreak[0]?.streak ?? 1
   const sortedMonths = Object.keys(milestoneHistory).sort((a, b) => b.localeCompare(a))
 
@@ -74,6 +76,15 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
         {myStreak && <MyStreakPanel streak={myStreak.streak} broken={myStreak.broken} jokerAvailable={myStreak.jokerAvailable} jokerUsedThisSeason={myStreak.jokerUsedThisSeason} />}
 
         {quests.length > 0 && <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} />}
+
+        {teacherRegie && (
+          <TeacherQuestRegie
+            activeQuests={teacherRegie.activeQuests}
+            allTemplates={teacherRegie.allTemplates}
+            weekStart={questWeekStart}
+            isOverride={teacherRegie.isOverride}
+          />
+        )}
 
         {/* Active streaks */}
         <div className="kh-card p-5">
