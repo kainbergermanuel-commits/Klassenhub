@@ -116,7 +116,11 @@ export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, co
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
   let h = hash
   function nextIndex(len: number): number {
-    h = (h * 1103515245 + 12345) >>> 0
+    // Math.imul() ist Pflicht hier: normale Multiplikation überschreitet bei
+    // h nahe 2^32 die 53-Bit-Genauigkeit von JS-Zahlen und "friert" den
+    // Generator auf einen falschen Fixpunkt ein (immer derselbe Index) —
+    // dadurch fand die Auswahl in der Praxis manchmal nur 2 statt 3 Quests.
+    h = (Math.imul(h, 1103515245) + 12345) >>> 0
     return h % len
   }
 
