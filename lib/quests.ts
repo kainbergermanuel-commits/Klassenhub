@@ -1,4 +1,4 @@
-import type { QuestFocusTag, QuestSignal, QuestTemplate } from '@/lib/questVault'
+import type { QuestChoice, QuestFocusTag, QuestSignal, QuestTemplate } from '@/lib/questVault'
 import { QUEST_VAULT, QUEST_FOCUS_ROTATION } from '@/lib/questVault'
 
 /** Alle Daten, die zur Fortschritts-Berechnung eines Schülers nötig sind —
@@ -66,6 +66,11 @@ export interface QuestResult {
   parts: QuestPart[]
   /** Nur bei Wahlpfad-Quests relevant. */
   needsChoice: boolean
+  /** Bei bereits gewählter Wahlpfad-Quest: der gewählte Pfad, damit die UI
+   *  dessen konkrete Anleitung (choice.narrative) anzeigen kann — sonst
+   *  sieht man nach der Wahl nur noch den allgemeinen Vorlagen-Text
+   *  ("wähle deinen Weg") und nicht mehr, was zu tun ist. */
+  chosenChoice?: QuestChoice
 }
 
 export function computeQuestProgress(template: QuestTemplate, ctx: QuestContext, chosenChoiceKey?: string): QuestResult {
@@ -74,7 +79,7 @@ export function computeQuestProgress(template: QuestTemplate, ctx: QuestContext,
     const choice = template.choices.find(c => c.key === chosenChoiceKey)
     if (!choice) return { template, done: false, parts: [], needsChoice: true }
     const progress = computeSignalProgress(choice.signal, ctx)
-    return { template, done: progress.done, parts: [{ label: choice.label, progress }], needsChoice: false }
+    return { template, done: progress.done, parts: [{ label: signalLabel(choice.signal), progress }], needsChoice: false, chosenChoice: choice }
   }
   const parts = (template.signals ?? []).map(s => ({ label: signalLabel(s), progress: computeSignalProgress(s, ctx) }))
   return { template, done: parts.length > 0 && parts.every(p => p.progress.done), parts, needsChoice: false }

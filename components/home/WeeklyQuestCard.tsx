@@ -66,7 +66,10 @@ export default function WeeklyQuestCard({ quests, weekStart, season }: Props) {
 
       <div className="flex flex-col gap-2.5">
         {quests.map(q => {
-          const narrative = q.template.narrative.replace('{guide}', theme.guide)
+          // Nach einer Wahlpfad-Entscheidung zeigt die Anleitung des GEWÄHLTEN
+          // Pfads (nicht mehr den allgemeinen "wähle deinen Weg"-Text) —
+          // sonst sieht man nach der Wahl nicht mehr, was zu tun ist.
+          const narrative = (q.chosenChoice ? q.chosenChoice.narrative : q.template.narrative).replace('{guide}', theme.guide)
           return (
             <div key={q.template.key} className="rounded-xl bg-[#FAF8F3] px-3 py-2.5">
               <div className="flex items-center gap-2">
@@ -77,6 +80,11 @@ export default function WeeklyQuestCard({ quests, weekStart, season }: Props) {
                   {q.done ? 'task_alt' : 'radio_button_unchecked'}
                 </span>
                 <span className="font-semibold text-[14px] text-kh-dark truncate">{q.template.title}</span>
+                {q.chosenChoice && (
+                  <span className="text-[10px] font-bold text-kh-teal bg-kh-teal/10 px-2 py-0.5 rounded-full flex-shrink-0">
+                    {q.chosenChoice.label}
+                  </span>
+                )}
               </div>
               <p className="text-[12px] text-kh-muted mt-1 pl-[26px]">{narrative}</p>
 
