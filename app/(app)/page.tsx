@@ -9,6 +9,7 @@ import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestContext, typ
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
 import type { GuildMember } from '@/components/home/GuildQuestCard'
+import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -307,6 +308,27 @@ export default async function HomePage() {
       }
     }
 
+    // ─── ERFOLGE (Heldenbuch-Statistik) ───────────────────────────────────────
+    const classGoalDoneValue = countClassGoalDone(allHwForStreak ?? [], allCompletionsStudent ?? [])
+    const classGoalReached = !!classGoal && classGoalDoneValue >= classGoal.target
+    const newAchievements = collectAchievements({
+      studentId: user.id,
+      weekStart,
+      season: currentSeason,
+      quests,
+      guildQuest: guildSection?.quest ?? null,
+      classGoalReached,
+    })
+    if (newAchievements.length > 0) {
+      // Fehlertolerant: schlägt z.B. in der Lehrer-Vorschau-als-Schüler-Funktion
+      // fehl (RLS prüft den echten auth.uid(), nicht das vorgeschaute Profil,
+      // Supabase gibt dann {error} zurück statt zu werfen) — reine Bonus-
+      // Statistik, das Ergebnis wird bewusst nicht geprüft/geworfen.
+      await supabase.from('achievements').upsert(newAchievements as never, { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true })
+    }
+    const { data: allMyAchievements } = await supabase.from('achievements').select('kind').eq('student_id', user.id)
+    const achievementCounts = countAchievements(allMyAchievements ?? [])
+
     return (
       <StudentHome
         fullName={profile.full_name}
@@ -323,13 +345,14 @@ export default async function HomePage() {
         confirmedStreak={confirmedStreak}
         pendingMilestone={pendingMilestone}
         classGoal={classGoal}
-        classGoalDone={countClassGoalDone(allHwForStreak ?? [], allCompletionsStudent ?? [])}
+        classGoalDone={classGoalDoneValue}
         season={currentSeason}
         quests={quests}
         questWeekStart={weekStart}
         socialProofPct={socialProofPct}
         myMilestones={myMilestones ?? []}
         guildSection={guildSection}
+        achievementCounts={achievementCounts}
       />
     )
   }

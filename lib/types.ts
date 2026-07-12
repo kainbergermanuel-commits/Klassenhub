@@ -265,6 +265,12 @@ export type Database = {
         Update: Partial<QuestChoiceRow>
         Relationships: []
       }
+      achievements: {
+        Row: Achievement
+        Insert: { student_id: string; kind: AchievementKind; key: string; period: string; achieved_at?: string }
+        Update: Partial<Achievement>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -355,6 +361,19 @@ export type QuestChoiceRow = {
   student_id: string
   choice_key: string
   chosen_at: string
+}
+
+// Reines Log fürs Heldenbuch (Statistik-Zeilen) — siehe lib/achievements.ts.
+// Persistiert NICHT den Quest-Fortschritt selbst (der bleibt live berechnet),
+// nur DASS etwas irgendwann geschafft wurde.
+export type AchievementKind = 'quest' | 'guild_quest' | 'class_goal'
+
+export type Achievement = {
+  student_id: string
+  kind: AchievementKind
+  key: string
+  period: string
+  achieved_at: string
 }
 
 // Termine ("events"). AppEvent statt Event, um Kollision mit dem DOM-Event zu vermeiden.

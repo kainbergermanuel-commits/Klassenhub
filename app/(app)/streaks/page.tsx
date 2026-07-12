@@ -7,6 +7,7 @@ import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateK
 import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
 import type { GuildMember } from '@/components/home/GuildQuestCard'
+import { collectAchievements } from '@/lib/achievements'
 import StreakOverview from '@/components/streaks/StreakOverview'
 import type { RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 
@@ -211,6 +212,22 @@ export default async function StreaksPage() {
           }))
         guildSection = { guild: myGuild, members, quest: guildQuest }
       }
+    }
+
+    // ─── ERFOLGE (Heldenbuch-Statistik) ────────────────────────────────────────
+    // Gleiche Protokollierung wie auf der Startseite — ein Schüler könnte auch
+    // direkt hier eine Quest abschließen, ohne vorher die Startseite zu laden.
+    const classGoalReached = !!classGoal && classGoalConfirmedDone >= classGoal.target
+    const newAchievements = collectAchievements({
+      studentId: profile.id,
+      weekStart,
+      season: currentSeason,
+      quests: questsForMe,
+      guildQuest: guildSection?.quest ?? null,
+      classGoalReached,
+    })
+    if (newAchievements.length > 0) {
+      await supabase.from('achievements').upsert(newAchievements as never, { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true })
     }
   }
 

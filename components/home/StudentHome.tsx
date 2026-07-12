@@ -10,6 +10,7 @@ import GuildQuestCard, { type GuildMember } from './GuildQuestCard'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { QuestResult } from '@/lib/quests'
 import type { Guild, GuildQuestResult } from '@/lib/guilds'
+import type { AchievementCounts } from '@/lib/achievements'
 import { dutyIcon } from '@/lib/dutyIcon'
 import { greeting } from '@/lib/date'
 
@@ -36,10 +37,11 @@ interface StudentHomeProps {
   socialProofPct: number | null
   myMilestones: { milestone: number; confirmed_at: string }[]
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
+  achievementCounts: AchievementCounts
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection, achievementCounts,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -151,7 +153,7 @@ export default function StudentHome({
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
             </div>
             <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} milestones={myMilestones} season={season} />
+              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} milestones={myMilestones} season={season} achievementCounts={achievementCounts} />
             </div>
           </div>
         </div>

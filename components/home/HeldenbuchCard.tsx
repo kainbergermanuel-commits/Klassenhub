@@ -1,5 +1,6 @@
 import { flameCount, MILESTONES } from '@/lib/streak'
 import { getSeasonTheme } from '@/lib/seasonTheme'
+import type { AchievementCounts } from '@/lib/achievements'
 
 interface Milestone {
   milestone: number
@@ -11,15 +12,17 @@ interface Props {
   confirmedStreak: number
   milestones: Milestone[]
   season: string
+  achievementCounts: AchievementCounts
 }
 
 /** Private Rückschau auf die eigene Reise — bewusst kein Vergleich mit
  *  anderen Schüler:innen (siehe Gamification-Plan: "Konzept bleibt,
  *  Vergleich geht"). Füllt die Sidebar-Lücke der entfernten StreakLeaderCard. */
-export default function HeldenbuchCard({ streak, confirmedStreak, milestones, season }: Props) {
+export default function HeldenbuchCard({ streak, confirmedStreak, milestones, season, achievementCounts }: Props) {
   const theme = getSeasonTheme(season)
   const flames = flameCount(confirmedStreak)
   const nextMilestone = MILESTONES.find(m => m > confirmedStreak)
+  const totalAchievements = achievementCounts.quest + achievementCounts.guild_quest + achievementCounts.class_goal
 
   return (
     <div className="kh-card p-5">
@@ -43,6 +46,23 @@ export default function HeldenbuchCard({ streak, confirmedStreak, milestones, se
           )}
         </div>
       </div>
+
+      {totalAchievements > 0 && (
+        <div className="grid grid-cols-3 gap-1.5 mb-3">
+          <div className="rounded-lg bg-[#FAF8F3] px-2 py-2 text-center">
+            <div className="font-extrabold text-[15px] text-kh-teal leading-none">{achievementCounts.quest}</div>
+            <div className="text-[9.5px] text-kh-muted font-semibold mt-1">Quests</div>
+          </div>
+          <div className="rounded-lg bg-[#FAF8F3] px-2 py-2 text-center">
+            <div className="font-extrabold text-[15px] text-kh-violet leading-none">{achievementCounts.guild_quest}</div>
+            <div className="text-[9.5px] text-kh-muted font-semibold mt-1">Gilden-Erfolge</div>
+          </div>
+          <div className="rounded-lg bg-[#FAF8F3] px-2 py-2 text-center">
+            <div className="font-extrabold text-[15px] text-kh-amber leading-none">{achievementCounts.class_goal}</div>
+            <div className="text-[9.5px] text-kh-muted font-semibold mt-1">Klassenziele</div>
+          </div>
+        </div>
+      )}
 
       {milestones.length === 0 ? (
         <p className="text-[12.5px] text-kh-muted font-medium">
