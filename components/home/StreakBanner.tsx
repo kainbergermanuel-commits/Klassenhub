@@ -1,4 +1,5 @@
 import { flameCount } from '@/lib/streak'
+import { getSeasonTheme } from '@/lib/seasonTheme'
 
 interface Props {
   /** Eigener Streak – sofort sichtbar (auch unbestätigt). Bestimmt die angezeigte Zahl. */
@@ -6,9 +7,11 @@ interface Props {
   /** Eltern-bestätigter Streak – verdient die Flammen (Live-Spiegel). */
   confirmedStreak: number
   pendingMilestone: number | null
+  season: string
 }
 
-export default function StreakBanner({ streak, confirmedStreak, pendingMilestone }: Props) {
+export default function StreakBanner({ streak, confirmedStreak, pendingMilestone, season }: Props) {
+  const theme = getSeasonTheme(season)
   if (streak === 0) return null
   const flames = flameCount(confirmedStreak)
 
@@ -94,7 +97,7 @@ export default function StreakBanner({ streak, confirmedStreak, pendingMilestone
           </div>
         ) : (
           <div className="text-[12.5px] font-semibold text-kh-teal mt-0.5">
-            Weiter so — nächster Meilenstein bei {Math.ceil(streak / 5) * 5} HÜ
+            {theme.nudge(Math.ceil(streak / 5) * 5 - streak)}
           </div>
         )}
       </div>

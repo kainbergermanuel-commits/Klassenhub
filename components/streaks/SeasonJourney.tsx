@@ -67,6 +67,10 @@ export default function SeasonJourney({ season, pct, target }: Props) {
           )
         })}
       </div>
+
+      <p className="relative mt-4 text-[12.5px] text-kh-dark/80 italic leading-snug border-l-2 border-[#E8A020]/50 pl-3">
+        {theme.stages[activeStage].story}
+      </p>
     </div>
   )
 }

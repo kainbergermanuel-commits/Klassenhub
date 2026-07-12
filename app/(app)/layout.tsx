@@ -23,7 +23,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     ...(profile.role !== 'student' ? [
       { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined },
     ] : []),
-    { href: '/streaks', icon: 'local_fire_department', label: 'Streaks' },
+    { href: '/streaks', icon: 'explore', label: 'Abenteuer' },
     ...(isTeacher ? [
       { href: '/planung', icon: 'edit_calendar', label: 'Planung' },
       { href: '/klasse', icon: 'groups', label: 'Klasse' },

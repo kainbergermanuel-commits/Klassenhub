@@ -9,7 +9,6 @@ import FeatureCard from './FeatureCard'
 import DutyCard, { type DutyEntry } from './DutyCard'
 import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
-import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ClassGoalBadge from './ClassGoalBadge'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
 import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber, greeting } from '@/lib/date'
@@ -126,15 +125,15 @@ interface TeacherHomeProps {
   reminders: Reminder[]
   dutyEntries: DutyEntry[]
   upcomingEvents: AgendaEvent[]
-  streakEntries: StreakEntry[]
   recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
+  season: string
 }
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  hwOpenStudents, reminders, dutyEntries, upcomingEvents, streakEntries, recentHomework, classGoal, classGoalDone,
+  hwOpenStudents, reminders, dutyEntries, upcomingEvents, recentHomework, classGoal, classGoalDone, season,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -160,7 +159,7 @@ export default function TeacherHome({
             <p className="text-sm text-kh-muted font-medium mt-1">{today} · Klasse {klass?.name}</p>
           </div>
         </div>
-        <ClassGoalBadge goal={classGoal} done={classGoalDone} className="max-md:hidden" />
+        <ClassGoalBadge goal={classGoal} done={classGoalDone} season={season} />
       </header>
 
       {/* Schwebender „Neue HÜ"-Button unter dem Burger (nur Mobile, nur Startseite) */}
@@ -287,9 +286,6 @@ export default function TeacherHome({
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="teacher" classId={classId} userId={userId} />
-            </div>
-            <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-              <StreakLeaderCard entries={streakEntries} />
             </div>
           </div>
         </div>

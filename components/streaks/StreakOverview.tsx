@@ -57,9 +57,9 @@ export default function StreakOverview({ role, withStreak, noStreak, milestoneHi
           <img src="/flame.svg" alt="" className="w-6 h-6" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Streaks</h1>
+          <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Abenteuer</h1>
           <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">
-            Aufeinanderfolgende erledigte Hausübungen · {withStreak.length} aktive Streaks
+            Klassenreise &amp; Streaks · {withStreak.length} aktive Streaks
           </p>
         </div>
       </header>

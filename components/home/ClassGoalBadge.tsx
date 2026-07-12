@@ -2,15 +2,18 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { getSeasonTheme } from '@/lib/seasonTheme'
 
 interface Props {
   goal: { target: number; reward: string | null } | null
   done: number
+  season: string
   className?: string
 }
 
-/** Sehr dezenter Fortschritts-Hinweis fürs Klassenziel, für den Startseiten-Header. */
-export default function ClassGoalBadge({ goal, done, className = '' }: Props) {
+/** Fortschritts-Hinweis fürs Klassenziel, für den Startseiten-Header. */
+export default function ClassGoalBadge({ goal, done, season, className = '' }: Props) {
+  const theme = getSeasonTheme(season)
   const pct = goal ? Math.min(100, Math.round((done / goal.target) * 100)) : 0
 
   const [animatedPct, setAnimatedPct] = useState(0)
@@ -29,7 +32,7 @@ export default function ClassGoalBadge({ goal, done, className = '' }: Props) {
     >
       <div className="w-full flex items-center justify-between gap-2">
         <span className="text-[12px] font-bold text-kh-dark whitespace-nowrap" style={{ textShadow: '0 1px 4px rgba(255,255,255,.6)' }}>
-          Bergexpedition
+          {theme.name}
         </span>
         <span className="text-[13px] font-extrabold text-[#B9791A] whitespace-nowrap" style={{ textShadow: '0 1px 4px rgba(255,255,255,.6)' }}>
           {pct}%
@@ -43,10 +46,10 @@ export default function ClassGoalBadge({ goal, done, className = '' }: Props) {
           />
         </div>
         <span
-          className="absolute -top-4 -translate-x-1/2 text-[22px] leading-none transition-[left] duration-[1200ms] ease-out"
-          style={{ left: `${animatedPct}%` }}
+          className="msym absolute -top-4 -translate-x-1/2 text-[19px] leading-none transition-[left] duration-[1200ms] ease-out text-[#B9791A]"
+          style={{ left: `${animatedPct}%`, fontVariationSettings: "'FILL' 1" }}
         >
-          🏔️
+          {theme.icon}
         </span>
       </div>
     </Link>

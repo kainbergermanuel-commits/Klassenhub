@@ -83,16 +83,9 @@ export default async function HomePage() {
     ])
 
     const allHwIds = (allHwForStreaks ?? []).map(h => h.id)
-    const studentIdsT = (allStudents ?? []).map(s => s.id)
-    const [{ data: allCompletions }, { data: freezesT }] = await Promise.all([
-      allHwIds.length > 0
-        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
-        : Promise.resolve({ data: [] }),
-      studentIdsT.length > 0
-        ? supabase.from('streak_freezes').select('student_id,homework_id').in('student_id', studentIdsT)
-        : Promise.resolve({ data: [] }),
-    ])
-    const frozenByStudentT = groupFrozenByStudent(freezesT ?? [])
+    const { data: allCompletions } = allHwIds.length > 0
+      ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
+      : { data: [] }
 
     const students = allStudents ?? []
     const studentMap = Object.fromEntries(students.map(s => [s.id, s.full_name.split(' ')[0]]))
@@ -102,30 +95,10 @@ export default async function HomePage() {
     }))
 
     const doneByStudent = new Map<string, Set<string>>()
-    const confirmedByStudent = new Map<string, Set<string>>()
     for (const c of allCompletions ?? []) {
       if (!doneByStudent.has(c.student_id)) doneByStudent.set(c.student_id, new Set())
       doneByStudent.get(c.student_id)!.add(c.homework_id)
-      if ((c as any).confirmed_by_parent_at) {
-        if (!confirmedByStudent.has(c.student_id)) confirmedByStudent.set(c.student_id, new Set())
-        confirmedByStudent.get(c.student_id)!.add(c.homework_id)
-      }
     }
-    // Leaderboard zeigt ausschließlich eltern-bestätigte Streaks; Flammen leiten
-    // sich direkt aus dieser Zahl ab (Live-Spiegel).
-    const streakEntries = students
-      .map(s => ({
-        id: s.id,
-        full_name: s.full_name,
-        avatar_color: s.avatar_color ?? '#0F8A82',
-        avatar_seed: s.avatar_seed ?? null,
-        avatar_hair_color: s.avatar_hair_color ?? null,
-        avatar_skin_color: s.avatar_skin_color ?? null,
-        streak: computeStreak(confirmedByStudent.get(s.id) ?? new Set(), allHwForStreaks ?? [], today, frozenByStudentT.get(s.id)),
-      }))
-      .filter(e => e.streak > 0)
-      .sort((a, b) => b.streak - a.streak)
-
     const completionCountByHw = new Map<string, number>()
     for (const c of allCompletions ?? []) {
       completionCountByHw.set(c.homework_id, (completionCountByHw.get(c.homework_id) ?? 0) + 1)
@@ -150,10 +123,10 @@ export default async function HomePage() {
         reminders={upcomingReminders}
         dutyEntries={dutyEntries}
         upcomingEvents={upcomingEvents}
-        streakEntries={streakEntries}
         recentHomework={(recentHw ?? []).map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
         classGoal={classGoal}
         classGoalDone={countClassGoalDone(allHwForStreaks ?? [], allCompletions ?? [])}
+        season={currentSeason}
       />
     )
   }
@@ -219,15 +192,6 @@ export default async function HomePage() {
         confirmedByStudentS.get(c.student_id)!.add(c.homework_id)
       }
     }
-    const streakEntries = (allStudents ?? [])
-      .map(s => ({
-        id: s.id, full_name: s.full_name, avatar_color: s.avatar_color ?? '#0F8A82', avatar_seed: s.avatar_seed ?? null,
-        avatar_hair_color: s.avatar_hair_color ?? null, avatar_skin_color: s.avatar_skin_color ?? null,
-        streak: computeStreak(confirmedByStudentS.get(s.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(s.id)),
-      }))
-      .filter(e => e.streak > 0)
-      .sort((a, b) => b.streak - a.streak)
-
     // Eigener bestätigter Streak → verdient die Flammen. Pending = eigener (actual)
     // Meilenstein liegt über dem bereits bestätigten ⇒ "warte auf Eltern".
     const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
@@ -249,9 +213,9 @@ export default async function HomePage() {
         streak={streak}
         confirmedStreak={confirmedStreak}
         pendingMilestone={pendingMilestone}
-        streakEntries={streakEntries}
         classGoal={classGoal}
         classGoalDone={countClassGoalDone(allHwForStreak ?? [], allCompletionsStudent ?? [])}
+        season={currentSeason}
       />
     )
   }
@@ -305,15 +269,6 @@ export default async function HomePage() {
         confirmedByStudentP.get(c.student_id)!.add(c.homework_id)
       }
     }
-    const parentStreakEntries = (allStudents ?? [])
-      .map(s => ({
-        id: s.id, full_name: s.full_name, avatar_color: s.avatar_color ?? '#0F8A82', avatar_seed: s.avatar_seed ?? null,
-        avatar_hair_color: s.avatar_hair_color ?? null, avatar_skin_color: s.avatar_skin_color ?? null,
-        streak: computeStreak(confirmedByStudentP.get(s.id) ?? new Set(), allHwForStreak, today, frozenByStudentP.get(s.id)),
-      }))
-      .filter(e => e.streak > 0)
-      .sort((a, b) => b.streak - a.streak)
-
     // Eltern-bestätigter Streak des Kindes → verdient die Flammen (Live-Spiegel)
     const childConfirmedStreak = child
       ? computeStreak(confirmedByStudentP.get(child.id) ?? new Set(), allHwForStreak, today, frozenByStudentP.get(child.id))
@@ -346,7 +301,6 @@ export default async function HomePage() {
         childStreak={childStreak}
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}
-        streakEntries={parentStreakEntries}
         classGoal={classGoal}
         classGoalDone={countClassGoalDone(allHwForStreak, allCompletionsParent ?? [])}
       />

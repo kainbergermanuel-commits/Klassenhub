@@ -3,7 +3,6 @@ import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
-import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ClassGoalBadge from './ClassGoalBadge'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { dutyIcon } from '@/lib/dutyIcon'
@@ -23,13 +22,13 @@ interface StudentHomeProps {
   streak: number
   confirmedStreak: number
   pendingMilestone: number | null
-  streakEntries: StreakEntry[]
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
+  season: string
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, streakEntries, classGoal, classGoalDone,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -72,7 +71,7 @@ export default function StudentHome({
           </div>
           <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
         </div>
-        <ClassGoalBadge goal={classGoal} done={classGoalDone} className="max-md:hidden" />
+        <ClassGoalBadge goal={classGoal} done={classGoalDone} season={season} />
       </header>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
@@ -106,7 +105,7 @@ export default function StudentHome({
 
           {/* Streak */}
           <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-            <StreakBanner streak={streak} confirmedStreak={confirmedStreak} pendingMilestone={pendingMilestone} />
+            <StreakBanner streak={streak} confirmedStreak={confirmedStreak} pendingMilestone={pendingMilestone} season={season} />
           </div>
 
           {/* Open homework — all, sorted by urgency */}
@@ -119,9 +118,6 @@ export default function StudentHome({
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
-            </div>
-            <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-              <StreakLeaderCard entries={streakEntries} />
             </div>
           </div>
         </div>

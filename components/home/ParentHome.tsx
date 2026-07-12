@@ -2,7 +2,6 @@ import Link from 'next/link'
 import FeatureCard from './FeatureCard'
 import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
-import StreakLeaderCard, { type StreakEntry } from './StreakLeaderCard'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
 import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
@@ -25,13 +24,12 @@ interface ParentHomeProps {
   /** Eltern-bestätigter Streak des Kindes – verdient die Flammen (Live-Spiegel). */
   childConfirmedStreak: number
   pendingConfirmations: PendingConfirmation[]
-  streakEntries: StreakEntry[]
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, streakEntries, classGoal, classGoalDone,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, classGoal, classGoalDone,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
@@ -197,9 +195,6 @@ export default function ParentHome({
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="parent" />
-            </div>
-            <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-              <StreakLeaderCard entries={streakEntries} />
             </div>
           </div>
         </div>
