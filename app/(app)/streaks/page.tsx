@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO, lastDayOfMonthISO, lastDayOfPrevMonthISO, firstDayOfPrevMonthISO, firstDayOfMonthISO, daysUntil } from '@/lib/date'
+import { todayISO, lastDayOfMonthISO, lastDayOfPrevMonthISO, firstDayOfPrevMonthISO, firstDayOfMonthISO, daysUntil, getRelevantMondayOfWeek, addDaysISO } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework } from '@/lib/streak'
+import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestContext, type QuestResult } from '@/lib/quests'
+import { findQuestTemplate } from '@/lib/questVault'
 import StreakOverview from '@/components/streaks/StreakOverview'
 
 export default async function StreaksPage() {
@@ -52,7 +54,7 @@ export default async function StreaksPage() {
 
   const allHwIds = (allHwDesc ?? []).map(h => h.id)
   const { data: allCompletions } = allHwIds.length > 0
-    ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
+    ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at,completed_at').in('homework_id', allHwIds)
     : { data: [] }
 
   // Build doneIds per student (alle für eigenen Streak) + nur bestätigte für Leaderboard
@@ -108,6 +110,76 @@ export default async function StreaksPage() {
     const jokerUsedThisSeason = freezeUsedThisSeasonByStudent.has(profile.id)
     const jokerAvailable = broken && !jokerUsedThisSeason
     myStreak = { streak: myDisplayStreak, broken, jokerAvailable, jokerUsedThisSeason }
+  }
+
+  // ─── QUESTS (nur für eingeloggten Schüler, siehe lib/quests.ts) ──────────────
+  const weekStart = getRelevantMondayOfWeek()
+  let questsForMe: QuestResult[] = []
+  if (profile.role === 'student') {
+    const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
+
+    const [
+      { data: weekReminders },
+      { data: weekEvents },
+      { data: weekDuty },
+      { data: questOverrides },
+      { data: myChoices },
+    ] = await Promise.all([
+      supabase.from('reminders').select('id,event_date,target_student_ids').eq('class_id', activeClassId).gte('event_date', weekStart).lte('event_date', weekEnd),
+      supabase.from('events').select('id,start_date,target_student_ids').eq('class_id', activeClassId).gte('start_date', weekStart).lte('start_date', weekEnd),
+      supabase.from('duties').select('assignee_ids').eq('class_id', activeClassId).eq('week_start', weekStart),
+      supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
+      supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', profile.id).eq('week_start', weekStart),
+    ])
+
+    const weekReminderIds = (weekReminders ?? [])
+      .filter(r => !r.target_student_ids || r.target_student_ids.includes(profile.id))
+      .map(r => r.id)
+    const { data: myViews } = weekReminderIds.length > 0
+      ? await supabase.from('reminder_views').select('reminder_id').eq('student_id', profile.id).in('reminder_id', weekReminderIds)
+      : { data: [] }
+    const weekEventIds = (weekEvents ?? [])
+      .filter(e => !e.target_student_ids || e.target_student_ids.includes(profile.id))
+      .map(e => e.id)
+    const dutyAssignedThisWeek = (weekDuty ?? []).some(d => d.assignee_ids.includes(profile.id))
+
+    const weekHw = (allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
+    const dueByHwId = new Map((allHwDesc ?? []).map(h => [h.id, h.due_date]))
+    const myDoneIds = doneByStudent.get(profile.id) ?? new Set<string>()
+    const myConfirmedIds = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
+    const myFrozenIds = frozenByStudent.get(profile.id) ?? new Set<string>()
+    const streakHeldThisWeek = weekHw.every(h => myDoneIds.has(h.id) || myFrozenIds.has(h.id))
+    const earlyHomeworkIds = new Set(
+      (allCompletions ?? [])
+        .filter(c => c.student_id === profile.id)
+        .filter(c => {
+          const due = dueByHwId.get(c.homework_id)
+          return due && (c as any).completed_at && (c as any).completed_at.slice(0, 10) < due
+        })
+        .map(c => c.homework_id)
+    )
+
+    const activeQuestKeys = resolveWeeklyTemplateKeys(activeClassId, weekStart, (questOverrides ?? []).map(q => q.template_key))
+    const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
+
+    const questCtx: QuestContext = {
+      weekStart,
+      weekEnd,
+      weekHomeworkIds: weekHw.map(h => h.id),
+      doneHomeworkIds: myDoneIds,
+      earlyHomeworkIds,
+      confirmedHomeworkIds: myConfirmedIds,
+      weekReminderIds,
+      viewedReminderIds: new Set((myViews ?? []).map(v => v.reminder_id)),
+      weekEventIds,
+      dutyAssignedThisWeek,
+      streakHeldThisWeek,
+    }
+
+    questsForMe = activeQuestKeys
+      .map(key => findQuestTemplate(key))
+      .filter((t): t is NonNullable<typeof t> => !!t)
+      .map(t => computeQuestProgress(t, questCtx, choiceByTemplate.get(t.key)))
   }
 
   // ─── VORMONAT-RANGLISTE ──────────────────────────────────────────────────────
@@ -169,6 +241,8 @@ export default async function StreaksPage() {
       classGoalDone={classGoalConfirmedDone}
       currentSeason={currentSeason}
       myStreak={myStreak}
+      quests={questsForMe}
+      questWeekStart={weekStart}
     />
   )
 }

@@ -250,6 +250,15 @@ export default async function HomePage() {
       .filter((t): t is NonNullable<typeof t> => !!t)
       .map(t => computeQuestProgress(t, questCtx, choiceByTemplate.get(t.key)))
 
+    // ─── SOCIAL-PROOF-NUDGE (anonym, keine Namen) ────────────────────────────
+    // Ab 3 Schüler:innen, damit der Prozentwert niemanden einzeln erkennbar macht.
+    const weekHwIdSet = new Set(weekHw.map(h => h.id))
+    const studentsActiveThisWeek = new Set(
+      (allCompletionsStudent ?? []).filter(c => weekHwIdSet.has(c.homework_id)).map(c => c.student_id)
+    )
+    const classSize = (allStudents ?? []).length
+    const socialProofPct = classSize >= 3 ? Math.round((studentsActiveThisWeek.size / classSize) * 100) : null
+
     return (
       <StudentHome
         fullName={profile.full_name}
@@ -270,6 +279,7 @@ export default async function HomePage() {
         season={currentSeason}
         quests={quests}
         questWeekStart={weekStart}
+        socialProofPct={socialProofPct}
       />
     )
   }

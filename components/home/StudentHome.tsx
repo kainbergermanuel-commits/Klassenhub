@@ -29,10 +29,12 @@ interface StudentHomeProps {
   season: string
   quests: QuestResult[]
   questWeekStart: string
+  /** Anteil der Klasse mit mind. 1 Erledigung diese Woche, anonym (keine Namen). `null` = zu kleine Klasse. */
+  socialProofPct: number | null
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -84,6 +86,15 @@ export default function StudentHome({
           <div className="animate-card-enter" style={{ animationDelay: '60ms' }}>
             <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} />
           </div>
+
+          {socialProofPct !== null && (
+            <div className="animate-card-enter flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#F0FAF9] border border-kh-teal/20" style={{ animationDelay: '90ms' }}>
+              <span className="msym text-[18px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
+              <p className="text-[13px] font-semibold text-kh-dark">
+                {socialProofPct}&nbsp;% deiner Klasse sind diese Woche schon dabei — schließ dich an!
+              </p>
+            </div>
+          )}
 
           {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
