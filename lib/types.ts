@@ -253,6 +253,18 @@ export type Database = {
         Update: Partial<AppEvent>
         Relationships: []
       }
+      quests: {
+        Row: Quest
+        Insert: { id?: string; class_id: string; template_key: string; week_start: string; created_by?: string | null; created_at?: string }
+        Update: Partial<Quest>
+        Relationships: []
+      }
+      quest_choices: {
+        Row: QuestChoiceRow
+        Insert: { class_id: string; template_key: string; week_start: string; student_id: string; choice_key: string; chosen_at?: string }
+        Update: Partial<QuestChoiceRow>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -319,6 +331,30 @@ export type StreakFreeze = {
   student_id: string
   homework_id: string
   created_at: string
+}
+
+// Quest-Instanz: verweist per template_key auf lib/questVault.ts (kein FK,
+// keine eigene Tabelle für den Vorrat — siehe supabase/feature-quests.sql).
+export type Quest = {
+  id: string
+  class_id: string
+  template_key: string
+  week_start: string
+  created_by: string | null
+  created_at: string
+}
+
+// QuestChoiceRow statt QuestChoice, um Kollision mit dem gleichnamigen
+// Vorrats-Typ in lib/questVault.ts (Wahlpfad-Definition) zu vermeiden.
+// Bewusst NICHT an quests.id gekoppelt (siehe fix-quest-choices-key.sql) —
+// automatisch gewählte Quests erzeugen keine quests-Zeile.
+export type QuestChoiceRow = {
+  class_id: string
+  template_key: string
+  week_start: string
+  student_id: string
+  choice_key: string
+  chosen_at: string
 }
 
 // Termine ("events"). AppEvent statt Event, um Kollision mit dem DOM-Event zu vermeiden.

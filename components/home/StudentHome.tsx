@@ -4,7 +4,9 @@ import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StreakBanner from './StreakBanner'
 import ClassGoalBadge from './ClassGoalBadge'
+import WeeklyQuestCard from './WeeklyQuestCard'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
+import type { QuestResult } from '@/lib/quests'
 import { dutyIcon } from '@/lib/dutyIcon'
 import { greeting } from '@/lib/date'
 
@@ -25,10 +27,12 @@ interface StudentHomeProps {
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
   season: string
+  quests: QuestResult[]
+  questWeekStart: string
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season,
+  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -76,6 +80,11 @@ export default function StudentHome({
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6 mx-auto w-full">
+          {/* Wochen-Quests */}
+          <div className="animate-card-enter" style={{ animationDelay: '60ms' }}>
+            <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} />
+          </div>
+
           {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
             {[

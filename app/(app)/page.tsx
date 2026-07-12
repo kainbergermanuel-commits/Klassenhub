@@ -2,9 +2,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
-import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO } from '@/lib/date'
+import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO } from '@/lib/date'
 import { computeStreak, currentMilestone, groupFrozenByStudent } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
+import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestContext, type QuestResult } from '@/lib/quests'
+import { findQuestTemplate } from '@/lib/questVault'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -138,7 +140,7 @@ export default async function HomePage() {
       { data: allHwForStreak },
       { data: allStudents },
     ] = await Promise.all([
-      supabase.from('homework_completions').select('homework_id').eq('student_id', user.id),
+      supabase.from('homework_completions').select('homework_id,completed_at').eq('student_id', user.id),
       supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
       supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
     ])
@@ -198,6 +200,56 @@ export default async function HomePage() {
     const actualMs = currentMilestone(streak)
     const pendingMilestone = streak >= 5 && actualMs > currentMilestone(confirmedStreak) ? actualMs : null
 
+    // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────
+    const weekStart = dutyWeekStart
+    const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
+
+    const [{ data: questOverrides }, { data: myChoices }] = await Promise.all([
+      supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
+      supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', user.id).eq('week_start', weekStart),
+    ])
+    const activeQuestKeys = resolveWeeklyTemplateKeys(activeClassId, weekStart, (questOverrides ?? []).map(q => q.template_key))
+    const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
+
+    const weekHw = (allHwForStreak ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
+    const dueByHwId = new Map((allHwForStreak ?? []).map(h => [h.id, h.due_date]))
+    const earlyHomeworkIds = new Set(
+      (completions ?? [])
+        .filter(c => {
+          const due = dueByHwId.get(c.homework_id)
+          return due && c.completed_at && c.completed_at.slice(0, 10) < due
+        })
+        .map(c => c.homework_id)
+    )
+    const weekReminderIds = upcomingReminders
+      .filter(r => r.event_date >= weekStart && r.event_date <= weekEnd)
+      .filter(r => !r.target_student_ids || r.target_student_ids.includes(user.id))
+      .map(r => r.id)
+    const weekEventIds = upcomingEvents
+      .filter(e => e.start_date >= weekStart && e.start_date <= weekEnd)
+      .filter(e => !e.target_student_ids || e.target_student_ids.includes(user.id))
+      .map(e => e.id)
+    const myFrozenIds = frozenByStudentS.get(user.id) ?? new Set<string>()
+    const streakHeldThisWeek = weekHw.every(h => doneIds.has(h.id) || myFrozenIds.has(h.id))
+
+    const questCtx: QuestContext = {
+      weekStart,
+      weekEnd,
+      weekHomeworkIds: weekHw.map(h => h.id),
+      doneHomeworkIds: doneIds,
+      earlyHomeworkIds,
+      confirmedHomeworkIds: confirmedByStudentS.get(user.id) ?? new Set(),
+      weekReminderIds,
+      viewedReminderIds: new Set(myViewedIds),
+      weekEventIds,
+      dutyAssignedThisWeek: !!myDuty,
+      streakHeldThisWeek,
+    }
+    const quests: QuestResult[] = activeQuestKeys
+      .map(key => findQuestTemplate(key))
+      .filter((t): t is NonNullable<typeof t> => !!t)
+      .map(t => computeQuestProgress(t, questCtx, choiceByTemplate.get(t.key)))
+
     return (
       <StudentHome
         fullName={profile.full_name}
@@ -216,6 +268,8 @@ export default async function HomePage() {
         classGoal={classGoal}
         classGoalDone={countClassGoalDone(allHwForStreak ?? [], allCompletionsStudent ?? [])}
         season={currentSeason}
+        quests={quests}
+        questWeekStart={weekStart}
       />
     )
   }
