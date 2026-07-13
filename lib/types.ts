@@ -271,6 +271,12 @@ export type Database = {
         Update: Partial<Achievement>
         Relationships: []
       }
+      duty_completions: {
+        Row: DutyCompletion
+        Insert: { duty_id: string; student_id: string; completed_at?: string }
+        Update: Partial<DutyCompletion>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -361,6 +367,14 @@ export type QuestChoiceRow = {
   student_id: string
   choice_key: string
   chosen_at: string
+}
+
+// Dienst-Selbstbestätigung — siehe supabase/feature-duty-completions.sql.
+// Schließt die Lücke: `duties` speichert nur die Zuteilung, kein "erledigt".
+export type DutyCompletion = {
+  duty_id: string
+  student_id: string
+  completed_at: string
 }
 
 // Reines Log fürs Heldenbuch (Statistik-Zeilen) — siehe lib/achievements.ts.

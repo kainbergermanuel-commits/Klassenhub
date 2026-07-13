@@ -3,6 +3,7 @@ import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT } from '@/lib/seasonT
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 import { daysUntilLabel } from '@/lib/date'
 import { eventCategoryMeta } from '@/lib/eventCategories'
+import DutyNudge from './DutyNudge'
 import type { QuestResult } from '@/lib/quests'
 import type { AgendaEvent } from '@/lib/types'
 
@@ -12,6 +13,8 @@ interface Props {
   classGoalDone: number
   quests: QuestResult[]
   upcomingEvents: AgendaEvent[]
+  myDuty: { id: string; name: string } | null
+  dutyDoneThisWeek: boolean
 }
 
 /** Story-Hero für die Startseite: Guide-Portrait (oder Platzhalter-Icon,
@@ -20,7 +23,7 @@ interface Props {
  *  (`classGoal`/`quests`/`upcomingEvents`), keine neue Query.
  *  Ersetzt auf der Startseite `ClassGoalBadge`; `/streaks` bleibt bei
  *  `SeasonJourney` (eigene, ausführlichere Darstellung). */
-export default function StoryHeroCard({ season, classGoal, classGoalDone, quests, upcomingEvents }: Props) {
+export default function StoryHeroCard({ season, classGoal, classGoalDone, quests, upcomingEvents, myDuty, dutyDoneThisWeek }: Props) {
   const theme = getSeasonTheme(season)
   const pct = classGoal ? Math.min(100, Math.round((classGoalDone / classGoal.target) * 100)) : 0
   const activeStage = currentStageIndex(pct, theme.stages.length)
@@ -57,6 +60,7 @@ export default function StoryHeroCard({ season, classGoal, classGoalDone, quests
           </TooltipBody>
         </Pill>
       )}
+      {myDuty && <DutyNudge dutyId={myDuty.id} dutyName={myDuty.name} done={dutyDoneThisWeek} guide={theme.guide} />}
       {nextEvent && (
         <Pill icon="event" iconColor="#5965B8" label={nextEventLabel}>
           <TooltipHead>{eventCategoryMeta(nextEvent.category).label}</TooltipHead>

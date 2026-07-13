@@ -168,6 +168,14 @@ export default async function HomePage() {
     }
     const myDuty = duties.find(d => d.assignee_ids.includes(user.id)) ?? null
 
+    // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
+    const dutyIds = duties.map(d => d.id)
+    const { data: dutyCompletionsRaw } = dutyIds.length > 0
+      ? await supabase.from('duty_completions').select('duty_id,student_id').in('duty_id', dutyIds)
+      : { data: [] }
+    const dutyDoneByStudent = new Set((dutyCompletionsRaw ?? []).map(c => c.student_id))
+    const dutyDoneThisWeek = !!myDuty && dutyDoneByStudent.has(user.id)
+
     // Eigener Streak: sofort sichtbar (auch unbestätigt)
     const streak = computeStreak(doneIds, allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
 
@@ -236,7 +244,7 @@ export default async function HomePage() {
       weekReminderIds,
       viewedReminderIds: new Set(myViewedIds),
       weekEventIds,
-      dutyAssignedThisWeek: !!myDuty,
+      dutyDoneThisWeek,
       streakHeldThisWeek,
     }
     const quests: QuestResult[] = activeQuestKeys
@@ -276,14 +284,13 @@ export default async function HomePage() {
           confirmedByStudentAll.get(c.student_id)!.add(c.homework_id)
         }
       }
-      const dutyAssignedByStudent = new Set(duties.flatMap(d => d.assignee_ids))
       const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
           weekHomeworkIds: weekHw.map(h => h.id),
           doneByStudent: doneByStudentAll,
           confirmedByStudent: confirmedByStudentAll,
-          dutyAssignedByStudent,
+          dutyDoneByStudent,
         })
         const members: GuildMember[] = (allStudents ?? [])
           .filter(s => myGuild.memberIds.includes(s.id))
@@ -329,6 +336,8 @@ export default async function HomePage() {
         reminders={upcomingReminders}
         myViewedIds={myViewedIds}
         upcomingEvents={upcomingEvents}
+        myDuty={myDuty ? { id: myDuty.id, name: myDuty.duty_name } : null}
+        dutyDoneThisWeek={dutyDoneThisWeek}
         streak={streak}
         confirmedStreak={confirmedStreak}
         broken={broken}

@@ -129,7 +129,7 @@ export default async function StreaksPage() {
     ] = await Promise.all([
       supabase.from('reminders').select('id,event_date,target_student_ids').eq('class_id', activeClassId).gte('event_date', weekStart).lte('event_date', weekEnd),
       supabase.from('events').select('id,start_date,target_student_ids').eq('class_id', activeClassId).gte('start_date', weekStart).lte('start_date', weekEnd),
-      supabase.from('duties').select('assignee_ids').eq('class_id', activeClassId).eq('week_start', weekStart),
+      supabase.from('duties').select('id,assignee_ids').eq('class_id', activeClassId).eq('week_start', weekStart),
       supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
       supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', profile.id).eq('week_start', weekStart),
     ])
@@ -143,7 +143,14 @@ export default async function StreaksPage() {
     const weekEventIds = (weekEvents ?? [])
       .filter(e => !e.target_student_ids || e.target_student_ids.includes(profile.id))
       .map(e => e.id)
-    const dutyAssignedThisWeek = (weekDuty ?? []).some(d => d.assignee_ids.includes(profile.id))
+
+    // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
+    const weekDutyIds = (weekDuty ?? []).map(d => d.id)
+    const { data: dutyCompletionsRaw } = weekDutyIds.length > 0
+      ? await supabase.from('duty_completions').select('duty_id,student_id').in('duty_id', weekDutyIds)
+      : { data: [] }
+    const dutyDoneByStudent = new Set((dutyCompletionsRaw ?? []).map(c => c.student_id))
+    const dutyDoneThisWeek = dutyDoneByStudent.has(profile.id)
 
     const weekHw = (allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
     const dueByHwId = new Map((allHwDesc ?? []).map(h => [h.id, h.due_date]))
@@ -174,7 +181,7 @@ export default async function StreaksPage() {
       weekReminderIds,
       viewedReminderIds: new Set((myViews ?? []).map(v => v.reminder_id)),
       weekEventIds,
-      dutyAssignedThisWeek,
+      dutyDoneThisWeek,
       streakHeldThisWeek,
     }
 
@@ -188,14 +195,13 @@ export default async function StreaksPage() {
     const guilds = assignGuilds(activeClassId, currentSeason, allStudentIds)
     const myGuild = findMyGuild(guilds, profile.id)
     if (myGuild) {
-      const dutyAssignedByStudent = new Set((weekDuty ?? []).flatMap(d => d.assignee_ids))
       const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
           weekHomeworkIds: weekHw.map(h => h.id),
           doneByStudent,
           confirmedByStudent: confirmedDoneByStudent,
-          dutyAssignedByStudent,
+          dutyDoneByStudent,
         })
         const members: GuildMember[] = (students ?? [])
           .filter(s => myGuild.memberIds.includes(s.id))

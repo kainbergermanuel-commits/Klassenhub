@@ -17,6 +17,8 @@ interface StudentHomeProps {
   reminders: Reminder[]
   myViewedIds: string[]
   upcomingEvents: AgendaEvent[]
+  myDuty: { id: string; name: string } | null
+  dutyDoneThisWeek: boolean
   streak: number
   confirmedStreak: number
   broken: boolean
@@ -36,7 +38,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection, achievementCounts,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, dutyDoneThisWeek, streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection, achievementCounts,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -59,7 +61,7 @@ export default function StudentHome({
           {/* relative z-20: eigener Stacking-Context durch animate-card-enter (transform in
               fill-mode 'both'), sonst würden Tooltips/Vala-Überstand von Karten darunter verdeckt */}
           <div className="relative z-20 animate-card-enter" style={{ animationDelay: '30ms' }}>
-            <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} />
+            <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} myDuty={myDuty} dutyDoneThisWeek={dutyDoneThisWeek} />
           </div>
 
           {/* Wochen-Quests (inkl. Gilden-Quest als Block) */}

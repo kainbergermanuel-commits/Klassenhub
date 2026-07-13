@@ -77,7 +77,8 @@ export function findMyGuild(guilds: Guild[], studentId: string): Guild | undefin
 
 export type GuildQuestSignal =
   | { type: 'homework'; targetCount: number }
-  | { type: 'duty_assigned'; targetCount: number }
+  /** Dienst der Woche selbst bestätigt (nicht bloß zugeteilt), siehe duty_completions. */
+  | { type: 'duty_done'; targetCount: number }
   | { type: 'parent_confirm'; targetCount: number }
 
 export interface GuildQuestTemplate {
@@ -98,7 +99,7 @@ export const GUILD_QUEST_VAULT: GuildQuestTemplate[] = [
     key: 'guild_duty',
     title: 'Gemeinsam verantwortlich',
     narrative: '{guide}: alle Gildenmitglieder mit Dienst diese Woche erfüllen ihn.',
-    signal: { type: 'duty_assigned', targetCount: 1 },
+    signal: { type: 'duty_done', targetCount: 1 },
   },
   {
     key: 'guild_parent',
@@ -127,7 +128,7 @@ export interface GuildQuestContext {
   weekHomeworkIds: string[]
   doneByStudent: Map<string, Set<string>>
   confirmedByStudent: Map<string, Set<string>>
-  dutyAssignedByStudent: Set<string>
+  dutyDoneByStudent: Set<string>
 }
 
 export interface GuildQuestResult {
@@ -144,8 +145,8 @@ export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: G
         const done = ctx.doneByStudent.get(studentId) ?? new Set<string>()
         return ctx.weekHomeworkIds.filter(id => done.has(id)).length >= template.signal.targetCount
       }
-      case 'duty_assigned':
-        return ctx.dutyAssignedByStudent.has(studentId)
+      case 'duty_done':
+        return ctx.dutyDoneByStudent.has(studentId)
       case 'parent_confirm': {
         const confirmed = ctx.confirmedByStudent.get(studentId) ?? new Set<string>()
         return ctx.weekHomeworkIds.filter(id => confirmed.has(id)).length >= template.signal.targetCount

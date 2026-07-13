@@ -21,7 +21,9 @@ export interface QuestContext {
   weekReminderIds: string[]
   viewedReminderIds: Set<string>
   weekEventIds: string[]
-  dutyAssignedThisWeek: boolean
+  /** Dienst der Woche selbst bestätigt (SDT-Selbstkontrolle), nicht bloß
+   *  zugeteilt — siehe duty_completions. */
+  dutyDoneThisWeek: boolean
   streakHeldThisWeek: boolean
 }
 
@@ -45,8 +47,8 @@ export function computeSignalProgress(signal: QuestSignal, ctx: QuestContext): Q
       return clamp(ctx.weekReminderIds.filter(id => ctx.viewedReminderIds.has(id)).length, signal.targetCount)
     case 'event_ready':
       return clamp(ctx.weekEventIds.length > 0 ? 1 : 0, signal.targetCount)
-    case 'duty_assigned':
-      return clamp(ctx.dutyAssignedThisWeek ? 1 : 0, signal.targetCount)
+    case 'duty_done':
+      return clamp(ctx.dutyDoneThisWeek ? 1 : 0, signal.targetCount)
     case 'streak_hold':
       return clamp(ctx.streakHeldThisWeek ? 1 : 0, signal.targetCount)
     case 'parent_confirm':
@@ -91,7 +93,7 @@ function signalLabel(signal: QuestSignal): string {
     case 'homework_early': return 'Vorzeitig erledigt'
     case 'reminder': return 'Erinnerung gesehen'
     case 'event_ready': return 'Termin im Blick'
-    case 'duty_assigned': return 'Dienst wahrgenommen'
+    case 'duty_done': return 'Dienst erledigt'
     case 'streak_hold': return 'Streak gehalten'
     case 'parent_confirm': return 'Eltern-Bestätigungen'
   }

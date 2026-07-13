@@ -25,7 +25,9 @@ export type QuestSignal =
   | { type: 'reminder'; targetCount: number }
   /** Termin diese Woche, der den Schüler betrifft (target_student_ids). */
   | { type: 'event_ready'; targetCount: number }
-  | { type: 'duty_assigned'; targetCount: number }
+  /** Dienst der Woche selbst bestätigt (nicht bloß zugeteilt), siehe
+   *  duty_completions/toggleDutyCompletion.ts. */
+  | { type: 'duty_done'; targetCount: number }
   /** Kein Hausübungs-Ausfall diese Woche (Streak nicht gerissen). */
   | { type: 'streak_hold'; targetCount: number }
   | { type: 'parent_confirm'; targetCount: number }
@@ -75,7 +77,7 @@ export const QUEST_VAULT: QuestTemplate[] = [
     title: 'Dienst der Woche',
     narrative: '{guide} zählt auf dich: dein Dienst diese Woche.',
     focusTag: 'verantwortung',
-    signals: [{ type: 'duty_assigned', targetCount: 1 }],
+    signals: [{ type: 'duty_done', targetCount: 1 }],
   },
   {
     key: 'streak_hold',
@@ -98,7 +100,7 @@ export const QUEST_VAULT: QuestTemplate[] = [
     focusTag: 'verantwortung',
     signals: [
       { type: 'homework', targetCount: 2 },
-      { type: 'duty_assigned', targetCount: 1 },
+      { type: 'duty_done', targetCount: 1 },
       { type: 'reminder', targetCount: 1 },
     ],
   },
