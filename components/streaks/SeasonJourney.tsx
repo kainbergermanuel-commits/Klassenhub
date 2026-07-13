@@ -29,7 +29,7 @@ export default function SeasonJourney({ season, pct, target }: Props) {
         <div className="absolute left-0 right-0 h-1 rounded-full bg-[#E4DCC9] top-1/2 -translate-y-1/2" />
         <div
           className="absolute left-0 h-1 rounded-full bg-gradient-to-r from-[#B8721E] to-[#F5C842] top-1/2 -translate-y-1/2 transition-all duration-700"
-          style={{ width: `${(activeStage / (theme.stages.length - 1)) * 100}%` }}
+          style={{ width: `${((activeStage + 0.5) / theme.stages.length) * 100}%` }}
         />
         {theme.stages.map((stage, i) => {
           const reached = i <= activeStage

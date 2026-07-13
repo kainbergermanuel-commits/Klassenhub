@@ -2,16 +2,24 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSeasonTheme } from '@/lib/seasonTheme'
+import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { chooseQuestPath } from '@/app/actions/chooseQuestPath'
 import { weeklyFocusTag } from '@/lib/quests'
 import { QUEST_FOCUS_LABELS } from '@/lib/questVault'
+import Avatar from '@/components/ui/Avatar'
 import type { QuestResult } from '@/lib/quests'
+import type { Guild, GuildMember, GuildQuestResult } from '@/lib/guilds'
 
 interface Props {
   quests: QuestResult[]
   weekStart: string
   season: string
+  /** Guide-Portrait neben dem Titel zeigen. Auf der Startseite aus, weil
+   *  dort `StoryHeroCard` das Guide-Bild schon groß zeigt. */
+  showGuidePortrait?: boolean
+  /** Kooperative Gilden-Quest — wird als eigener Block unter den Solo-Quests
+   *  gezeigt (früher eigene Card). Kooperation innerhalb, kein Innen-Vergleich. */
+  guildSection?: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
 }
 
 function ChoiceButtons({ questKey, weekStart, choices }: { questKey: string; weekStart: string; choices: NonNullable<QuestResult['template']['choices']> }) {
@@ -45,17 +53,26 @@ function ChoiceButtons({ questKey, weekStart, choices }: { questKey: string; wee
   )
 }
 
-export default function WeeklyQuestCard({ quests, weekStart, season }: Props) {
-  if (quests.length === 0) return null
+export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePortrait = true, guildSection }: Props) {
+  if (quests.length === 0 && !guildSection) return null
   const theme = getSeasonTheme(season)
   const focus = weeklyFocusTag(weekStart)
+  const portrait = showGuidePortrait ? GUIDE_PORTRAIT[theme.icon] : undefined
+  const guildNarrative = guildSection ? guildSection.quest.template.narrative.replace('{guide}', theme.guide) : ''
 
   return (
     <div className="kh-card p-5">
       <div className="flex items-center gap-2 mb-1">
         <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>
         <h2 className="font-extrabold text-base text-kh-dark">Wochen-Quests</h2>
-        <span className="text-[12px] font-semibold text-kh-muted ml-auto">{theme.guide}</span>
+        <span className="flex items-center gap-1.5 ml-auto">
+          {portrait && (
+            <span className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-white shadow-[0_2px_6px_rgba(20,40,45,.18)]">
+              <img src={portrait} alt="" className="absolute top-0 left-1/2 -translate-x-1/2 h-[430%] w-auto max-w-none" />
+            </span>
+          )}
+          <span className="text-[12px] font-semibold text-kh-muted">{theme.guide}</span>
+        </span>
       </div>
       <div className="mb-3">
         <span className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-kh-teal bg-kh-teal/10 px-2 py-0.5 rounded-full">
@@ -65,7 +82,7 @@ export default function WeeklyQuestCard({ quests, weekStart, season }: Props) {
       </div>
 
       <div className="flex flex-col gap-2.5">
-        {quests.map(q => {
+        {quests.length > 0 && quests.map(q => {
           // Nach einer Wahlpfad-Entscheidung zeigt die Anleitung des GEWÄHLTEN
           // Pfads (nicht mehr den allgemeinen "wähle deinen Weg"-Text) —
           // sonst sieht man nach der Wahl nicht mehr, was zu tun ist.
@@ -115,6 +132,42 @@ export default function WeeklyQuestCard({ quests, weekStart, season }: Props) {
             </div>
           )
         })}
+
+        {guildSection && (
+          <div className="mt-1 rounded-xl border border-kh-violet/20 bg-kh-violet/[0.06] px-3 py-2.5">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="msym text-[16px] text-kh-violet" style={{ fontVariationSettings: "'FILL' 1" }}>diversity_3</span>
+              <span className="text-[10.5px] font-bold uppercase tracking-wide text-kh-violet">Gilde</span>
+              <span className="font-extrabold text-[13px] text-kh-dark ml-0.5">{guildSection.guild.name}</span>
+              <span className="flex items-center -space-x-1.5 ml-auto flex-shrink-0">
+                {guildSection.members.map(m => (
+                  <span key={m.id} title={m.full_name} className="ring-2 ring-white rounded-full">
+                    <Avatar name={m.full_name} color={m.avatar_color} seed={m.avatar_seed} hairColor={m.avatar_hair_color} skinColor={m.avatar_skin_color} size={22} />
+                  </span>
+                ))}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className={`msym text-[18px] flex-shrink-0 ${guildSection.quest.done ? 'text-kh-green' : 'text-kh-muted/50'}`}
+                style={{ fontVariationSettings: `'FILL' ${guildSection.quest.done ? 1 : 0}` }}
+              >
+                {guildSection.quest.done ? 'task_alt' : 'radio_button_unchecked'}
+              </span>
+              <span className="font-semibold text-[14px] text-kh-dark flex-1 truncate">{guildSection.quest.template.title}</span>
+              <span className="text-[11px] font-bold text-kh-muted flex-shrink-0">{guildSection.quest.membersMet}/{guildSection.quest.total}</span>
+            </div>
+            <p className="text-[12px] text-kh-muted mt-1 pl-[26px]">{guildNarrative}</p>
+            <div className="mt-2 pl-[26px] flex gap-1">
+              {Array.from({ length: guildSection.quest.total }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 flex-1 rounded-full ${i < guildSection.quest.membersMet ? 'bg-kh-violet' : 'bg-kh-border/50'}`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

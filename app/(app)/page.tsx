@@ -3,12 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO } from '@/lib/date'
-import { computeStreak, currentMilestone, groupFrozenByStudent } from '@/lib/streak'
+import { computeStreak, currentMilestone, findBreakingHomework, groupFrozenByStudent } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
 import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestContext, type QuestResult } from '@/lib/quests'
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
-import type { GuildMember } from '@/components/home/GuildQuestCard'
+import type { GuildMember } from '@/lib/guilds'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
@@ -150,13 +150,13 @@ export default async function HomePage() {
 
     const doneIds = new Set((completions ?? []).map(c => c.homework_id))
     const homeworkWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: doneIds.has(h.id) }))
-    const hwOpenCount = homeworkWithStatus.filter(h => !h.done).length
 
     const studentIdsS = (allStudents ?? []).map(s => s.id)
     const { data: freezesS } = studentIdsS.length > 0
-      ? await supabase.from('streak_freezes').select('student_id,homework_id').in('student_id', studentIdsS)
+      ? await supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIdsS)
       : { data: [] }
     const frozenByStudentS = groupFrozenByStudent(freezesS ?? [])
+    const freezeUsedThisSeasonS = new Set((freezesS ?? []).filter(f => f.created_at.slice(0, 7) === currentSeason).map(f => f.student_id))
 
     const reminderIds = upcomingReminders.map(r => r.id)
     const myViewedIds: string[] = []
@@ -171,21 +171,8 @@ export default async function HomePage() {
     // Eigener Streak: sofort sichtbar (auch unbestätigt)
     const streak = computeStreak(doneIds, allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
 
-    let myDutyPartners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] = []
-    if (myDuty) {
-      const { data: partners } = await supabase
-        .from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color')
-        .in('id', myDuty.assignee_ids.filter((id: string) => id !== user.id))
-      myDutyPartners = (partners ?? []).map(p => ({
-        full_name: p.full_name,
-        avatar_color: p.avatar_color ?? '#0F8A82',
-        avatar_seed: p.avatar_seed ?? null,
-        avatar_hair_color: p.avatar_hair_color ?? null,
-        avatar_skin_color: p.avatar_skin_color ?? null,
-      }))
-    }
-
-    // Streak leaderboard for all students (nur eltern-bestätigte Streaks)
+    // Alle Erledigungen der Klasse (nur eltern-bestätigte) — Basis für eigenen
+    // Streak, Gilden-Aggregation und Social-Proof-Nudge weiter unten.
     const allHwIds = (allHwForStreak ?? []).map(h => h.id)
     const { data: allCompletionsStudent } = allHwIds.length > 0
       ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
@@ -202,6 +189,10 @@ export default async function HomePage() {
     const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
     const actualMs = currentMilestone(streak)
     const pendingMilestone = streak >= 5 && actualMs > currentMilestone(confirmedStreak) ? actualMs : null
+
+    const broken = findBreakingHomework(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id)) !== null
+    const jokerUsedThisSeason = freezeUsedThisSeasonS.has(user.id)
+    const jokerAvailable = broken && !jokerUsedThisSeason
 
     // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────
     const weekStart = dutyWeekStart
@@ -335,14 +326,14 @@ export default async function HomePage() {
         userId={user.id}
         classId={activeClassId}
         allHomework={homeworkWithStatus}
-        hwOpenCount={hwOpenCount}
-        hwTotal={homeworkWithStatus.length}
         reminders={upcomingReminders}
         myViewedIds={myViewedIds}
         upcomingEvents={upcomingEvents}
-        myDuty={myDuty ? { name: myDuty.duty_name, partners: myDutyPartners } : null}
         streak={streak}
         confirmedStreak={confirmedStreak}
+        broken={broken}
+        jokerAvailable={jokerAvailable}
+        jokerUsedThisSeason={jokerUsedThisSeason}
         pendingMilestone={pendingMilestone}
         classGoal={classGoal}
         classGoalDone={classGoalDoneValue}

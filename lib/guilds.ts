@@ -10,6 +10,16 @@ export interface Guild {
   memberIds: string[]
 }
 
+/** Anzeige-Daten eines Gildenmitglieds (für Avatare in der Quest-Card). */
+export interface GuildMember {
+  id: string
+  full_name: string
+  avatar_color: string
+  avatar_seed: string | null
+  avatar_hair_color: string | null
+  avatar_skin_color: string | null
+}
+
 const GUILD_NAMES = [
   'Die Flammenwächter',
   'Die Wegfinder',

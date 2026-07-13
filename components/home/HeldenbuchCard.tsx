@@ -1,5 +1,6 @@
-import { flameCount, MILESTONES } from '@/lib/streak'
+import { MILESTONES, flameCount, VETERAN_MILESTONE } from '@/lib/streak'
 import { getSeasonTheme } from '@/lib/seasonTheme'
+import StreakEmblem from './StreakEmblem'
 import type { AchievementCounts } from '@/lib/achievements'
 
 interface Milestone {
@@ -10,19 +11,27 @@ interface Milestone {
 interface Props {
   streak: number
   confirmedStreak: number
+  broken: boolean
+  jokerAvailable: boolean
+  jokerUsedThisSeason: boolean
+  pendingMilestone: number | null
   milestones: Milestone[]
   season: string
   achievementCounts: AchievementCounts
+  /** Schild-Emblem (Streak-Joker) anzeigen. Auf der Abenteuer-Seite aus, weil
+   *  der Schild dort als Item im Rucksack lebt — sonst doppelt. */
+  showEmblem?: boolean
 }
 
 /** Private Rückschau auf die eigene Reise — bewusst kein Vergleich mit
  *  anderen Schüler:innen (siehe Gamification-Plan: "Konzept bleibt,
- *  Vergleich geht"). Füllt die Sidebar-Lücke der entfernten StreakLeaderCard. */
-export default function HeldenbuchCard({ streak, confirmedStreak, milestones, season, achievementCounts }: Props) {
+ *  Vergleich geht"). Füllt die Sidebar-Lücke der entfernten StreakLeaderCard.
+ *  Der Streak selbst lebt hier nur noch als stilles Emblem, kein Banner mehr. */
+export default function HeldenbuchCard({ streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, milestones, season, achievementCounts, showEmblem = true }: Props) {
   const theme = getSeasonTheme(season)
-  const flames = flameCount(confirmedStreak)
   const nextMilestone = MILESTONES.find(m => m > confirmedStreak)
   const totalAchievements = achievementCounts.quest + achievementCounts.guild_quest + achievementCounts.class_goal
+  const flames = flameCount(confirmedStreak)
 
   return (
     <div className="kh-card p-5">
@@ -32,13 +41,18 @@ export default function HeldenbuchCard({ streak, confirmedStreak, milestones, se
       </div>
 
       <div className="flex items-center gap-3 mb-3">
-        <div className="flex items-center flex-shrink-0">
-          {flames > 0
-            ? Array.from({ length: flames }).map((_, i) => (
-                <img key={i} src="/flame.svg" alt="" className="w-6 h-6" style={{ marginLeft: i === 0 ? 0 : '-7px' }} />
-              ))
-            : <span className="msym text-[24px] text-kh-muted/40" style={{ fontVariationSettings: "'FILL' 0" }}>local_fire_department</span>}
-        </div>
+        {showEmblem && (
+          <StreakEmblem streak={streak} broken={broken} jokerAvailable={jokerAvailable} jokerUsedThisSeason={jokerUsedThisSeason} pendingMilestone={pendingMilestone} />
+        )}
+        {flames > 0 ? (
+          <div className="flex items-center flex-shrink-0">
+            {Array.from({ length: flames }).map((_, i) => (
+              <img key={i} src="/flame.svg" alt="" className="w-7 h-7" style={{ marginLeft: i === 0 ? 0 : '-8px' }} />
+            ))}
+          </div>
+        ) : !showEmblem ? (
+          <span className="msym text-[28px] text-kh-muted/40 flex-shrink-0" style={{ fontVariationSettings: "'FILL' 0" }}>local_fire_department</span>
+        ) : null}
         <div>
           <p className="font-extrabold text-[15px] text-kh-dark leading-tight">{streak} HÜ in Folge</p>
           {nextMilestone && (
@@ -69,12 +83,22 @@ export default function HeldenbuchCard({ streak, confirmedStreak, milestones, se
           {theme.guide}: Noch keine Meilensteine — die ersten 5 HÜ in Folge warten auf dich.
         </p>
       ) : (
-        <div className="flex flex-col gap-1.5">
-          {milestones.slice(0, 5).map(m => (
-            <div key={m.milestone} className="flex items-center gap-2 rounded-lg bg-[#FAF8F3] px-2.5 py-1.5">
-              <span className="msym text-[14px] text-kh-amber flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
-              <span className="text-[12px] font-semibold text-kh-dark flex-1">{m.milestone} HÜ in Folge</span>
-              <span className="text-[10.5px] text-kh-muted flex-shrink-0">
+        <div className="rounded-lg bg-[#FAF8F3] px-3 py-1">
+          {milestones.slice(0, 6).map(m => (
+            <div
+              key={`${m.milestone}-${m.confirmed_at}`}
+              className="flex items-center gap-2 py-1.5 border-b border-kh-border/40 last:border-0"
+            >
+              <span className="msym text-[13px] text-kh-amber flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
+              <span className="text-[12px] font-semibold text-kh-dark">{m.milestone} HÜ in Folge</span>
+              {/* Leise Item-Notiz: Meilenstein 15 schaltet das Meistersiegel frei */}
+              {m.milestone === VETERAN_MILESTONE && (
+                <span className="text-[10px] font-bold text-kh-amber/80 flex items-center gap-0.5">
+                  <span className="msym text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                  Meistersiegel
+                </span>
+              )}
+              <span className="text-[10.5px] text-kh-muted ml-auto flex-shrink-0">
                 {new Date(m.confirmed_at).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })}
               </span>
             </div>

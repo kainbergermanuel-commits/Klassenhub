@@ -1,13 +1,12 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO, lastDayOfMonthISO, lastDayOfPrevMonthISO, firstDayOfPrevMonthISO, firstDayOfMonthISO, daysUntil, getRelevantMondayOfWeek, addDaysISO } from '@/lib/date'
+import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework } from '@/lib/streak'
 import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateKeys, type QuestContext, type QuestResult } from '@/lib/quests'
 import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
-import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
-import type { GuildMember } from '@/components/home/GuildQuestCard'
-import { collectAchievements } from '@/lib/achievements'
+import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult, type GuildMember } from '@/lib/guilds'
+import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import StreakOverview from '@/components/streaks/StreakOverview'
 import type { RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 
@@ -22,24 +21,16 @@ export default async function StreaksPage() {
   // länger erhalten bleiben. TODO(live): vor Go-Live wieder auf lastDayOfMonthISO()
   // (= aktueller Monat) zurücksetzen.
   const monthEnd = lastDayOfMonthISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1))
-  const prevMonthEnd = lastDayOfPrevMonthISO()
-  const prevMonthStart = firstDayOfPrevMonthISO()
-  const daysLeft = daysUntil(monthEnd) + 1 // +1: endet zu Mitternacht des letzten Tags
 
   const currentSeason = today.slice(0, 7) // 'YYYY-MM', unabhängig vom Test-Hack
 
   const [
     { data: students },
     { data: allHwDesc },
-    { data: confirmations },
     { data: classGoal },
   ] = await Promise.all([
     supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
     supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).order('due_date', { ascending: false }),
-    supabase.from('streak_confirmations').select('student_id,milestone,confirmed_by,confirmed_at').in(
-      'student_id',
-      (await supabase.from('profiles').select('id').eq('class_id', activeClassId).eq('role', 'student')).data?.map(s => s.id) ?? []
-    ),
     supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
   ])
 
@@ -106,10 +97,16 @@ export default async function StreaksPage() {
 
   // ─── DEIN STREAK (nur für eingeloggten Schüler) ──────────────────────────────
   let myStreak: { streak: number; broken: boolean; jokerAvailable: boolean; jokerUsedThisSeason: boolean } | null = null
+  let myActualStreak = 0
+  let myPendingMilestone: number | null = null
   if (profile.role === 'student') {
+    const myOwnDoneIds = doneByStudent.get(profile.id) ?? new Set<string>()
     const myConfirmedIds = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const myFrozenIds = frozenByStudent.get(profile.id)
+    myActualStreak = computeStreak(myOwnDoneIds, allHwDesc ?? [], today, myFrozenIds)
     const myDisplayStreak = computeStreak(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds)
+    const actualMs = currentMilestone(myActualStreak)
+    myPendingMilestone = myActualStreak >= 5 && actualMs > currentMilestone(myDisplayStreak) ? actualMs : null
     const broken = findBreakingHomework(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds) !== null
     const jokerUsedThisSeason = freezeUsedThisSeasonByStudent.has(profile.id)
     const jokerAvailable = broken && !jokerUsedThisSeason
@@ -231,6 +228,34 @@ export default async function StreaksPage() {
     }
   }
 
+  // ─── HELDENBUCH (eigene Meilensteine + Erfolge, keine Klasse-Ansicht) ────────
+  let myHeldenbuch: {
+    streak: number
+    confirmedStreak: number
+    broken: boolean
+    jokerAvailable: boolean
+    jokerUsedThisSeason: boolean
+    pendingMilestone: number | null
+    milestones: { milestone: number; confirmed_at: string }[]
+    achievementCounts: AchievementCounts
+  } | null = null
+  if (profile.role === 'student' && myStreak) {
+    const [{ data: myMilestones }, { data: myAchievements }] = await Promise.all([
+      supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', profile.id).order('confirmed_at', { ascending: false }),
+      supabase.from('achievements').select('kind').eq('student_id', profile.id),
+    ])
+    myHeldenbuch = {
+      streak: myActualStreak,
+      confirmedStreak: myStreak.streak,
+      broken: myStreak.broken,
+      jokerAvailable: myStreak.jokerAvailable,
+      jokerUsedThisSeason: myStreak.jokerUsedThisSeason,
+      pendingMilestone: myPendingMilestone,
+      milestones: myMilestones ?? [],
+      achievementCounts: countAchievements(myAchievements ?? []),
+    }
+  }
+
   // ─── SPIELLEITER-REGIE (nur Lehrer): Wochen-Quests sehen & tauschen ──────────
   let teacherRegie: { activeQuests: RegieQuest[]; allTemplates: { key: string; title: string }[]; isOverride: boolean } | null = null
   if (profile.role === 'teacher') {
@@ -250,65 +275,18 @@ export default async function StreaksPage() {
     }
   }
 
-  // ─── VORMONAT-RANGLISTE ──────────────────────────────────────────────────────
-  const prevMonthHw = (allHwDesc ?? []).filter(h => h.due_date >= prevMonthStart && h.due_date <= prevMonthEnd)
-  const prevMonthHwIds = prevMonthHw.map(h => h.id)
-  let prevRace: Array<{ id: string; full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null; streak: number }> = []
-  if (prevMonthHwIds.length > 0) {
-    const { data: prevCompletions } = await supabase
-      .from('homework_completions').select('homework_id,student_id').in('homework_id', prevMonthHwIds)
-    const doneByStudentPrev = new Map<string, Set<string>>()
-    for (const c of prevCompletions ?? []) {
-      if (!doneByStudentPrev.has(c.student_id)) doneByStudentPrev.set(c.student_id, new Set())
-      doneByStudentPrev.get(c.student_id)!.add(c.homework_id)
-    }
-    prevRace = (students ?? [])
-      .map(s => ({
-        id: s.id,
-        full_name: s.full_name,
-        avatar_color: s.avatar_color ?? '#0F8A82',
-        avatar_seed: s.avatar_seed ?? null,
-        avatar_hair_color: s.avatar_hair_color ?? null,
-        avatar_skin_color: s.avatar_skin_color ?? null,
-        streak: computeStreak(doneByStudentPrev.get(s.id) ?? new Set(), prevMonthHw, prevMonthEnd),
-      }))
-      .filter(s => s.streak > 0)
-      .sort((a, b) => b.streak - a.streak)
-  }
-
-  // Sort: by streak desc
-  const withStreak = studentData
-    .filter(s => s.streak > 0)
-    .sort((a, b) => b.streak - a.streak)
+  const withStreak = studentData.filter(s => s.streak > 0)
   const noStreak = studentData.filter(s => s.streak === 0)
-
-  // Group confirmed milestones by month (for history section)
-  const milestoneHistory: Record<string, Array<{ studentName: string; milestone: number; confirmed_at: string }>> = {}
-  for (const c of confirmations ?? []) {
-    const student = (students ?? []).find(s => s.id === c.student_id)
-    if (!student) continue
-    const month = c.confirmed_at.slice(0, 7) // "2026-06"
-    if (!milestoneHistory[month]) milestoneHistory[month] = []
-    milestoneHistory[month].push({
-      studentName: student.full_name,
-      milestone: c.milestone,
-      confirmed_at: c.confirmed_at,
-    })
-  }
 
   return (
     <StreakOverview
       role={profile.role}
       withStreak={withStreak}
       noStreak={noStreak}
-      milestoneHistory={milestoneHistory}
-      daysLeft={daysLeft}
-      prevRace={prevRace}
-      prevMonthLabel={prevMonthEnd.slice(0, 7)}
       classGoal={classGoal ? { target: classGoal.target, reward: classGoal.reward } : null}
       classGoalDone={classGoalConfirmedDone}
       currentSeason={currentSeason}
-      myStreak={myStreak}
+      myHeldenbuch={myHeldenbuch}
       quests={questsForMe}
       questWeekStart={weekStart}
       teacherRegie={teacherRegie}

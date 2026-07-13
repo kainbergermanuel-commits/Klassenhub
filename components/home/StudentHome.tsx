@@ -1,17 +1,12 @@
-import FeatureCard from './FeatureCard'
-import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
-import StreakBanner from './StreakBanner'
-import ClassGoalBadge from './ClassGoalBadge'
+import StoryHeroCard from './StoryHeroCard'
 import WeeklyQuestCard from './WeeklyQuestCard'
 import HeldenbuchCard from './HeldenbuchCard'
-import GuildQuestCard, { type GuildMember } from './GuildQuestCard'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { QuestResult } from '@/lib/quests'
-import type { Guild, GuildQuestResult } from '@/lib/guilds'
+import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { AchievementCounts } from '@/lib/achievements'
-import { dutyIcon } from '@/lib/dutyIcon'
 import { greeting } from '@/lib/date'
 
 interface StudentHomeProps {
@@ -19,14 +14,14 @@ interface StudentHomeProps {
   userId: string
   classId: string
   allHomework: HomeworkWithStatus[]
-  hwOpenCount: number
-  hwTotal: number
   reminders: Reminder[]
   myViewedIds: string[]
   upcomingEvents: AgendaEvent[]
-  myDuty: { name: string; partners: { full_name: string; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] } | null
   streak: number
   confirmedStreak: number
+  broken: boolean
+  jokerAvailable: boolean
+  jokerUsedThisSeason: boolean
   pendingMilestone: number | null
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
@@ -41,57 +36,35 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, hwOpenCount, hwTotal, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection, achievementCounts,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection, achievementCounts,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
-  const hwDone = hwTotal - hwOpenCount
-
-  // Duty week day pills
-  const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
-  const now = new Date()
-  const nowDay = now.getDay() // 0=Sun,1=Mon,...
-  const nowMins = now.getHours() * 60 + now.getMinutes()
-  const DONE_MINS = 13 * 60 + 35
-  const dutyDayFooter = myDuty ? (
-    <div className="flex gap-1.5">
-      {DAYS.map((label, i) => {
-        const weekDay = i + 1 // Mon=1...Fri=5
-        const isDone = nowDay > weekDay || (nowDay === weekDay && nowMins >= DONE_MINS)
-        const isToday = nowDay === weekDay
-        return (
-          <div
-            key={label}
-            className="flex-1 rounded-lg py-1 flex items-center justify-center"
-            style={{ background: isDone ? 'rgba(255,255,255,0.08)' : isToday ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.15)' }}
-          >
-            <span className="text-[10px] font-bold" style={{ color: isDone ? 'rgba(255,255,255,0.35)' : 'white' }}>{label}</span>
-          </div>
-        )
-      })}
-    </div>
-  ) : null
 
   return (
     <>
-      <header className="mb-6 grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
-        <div>
-          <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
-            <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
-              <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
-            </div>
-            <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">{greeting()}, {firstName}!</h1>
+      <header className="mb-6">
+        <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
+          <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
+            <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
           </div>
-          <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
+          <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">{greeting()}, {firstName}!</h1>
         </div>
-        <ClassGoalBadge goal={classGoal} done={classGoalDone} season={season} />
+        <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
       </header>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6 mx-auto w-full">
-          {/* Wochen-Quests */}
+          {/* Story-Hero: Etappe, Guide-Text, Maskottchen-Platzhalter */}
+          {/* relative z-20: eigener Stacking-Context durch animate-card-enter (transform in
+              fill-mode 'both'), sonst würden Tooltips/Vala-Überstand von Karten darunter verdeckt */}
+          <div className="relative z-20 animate-card-enter" style={{ animationDelay: '30ms' }}>
+            <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} />
+          </div>
+
+          {/* Wochen-Quests (inkl. Gilden-Quest als Block) */}
           <div className="animate-card-enter" style={{ animationDelay: '60ms' }}>
-            <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} />
+            <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} showGuidePortrait={false} guildSection={guildSection} />
           </div>
 
           {socialProofPct !== null && (
@@ -102,44 +75,6 @@ export default function StudentHome({
               </p>
             </div>
           )}
-
-          {guildSection && (
-            <div className="animate-card-enter" style={{ animationDelay: '105ms' }}>
-              <GuildQuestCard guild={guildSection.guild} members={guildSection.members} quest={guildSection.quest} season={season} />
-            </div>
-          )}
-
-          {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
-          <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
-            {[
-              <FeatureCard
-                href="/hausaufgaben" gradient="amber" icon="assignment"
-                title="Hausübungen"
-                meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
-                progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
-              />,
-              <FeatureCard
-                href="/dienste" gradient="violet" icon={myDuty ? dutyIcon(myDuty.name) : 'cleaning_services'}
-                title={myDuty ? `Dienst: ${myDuty.name}` : 'Dienste'}
-                meta={myDuty
-                  ? (myDuty.partners.length > 0 ? `mit ${myDuty.partners.map(p => p.full_name.split(' ')[0]).join(', ')}` : 'Diese Woche · Mo–Fr')
-                  : 'Diese Woche kein Dienst'}
-                people={myDuty?.partners}
-                peopleInline
-                footer={dutyDayFooter}
-              />,
-              <TermineCard events={upcomingEvents} />,
-            ].map((card, i) => (
-              <div key={i} className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: `${i * 60}ms` }}>
-                {card}
-              </div>
-            ))}
-          </div>
-
-          {/* Streak */}
-          <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-            <StreakBanner streak={streak} confirmedStreak={confirmedStreak} pendingMilestone={pendingMilestone} season={season} />
-          </div>
 
           {/* Open homework — all, sorted by urgency */}
           <div className="animate-card-enter" style={{ animationDelay: '240ms' }}>
@@ -153,7 +88,7 @@ export default function StudentHome({
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
             </div>
             <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} milestones={myMilestones} season={season} achievementCounts={achievementCounts} />
+              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} jokerAvailable={jokerAvailable} jokerUsedThisSeason={jokerUsedThisSeason} pendingMilestone={pendingMilestone} milestones={myMilestones} season={season} achievementCounts={achievementCounts} />
             </div>
           </div>
         </div>
