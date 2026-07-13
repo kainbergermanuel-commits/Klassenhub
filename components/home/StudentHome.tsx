@@ -3,11 +3,21 @@ import StudentOpenHomework from './StudentWeekHomework'
 import StoryHeroCard from './StoryHeroCard'
 import WeeklyQuestCard from './WeeklyQuestCard'
 import HeldenbuchCard from './HeldenbuchCard'
+import DutyModule from './DutyModule'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { QuestResult } from '@/lib/quests'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { AchievementCounts } from '@/lib/achievements'
+import type { RucksackState } from '@/components/streaks/RucksackItems'
 import { greeting } from '@/lib/date'
+
+interface DutyPartner {
+  full_name: string
+  avatar_color: string
+  avatar_seed: string | null
+  avatar_hair_color: string | null
+  avatar_skin_color: string | null
+}
 
 interface StudentHomeProps {
   fullName: string
@@ -17,8 +27,7 @@ interface StudentHomeProps {
   reminders: Reminder[]
   myViewedIds: string[]
   upcomingEvents: AgendaEvent[]
-  myDuty: { id: string; name: string } | null
-  dutyDoneThisWeek: boolean
+  myDuty: { id: string; name: string; partners: DutyPartner[]; doneWeekdays: number[] } | null
   streak: number
   confirmedStreak: number
   broken: boolean
@@ -35,10 +44,11 @@ interface StudentHomeProps {
   myMilestones: { milestone: number; confirmed_at: string }[]
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
   achievementCounts: AchievementCounts
+  rucksack: RucksackState
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, dutyDoneThisWeek, streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection, achievementCounts,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection, achievementCounts, rucksack,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -61,7 +71,7 @@ export default function StudentHome({
           {/* relative z-20: eigener Stacking-Context durch animate-card-enter (transform in
               fill-mode 'both'), sonst würden Tooltips/Vala-Überstand von Karten darunter verdeckt */}
           <div className="relative z-20 animate-card-enter" style={{ animationDelay: '30ms' }}>
-            <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} myDuty={myDuty} dutyDoneThisWeek={dutyDoneThisWeek} />
+            <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} />
           </div>
 
           {/* Wochen-Quests (inkl. Gilden-Quest als Block) */}
@@ -89,8 +99,13 @@ export default function StudentHome({
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
             </div>
-            <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
-              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} jokerAvailable={jokerAvailable} jokerUsedThisSeason={jokerUsedThisSeason} pendingMilestone={pendingMilestone} milestones={myMilestones} season={season} achievementCounts={achievementCounts} />
+            {myDuty && (
+              <div className="animate-card-enter" style={{ animationDelay: '150ms' }}>
+                <DutyModule dutyId={myDuty.id} dutyName={myDuty.name} partners={myDuty.partners} doneWeekdays={myDuty.doneWeekdays} />
+              </div>
+            )}
+            <div className="relative z-10 animate-card-enter" style={{ animationDelay: '180ms' }}>
+              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} jokerAvailable={jokerAvailable} jokerUsedThisSeason={jokerUsedThisSeason} pendingMilestone={pendingMilestone} milestones={myMilestones} season={season} achievementCounts={achievementCounts} rucksack={rucksack} />
             </div>
           </div>
         </div>

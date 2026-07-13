@@ -273,7 +273,7 @@ export type Database = {
       }
       duty_completions: {
         Row: DutyCompletion
-        Insert: { duty_id: string; student_id: string; completed_at?: string }
+        Insert: { duty_id: string; student_id: string; weekday: number; completed_at?: string }
         Update: Partial<DutyCompletion>
         Relationships: []
       }
@@ -374,6 +374,7 @@ export type QuestChoiceRow = {
 export type DutyCompletion = {
   duty_id: string
   student_id: string
+  weekday: number // 1=Mo … 5=Fr
   completed_at: string
 }
 

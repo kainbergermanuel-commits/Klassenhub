@@ -1,6 +1,8 @@
 import { MILESTONES, flameCount, VETERAN_MILESTONE } from '@/lib/streak'
 import { getSeasonTheme } from '@/lib/seasonTheme'
 import StreakEmblem from './StreakEmblem'
+import RucksackButton from '@/components/streaks/RucksackButton'
+import type { RucksackState } from '@/components/streaks/RucksackItems'
 import type { AchievementCounts } from '@/lib/achievements'
 
 interface Milestone {
@@ -21,23 +23,33 @@ interface Props {
   /** Schild-Emblem (Streak-Joker) anzeigen. Auf der Abenteuer-Seite aus, weil
    *  der Schild dort als Item im Rucksack lebt — sonst doppelt. */
   showEmblem?: boolean
+  /** Rucksack-Zugang als Icon+Overlay im Header. Nur setzen, wo keine volle
+   *  Rucksack-Card daneben steht (Startseite) — auf `/streaks` = null. */
+  rucksack?: RucksackState | null
 }
 
 /** Private Rückschau auf die eigene Reise — bewusst kein Vergleich mit
  *  anderen Schüler:innen (siehe Gamification-Plan: "Konzept bleibt,
  *  Vergleich geht"). Füllt die Sidebar-Lücke der entfernten StreakLeaderCard.
- *  Der Streak selbst lebt hier nur noch als stilles Emblem, kein Banner mehr. */
-export default function HeldenbuchCard({ streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, milestones, season, achievementCounts, showEmblem = true }: Props) {
+ *
+ *  Kohärenz der Kennzahlen: alles Sichtbare fußt auf dem ELTERN-BESTÄTIGTEN
+ *  Streak (`confirmedStreak`) — das ist der verdiente, flammen-tragende Wert.
+ *  Der (höhere) unbestätigte Streak wird nur als "warten auf Bestätigung"
+ *  ausgewiesen, damit große Zahl, Flammen und "nächster Meilenstein" nie
+ *  widersprüchlich sind (früher: "12 in Folge · nächster bei 10"). */
+export default function HeldenbuchCard({ streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, milestones, season, achievementCounts, showEmblem = true, rucksack = null }: Props) {
   const theme = getSeasonTheme(season)
   const nextMilestone = MILESTONES.find(m => m > confirmedStreak)
   const totalAchievements = achievementCounts.quest + achievementCounts.guild_quest + achievementCounts.class_goal
   const flames = flameCount(confirmedStreak)
+  const pending = Math.max(0, streak - confirmedStreak)
 
   return (
     <div className="kh-card p-5">
       <div className="flex items-center gap-2 mb-3">
         <span className="msym text-[19px] text-kh-amber" style={{ fontVariationSettings: "'FILL' 1" }}>auto_stories</span>
         <h2 className="font-extrabold text-base text-kh-dark">Dein Heldenbuch</h2>
+        {rucksack && <span className="ml-auto"><RucksackButton state={rucksack} /></span>}
       </div>
 
       <div className="flex items-center gap-3 mb-3">
@@ -54,10 +66,12 @@ export default function HeldenbuchCard({ streak, confirmedStreak, broken, jokerA
           <span className="msym text-[28px] text-kh-muted/40 flex-shrink-0" style={{ fontVariationSettings: "'FILL' 0" }}>local_fire_department</span>
         ) : null}
         <div>
-          <p className="font-extrabold text-[15px] text-kh-dark leading-tight">{streak} HÜ in Folge</p>
-          {nextMilestone && (
+          <p className="font-extrabold text-[15px] text-kh-dark leading-tight">{confirmedStreak} HÜ in Folge</p>
+          {pending > 0 ? (
+            <p className="text-[11.5px] text-kh-muted font-medium">+{pending} {pending === 1 ? 'wartet' : 'warten'} auf Bestätigung</p>
+          ) : nextMilestone ? (
             <p className="text-[11.5px] text-kh-muted font-medium">Nächster Meilenstein bei {nextMilestone}</p>
-          )}
+          ) : null}
         </div>
       </div>
 

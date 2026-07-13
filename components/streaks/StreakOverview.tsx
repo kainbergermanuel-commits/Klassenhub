@@ -83,15 +83,17 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
               showEmblem={false}
             />
             <RucksackCard
-              broken={myHeldenbuch.broken}
-              jokerAvailable={myHeldenbuch.jokerAvailable}
-              jokerUsedThisSeason={myHeldenbuch.jokerUsedThisSeason}
-              veteranEarned={myHeldenbuch.milestones.some(m => m.milestone >= VETERAN_MILESTONE)}
-              confirmedStreak={myHeldenbuch.confirmedStreak}
-              totalAchievements={myHeldenbuch.achievementCounts.quest + myHeldenbuch.achievementCounts.guild_quest + myHeldenbuch.achievementCounts.class_goal}
-              guildName={guildSection?.guild.name ?? null}
-              parentConfirmStreak={myHeldenbuch.confirmedStreak}
-              nextStepHint={quests.find(q => !q.done)?.template.title ?? null}
+              state={{
+                broken: myHeldenbuch.broken,
+                jokerAvailable: myHeldenbuch.jokerAvailable,
+                jokerUsedThisSeason: myHeldenbuch.jokerUsedThisSeason,
+                veteranEarned: myHeldenbuch.milestones.some(m => m.milestone >= VETERAN_MILESTONE),
+                confirmedStreak: myHeldenbuch.confirmedStreak,
+                totalAchievements: myHeldenbuch.achievementCounts.quest + myHeldenbuch.achievementCounts.guild_quest + myHeldenbuch.achievementCounts.class_goal,
+                guildName: guildSection?.guild.name ?? null,
+                parentConfirmStreak: myHeldenbuch.confirmedStreak,
+                nextStepHint: quests.find(q => !q.done)?.template.title ?? null,
+              }}
             />
           </div>
         )}

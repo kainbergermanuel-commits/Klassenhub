@@ -3,12 +3,13 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO } from '@/lib/date'
-import { computeStreak, currentMilestone, findBreakingHomework, groupFrozenByStudent } from '@/lib/streak'
+import { computeStreak, currentMilestone, findBreakingHomework, groupFrozenByStudent, VETERAN_MILESTONE } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
 import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestContext, type QuestResult } from '@/lib/quests'
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
 import type { GuildMember } from '@/lib/guilds'
+import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
@@ -171,10 +172,24 @@ export default async function HomePage() {
     // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
     const dutyIds = duties.map(d => d.id)
     const { data: dutyCompletionsRaw } = dutyIds.length > 0
-      ? await supabase.from('duty_completions').select('duty_id,student_id').in('duty_id', dutyIds)
+      ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', dutyIds)
       : { data: [] }
-    const dutyDoneByStudent = new Set((dutyCompletionsRaw ?? []).map(c => c.student_id))
-    const dutyDoneThisWeek = !!myDuty && dutyDoneByStudent.has(user.id)
+    const { doneByDutyStudent, keptUpStudents } = buildDutyDone(duties, dutyCompletionsRaw ?? [])
+    const dutyDoneThisWeek = !!myDuty && keptUpStudents.has(user.id)
+    const myDutyDoneWeekdays = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, user.id) : []
+
+    // Dienst-Partner (übrige zugeteilte Kinder) für das Dienst-Modul — aus den
+    // bereits geladenen Klassen-Profilen, keine neue Query.
+    const myDutyPartnerIds = myDuty ? myDuty.assignee_ids.filter((id: string) => id !== user.id) : []
+    const myDutyPartners = (allStudents ?? [])
+      .filter(s => myDutyPartnerIds.includes(s.id))
+      .map(s => ({
+        full_name: s.full_name,
+        avatar_color: s.avatar_color ?? '#0F8A82',
+        avatar_seed: s.avatar_seed ?? null,
+        avatar_hair_color: s.avatar_hair_color ?? null,
+        avatar_skin_color: s.avatar_skin_color ?? null,
+      }))
 
     // Eigener Streak: sofort sichtbar (auch unbestätigt)
     const streak = computeStreak(doneIds, allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
@@ -290,7 +305,7 @@ export default async function HomePage() {
           weekHomeworkIds: weekHw.map(h => h.id),
           doneByStudent: doneByStudentAll,
           confirmedByStudent: confirmedByStudentAll,
-          dutyDoneByStudent,
+          dutyDoneByStudent: keptUpStudents,
         })
         const members: GuildMember[] = (allStudents ?? [])
           .filter(s => myGuild.memberIds.includes(s.id))
@@ -327,6 +342,18 @@ export default async function HomePage() {
     const { data: allMyAchievements } = await supabase.from('achievements').select('kind').eq('student_id', user.id)
     const achievementCounts = countAchievements(allMyAchievements ?? [])
 
+    const rucksack = {
+      broken,
+      jokerAvailable,
+      jokerUsedThisSeason,
+      veteranEarned: (myMilestones ?? []).some(m => m.milestone >= VETERAN_MILESTONE),
+      confirmedStreak,
+      totalAchievements: achievementCounts.quest + achievementCounts.guild_quest + achievementCounts.class_goal,
+      guildName: guildSection?.guild.name ?? null,
+      parentConfirmStreak: confirmedStreak,
+      nextStepHint: quests.find(q => !q.done)?.template.title ?? null,
+    }
+
     return (
       <StudentHome
         fullName={profile.full_name}
@@ -336,8 +363,7 @@ export default async function HomePage() {
         reminders={upcomingReminders}
         myViewedIds={myViewedIds}
         upcomingEvents={upcomingEvents}
-        myDuty={myDuty ? { id: myDuty.id, name: myDuty.duty_name } : null}
-        dutyDoneThisWeek={dutyDoneThisWeek}
+        myDuty={myDuty ? { id: myDuty.id, name: myDuty.duty_name, partners: myDutyPartners, doneWeekdays: myDutyDoneWeekdays } : null}
         streak={streak}
         confirmedStreak={confirmedStreak}
         broken={broken}
@@ -353,6 +379,7 @@ export default async function HomePage() {
         myMilestones={myMilestones ?? []}
         guildSection={guildSection}
         achievementCounts={achievementCounts}
+        rucksack={rucksack}
       />
     )
   }

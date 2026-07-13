@@ -6,6 +6,7 @@ import { computeStreak, currentMilestone, findBreakingHomework } from '@/lib/str
 import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateKeys, type QuestContext, type QuestResult } from '@/lib/quests'
 import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult, type GuildMember } from '@/lib/guilds'
+import { buildDutyDone } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import StreakOverview from '@/components/streaks/StreakOverview'
 import type { RegieQuest } from '@/components/streaks/TeacherQuestRegie'
@@ -147,10 +148,10 @@ export default async function StreaksPage() {
     // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
     const weekDutyIds = (weekDuty ?? []).map(d => d.id)
     const { data: dutyCompletionsRaw } = weekDutyIds.length > 0
-      ? await supabase.from('duty_completions').select('duty_id,student_id').in('duty_id', weekDutyIds)
+      ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', weekDutyIds)
       : { data: [] }
-    const dutyDoneByStudent = new Set((dutyCompletionsRaw ?? []).map(c => c.student_id))
-    const dutyDoneThisWeek = dutyDoneByStudent.has(profile.id)
+    const { keptUpStudents } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
+    const dutyDoneThisWeek = keptUpStudents.has(profile.id)
 
     const weekHw = (allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
     const dueByHwId = new Map((allHwDesc ?? []).map(h => [h.id, h.due_date]))
@@ -201,7 +202,7 @@ export default async function StreaksPage() {
           weekHomeworkIds: weekHw.map(h => h.id),
           doneByStudent,
           confirmedByStudent: confirmedDoneByStudent,
-          dutyDoneByStudent,
+          dutyDoneByStudent: keptUpStudents,
         })
         const members: GuildMember[] = (students ?? [])
           .filter(s => myGuild.memberIds.includes(s.id))
