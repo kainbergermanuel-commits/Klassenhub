@@ -91,7 +91,7 @@ export default function StoryHeroCard({ season, classGoal, classGoalDone, quests
           <img
             src={portrait}
             alt={theme.guide}
-            className="absolute -top-3 left-[-6px] w-[110%] h-[calc(100%+12px)] sm:-top-6 sm:left-[-14px] sm:w-[122%] sm:h-[calc(100%+24px)] object-contain object-bottom"
+            className="absolute -top-5 left-[-6px] w-[110%] h-[calc(100%+20px)] sm:-top-9 sm:left-[-14px] sm:w-[122%] sm:h-[calc(100%+36px)] object-contain object-bottom"
           />
         </div>
 
