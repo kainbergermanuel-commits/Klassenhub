@@ -165,49 +165,72 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
         {/* Nav */}
         <nav className={`flex flex-col gap-0.5 flex-1 ${collapsed ? 'px-2' : 'px-3.5'}`}>
           {navItems.map(item => {
-            const active = pathname === item.href
+            const onStreaksFamily = item.href === '/streaks' && pathname.startsWith('/streaks')
+            const active = pathname === item.href || onStreaksFamily
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                className={`group relative flex items-center gap-3 py-2.5 rounded-xl overflow-hidden transition-all duration-200 ${
-                  collapsed ? 'justify-center px-2' : 'px-3.5'
-                } ${
-                  active
-                    ? 'text-kh-dark shadow-sm'
-                    : 'text-kh-muted hover:bg-[#EDEDEC] hover:-translate-y-[2.5px] hover:shadow-sm'
-                }`}
-                style={active ? { background: 'linear-gradient(to bottom right, #C2E6DF 0%, #E4F3F0 100%)' } : undefined}
-              >
-                {active && (
-                  <span className="absolute left-0 top-0 bottom-0 w-[3.8px]" style={{ background: 'linear-gradient(to top, #0F8A82 0%, #3DB5AC 100%)' }} />
-                )}
-                <span
-                  className={`msym text-[20.5px] transition-all duration-200 flex-shrink-0 ${
-                    active ? '' : 'text-[#9AA6A7] group-hover:text-[#6E7E80]'
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
+                  className={`group relative flex items-center gap-3 py-2.5 rounded-xl overflow-hidden transition-all duration-200 ${
+                    collapsed ? 'justify-center px-2' : 'px-3.5'
+                  } ${
+                    active
+                      ? 'text-kh-dark shadow-sm'
+                      : 'text-kh-muted hover:bg-[#EDEDEC] hover:-translate-y-[2.5px] hover:shadow-sm'
                   }`}
-                  style={{
-                    fontVariationSettings: `'FILL' ${active ? 1 : 0}`,
-                    color: active ? '#0F8A82' : undefined,
-                  }}
+                  style={active ? { background: 'linear-gradient(to bottom right, #C2E6DF 0%, #E4F3F0 100%)' } : undefined}
                 >
-                  {item.icon}
-                </span>
-                {!collapsed && (
-                  <span className={`flex-1 text-[14px] ${active ? 'font-bold' : 'font-semibold'}`}>
-                    {item.label}
+                  {active && (
+                    <span className="absolute left-0 top-0 bottom-0 w-[3.8px]" style={{ background: 'linear-gradient(to top, #0F8A82 0%, #3DB5AC 100%)' }} />
+                  )}
+                  <span
+                    className={`msym text-[20.5px] transition-all duration-200 flex-shrink-0 ${
+                      active ? '' : 'text-[#9AA6A7] group-hover:text-[#6E7E80]'
+                    }`}
+                    style={{
+                      fontVariationSettings: `'FILL' ${active ? 1 : 0}`,
+                      color: active ? '#0F8A82' : undefined,
+                    }}
+                  >
+                    {item.icon}
                   </span>
+                  {!collapsed && (
+                    <span className={`flex-1 text-[14px] ${active ? 'font-bold' : 'font-semibold'}`}>
+                      {item.label}
+                    </span>
+                  )}
+                  {!collapsed && item.badge ? (
+                    <span className="min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center gradient-amber text-white shadow-[0_2px_6px_rgba(201,138,43,.4)]">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                  {collapsed && item.badge ? (
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-kh-amber" />
+                  ) : null}
+                </Link>
+
+                {/* Aufklappbares Untermenü: "Die Reise" nur sichtbar, solange man
+                    auf einer /streaks-Seite ist. */}
+                {!collapsed && onStreaksFamily && (
+                  <Link
+                    href="/streaks/reise"
+                    className={`flex items-center gap-2.5 py-2 pl-[42px] pr-3.5 rounded-xl text-[13px] transition-colors ${
+                      pathname === '/streaks/reise'
+                        ? 'text-kh-teal font-bold'
+                        : 'text-kh-muted hover:text-kh-dark hover:bg-[#EDEDEC] font-semibold'
+                    }`}
+                  >
+                    <span
+                      className="msym text-[16px] flex-shrink-0"
+                      style={{ fontVariationSettings: `'FILL' ${pathname === '/streaks/reise' ? 1 : 0}` }}
+                    >
+                      map
+                    </span>
+                    Die Reise
+                  </Link>
                 )}
-                {!collapsed && item.badge ? (
-                  <span className="min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center gradient-amber text-white shadow-[0_2px_6px_rgba(201,138,43,.4)]">
-                    {item.badge}
-                  </span>
-                ) : null}
-                {collapsed && item.badge ? (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-kh-amber" />
-                ) : null}
-              </Link>
+              </div>
             )
           })}
         </nav>

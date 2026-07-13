@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getSeasonTheme, currentStageIndex } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 
@@ -21,9 +22,15 @@ export default function SeasonJourney({ season, pct, target }: Props) {
         </div>
       )}
 
-      <p className="relative text-[11.5px] font-bold text-kh-muted uppercase tracking-wide mb-4">
-        {theme.name} · Etappe {activeStage + 1} von {theme.stages.length}
-      </p>
+      <div className="relative flex items-center justify-between mb-4">
+        <p className="text-[11.5px] font-bold text-kh-muted uppercase tracking-wide">
+          {theme.name} · Etappe {activeStage + 1} von {theme.stages.length}
+        </p>
+        <Link href="/streaks/reise" className="text-[11.5px] font-bold text-kh-teal hover:opacity-70 transition-opacity flex items-center gap-1 flex-shrink-0">
+          Die Reise
+          <span className="msym text-[14px]">chevron_right</span>
+        </Link>
+      </div>
 
       <div className="relative flex items-center">
         <div className="absolute left-0 right-0 h-1 rounded-full bg-[#E4DCC9] top-1/2 -translate-y-1/2" />

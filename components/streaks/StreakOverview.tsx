@@ -8,6 +8,7 @@ import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
 import TeacherQuestRegie, { type RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 import { VETERAN_MILESTONE } from '@/lib/streak'
+import { getSeasonTheme } from '@/lib/seasonTheme'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 
 interface StudentStreak {
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, teacherRegie, guildSection }: Props) {
+  const theme = getSeasonTheme(currentSeason)
   return (
     <>
       <header className="mb-6 flex items-center gap-3.5">
@@ -54,7 +56,7 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
         <div className="min-w-0">
           <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Abenteuer</h1>
           <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">
-            Klassenreise &amp; Streaks · {withStreak.length} aktive Streaks
+            {theme.name} · Begleitet von {theme.guide}
           </p>
         </div>
       </header>

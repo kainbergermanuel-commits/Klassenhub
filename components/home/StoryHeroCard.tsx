@@ -84,12 +84,14 @@ export default function StoryHeroCard({ season, classGoal, classGoalDone, quests
           )}
         </div>
 
-        {/* Guide-Portrait — nimmt den linken Bereich der Card ein, Kopf ragt bewusst über den Kartenrand */}
-        <div className="relative z-10 w-[42%] min-w-[130px] max-w-[220px] flex-shrink-0 self-stretch pointer-events-none">
+        {/* Guide-Portrait — nimmt den linken Bereich der Card ein, Kopf ragt bewusst über den Kartenrand.
+            Min-/Max-Breite + Überstand auf Mobile kleiner, sonst nimmt Vala auf schmalen
+            Screens proportional zu viel Platz ein und drängt Text/Pillen in den Umbruch. */}
+        <div className="relative z-10 w-[38%] min-w-[92px] max-w-[160px] sm:w-[42%] sm:min-w-[130px] sm:max-w-[220px] flex-shrink-0 self-stretch pointer-events-none">
           <img
             src={portrait}
             alt={theme.guide}
-            className="absolute -top-6 left-[-14px] w-[122%] h-[calc(100%+24px)] object-contain object-bottom"
+            className="absolute -top-3 left-[-6px] w-[110%] h-[calc(100%+12px)] sm:-top-6 sm:left-[-14px] sm:w-[122%] sm:h-[calc(100%+24px)] object-contain object-bottom"
           />
         </div>
 
