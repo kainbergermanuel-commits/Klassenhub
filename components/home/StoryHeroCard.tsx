@@ -40,7 +40,7 @@ export default function StoryHeroCard({ season, classGoal, classGoalDone, quests
     : ''
 
   const pills = (
-    <div className="relative px-5 pb-4 pt-1 flex flex-wrap justify-end gap-1.5">
+    <div className="relative px-5 pb-4 pt-1 hidden sm:flex flex-wrap justify-end gap-1.5">
       {classGoal && (
         <Pill icon={theme.icon} iconColor="#B9791A" label={`${pct}% Ziel`}>
           <TooltipHead>Klassenziel</TooltipHead>
@@ -85,13 +85,12 @@ export default function StoryHeroCard({ season, classGoal, classGoalDone, quests
         </div>
 
         {/* Guide-Portrait — nimmt den linken Bereich der Card ein, Kopf ragt bewusst über den Kartenrand.
-            Min-/Max-Breite + Überstand auf Mobile kleiner, sonst nimmt Vala auf schmalen
-            Screens proportional zu viel Platz ein und drängt Text/Pillen in den Umbruch. */}
-        <div className="relative z-10 w-[38%] min-w-[92px] max-w-[160px] sm:w-[42%] sm:min-w-[130px] sm:max-w-[220px] flex-shrink-0 self-stretch pointer-events-none">
+            Auf Mobile kleiner + weiter oben (keine Pillen-Reihe dort, die Platz bräuchte). */}
+        <div className="relative z-10 w-[32%] min-w-[80px] max-w-[140px] sm:w-[42%] sm:min-w-[130px] sm:max-w-[220px] flex-shrink-0 self-stretch pointer-events-none">
           <img
             src={portrait}
             alt={theme.guide}
-            className="absolute -top-3 left-[-6px] w-[110%] h-[calc(100%+12px)] sm:-top-6 sm:left-[-14px] sm:w-[122%] sm:h-[calc(100%+24px)] object-contain object-bottom"
+            className="absolute -top-7 left-[-6px] w-[100%] h-[calc(100%+28px)] sm:-top-6 sm:left-[-14px] sm:w-[122%] sm:h-[calc(100%+24px)] object-contain object-bottom"
           />
         </div>
 

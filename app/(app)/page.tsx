@@ -175,8 +175,8 @@ export default async function HomePage() {
       ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', dutyIds)
       : { data: [] }
     const { doneByDutyStudent, keptUpStudents } = buildDutyDone(duties, dutyCompletionsRaw ?? [])
-    const dutyDoneThisWeek = !!myDuty && keptUpStudents.has(user.id)
     const myDutyDoneWeekdays = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, user.id) : []
+    const dutyDoneCount = myDutyDoneWeekdays.length
 
     // Dienst-Partner (übrige zugeteilte Kinder) für das Dienst-Modul — aus den
     // bereits geladenen Klassen-Profilen, keine neue Query.
@@ -246,9 +246,6 @@ export default async function HomePage() {
       .filter(e => e.start_date >= weekStart && e.start_date <= weekEnd)
       .filter(e => !e.target_student_ids || e.target_student_ids.includes(user.id))
       .map(e => e.id)
-    const myFrozenIds = frozenByStudentS.get(user.id) ?? new Set<string>()
-    const streakHeldThisWeek = weekHw.every(h => doneIds.has(h.id) || myFrozenIds.has(h.id))
-
     const questCtx: QuestContext = {
       weekStart,
       weekEnd,
@@ -259,8 +256,8 @@ export default async function HomePage() {
       weekReminderIds,
       viewedReminderIds: new Set(myViewedIds),
       weekEventIds,
-      dutyDoneThisWeek,
-      streakHeldThisWeek,
+      dutyDoneCount,
+      currentStreakLength: streak,
     }
     const quests: QuestResult[] = activeQuestKeys
       .map(key => findQuestTemplate(key))

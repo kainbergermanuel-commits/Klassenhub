@@ -87,8 +87,12 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
           // Pfads (nicht mehr den allgemeinen "wähle deinen Weg"-Text) —
           // sonst sieht man nach der Wahl nicht mehr, was zu tun ist.
           const narrative = (q.chosenChoice ? q.chosenChoice.narrative : q.template.narrative).replace('{guide}', theme.guide)
+          const isMeister = q.template.tier === 'meister'
           return (
-            <div key={q.template.key} className="rounded-xl bg-[#FAF8F3] px-3 py-2.5">
+            <div
+              key={q.template.key}
+              className={`rounded-xl px-3 py-2.5 ${isMeister ? 'bg-kh-amber/[0.07] border border-kh-amber/25' : 'bg-[#FAF8F3]'}`}
+            >
               <div className="flex items-center gap-2">
                 <span
                   className={`msym text-[18px] flex-shrink-0 ${q.done ? 'text-kh-green' : 'text-kh-muted/50'}`}
@@ -97,6 +101,12 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
                   {q.done ? 'task_alt' : 'radio_button_unchecked'}
                 </span>
                 <span className="font-semibold text-[14px] text-kh-dark truncate">{q.template.title}</span>
+                {isMeister && (
+                  <span className="flex items-center gap-0.5 text-[9.5px] font-extrabold text-kh-amber bg-kh-amber/15 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    <span className="msym text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
+                    Meister
+                  </span>
+                )}
                 {q.chosenChoice && (
                   <span className="text-[10px] font-bold text-kh-teal bg-kh-teal/10 px-2 py-0.5 rounded-full flex-shrink-0">
                     {q.chosenChoice.label}

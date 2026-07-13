@@ -48,6 +48,10 @@ export interface QuestTemplate {
   signals?: QuestSignal[]
   /** Wahlpfad: genau ein gewählter Pfad zählt. Nicht kombinierbar mit `signals`. */
   choices?: QuestChoice[]
+  /** 'meister' = spürbar anspruchsvoller (mehrtägig/hohe Hürde), eigene
+   *  Kennzeichnung in der UI. Fehlt das Feld, gilt 'standard'. Beide Stufen
+   *  landen im selben Vorrat/Rotation — kein separates Freischalt-System. */
+  tier?: 'standard' | 'meister'
 }
 
 export const QUEST_VAULT: QuestTemplate[] = [
@@ -75,16 +79,16 @@ export const QUEST_VAULT: QuestTemplate[] = [
   {
     key: 'duty_done',
     title: 'Dienst der Woche',
-    narrative: '{guide} zählt auf dich: dein Dienst diese Woche.',
+    narrative: '{guide} zählt auf dich: bestätige deinen Dienst an 3 Tagen diese Woche.',
     focusTag: 'verantwortung',
-    signals: [{ type: 'duty_done', targetCount: 1 }],
+    signals: [{ type: 'duty_done', targetCount: 3 }],
   },
   {
     key: 'streak_hold',
     title: 'Flamme am Leben halten',
-    narrative: '{guide} passt auf deine Flamme auf — halte deinen Streak diese Woche.',
+    narrative: '{guide} passt auf deine Flamme auf — halte deine Streak 3 Tage in Folge.',
     focusTag: 'ausdauer',
-    signals: [{ type: 'streak_hold', targetCount: 1 }],
+    signals: [{ type: 'streak_hold', targetCount: 3 }],
   },
   {
     key: 'parent_ally',
@@ -100,9 +104,17 @@ export const QUEST_VAULT: QuestTemplate[] = [
     focusTag: 'verantwortung',
     signals: [
       { type: 'homework', targetCount: 2 },
-      { type: 'duty_done', targetCount: 1 },
+      { type: 'duty_done', targetCount: 2 },
       { type: 'reminder', targetCount: 1 },
     ],
+  },
+  {
+    key: 'meister_ausdauer',
+    title: 'Meisterhafte Ausdauer',
+    narrative: '{guide} ist beeindruckt: 5 Tage in Folge, ohne eine einzige Hausübung zu vergessen.',
+    focusTag: 'ausdauer',
+    tier: 'meister',
+    signals: [{ type: 'streak_hold', targetCount: 5 }],
   },
   {
     key: 'vorbereitung_wahlpfad',

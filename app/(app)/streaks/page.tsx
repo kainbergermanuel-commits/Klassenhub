@@ -6,7 +6,7 @@ import { computeStreak, currentMilestone, findBreakingHomework } from '@/lib/str
 import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateKeys, type QuestContext, type QuestResult } from '@/lib/quests'
 import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult, type GuildMember } from '@/lib/guilds'
-import { buildDutyDone } from '@/lib/duty'
+import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import StreakOverview from '@/components/streaks/StreakOverview'
 import type { RegieQuest } from '@/components/streaks/TeacherQuestRegie'
@@ -150,15 +150,17 @@ export default async function StreaksPage() {
     const { data: dutyCompletionsRaw } = weekDutyIds.length > 0
       ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', weekDutyIds)
       : { data: [] }
-    const { keptUpStudents } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
-    const dutyDoneThisWeek = keptUpStudents.has(profile.id)
+    const { doneByDutyStudent, keptUpStudents } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
+    const myDuties = (weekDuty ?? []).filter(d => d.assignee_ids.includes(profile.id))
+    const dutyDoneCount = myDuties.length > 0
+      ? Math.max(...myDuties.map(d => dutyDoneWeekdays(doneByDutyStudent, d.id, profile.id).length))
+      : 0
 
     const weekHw = (allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
     const dueByHwId = new Map((allHwDesc ?? []).map(h => [h.id, h.due_date]))
     const myDoneIds = doneByStudent.get(profile.id) ?? new Set<string>()
     const myConfirmedIds = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const myFrozenIds = frozenByStudent.get(profile.id) ?? new Set<string>()
-    const streakHeldThisWeek = weekHw.every(h => myDoneIds.has(h.id) || myFrozenIds.has(h.id))
     const earlyHomeworkIds = new Set(
       (allCompletions ?? [])
         .filter(c => c.student_id === profile.id)
@@ -182,8 +184,8 @@ export default async function StreaksPage() {
       weekReminderIds,
       viewedReminderIds: new Set((myViews ?? []).map(v => v.reminder_id)),
       weekEventIds,
-      dutyDoneThisWeek,
-      streakHeldThisWeek,
+      dutyDoneCount,
+      currentStreakLength: myActualStreak,
     }
 
     questsForMe = activeQuestKeys
