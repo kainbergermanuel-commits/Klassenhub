@@ -4,21 +4,16 @@
 
 function MountainArt() {
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {/* Fixe Höhe statt volle Kartenhöhe: sonst zeigt object-cover bei
-          wachsender (schmaler/hoher) Karte zwangsläufig das ganze Foto von
-          oben bis unten — der plane Himmel oben nimmt dann proportional immer
-          mehr Platz ein ("Streifen"). Stattdessen an den oberen Rand geheftet,
-          darunter läuft der Verlauf in die Kartenfarbe aus. */}
+    <div className="absolute inset-0 w-full h-full">
       <img
         src="/images/season-mountain.webp"
         alt=""
-        className="absolute top-0 left-0 right-0 h-[150px] sm:h-[190px] w-full object-cover"
-        style={{ opacity: 0.55, objectPosition: 'left top' }}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: 0.55, objectPosition: 'left calc(50% + 10px)' }}
       />
       <div
         className="absolute inset-0"
-        style={{ background: 'linear-gradient(180deg, rgba(239,234,224,0.05) 0%, rgba(239,234,224,0.35) 90px, #FAF8F3 150px, #FAF8F3 100%)' }}
+        style={{ background: 'linear-gradient(180deg, rgba(239,234,224,0.05) 0%, rgba(239,234,224,0.4) 55%, #FAF8F3 100%)' }}
       />
     </div>
   )
