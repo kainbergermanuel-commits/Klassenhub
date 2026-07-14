@@ -295,7 +295,8 @@ export default async function HomePage() {
           confirmedByStudentAll.get(c.student_id)!.add(c.homework_id)
         }
       }
-      const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart))
+      const guildFeasibility = { hasWeekHomework: weekHw.length > 0, hasWeekDuty: duties.length > 0 }
+      const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart, guildFeasibility))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
           weekHomeworkIds: weekHw.map(h => h.id),
@@ -335,13 +336,17 @@ export default async function HomePage() {
       // Statistik, das Ergebnis wird bewusst nicht geprüft/geworfen.
       await supabase.from('achievements').upsert(newAchievements as never, { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true })
     }
-    const [{ data: allMyAchievements }, { data: myNudgesToday }] = await Promise.all([
+    const [{ data: allMyAchievements }, { data: recentNudges }] = await Promise.all([
       supabase.from('achievements').select('kind').eq('student_id', user.id),
-      supabase.from('parent_nudges').select('id').eq('student_id', user.id).gte('created_at', `${today}T00:00:00`),
+      // Lokales Datum per String-Slice vergleichen statt DB-seitigem gte-
+      // Zeitbereich (created_at ist UTC, ein naiver "heute 00:00"-String
+      // wäre nahe Mitternacht in Europe/Vienna falsch) — siehe sendParentNudge.ts.
+      supabase.from('parent_nudges').select('created_at').eq('student_id', user.id).order('created_at', { ascending: false }).limit(5),
     ])
     const achievementCounts = countAchievements(allMyAchievements ?? [])
     const myConfirmedIdsForNudge = confirmedByStudentS.get(user.id) ?? new Set<string>()
     const pendingConfirmationCount = [...doneIds].filter(id => !myConfirmedIdsForNudge.has(id)).length
+    const nudgeSentToday = (recentNudges ?? []).some(n => n.created_at.slice(0, 10) === today)
 
     const rucksack = {
       broken,
@@ -350,7 +355,7 @@ export default async function HomePage() {
       crystalAvailable,
       crystalUsedThisSeason,
       pendingConfirmationCount,
-      nudgeSentToday: (myNudgesToday ?? []).length > 0,
+      nudgeSentToday,
       veteranEarned: (myMilestones ?? []).some(m => m.milestone >= VETERAN_MILESTONE),
       confirmedStreak,
       totalAchievements: achievementCounts.quest + achievementCounts.guild_quest + achievementCounts.class_goal,

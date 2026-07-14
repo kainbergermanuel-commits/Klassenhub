@@ -16,12 +16,20 @@ export async function sendParentNudge(): Promise<{ homeworkTitle: string }> {
   const supabase = await createClient()
   const today = todayISO()
 
-  const { data: todaysNudges } = await supabase
+  // Lokales Kalenderdatum per String-Slice vergleichen statt DB-seitigem
+  // gte-Zeitbereich — created_at ist UTC (timestamptz), ein naiver
+  // "heute 00:00"-String würde nahe Mitternacht (Europe/Vienna) falsch
+  // ausgewertet. Gleiche Konvention wie überall sonst im Projekt (z.B.
+  // streak_freezes-Season-Check via created_at.slice(0,7)).
+  const { data: recentNudges } = await supabase
     .from('parent_nudges')
-    .select('id')
+    .select('id,created_at')
     .eq('student_id', profile.id)
-    .gte('created_at', `${today}T00:00:00`)
-  if ((todaysNudges ?? []).length > 0) throw new Error('Heute schon eine Erinnerung geschickt')
+    .order('created_at', { ascending: false })
+    .limit(5)
+  if ((recentNudges ?? []).some(n => n.created_at.slice(0, 10) === today)) {
+    throw new Error('Heute schon eine Erinnerung geschickt')
+  }
 
   const { data: pending } = await supabase
     .from('homework_completions')

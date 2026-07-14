@@ -262,7 +262,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
         tooltip={
           <>
             <TipHead>Zeitkristall</TipHead>
-            <TipBody>Verlängert einmal pro Season die Frist einer HÜ um {' '}3 Tage, ohne dass deine Streak reißt — die Lehrkraft sieht die Verlängerung. Lädt sich am Monatsanfang wieder auf.</TipBody>
+            <TipBody>Verlängert einmal pro Season die Frist einer HÜ um 3 Tage, ohne dass deine Streak reißt — die Lehrkraft sieht die Verlängerung. Lädt sich am Monatsanfang wieder auf.</TipBody>
             <span className="block text-[11.5px] font-semibold mt-1.5 text-kh-muted">
               {crystalUsed ? 'Eingesetzt — Frist verlängert!'
                 : crystalState === 'action' ? 'Streak gerissen — jetzt einsetzbar.'
@@ -298,7 +298,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
             <TipBody>Schickt einen vordefinierten Hinweis an deine Eltern, wenn eine erledigte Hausübung noch auf Bestätigung wartet — höchstens einmal am Tag.</TipBody>
             <span className="block text-[11.5px] font-semibold mt-1.5 text-kh-muted">
               {nudgeSent ? `Erinnerung geschickt${nudgeTarget ? ` (${nudgeTarget})` : ''}!`
-                : nudgeState === 'action' ? `${pendingConfirmationCount} Hausübung${pendingConfirmationCount === 1 ? '' : 'en'} wartet noch auf Bestätigung.`
+                : nudgeState === 'action' ? `${pendingConfirmationCount} Hausübung${pendingConfirmationCount === 1 ? ' wartet' : 'en warten'} noch auf Bestätigung.`
                 : nudgeSpent ? 'Heute schon geschickt.'
                 : 'Gerade nichts zu erinnern.'}
             </span>

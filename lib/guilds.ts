@@ -136,15 +136,41 @@ export function findGuildQuestTemplate(key: string): GuildQuestTemplate | undefi
   return GUILD_QUEST_VAULT.find(t => t.key === key)
 }
 
+/** Klassenweite Machbarkeit für Gilden-Quests (Selbstprüfung 2026-07-14:
+ *  anders als bei Solo-Quests seit Phase 1 fehlte hier bislang jeder
+ *  Machbarkeits-Filter — in einer Woche ganz ohne fällige HÜ wären 3 der 4
+ *  Vorlagen für die GESAMTE Klasse gleichzeitig unerfüllbar gewesen, nicht
+ *  nur für ein einzelnes Kind wie beim Solo-Fall). */
+export interface GuildQuestFeasibility {
+  hasWeekHomework: boolean
+  hasWeekDuty: boolean
+}
+
+function guildTemplateFeasible(template: GuildQuestTemplate, f: GuildQuestFeasibility): boolean {
+  switch (template.signal.type) {
+    case 'homework':
+    case 'distributed_homework':
+    case 'parent_confirm':
+      return f.hasWeekHomework
+    case 'duty_done':
+      return f.hasWeekDuty
+  }
+}
+
 /** Wählt deterministisch eine Gilden-Quest pro Klasse+Woche — eigener Seed-
  *  Namensraum ("guild-…"), damit sie nicht zufällig mit der individuellen
- *  Wochen-Quest-Auswahl gleichläuft. */
-export function weeklyGuildQuestKey(classId: string, weekStart: string): string {
+ *  Wochen-Quest-Auswahl gleichläuft. `feasibility`, falls übergeben: filtert
+ *  Vorlagen heraus, die diese Woche klassenweit gar nicht erfüllbar sind
+ *  (z.B. Dienst-Quest ohne Dienste diese Woche). Fällt auf den vollen Vorrat
+ *  zurück, falls dadurch nichts übrig bliebe. */
+export function weeklyGuildQuestKey(classId: string, weekStart: string, feasibility?: GuildQuestFeasibility): string {
   const seed = `guild-${classId}-${weekStart}`
   let h = 0
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0
   h = (Math.imul(h, 1103515245) + 12345) >>> 0
-  return GUILD_QUEST_VAULT[h % GUILD_QUEST_VAULT.length].key
+  const feasibleVault = feasibility ? GUILD_QUEST_VAULT.filter(t => guildTemplateFeasible(t, feasibility)) : GUILD_QUEST_VAULT
+  const vault = feasibleVault.length > 0 ? feasibleVault : GUILD_QUEST_VAULT
+  return vault[h % vault.length].key
 }
 
 export interface GuildQuestContext {

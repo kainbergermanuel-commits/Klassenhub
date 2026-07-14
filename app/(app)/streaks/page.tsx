@@ -158,9 +158,6 @@ export default async function StreaksPage() {
     const { data: myViews } = weekReminderIds.length > 0
       ? await supabase.from('reminder_views').select('reminder_id').eq('student_id', profile.id).in('reminder_id', weekReminderIds)
       : { data: [] }
-    const weekEventIds = (weekEvents ?? [])
-      .filter(e => !e.target_student_ids || e.target_student_ids.includes(profile.id))
-      .map(e => e.id)
 
     // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
     const weekDutyIds = (weekDuty ?? []).map(d => d.id)
@@ -174,7 +171,6 @@ export default async function StreaksPage() {
       : 0
 
     const weekHw = (allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
-    const myFrozenIds = frozenByStudent.get(profile.id) ?? new Set<string>()
     const myOwnCompletions = (allCompletions ?? [])
       .filter(c => c.student_id === profile.id)
       .map(c => ({ homework_id: c.homework_id, completed_at: (c as any).completed_at ?? null }))
@@ -207,7 +203,8 @@ export default async function StreaksPage() {
     const guilds = assignGuilds(activeClassId, currentSeason, allStudentIds)
     const myGuild = findMyGuild(guilds, profile.id)
     if (myGuild) {
-      const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart))
+      const guildFeasibility = { hasWeekHomework: weekHw.length > 0, hasWeekDuty: (weekDuty ?? []).length > 0 }
+      const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart, guildFeasibility))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
           weekHomeworkIds: weekHw.map(h => h.id),
@@ -262,14 +259,17 @@ export default async function StreaksPage() {
     achievementCounts: AchievementCounts
   } | null = null
   if (profile.role === 'student' && myStreak) {
-    const [{ data: myMilestones }, { data: myAchievements }, { data: myNudgesToday }] = await Promise.all([
+    const [{ data: myMilestones }, { data: myAchievements }, { data: recentNudges }] = await Promise.all([
       supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', profile.id).order('confirmed_at', { ascending: false }),
       supabase.from('achievements').select('kind').eq('student_id', profile.id),
-      supabase.from('parent_nudges').select('id').eq('student_id', profile.id).gte('created_at', `${today}T00:00:00`),
+      // Lokales Datum per String-Slice vergleichen statt DB-seitigem gte-
+      // Zeitbereich (created_at ist UTC) — siehe sendParentNudge.ts.
+      supabase.from('parent_nudges').select('created_at').eq('student_id', profile.id).order('created_at', { ascending: false }).limit(5),
     ])
     const myOwnDoneIdsForNudge = doneByStudent.get(profile.id) ?? new Set<string>()
     const myConfirmedIdsForNudge = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const pendingConfirmationCount = [...myOwnDoneIdsForNudge].filter(id => !myConfirmedIdsForNudge.has(id)).length
+    const nudgeSentToday = (recentNudges ?? []).some(n => n.created_at.slice(0, 10) === today)
     myHeldenbuch = {
       streak: myActualStreak,
       confirmedStreak: myStreak.streak,
@@ -279,7 +279,7 @@ export default async function StreaksPage() {
       crystalAvailable: myStreak.crystalAvailable,
       crystalUsedThisSeason: myStreak.crystalUsedThisSeason,
       pendingConfirmationCount,
-      nudgeSentToday: (myNudgesToday ?? []).length > 0,
+      nudgeSentToday,
       pendingMilestone: myPendingMilestone,
       milestones: myMilestones ?? [],
       achievementCounts: countAchievements(myAchievements ?? []),
