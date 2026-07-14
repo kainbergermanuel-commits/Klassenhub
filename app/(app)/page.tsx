@@ -154,11 +154,23 @@ export default async function HomePage() {
     const homeworkWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: doneIds.has(h.id) }))
 
     const studentIdsS = (allStudents ?? []).map(s => s.id)
-    const { data: freezesS } = studentIdsS.length > 0
-      ? await supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIdsS)
-      : { data: [] }
+    const [{ data: freezesS }, { data: extensionsS }] = studentIdsS.length > 0
+      ? await Promise.all([
+          supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIdsS),
+          supabase.from('homework_extensions').select('student_id,homework_id,extra_days,created_at').in('student_id', studentIdsS),
+        ])
+      : [{ data: [] }, { data: [] }]
     const frozenByStudentS = groupFrozenByStudent(freezesS ?? [])
     const freezeUsedThisSeasonS = new Set((freezesS ?? []).filter(f => f.created_at.slice(0, 7) === currentSeason).map(f => f.student_id))
+
+    // ─── ZEITKRISTALL (HÜ-Fristverlängerung, siehe lib/streak.ts effectiveDueDate) ──
+    const extensionsByStudentS = new Map<string, Map<string, number>>()
+    const crystalUsedThisSeasonS = new Set<string>()
+    for (const e of extensionsS ?? []) {
+      if (!extensionsByStudentS.has(e.student_id)) extensionsByStudentS.set(e.student_id, new Map())
+      extensionsByStudentS.get(e.student_id)!.set(e.homework_id, e.extra_days)
+      if (e.created_at.slice(0, 7) === currentSeason) crystalUsedThisSeasonS.add(e.student_id)
+    }
 
     const reminderIds = upcomingReminders.map(r => r.id)
     const myViewedIds: string[] = []
@@ -193,7 +205,7 @@ export default async function HomePage() {
       }))
 
     // Eigener Streak: sofort sichtbar (auch unbestätigt)
-    const streak = computeStreak(doneIds, allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
+    const streak = computeStreak(doneIds, allHwForStreak ?? [], today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id))
 
     // Alle Erledigungen der Klasse (nur eltern-bestätigte) — Basis für eigenen
     // Streak, Gilden-Aggregation und Social-Proof-Nudge weiter unten.
@@ -210,13 +222,15 @@ export default async function HomePage() {
     }
     // Eigener bestätigter Streak → verdient die Flammen. Pending = eigener (actual)
     // Meilenstein liegt über dem bereits bestätigten ⇒ "warte auf Eltern".
-    const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id))
+    const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id))
     const actualMs = currentMilestone(streak)
     const pendingMilestone = streak >= 5 && actualMs > currentMilestone(confirmedStreak) ? actualMs : null
 
-    const broken = findBreakingHomework(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id)) !== null
+    const broken = findBreakingHomework(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id)) !== null
     const jokerUsedThisSeason = freezeUsedThisSeasonS.has(user.id)
     const jokerAvailable = broken && !jokerUsedThisSeason
+    const crystalUsedThisSeason = crystalUsedThisSeasonS.has(user.id)
+    const crystalAvailable = broken && !crystalUsedThisSeason
 
     // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────
     const weekStart = dutyWeekStart
@@ -321,13 +335,22 @@ export default async function HomePage() {
       // Statistik, das Ergebnis wird bewusst nicht geprüft/geworfen.
       await supabase.from('achievements').upsert(newAchievements as never, { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true })
     }
-    const { data: allMyAchievements } = await supabase.from('achievements').select('kind').eq('student_id', user.id)
+    const [{ data: allMyAchievements }, { data: myNudgesToday }] = await Promise.all([
+      supabase.from('achievements').select('kind').eq('student_id', user.id),
+      supabase.from('parent_nudges').select('id').eq('student_id', user.id).gte('created_at', `${today}T00:00:00`),
+    ])
     const achievementCounts = countAchievements(allMyAchievements ?? [])
+    const myConfirmedIdsForNudge = confirmedByStudentS.get(user.id) ?? new Set<string>()
+    const pendingConfirmationCount = [...doneIds].filter(id => !myConfirmedIdsForNudge.has(id)).length
 
     const rucksack = {
       broken,
       jokerAvailable,
       jokerUsedThisSeason,
+      crystalAvailable,
+      crystalUsedThisSeason,
+      pendingConfirmationCount,
+      nudgeSentToday: (myNudgesToday ?? []).length > 0,
       veteranEarned: (myMilestones ?? []).some(m => m.milestone >= VETERAN_MILESTONE),
       confirmedStreak,
       totalAchievements: achievementCounts.quest + achievementCounts.guild_quest + achievementCounts.class_goal,
@@ -386,13 +409,21 @@ export default async function HomePage() {
     }
 
     const studentIdsP = (allStudents ?? []).map(s => s.id)
-    const { data: freezesP } = studentIdsP.length > 0
-      ? await supabase.from('streak_freezes').select('student_id,homework_id').in('student_id', studentIdsP)
-      : { data: [] }
+    const [{ data: freezesP }, { data: extensionsP }] = studentIdsP.length > 0
+      ? await Promise.all([
+          supabase.from('streak_freezes').select('student_id,homework_id').in('student_id', studentIdsP),
+          supabase.from('homework_extensions').select('student_id,homework_id,extra_days').in('student_id', studentIdsP),
+        ])
+      : [{ data: [] }, { data: [] }]
     const frozenByStudentP = groupFrozenByStudent(freezesP ?? [])
+    const extensionsByStudentP = new Map<string, Map<string, number>>()
+    for (const e of extensionsP ?? []) {
+      if (!extensionsByStudentP.has(e.student_id)) extensionsByStudentP.set(e.student_id, new Map())
+      extensionsByStudentP.get(e.student_id)!.set(e.homework_id, e.extra_days)
+    }
 
     if (child) {
-      childStreak = computeStreak(childDoneIds, allHwForStreak, today, frozenByStudentP.get(child.id))
+      childStreak = computeStreak(childDoneIds, allHwForStreak, today, frozenByStudentP.get(child.id), extensionsByStudentP.get(child.id))
     }
 
     // Streak leaderboard (nur eltern-bestätigte Streaks) + offene HÜ-Bestätigungen
@@ -417,7 +448,7 @@ export default async function HomePage() {
     }
     // Eltern-bestätigter Streak des Kindes → verdient die Flammen (Live-Spiegel)
     const childConfirmedStreak = child
-      ? computeStreak(confirmedByStudentP.get(child.id) ?? new Set(), allHwForStreak, today, frozenByStudentP.get(child.id))
+      ? computeStreak(confirmedByStudentP.get(child.id) ?? new Set(), allHwForStreak, today, frozenByStudentP.get(child.id), extensionsByStudentP.get(child.id))
       : 0
 
     const pendingConfirmations = (pendingConfs ?? []).map((c: any) => ({

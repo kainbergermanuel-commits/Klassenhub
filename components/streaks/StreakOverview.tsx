@@ -35,6 +35,10 @@ interface Props {
     broken: boolean
     jokerAvailable: boolean
     jokerUsedThisSeason: boolean
+    crystalAvailable: boolean
+    crystalUsedThisSeason: boolean
+    pendingConfirmationCount: number
+    nudgeSentToday: boolean
     pendingMilestone: number | null
     milestones: { milestone: number; confirmed_at: string }[]
     achievementCounts: AchievementCounts
@@ -89,6 +93,10 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
                 broken: myHeldenbuch.broken,
                 jokerAvailable: myHeldenbuch.jokerAvailable,
                 jokerUsedThisSeason: myHeldenbuch.jokerUsedThisSeason,
+                crystalAvailable: myHeldenbuch.crystalAvailable,
+                crystalUsedThisSeason: myHeldenbuch.crystalUsedThisSeason,
+                pendingConfirmationCount: myHeldenbuch.pendingConfirmationCount,
+                nudgeSentToday: myHeldenbuch.nudgeSentToday,
                 veteranEarned: myHeldenbuch.milestones.some(m => m.milestone >= VETERAN_MILESTONE),
                 confirmedStreak: myHeldenbuch.confirmedStreak,
                 totalAchievements: myHeldenbuch.achievementCounts.quest + myHeldenbuch.achievementCounts.guild_quest + myHeldenbuch.achievementCounts.class_goal,

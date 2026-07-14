@@ -277,6 +277,18 @@ export type Database = {
         Update: Partial<DutyCompletion>
         Relationships: []
       }
+      homework_extensions: {
+        Row: HomeworkExtension
+        Insert: { student_id: string; homework_id: string; extra_days: number; created_at?: string }
+        Update: Partial<HomeworkExtension>
+        Relationships: []
+      }
+      parent_nudges: {
+        Row: ParentNudge
+        Insert: { student_id: string; homework_id: string; created_at?: string }
+        Update: Partial<ParentNudge>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -376,6 +388,23 @@ export type DutyCompletion = {
   student_id: string
   weekday: number // 1=Mo … 5=Fr
   completed_at: string
+}
+
+// Zeitkristall (Balance-Fahrplan Phase 3) — siehe supabase/feature-hw-extension.sql
+// + lib/streak.ts (effectiveDueDate).
+export type HomeworkExtension = {
+  student_id: string
+  homework_id: string
+  extra_days: number
+  created_at: string
+}
+
+// Botenfeder (Balance-Fahrplan Phase 3) — siehe supabase/feature-parent-nudge.sql.
+export type ParentNudge = {
+  id: string
+  student_id: string
+  homework_id: string
+  created_at: string
 }
 
 // Reines Log fürs Heldenbuch (Statistik-Zeilen) — siehe lib/achievements.ts.

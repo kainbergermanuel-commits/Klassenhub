@@ -1,17 +1,32 @@
+import { addDaysISO } from '@/lib/date'
+
+/** Effektives Fälligkeitsdatum unter Berücksichtigung einer persönlichen
+ *  Zeitkristall-Verlängerung (siehe supabase/feature-hw-extension.sql).
+ *  `extensions` bildet homework_id -> zusätzliche Tage ab — NUR für die
+ *  Hausübungen, die dieses eine Kind selbst verlängert hat (nie klassenweit). */
+export function effectiveDueDate(dueDate: string, hwId: string, extensions?: Map<string, number>): string {
+  const extraDays = extensions?.get(hwId)
+  if (!extraDays) return dueDate
+  return addDaysISO(extraDays, new Date(`${dueDate}T00:00:00`))
+}
+
 /**
  * Berechnet die Streak-Länge. `frozenIds` (Streak-Joker) überbrücken eine
  * verpasste HÜ: sie zählt nicht mit, bricht die Streak aber auch nicht.
+ * `extensions` (Zeitkristall) verschiebt das Fälligkeitsdatum EINER HÜ nach
+ * hinten, sodass sie noch gar nicht als "vergangen" gilt.
  */
 export function computeStreak(
   doneIds: Set<string>,
   allHwDesc: { id: string; due_date: string }[],
   today: string,
-  frozenIds?: Set<string>
+  frozenIds?: Set<string>,
+  extensions?: Map<string, number>
 ): number {
   let streak = 0
   let pastReached = false
   for (const hw of allHwDesc) {
-    const isPast = hw.due_date <= today
+    const isPast = effectiveDueDate(hw.due_date, hw.id, extensions) <= today
     if (isPast) pastReached = true
     if (doneIds.has(hw.id)) {
       streak++
@@ -25,18 +40,19 @@ export function computeStreak(
 }
 
 /**
- * Liefert die HÜ, an der die Streak (ohne Joker) reißen würde – also die
- * erste vergangene, nicht erledigte HÜ in absteigender Reihenfolge. `null`
- * wenn die Streak aktuell nicht gerissen ist (oder es keine HÜ gibt).
+ * Liefert die HÜ, an der die Streak (ohne Joker/Zeitkristall) reißen würde –
+ * also die erste vergangene, nicht erledigte HÜ in absteigender Reihenfolge.
+ * `null` wenn die Streak aktuell nicht gerissen ist (oder es keine HÜ gibt).
  */
 export function findBreakingHomework(
   doneIds: Set<string>,
   allHwDesc: { id: string; due_date: string }[],
   today: string,
-  frozenIds?: Set<string>
+  frozenIds?: Set<string>,
+  extensions?: Map<string, number>
 ): string | null {
   for (const hw of allHwDesc) {
-    const isPast = hw.due_date <= today
+    const isPast = effectiveDueDate(hw.due_date, hw.id, extensions) <= today
     if (!isPast) continue
     if (doneIds.has(hw.id)) continue
     if (frozenIds?.has(hw.id)) continue

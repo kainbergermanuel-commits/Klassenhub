@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStreakFreeze } from '@/app/actions/useStreakFreeze'
+import { useTimeCrystal } from '@/app/actions/useTimeCrystal'
+import { sendParentNudge } from '@/app/actions/sendParentNudge'
 import { VETERAN_MILESTONE } from '@/lib/streak'
 
 /** Alle Signale, aus denen sich der Rucksack-Zustand ergibt — bewusst rein
@@ -13,6 +15,14 @@ export interface RucksackState {
   broken: boolean
   jokerAvailable: boolean
   jokerUsedThisSeason: boolean
+  /** Zeitkristall (Balance-Fahrplan Phase 3): zweites, unabhängiges 1x/Season-
+   *  Werkzeug bei gerissener Streak — verlängert statt zu überbrücken. */
+  crystalAvailable: boolean
+  crystalUsedThisSeason: boolean
+  /** Botenfeder (Balance-Fahrplan Phase 3): kanonischer, vordefinierter
+   *  Eltern-Hinweis (kein Freitext) — max. 1x/Tag, nur wenn etwas offen ist. */
+  pendingConfirmationCount: number
+  nudgeSentToday: boolean
   veteranEarned: boolean
   confirmedStreak: number
   totalAchievements: number
@@ -34,15 +44,22 @@ const WAPPEN_TARGET = 3
 const AMULETT_TARGET = 3
 
 /** Die 8 Rucksack-Item-Kacheln (3-spaltig). Jedes Item bildet ein echtes,
- *  für alle gleich geltendes Signal ab — Zeitkristall/Botenfeder haben noch
- *  keine Mechanik und sind deshalb als "In Entwicklung" markiert. */
+ *  für alle gleich geltendes Signal ab. */
 export default function RucksackItems({ state }: { state: RucksackState }) {
-  const { broken, jokerAvailable, jokerUsedThisSeason, veteranEarned, confirmedStreak,
-    totalAchievements, guildName, parentConfirmStreak, nextStepHint } = state
+  const { broken, jokerAvailable, jokerUsedThisSeason, crystalAvailable, crystalUsedThisSeason,
+    pendingConfirmationCount, nudgeSentToday,
+    veteranEarned, confirmedStreak, totalAchievements, guildName, parentConfirmStreak, nextStepHint } = state
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState(false)
   const [used, setUsed] = useState(false)
+  const [crystalPending, startCrystalTransition] = useTransition()
+  const [crystalError, setCrystalError] = useState(false)
+  const [crystalUsed, setCrystalUsed] = useState(false)
+  const [nudgePending, startNudgeTransition] = useTransition()
+  const [nudgeError, setNudgeError] = useState(false)
+  const [nudgeSent, setNudgeSent] = useState(false)
+  const [nudgeTarget, setNudgeTarget] = useState<string | null>(null)
 
   function activateShield() {
     setError(false)
@@ -57,10 +74,47 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
     })
   }
 
+  function activateCrystal() {
+    setCrystalError(false)
+    startCrystalTransition(async () => {
+      try {
+        await useTimeCrystal()
+        setCrystalUsed(true)
+        router.refresh()
+      } catch {
+        setCrystalError(true)
+      }
+    })
+  }
+
+  function activateNudge() {
+    setNudgeError(false)
+    startNudgeTransition(async () => {
+      try {
+        const { homeworkTitle } = await sendParentNudge()
+        setNudgeTarget(homeworkTitle)
+        setNudgeSent(true)
+        router.refresh()
+      } catch {
+        setNudgeError(true)
+      }
+    })
+  }
+
   const shieldSpent = used || jokerUsedThisSeason
   const shieldState: ItemState = broken && jokerAvailable && !used
     ? 'action'
     : shieldSpent ? 'spent' : 'ready'
+
+  const crystalSpent = crystalUsed || crystalUsedThisSeason
+  const crystalState: ItemState = broken && crystalAvailable && !crystalUsed
+    ? 'action'
+    : crystalSpent ? 'spent' : 'ready'
+
+  const nudgeSpent = nudgeSent || nudgeSentToday
+  const nudgeState: ItemState = pendingConfirmationCount > 0 && !nudgeSpent
+    ? 'action'
+    : nudgeSpent ? 'spent' : 'locked'
 
   const veteranRemaining = Math.max(0, VETERAN_MILESTONE - confirmedStreak)
   const wappenEarned = totalAchievements >= WAPPEN_TARGET
@@ -194,31 +248,71 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       />
 
       <Item
-        state="locked"
-        gradient="linear-gradient(135deg, #9CA3AF, #6E7E80)"
-        dimmed
-        icon={<span className="msym text-[24px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>hourglass_empty</span>}
+        state={crystalState}
+        gradient={crystalState === 'action' ? 'linear-gradient(135deg, #C084E8, #9C5FD1)' : 'linear-gradient(135deg, #9CA3AF, #6E7E80)'}
+        dimmed={crystalState === 'spent'}
+        pulse={crystalState === 'action'}
+        icon={
+          <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2 4 8l8 14 8-14z" fill={crystalState !== 'spent' ? 'rgba(255,255,255,.22)' : 'none'} />
+            <path d="M4 8h16M9 8l3-6 3 6" />
+          </svg>
+        }
         title="Zeitkristall"
-        chipOverride={{ label: 'In Entwicklung', cls: 'text-kh-muted bg-kh-muted/12' }}
         tooltip={
           <>
             <TipHead>Zeitkristall</TipHead>
-            <TipBody>Soll später einmal eine HÜ-Frist um ein paar Tage verlängern können, ohne die Streak zu gefährden. Diese Funktion gibt es noch nicht — kommt in einer späteren Ausbaustufe.</TipBody>
+            <TipBody>Verlängert einmal pro Season die Frist einer HÜ um {' '}3 Tage, ohne dass deine Streak reißt — die Lehrkraft sieht die Verlängerung. Lädt sich am Monatsanfang wieder auf.</TipBody>
+            <span className="block text-[11.5px] font-semibold mt-1.5 text-kh-muted">
+              {crystalUsed ? 'Eingesetzt — Frist verlängert!'
+                : crystalState === 'action' ? 'Streak gerissen — jetzt einsetzbar.'
+                : crystalSpent ? 'Diese Season verbraucht.'
+                : '1 Ladung in Reserve.'}
+            </span>
+            {crystalState === 'action' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); activateCrystal() }}
+                disabled={crystalPending}
+                className="pointer-events-auto mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#C084E8] to-[#9C5FD1] text-white text-[11.5px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                <span className="msym text-[13px]">bolt</span>
+                Kristall einsetzen
+              </button>
+            )}
+            {crystalError && <span className="block text-[10.5px] font-semibold text-kh-red mt-1.5">Kristall konnte nicht eingesetzt werden.</span>}
           </>
         }
       />
 
       <Item
-        state="locked"
-        gradient="linear-gradient(135deg, #9CA3AF, #6E7E80)"
-        dimmed
+        state={nudgeState}
+        gradient={nudgeState === 'action' ? 'linear-gradient(135deg, #F0A868, #D97B3D)' : 'linear-gradient(135deg, #9CA3AF, #6E7E80)'}
+        dimmed={nudgeState !== 'action'}
+        pulse={nudgeState === 'action'}
         icon={<span className="msym text-[24px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>mail</span>}
         title="Botenfeder"
-        chipOverride={{ label: 'In Entwicklung', cls: 'text-kh-muted bg-kh-muted/12' }}
+        chipOverride={nudgeState === 'locked' ? { label: 'Nichts offen', cls: 'text-kh-muted bg-kh-muted/12' } : undefined}
         tooltip={
           <>
             <TipHead>Botenfeder</TipHead>
-            <TipBody>Soll später eine gezielte Erinnerung an die Eltern schicken können. Diese Funktion gibt es noch nicht — kommt in einer späteren Ausbaustufe.</TipBody>
+            <TipBody>Schickt einen vordefinierten Hinweis an deine Eltern, wenn eine erledigte Hausübung noch auf Bestätigung wartet — höchstens einmal am Tag.</TipBody>
+            <span className="block text-[11.5px] font-semibold mt-1.5 text-kh-muted">
+              {nudgeSent ? `Erinnerung geschickt${nudgeTarget ? ` (${nudgeTarget})` : ''}!`
+                : nudgeState === 'action' ? `${pendingConfirmationCount} Hausübung${pendingConfirmationCount === 1 ? '' : 'en'} wartet noch auf Bestätigung.`
+                : nudgeSpent ? 'Heute schon geschickt.'
+                : 'Gerade nichts zu erinnern.'}
+            </span>
+            {nudgeState === 'action' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); activateNudge() }}
+                disabled={nudgePending}
+                className="pointer-events-auto mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#F0A868] to-[#D97B3D] text-white text-[11.5px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                <span className="msym text-[13px]">send</span>
+                Erinnerung schicken
+              </button>
+            )}
+            {nudgeError && <span className="block text-[10.5px] font-semibold text-kh-red mt-1.5">Erinnerung konnte nicht geschickt werden.</span>}
           </>
         }
       />

@@ -37,9 +37,12 @@ export default async function StreaksPage() {
   ])
 
   const studentIds = (students ?? []).map(s => s.id)
-  const { data: allFreezes } = studentIds.length > 0
-    ? await supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIds)
-    : { data: [] }
+  const [{ data: allFreezes }, { data: allExtensions }] = studentIds.length > 0
+    ? await Promise.all([
+        supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIds),
+        supabase.from('homework_extensions').select('student_id,homework_id,extra_days,created_at').in('student_id', studentIds),
+      ])
+    : [{ data: [] }, { data: [] }]
 
   const frozenByStudent = new Map<string, Set<string>>()
   const freezeUsedThisSeasonByStudent = new Set<string>()
@@ -47,6 +50,15 @@ export default async function StreaksPage() {
     if (!frozenByStudent.has(f.student_id)) frozenByStudent.set(f.student_id, new Set())
     frozenByStudent.get(f.student_id)!.add(f.homework_id)
     if (f.created_at.slice(0, 7) === currentSeason) freezeUsedThisSeasonByStudent.add(f.student_id)
+  }
+
+  // ─── ZEITKRISTALL (HÜ-Fristverlängerung, siehe lib/streak.ts effectiveDueDate) ──
+  const extensionsByStudent = new Map<string, Map<string, number>>()
+  const crystalUsedThisSeasonByStudent = new Set<string>()
+  for (const e of allExtensions ?? []) {
+    if (!extensionsByStudent.has(e.student_id)) extensionsByStudent.set(e.student_id, new Map())
+    extensionsByStudent.get(e.student_id)!.set(e.homework_id, e.extra_days)
+    if (e.created_at.slice(0, 7) === currentSeason) crystalUsedThisSeasonByStudent.add(e.student_id)
   }
 
   const allHwIds = (allHwDesc ?? []).map(h => h.id)
@@ -78,8 +90,9 @@ export default async function StreaksPage() {
     const doneIds = doneByStudent.get(s.id) ?? new Set<string>()
     const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
     const frozenIds = frozenByStudent.get(s.id)
-    const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today, frozenIds)
-    const displayStreak = computeStreak(confirmedIds, allHwDesc ?? [], today, frozenIds)
+    const extensions = extensionsByStudent.get(s.id)
+    const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today, frozenIds, extensions)
+    const displayStreak = computeStreak(confirmedIds, allHwDesc ?? [], today, frozenIds, extensions)
 
     // Pending: erreichter (actual) Meilenstein liegt über dem eltern-bestätigten
     const actualMilestone = currentMilestone(actualStreak)
@@ -98,21 +111,24 @@ export default async function StreaksPage() {
   })
 
   // ─── DEIN STREAK (nur für eingeloggten Schüler) ──────────────────────────────
-  let myStreak: { streak: number; broken: boolean; jokerAvailable: boolean; jokerUsedThisSeason: boolean } | null = null
+  let myStreak: { streak: number; broken: boolean; jokerAvailable: boolean; jokerUsedThisSeason: boolean; crystalAvailable: boolean; crystalUsedThisSeason: boolean } | null = null
   let myActualStreak = 0
   let myPendingMilestone: number | null = null
   if (profile.role === 'student') {
     const myOwnDoneIds = doneByStudent.get(profile.id) ?? new Set<string>()
     const myConfirmedIds = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const myFrozenIds = frozenByStudent.get(profile.id)
-    myActualStreak = computeStreak(myOwnDoneIds, allHwDesc ?? [], today, myFrozenIds)
-    const myDisplayStreak = computeStreak(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds)
+    const myExtensions = extensionsByStudent.get(profile.id)
+    myActualStreak = computeStreak(myOwnDoneIds, allHwDesc ?? [], today, myFrozenIds, myExtensions)
+    const myDisplayStreak = computeStreak(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions)
     const actualMs = currentMilestone(myActualStreak)
     myPendingMilestone = myActualStreak >= 5 && actualMs > currentMilestone(myDisplayStreak) ? actualMs : null
-    const broken = findBreakingHomework(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds) !== null
+    const broken = findBreakingHomework(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions) !== null
     const jokerUsedThisSeason = freezeUsedThisSeasonByStudent.has(profile.id)
     const jokerAvailable = broken && !jokerUsedThisSeason
-    myStreak = { streak: myDisplayStreak, broken, jokerAvailable, jokerUsedThisSeason }
+    const crystalUsedThisSeason = crystalUsedThisSeasonByStudent.has(profile.id)
+    const crystalAvailable = broken && !crystalUsedThisSeason
+    myStreak = { streak: myDisplayStreak, broken, jokerAvailable, jokerUsedThisSeason, crystalAvailable, crystalUsedThisSeason }
   }
 
   // ─── QUESTS (nur für eingeloggten Schüler, siehe lib/quests.ts) ──────────────
@@ -237,21 +253,33 @@ export default async function StreaksPage() {
     broken: boolean
     jokerAvailable: boolean
     jokerUsedThisSeason: boolean
+    crystalAvailable: boolean
+    crystalUsedThisSeason: boolean
+    pendingConfirmationCount: number
+    nudgeSentToday: boolean
     pendingMilestone: number | null
     milestones: { milestone: number; confirmed_at: string }[]
     achievementCounts: AchievementCounts
   } | null = null
   if (profile.role === 'student' && myStreak) {
-    const [{ data: myMilestones }, { data: myAchievements }] = await Promise.all([
+    const [{ data: myMilestones }, { data: myAchievements }, { data: myNudgesToday }] = await Promise.all([
       supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', profile.id).order('confirmed_at', { ascending: false }),
       supabase.from('achievements').select('kind').eq('student_id', profile.id),
+      supabase.from('parent_nudges').select('id').eq('student_id', profile.id).gte('created_at', `${today}T00:00:00`),
     ])
+    const myOwnDoneIdsForNudge = doneByStudent.get(profile.id) ?? new Set<string>()
+    const myConfirmedIdsForNudge = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
+    const pendingConfirmationCount = [...myOwnDoneIdsForNudge].filter(id => !myConfirmedIdsForNudge.has(id)).length
     myHeldenbuch = {
       streak: myActualStreak,
       confirmedStreak: myStreak.streak,
       broken: myStreak.broken,
       jokerAvailable: myStreak.jokerAvailable,
       jokerUsedThisSeason: myStreak.jokerUsedThisSeason,
+      crystalAvailable: myStreak.crystalAvailable,
+      crystalUsedThisSeason: myStreak.crystalUsedThisSeason,
+      pendingConfirmationCount,
+      nudgeSentToday: (myNudgesToday ?? []).length > 0,
       pendingMilestone: myPendingMilestone,
       milestones: myMilestones ?? [],
       achievementCounts: countAchievements(myAchievements ?? []),
