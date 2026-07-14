@@ -2,16 +2,20 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { getAuth } from '@/lib/auth'
+import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, schoolYearStartISO } from '@/lib/date'
 import { computeStreak, findBreakingHomework } from '@/lib/streak'
 
 /** Setzt einen Streak-Joker ein (1× pro Season) für die HÜ, an der die
  *  Streak des eingeloggten Schülers gerade reißt. Gibt die neue Streak-Länge
- *  zurück, oder wirft, wenn kein Joker mehr verfügbar ist oder nichts zu retten ist. */
+ *  zurück, oder wirft, wenn kein Joker mehr verfügbar ist oder nichts zu retten ist.
+ *  ⚠️ Muss getEffectiveAuth() nutzen (nicht getAuth()) — sonst schlägt die
+ *  Lehrer-Vorschau-als-Schüler-Funktion mit "Unauthorized" fehl, weil dann
+ *  das echte Lehrer-Profil statt des vorgeschauten Schüler-Profils zurückkäme
+ *  (2026-07-14 live bestätigt, siehe useTimeCrystal.ts für das Vorbild-Muster). */
 export async function useStreakFreeze(): Promise<{ newStreak: number }> {
-  const { user, profile } = await getAuth()
-  if (!user || !profile || profile.role !== 'student') throw new Error('Unauthorized')
+  const { user, profile } = await getEffectiveAuth()
+  if (!user?.id || !profile || profile.role !== 'student') throw new Error('Unauthorized')
   if (!profile.class_id) throw new Error('Keine Klasse')
 
   const supabase = await createClient()
