@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework } from '@/lib/streak'
-import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateKeys, type QuestContext, type QuestResult } from '@/lib/quests'
+import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateKeys, type QuestResult } from '@/lib/quests'
+import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult, type GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
@@ -157,36 +158,28 @@ export default async function StreaksPage() {
       : 0
 
     const weekHw = (allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
-    const dueByHwId = new Map((allHwDesc ?? []).map(h => [h.id, h.due_date]))
-    const myDoneIds = doneByStudent.get(profile.id) ?? new Set<string>()
-    const myConfirmedIds = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const myFrozenIds = frozenByStudent.get(profile.id) ?? new Set<string>()
-    const earlyHomeworkIds = new Set(
-      (allCompletions ?? [])
-        .filter(c => c.student_id === profile.id)
-        .filter(c => {
-          const due = dueByHwId.get(c.homework_id)
-          return due && (c as any).completed_at && (c as any).completed_at.slice(0, 10) < due
-        })
-        .map(c => c.homework_id)
-    )
+    const myOwnCompletions = (allCompletions ?? [])
+      .filter(c => c.student_id === profile.id)
+      .map(c => ({ homework_id: c.homework_id, completed_at: (c as any).completed_at ?? null }))
 
-    const activeQuestKeys = resolveWeeklyTemplateKeys(activeClassId, weekStart, (questOverrides ?? []).map(q => q.template_key))
     const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
 
-    const questCtx: QuestContext = {
+    const questCtx = buildQuestContext({
       weekStart,
       weekEnd,
-      weekHomeworkIds: weekHw.map(h => h.id),
-      doneHomeworkIds: myDoneIds,
-      earlyHomeworkIds,
-      confirmedHomeworkIds: myConfirmedIds,
-      weekReminderIds,
+      studentId: profile.id,
+      allHomework: allHwDesc ?? [],
+      ownCompletions: myOwnCompletions,
+      confirmedHomeworkIds: confirmedDoneByStudent.get(profile.id) ?? new Set<string>(),
+      reminders: weekReminders ?? [],
       viewedReminderIds: new Set((myViews ?? []).map(v => v.reminder_id)),
-      weekEventIds,
+      events: weekEvents ?? [],
       dutyDoneCount,
       currentStreakLength: myActualStreak,
-    }
+    })
+    const feasibility = buildFeasibility(questCtx, myDuties.length > 0)
+    const activeQuestKeys = resolveWeeklyTemplateKeys(activeClassId, weekStart, (questOverrides ?? []).map(q => q.template_key), 3, feasibility)
 
     questsForMe = activeQuestKeys
       .map(key => findQuestTemplate(key))

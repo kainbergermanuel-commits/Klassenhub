@@ -70,42 +70,65 @@ export function findMyGuild(guilds: Guild[], studentId: string): Guild | undefin
 }
 
 // ─── Gilden-Quests ─────────────────────────────────────────────────────────
-// Aggregierte Version der Solo-Quests: erfüllt, wenn ALLE Gildenmitglieder
-// das Signal individuell erreichen. Bewusst ein eigener, kleiner Vorrat statt
-// Wiederverwendung von QUEST_VAULT — die Auswertung (über mehrere Schüler:innen
-// statt über eine:n) ist strukturell anders genug, um sie nicht zu vermischen.
+// V2 (Balance-Fahrplan Phase 2): zwei Familien von Signalen.
+// (a) Per-Mitglied-Signale (homework/duty_done/parent_confirm) — erfüllt,
+//     wenn ein einstellbarer ANTEIL der Gilde das Signal individuell
+//     erreicht (`minShare`, Default .75 statt vorher "alle"). Verhindert,
+//     dass ein einzelnes säumiges Kind die ganze Gilde blockiert/beschämt.
+// (b) `distributed_homework` — ein ECHT verteilter, kooperativer Zähler:
+//     die Gilde sammelt zusammen X erledigte HÜ, von mindestens Y
+//     verschiedenen Mitgliedern beigetragen. Kein Kind kann das allein
+//     tragen → erzwingt Verteilung, schummelsicher (nur echte HÜ-Signale).
+// Bewusst ein eigener, kleiner Vorrat statt Wiederverwendung von QUEST_VAULT
+// — die Auswertung (über mehrere Schüler:innen statt über eine:n) ist
+// strukturell anders genug, um sie nicht zu vermischen.
 
 export type GuildQuestSignal =
   | { type: 'homework'; targetCount: number }
   /** Dienst der Woche selbst bestätigt (nicht bloß zugeteilt), siehe duty_completions. */
   | { type: 'duty_done'; targetCount: number }
   | { type: 'parent_confirm'; targetCount: number }
+  /** Verteilter Kern: `totalCount` HÜ insgesamt, von mind. `minContributors`
+   *  verschiedenen Mitgliedern. Keine Einzelperson kann das Ziel allein
+   *  erreichen, sobald `minContributors` > 1. */
+  | { type: 'distributed_homework'; totalCount: number; minContributors: number }
 
 export interface GuildQuestTemplate {
   key: string
   title: string
   narrative: string
   signal: GuildQuestSignal
+  /** Nur für Per-Mitglied-Signale relevant: Anteil der Gilde, der das Signal
+   *  erreichen muss (0–1). Fehlt das Feld, gilt .75 — "X von Y", nicht mehr
+   *  "alle". Bei kleinen Gilden (3er) wird abgerundet, nie aufgerundet
+   *  (sonst bliebe .75 bei 3 Mitgliedern effektiv "alle 3"). */
+  minShare?: number
 }
 
 export const GUILD_QUEST_VAULT: GuildQuestTemplate[] = [
   {
     key: 'guild_hw',
     title: 'Alle an Bord',
-    narrative: '{guide}: jedes Gildenmitglied schafft diese Woche mindestens eine Hausübung.',
+    narrative: '{guide}: die meisten Gildenmitglieder schaffen diese Woche mindestens eine Hausübung.',
     signal: { type: 'homework', targetCount: 1 },
   },
   {
     key: 'guild_duty',
     title: 'Gemeinsam verantwortlich',
-    narrative: '{guide}: alle Gildenmitglieder mit Dienst diese Woche erfüllen ihn.',
+    narrative: '{guide}: die meisten Gildenmitglieder mit Dienst diese Woche erfüllen ihn.',
     signal: { type: 'duty_done', targetCount: 1 },
   },
   {
     key: 'guild_parent',
     title: 'Vertrauensbeweis',
-    narrative: '{guide}: jedes Mitglied holt sich diese Woche mindestens eine Eltern-Bestätigung.',
+    narrative: '{guide}: die meisten Mitglieder holen sich diese Woche mindestens eine Eltern-Bestätigung.',
     signal: { type: 'parent_confirm', targetCount: 1 },
+  },
+  {
+    key: 'guild_pool',
+    title: 'Gemeinsamer Vorrat',
+    narrative: '{guide}: sammelt zusammen 5 Hausübungen — von mindestens 3 verschiedenen Mitgliedern beigetragen.',
+    signal: { type: 'distributed_homework', totalCount: 5, minContributors: 3 },
   },
 ]
 
@@ -133,12 +156,41 @@ export interface GuildQuestContext {
 
 export interface GuildQuestResult {
   template: GuildQuestTemplate
+  /** Per-Mitglied-Signale: Anzahl Mitglieder, die das Signal individuell
+   *  erreichen. `distributed_homework`: Anzahl beitragender Mitglieder. */
   membersMet: number
+  /** Per-Mitglied-Signale: Gildengröße. `distributed_homework`: benötigte
+   *  Mindest-Beitragende (`minContributors`, auf Gildengröße gedeckelt). */
   total: number
   done: boolean
+  /** Nur bei `distributed_homework` gesetzt: der gemeinsame HÜ-Fortschritt
+   *  ("3 von 5 HÜ gesammelt"), zusätzlich zur Beitragenden-Zahl oben. */
+  collected?: { current: number; target: number }
 }
 
 export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: Guild, ctx: GuildQuestContext): GuildQuestResult {
+  const size = guild.memberIds.length
+
+  if (template.signal.type === 'distributed_homework') {
+    const { totalCount, minContributors } = template.signal
+    let collected = 0
+    let contributors = 0
+    for (const sid of guild.memberIds) {
+      const done = ctx.doneByStudent.get(sid) ?? new Set<string>()
+      const doneCount = ctx.weekHomeworkIds.filter(id => done.has(id)).length
+      collected += doneCount
+      if (doneCount > 0) contributors++
+    }
+    const requiredContributors = Math.min(minContributors, size)
+    return {
+      template,
+      membersMet: contributors,
+      total: requiredContributors,
+      done: size > 0 && collected >= totalCount && contributors >= requiredContributors,
+      collected: { current: collected, target: totalCount },
+    }
+  }
+
   function meetsSignal(studentId: string): boolean {
     switch (template.signal.type) {
       case 'homework': {
@@ -151,8 +203,15 @@ export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: G
         const confirmed = ctx.confirmedByStudent.get(studentId) ?? new Set<string>()
         return ctx.weekHomeworkIds.filter(id => confirmed.has(id)).length >= template.signal.targetCount
       }
+      default:
+        return false
     }
   }
   const membersMet = guild.memberIds.filter(meetsSignal).length
-  return { template, membersMet, total: guild.memberIds.length, done: guild.memberIds.length > 0 && membersMet === guild.memberIds.length }
+  // "X von Y" statt "alle" (Prinzip 1: kein einzelnes Kind blockiert/beschämt
+  // die Gilde) — abgerundet, nie aufgerundet, sonst bliebe z.B. .75 bei einer
+  // 3er-Gilde effektiv "alle 3" und die Erleichterung ginge verloren.
+  const minShare = template.minShare ?? 0.75
+  const required = size > 0 ? Math.max(1, Math.floor(size * minShare)) : 0
+  return { template, membersMet, total: size, done: size > 0 && membersMet >= required }
 }

@@ -195,6 +195,14 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
                 />
               ))}
             </div>
+            {guildSection.quest.collected && (
+              <div className="mt-1.5 pl-[26px] flex items-center gap-2">
+                <span className="text-[10.5px] text-kh-muted flex-1">Gemeinsam gesammelt</span>
+                <span className="text-[10.5px] font-bold text-kh-violet flex-shrink-0">
+                  {guildSection.quest.collected.current}/{guildSection.quest.collected.target} HÜ
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

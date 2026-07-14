@@ -165,8 +165,14 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
         {/* Nav */}
         <nav className={`flex flex-col gap-0.5 flex-1 ${collapsed ? 'px-2' : 'px-3.5'}`}>
           {navItems.map(item => {
-            const onStreaksFamily = item.href === '/streaks' && pathname.startsWith('/streaks')
-            const active = pathname === item.href || onStreaksFamily
+            const isStreaksItem = item.href === '/streaks'
+            const onStreaksFamily = isStreaksItem && pathname.startsWith('/streaks')
+            const onReise = isStreaksItem && pathname === '/streaks/reise'
+            const active = pathname === item.href
+            // Wenn die Unterseite "Die Reise" aktiv ist, bekommt "Abenteuer"
+            // nur noch eine dezente grüne Markierung statt der vollen Pille —
+            // die Pille selbst wandert auf den Unterlink (siehe unten).
+            const halfActive = onReise
             return (
               <div key={item.href}>
                 <Link
@@ -177,6 +183,8 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                   } ${
                     active
                       ? 'text-kh-dark shadow-sm'
+                      : halfActive
+                      ? 'text-kh-teal'
                       : 'text-kh-muted hover:bg-[#EDEDEC] hover:-translate-y-[2.5px] hover:shadow-sm'
                   }`}
                   style={active ? { background: 'linear-gradient(to bottom right, #C2E6DF 0%, #E4F3F0 100%)' } : undefined}
@@ -186,11 +194,11 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                   )}
                   <span
                     className={`msym text-[20.5px] transition-all duration-200 flex-shrink-0 ${
-                      active ? '' : 'text-[#9AA6A7] group-hover:text-[#6E7E80]'
+                      active || halfActive ? '' : 'text-[#9AA6A7] group-hover:text-[#6E7E80]'
                     }`}
                     style={{
-                      fontVariationSettings: `'FILL' ${active ? 1 : 0}`,
-                      color: active ? '#0F8A82' : undefined,
+                      fontVariationSettings: `'FILL' ${active || halfActive ? 1 : 0}`,
+                      color: active || halfActive ? '#0F8A82' : undefined,
                     }}
                   >
                     {item.icon}
@@ -211,19 +219,24 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                 </Link>
 
                 {/* Aufklappbares Untermenü: "Die Reise" nur sichtbar, solange man
-                    auf einer /streaks-Seite ist. */}
+                    auf einer /streaks-Seite ist. Eigene, kleinere Pille, wenn
+                    aktiv — analog zu den Hauptlinks, aber schmaler/kompakter. */}
                 {!collapsed && onStreaksFamily && (
                   <Link
                     href="/streaks/reise"
-                    className={`flex items-center gap-2.5 py-2 pl-[42px] pr-3.5 rounded-xl text-[13px] transition-colors ${
-                      pathname === '/streaks/reise'
-                        ? 'text-kh-teal font-bold'
+                    className={`relative flex items-center gap-2 py-1.5 px-3 ml-[30px] mr-1 rounded-lg text-[12.5px] transition-all duration-200 overflow-hidden ${
+                      onReise
+                        ? 'text-kh-dark font-bold shadow-sm'
                         : 'text-kh-muted hover:text-kh-dark hover:bg-[#EDEDEC] font-semibold'
                     }`}
+                    style={onReise ? { background: 'linear-gradient(to bottom right, #C2E6DF 0%, #E4F3F0 100%)' } : undefined}
                   >
+                    {onReise && (
+                      <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full" style={{ background: 'linear-gradient(to top, #0F8A82 0%, #3DB5AC 100%)' }} />
+                    )}
                     <span
-                      className="msym text-[16px] flex-shrink-0"
-                      style={{ fontVariationSettings: `'FILL' ${pathname === '/streaks/reise' ? 1 : 0}` }}
+                      className="msym text-[15px] flex-shrink-0"
+                      style={{ fontVariationSettings: `'FILL' ${onReise ? 1 : 0}`, color: onReise ? '#0F8A82' : undefined }}
                     >
                       map
                     </span>

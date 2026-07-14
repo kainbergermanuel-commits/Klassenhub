@@ -61,25 +61,38 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
             />
           </div>
         )}
-        <div className="relative z-10 flex-1 min-w-0 rounded-r-2xl bg-gradient-to-br from-[#EFEAE0]/70 to-[#FAF8F3]/70 px-5 py-4 flex flex-col justify-center">
+        <div className="relative z-10 flex-1 min-w-0 px-5 py-4 flex flex-col justify-center">
           {target ? (
             <>
-              <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted mb-1">Klassenziel-Fortschritt</p>
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1 h-2 rounded-full bg-white/60 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#B8721E] to-[#F5C842] transition-all duration-700"
-                    style={{ width: `${clampedPct}%` }}
-                  />
-                  {theme.stages.slice(1).map((stage, i) => (
-                    <span
-                      key={stage.label}
-                      className="absolute top-0 bottom-0 w-px bg-white/70"
-                      style={{ left: `${((i + 1) / theme.stages.length) * 100}%` }}
-                    />
-                  ))}
-                </div>
-                <span className="text-[13px] font-extrabold text-kh-dark flex-shrink-0">{clampedPct}%</span>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted mb-2.5">
+                {theme.name} · Etappe {activeStage + 1} von {theme.stages.length}
+              </p>
+              <div className="relative flex items-center">
+                <div className="absolute left-0 right-0 h-1 rounded-full bg-[#E4DCC9] top-1/2 -translate-y-1/2" />
+                <div
+                  className="absolute left-0 h-1 rounded-full bg-gradient-to-r from-[#B8721E] to-[#F5C842] top-1/2 -translate-y-1/2 transition-all duration-700"
+                  style={{ width: `${((activeStage + 0.5) / theme.stages.length) * 100}%` }}
+                />
+                {theme.stages.map((stage, i) => {
+                  const reached = i <= activeStage
+                  const isCurrent = i === activeStage
+                  return (
+                    <div key={stage.label} className="relative flex-1 min-w-0 flex justify-center px-0.5">
+                      <div
+                        className={`msym flex items-center justify-center rounded-full transition-all duration-300 flex-shrink-0 ${isCurrent ? 'w-8 h-8 text-[17px]' : 'w-6 h-6 text-[13px]'}`}
+                        style={{
+                          background: reached ? 'linear-gradient(135deg, #E8A020 0%, #F5C842 100%)' : '#fff',
+                          color: reached ? '#fff' : '#B8AF9C',
+                          border: reached ? 'none' : '1.5px solid #E4DCC9',
+                          fontVariationSettings: `'FILL' ${reached ? 1 : 0}`,
+                          boxShadow: isCurrent ? '0 4px 10px rgba(184,114,30,.35)' : 'none',
+                        }}
+                      >
+                        {stage.icon}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </>
           ) : (

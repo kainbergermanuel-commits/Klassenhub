@@ -5,7 +5,8 @@ import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, groupFrozenByStudent, VETERAN_MILESTONE } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
-import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestContext, type QuestResult } from '@/lib/quests'
+import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
+import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
 import type { GuildMember } from '@/lib/guilds'
@@ -225,40 +226,24 @@ export default async function HomePage() {
       supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
       supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', user.id).eq('week_start', weekStart),
     ])
-    const activeQuestKeys = resolveWeeklyTemplateKeys(activeClassId, weekStart, (questOverrides ?? []).map(q => q.template_key))
     const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
 
     const weekHw = (allHwForStreak ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
-    const dueByHwId = new Map((allHwForStreak ?? []).map(h => [h.id, h.due_date]))
-    const earlyHomeworkIds = new Set(
-      (completions ?? [])
-        .filter(c => {
-          const due = dueByHwId.get(c.homework_id)
-          return due && c.completed_at && c.completed_at.slice(0, 10) < due
-        })
-        .map(c => c.homework_id)
-    )
-    const weekReminderIds = upcomingReminders
-      .filter(r => r.event_date >= weekStart && r.event_date <= weekEnd)
-      .filter(r => !r.target_student_ids || r.target_student_ids.includes(user.id))
-      .map(r => r.id)
-    const weekEventIds = upcomingEvents
-      .filter(e => e.start_date >= weekStart && e.start_date <= weekEnd)
-      .filter(e => !e.target_student_ids || e.target_student_ids.includes(user.id))
-      .map(e => e.id)
-    const questCtx: QuestContext = {
+    const questCtx = buildQuestContext({
       weekStart,
       weekEnd,
-      weekHomeworkIds: weekHw.map(h => h.id),
-      doneHomeworkIds: doneIds,
-      earlyHomeworkIds,
+      studentId: user.id,
+      allHomework: allHwForStreak ?? [],
+      ownCompletions: completions ?? [],
       confirmedHomeworkIds: confirmedByStudentS.get(user.id) ?? new Set(),
-      weekReminderIds,
+      reminders: upcomingReminders,
       viewedReminderIds: new Set(myViewedIds),
-      weekEventIds,
+      events: upcomingEvents,
       dutyDoneCount,
       currentStreakLength: streak,
-    }
+    })
+    const feasibility = buildFeasibility(questCtx, !!myDuty)
+    const activeQuestKeys = resolveWeeklyTemplateKeys(activeClassId, weekStart, (questOverrides ?? []).map(q => q.template_key), 3, feasibility)
     const quests: QuestResult[] = activeQuestKeys
       .map(key => findQuestTemplate(key))
       .filter((t): t is NonNullable<typeof t> => !!t)

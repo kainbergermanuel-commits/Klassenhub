@@ -20,6 +20,10 @@ export const QUEST_FOCUS_ROTATION: QuestFocusTag[] = ['puenktlichkeit', 'ausdaue
 
 export type QuestSignal =
   | { type: 'homework'; targetCount: number }
+  /** Verschiedene Kalendertage diese Woche mit mind. einer HÜ-Erledigung —
+   *  erzwingt echte Streckung über die Woche statt "alles an einem Tag"
+   *  (siehe Balance-Fahrplan Phase 1, "N von 5 Schultagen mit Slack"). */
+  | { type: 'homework_days'; targetCount: number }
   /** Hausübung erledigt, bevor sie fällig war. */
   | { type: 'homework_early'; targetCount: number }
   | { type: 'reminder'; targetCount: number }
@@ -52,6 +56,13 @@ export interface QuestTemplate {
    *  Kennzeichnung in der UI. Fehlt das Feld, gilt 'standard'. Beide Stufen
    *  landen im selben Vorrat/Rotation — kein separates Freischalt-System. */
   tier?: 'standard' | 'meister'
+  /** `false` = darf nicht als alleinstehende automatische Wochen-Quest
+   *  gezogen werden (siehe defaultWeeklyTemplateKeys) — für Vorlagen, die in
+   *  einer einzigen Handlung erledigt sind (z.B. eine Erinnerung ansehen)
+   *  und dadurch die Schwierigkeit×Zeit-Balance brechen würden (Balance-
+   *  Fahrplan Phase 1). Fehlt das Feld, gilt `true`. Der Lehrer-Override
+   *  (Regie) ist davon NICHT betroffen — nur die automatische Auswahl. */
+  soloEligible?: boolean
 }
 
 export const QUEST_VAULT: QuestTemplate[] = [
@@ -61,13 +72,14 @@ export const QUEST_VAULT: QuestTemplate[] = [
     narrative: '{guide}: reiche eine Hausübung ab, bevor sie fällig ist.',
     focusTag: 'puenktlichkeit',
     signals: [{ type: 'homework_early', targetCount: 1 }],
+    soloEligible: false, // einzelne Handlung — nicht als alleinstehende Wochen-Quest
   },
   {
     key: 'hw_x3',
     title: 'Fleißige Woche',
-    narrative: '{guide} zählt mit: 3 Hausübungen diese Woche erledigt.',
+    narrative: '{guide} zählt mit: an 3 verschiedenen Tagen diese Woche eine Hausübung erledigt.',
     focusTag: 'ausdauer',
-    signals: [{ type: 'homework', targetCount: 3 }],
+    signals: [{ type: 'homework_days', targetCount: 3 }],
   },
   {
     key: 'reminder_seen',
@@ -75,6 +87,7 @@ export const QUEST_VAULT: QuestTemplate[] = [
     narrative: '{guide} hat dir gefunkt — schau in deinen Erinnerungen nach.',
     focusTag: 'aufmerksamkeit',
     signals: [{ type: 'reminder', targetCount: 1 }],
+    soloEligible: false, // 10-Sekunden-Handlung — nicht als alleinstehende Wochen-Quest
   },
   {
     key: 'duty_done',

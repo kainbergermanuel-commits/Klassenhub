@@ -21,6 +21,11 @@ export interface QuestContext {
   weekReminderIds: string[]
   viewedReminderIds: Set<string>
   weekEventIds: string[]
+  /** Verschiedene Kalendertage diese Woche mit mind. einer HÜ-Erledigung
+   *  (nicht rohe Anzahl) — Grundlage für "an X Tagen aktiv"-Ziele, die
+   *  echte Streckung über die Woche statt "alles an einem Tag" verlangen
+   *  (siehe lib/questContext.ts, Balance-Fahrplan Phase 1). */
+  doneDatesThisWeek: Set<string>
   /** Anzahl selbst bestätigter Diensttage diese Woche (SDT-Selbstkontrolle,
    *  siehe duty_completions) — kein Alles-oder-nichts, damit Ziele wie
    *  "3 von 5 Tagen" möglich sind. */
@@ -44,6 +49,8 @@ export function computeSignalProgress(signal: QuestSignal, ctx: QuestContext): Q
   switch (signal.type) {
     case 'homework':
       return clamp(ctx.weekHomeworkIds.filter(id => ctx.doneHomeworkIds.has(id)).length, signal.targetCount)
+    case 'homework_days':
+      return clamp(ctx.doneDatesThisWeek.size, signal.targetCount)
     case 'homework_early':
       return clamp(ctx.weekHomeworkIds.filter(id => ctx.earlyHomeworkIds.has(id)).length, signal.targetCount)
     case 'reminder':
@@ -93,6 +100,7 @@ export function computeQuestProgress(template: QuestTemplate, ctx: QuestContext,
 function signalLabel(signal: QuestSignal): string {
   switch (signal.type) {
     case 'homework': return 'Hausübungen erledigt'
+    case 'homework_days': return 'Tage mit Hausübung'
     case 'homework_early': return 'Vorzeitig erledigt'
     case 'reminder': return 'Erinnerung gesehen'
     case 'event_ready': return 'Termin im Blick'
@@ -114,13 +122,55 @@ export function weeklyFocusTag(weekStart: string): QuestFocusTag {
   return QUEST_FOCUS_ROTATION[idx]
 }
 
+/** Rein informell: welche Wochen-Signale diesem Kind diese Woche überhaupt
+ *  zur Verfügung stehen — Grundlage für den Machbarkeits-Filter unten. Siehe
+ *  lib/questContext.ts (buildFeasibility) für die Ableitung aus Live-Daten. */
+export interface QuestFeasibility {
+  hasWeekHomework: boolean
+  hasDuty: boolean
+  hasWeekEvent: boolean
+}
+
+function signalFeasible(signal: QuestSignal, f: QuestFeasibility): boolean {
+  switch (signal.type) {
+    case 'homework':
+    case 'homework_days':
+    case 'homework_early':
+    case 'parent_confirm':
+      return f.hasWeekHomework
+    case 'duty_done':
+      return f.hasDuty
+    case 'event_ready':
+      return f.hasWeekEvent
+    case 'reminder':
+    case 'streak_hold':
+      return true
+  }
+}
+
+/** Ob eine Vorlage diese Woche für dieses Kind überhaupt erfüllbar ist.
+ *  Solo/Kombi-Quests brauchen JEDES Signal feasible, Wahlpfad-Quests
+ *  brauchen mindestens EINEN feasiblen Pfad (die Wahl selbst bleibt frei). */
+function templateFeasible(template: QuestTemplate, f: QuestFeasibility): boolean {
+  if (template.choices) return template.choices.some(c => signalFeasible(c.signal, f))
+  return (template.signals ?? []).every(s => signalFeasible(s, f))
+}
+
 /** Wählt deterministisch `count` Vorlagen aus dem Vorrat — abhängig von
  *  Klasse+Woche, damit alle Mitglieder derselben Klasse dieselben Quests
  *  sehen und ein Seitenreload nicht neu würfelt. Garantiert (falls
  *  vorhanden) mindestens eine Quest mit dem Fokus dieser Woche, der Rest
  *  wird deterministisch aus dem gesamten Vorrat aufgefüllt. Kein
- *  Wiederholungsschutz über Wochen hinweg (P1/P2-Grenze). */
-export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, count = 3): string[] {
+ *  Wiederholungsschutz über Wochen hinweg (P1/P2-Grenze).
+ *
+ *  `feasibility`, falls übergeben: filtert Vorlagen heraus, deren Signal
+ *  diese Woche für dieses Kind gar nicht erfüllbar ist (z.B. Dienst-Quest
+ *  ohne zugeteilten Dienst), UND Vorlagen mit `soloEligible: false` (zu
+ *  leicht für eine alleinstehende Wochen-Quest, siehe questVault.ts). Fällt
+ *  auf den ungefilterten (nur soloEligible-gefilterten) Vorrat zurück, falls
+ *  sonst weniger als `count` Vorlagen übrig blieben — Determinismus/
+ *  Mindestanzahl haben Vorrang vor perfekter Machbarkeit. */
+export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, count = 3, feasibility?: QuestFeasibility): string[] {
   const seed = `${classId}-${weekStart}`
   let hash = 0
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
@@ -134,9 +184,13 @@ export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, co
     return h % len
   }
 
+  const soloEligibleVault = QUEST_VAULT.filter(t => t.soloEligible !== false)
+  const feasibleVault = feasibility ? soloEligibleVault.filter(t => templateFeasible(t, feasibility)) : soloEligibleVault
+  const vault = feasibleVault.length >= count ? feasibleVault : soloEligibleVault
+
   const focus = weeklyFocusTag(weekStart)
-  const focusedKeys = QUEST_VAULT.filter(t => t.focusTag === focus).map(t => t.key)
-  const pool = QUEST_VAULT.map(t => t.key)
+  const focusedKeys = vault.filter(t => t.focusTag === focus).map(t => t.key)
+  const pool = vault.map(t => t.key)
 
   const picked: string[] = []
   if (focusedKeys.length > 0) picked.push(focusedKeys[nextIndex(focusedKeys.length)])
@@ -152,6 +206,6 @@ export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, co
 
 /** Aktive Vorlagen-Schlüssel für Klasse+Woche: Lehrer-Override (aus der
  *  `quests`-Tabelle) hat Vorrang vor der deterministischen Standardauswahl. */
-export function resolveWeeklyTemplateKeys(classId: string, weekStart: string, overrideKeys: string[], count = 3): string[] {
-  return overrideKeys.length > 0 ? overrideKeys : defaultWeeklyTemplateKeys(classId, weekStart, count)
+export function resolveWeeklyTemplateKeys(classId: string, weekStart: string, overrideKeys: string[], count = 3, feasibility?: QuestFeasibility): string[] {
+  return overrideKeys.length > 0 ? overrideKeys : defaultWeeklyTemplateKeys(classId, weekStart, count, feasibility)
 }
