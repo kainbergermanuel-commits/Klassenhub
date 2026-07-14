@@ -9,6 +9,7 @@ import type { QuestResult } from '@/lib/quests'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { AchievementCounts } from '@/lib/achievements'
 import type { RucksackState } from '@/components/streaks/RucksackItems'
+import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
 import { greeting } from '@/lib/date'
 
 interface DutyPartner {
@@ -31,8 +32,6 @@ interface StudentHomeProps {
   streak: number
   confirmedStreak: number
   broken: boolean
-  jokerAvailable: boolean
-  jokerUsedThisSeason: boolean
   pendingMilestone: number | null
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
@@ -41,14 +40,15 @@ interface StudentHomeProps {
   questWeekStart: string
   /** Anteil der Klasse mit mind. 1 Erledigung diese Woche, anonym (keine Namen). `null` = zu kleine Klasse. */
   socialProofPct: number | null
-  myMilestones: { milestone: number; confirmed_at: string }[]
+  guideNote: GuideNote
+  chronicle: ChronicleEntry[]
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
   achievementCounts: AchievementCounts
   rucksack: RucksackState
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, jokerAvailable, jokerUsedThisSeason, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, myMilestones, guildSection, achievementCounts, rucksack,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, guideNote, chronicle, guildSection, achievementCounts, rucksack,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -105,7 +105,7 @@ export default function StudentHome({
               </div>
             )}
             <div className="relative z-10 animate-card-enter" style={{ animationDelay: '180ms' }}>
-              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} jokerAvailable={jokerAvailable} jokerUsedThisSeason={jokerUsedThisSeason} pendingMilestone={pendingMilestone} milestones={myMilestones} season={season} achievementCounts={achievementCounts} rucksack={rucksack} />
+              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} pendingMilestone={pendingMilestone} season={season} achievementCounts={achievementCounts} guideNote={guideNote} chronicle={chronicle} rucksack={rucksack} />
             </div>
           </div>
         </div>

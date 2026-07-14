@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStreakFreeze } from '@/app/actions/useStreakFreeze'
 import { useTimeCrystal } from '@/app/actions/useTimeCrystal'
@@ -50,6 +50,21 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
     pendingConfirmationCount, nudgeSentToday,
     veteranEarned, confirmedStreak, totalAchievements, guildName, parentConfirmStreak, nextStepHint } = state
   const router = useRouter()
+  // Welche Item-Tooltip-Kachel offen ist (per Index) — zentral statt pro Item,
+  // damit immer nur EINER gleichzeitig offen ist und ein Klick außerhalb des
+  // Rucksacks alles schließt (vorher blieben Tooltips nach Klick permanent
+  // offen, da jedes Item nur seinen eigenen Zustand toggelte). */
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  useEffect(() => {
+    if (openIndex === null) return
+    function onDocDown(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpenIndex(null)
+    }
+    document.addEventListener('mousedown', onDocDown)
+    return () => document.removeEventListener('mousedown', onDocDown)
+  }, [openIndex])
+
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState(false)
   const [used, setUsed] = useState(false)
@@ -123,8 +138,10 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
   const amulettRemaining = Math.max(0, AMULETT_TARGET - parentConfirmStreak)
 
   return (
-    <div className="grid grid-cols-3 gap-2.5">
+    <div ref={containerRef} className="grid grid-cols-3 gap-2.5">
       <Item
+        isOpen={openIndex === 0}
+        onToggle={() => setOpenIndex(i => (i === 0 ? null : 0))}
         state={shieldState}
         gradient={shieldState === 'action' ? 'linear-gradient(135deg, #5AB4E0, #3D8FC7)' : 'linear-gradient(135deg, #3DB5AC, #0F8A82)'}
         dimmed={shieldState === 'spent'}
@@ -161,6 +178,8 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       />
 
       <Item
+        isOpen={openIndex === 1}
+        onToggle={() => setOpenIndex(i => (i === 1 ? null : 1))}
         state={veteranEarned ? 'ready' : 'locked'}
         gradient="linear-gradient(135deg, #E0A94B, #B8721E)"
         dimmed={!veteranEarned}
@@ -179,6 +198,8 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       />
 
       <Item
+        isOpen={openIndex === 2}
+        onToggle={() => setOpenIndex(i => (i === 2 ? null : 2))}
         state={wappenEarned ? 'ready' : 'locked'}
         gradient="linear-gradient(135deg, #8791dd, #5965B8)"
         dimmed={!wappenEarned}
@@ -197,6 +218,8 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       />
 
       <Item
+        isOpen={openIndex === 3}
+        onToggle={() => setOpenIndex(i => (i === 3 ? null : 3))}
         state={guildName ? 'ready' : 'locked'}
         gradient="linear-gradient(135deg, #7FD3A6, #2E9C6E)"
         dimmed={!guildName}
@@ -214,6 +237,8 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       />
 
       <Item
+        isOpen={openIndex === 4}
+        onToggle={() => setOpenIndex(i => (i === 4 ? null : 4))}
         state={amulettEarned ? 'ready' : 'locked'}
         gradient="linear-gradient(135deg, #E285A0, #C15B76)"
         dimmed={!amulettEarned}
@@ -231,6 +256,8 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       />
 
       <Item
+        isOpen={openIndex === 5}
+        onToggle={() => setOpenIndex(i => (i === 5 ? null : 5))}
         state="ready"
         gradient="linear-gradient(135deg, #3DB5AC, #0F8A82)"
         icon={<span className="msym text-[24px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>}
@@ -248,6 +275,8 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       />
 
       <Item
+        isOpen={openIndex === 6}
+        onToggle={() => setOpenIndex(i => (i === 6 ? null : 6))}
         state={crystalState}
         gradient={crystalState === 'action' ? 'linear-gradient(135deg, #C084E8, #9C5FD1)' : 'linear-gradient(135deg, #9CA3AF, #6E7E80)'}
         dimmed={crystalState === 'spent'}
@@ -285,6 +314,8 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       />
 
       <Item
+        isOpen={openIndex === 7}
+        onToggle={() => setOpenIndex(i => (i === 7 ? null : 7))}
         state={nudgeState}
         gradient={nudgeState === 'action' ? 'linear-gradient(135deg, #F0A868, #D97B3D)' : 'linear-gradient(135deg, #9CA3AF, #6E7E80)'}
         dimmed={nudgeState !== 'action'}
@@ -321,7 +352,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
 }
 
 function Item({
-  state, gradient, dimmed, pulse, icon, title, tooltip, chipOverride,
+  state, gradient, dimmed, pulse, icon, title, tooltip, chipOverride, isOpen, onToggle,
 }: {
   state: ItemState
   gradient: string
@@ -331,14 +362,18 @@ function Item({
   title: string
   tooltip: React.ReactNode
   chipOverride?: { label: string; cls: string }
+  /** Zentral in RucksackItems verwaltet (nicht mehr lokaler State) — sorgt
+   *  dafür, dass immer nur ein Tooltip gleichzeitig offen ist und ein Klick
+   *  außerhalb des Rucksacks alles schließt. */
+  isOpen: boolean
+  onToggle: () => void
 }) {
-  const [open, setOpen] = useState(false)
   const chip = chipOverride ?? STATE_CHIP[state]
 
   return (
     <div
       className="group/item flex flex-col items-center gap-1.5 rounded-xl bg-[#FAF8F3] px-2 py-3 cursor-default text-center"
-      onClick={() => setOpen(o => !o)}
+      onClick={(e) => { e.stopPropagation(); onToggle() }}
     >
       <span className="relative">
         <span
@@ -351,7 +386,7 @@ function Item({
         {/* Tooltip — direkt am Icon verankert, z-50 + zentriert nach unten. */}
         <span
           className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 w-max max-w-[220px] bg-white rounded-xl shadow-[0_8px_20px_rgba(20,40,45,.22)] p-3 text-left transition-opacity ${
-            open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto'
+            isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto'
           }`}
         >
           {tooltip}

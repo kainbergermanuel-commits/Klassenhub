@@ -9,6 +9,7 @@ import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult, type GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
+import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
 import StreakOverview from '@/components/streaks/StreakOverview'
 import type { RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 
@@ -135,6 +136,13 @@ export default async function StreaksPage() {
   const weekStart = getRelevantMondayOfWeek()
   let questsForMe: QuestResult[] = []
   let guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null = null
+  // Signale für die Heldenbuch-Guide-Notiz — im Quest-Block gesetzt (dort in
+  // Scope), im Heldenbuch-Block weiter unten verwendet.
+  let hbOpenHomework = 0
+  let hbDutyName: string | null = null
+  let hbDutyKeptUp = false
+  let hbQuestsDone = 0
+  let hbQuestsTotal = 0
   if (profile.role === 'student') {
     const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
 
@@ -147,7 +155,7 @@ export default async function StreaksPage() {
     ] = await Promise.all([
       supabase.from('reminders').select('id,event_date,target_student_ids').eq('class_id', activeClassId).gte('event_date', weekStart).lte('event_date', weekEnd),
       supabase.from('events').select('id,start_date,target_student_ids').eq('class_id', activeClassId).gte('start_date', weekStart).lte('start_date', weekEnd),
-      supabase.from('duties').select('id,assignee_ids').eq('class_id', activeClassId).eq('week_start', weekStart),
+      supabase.from('duties').select('id,assignee_ids,duty_name').eq('class_id', activeClassId).eq('week_start', weekStart),
       supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
       supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', profile.id).eq('week_start', weekStart),
     ])
@@ -197,6 +205,13 @@ export default async function StreaksPage() {
       .map(key => findQuestTemplate(key))
       .filter((t): t is NonNullable<typeof t> => !!t)
       .map(t => computeQuestProgress(t, questCtx, choiceByTemplate.get(t.key)))
+
+    // Heldenbuch-Guide-Notiz-Signale festhalten (Scope siehe oben)
+    hbOpenHomework = (allHwDesc ?? []).filter(h => h.due_date > today && !(doneByStudent.get(profile.id)?.has(h.id))).length
+    hbDutyName = myDuties[0]?.duty_name ?? null
+    hbDutyKeptUp = keptUpStudents.has(profile.id)
+    hbQuestsDone = questsForMe.filter(q => q.done).length
+    hbQuestsTotal = questsForMe.length
 
     // ─── GILDEN (Phase 3): kooperative Wochen-Quest in Kleingruppe ────────────
     const allStudentIds = (students ?? []).map(s => s.id)
@@ -257,6 +272,8 @@ export default async function StreaksPage() {
     pendingMilestone: number | null
     milestones: { milestone: number; confirmed_at: string }[]
     achievementCounts: AchievementCounts
+    guideNote: GuideNote
+    chronicle: ChronicleEntry[]
   } | null = null
   if (profile.role === 'student' && myStreak) {
     const [{ data: myMilestones }, { data: myAchievements }, { data: recentNudges }] = await Promise.all([
@@ -270,6 +287,22 @@ export default async function StreaksPage() {
     const myConfirmedIdsForNudge = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const pendingConfirmationCount = [...myOwnDoneIdsForNudge].filter(id => !myConfirmedIdsForNudge.has(id)).length
     const nudgeSentToday = (recentNudges ?? []).some(n => n.created_at.slice(0, 10) === today)
+    const guideNote = buildGuideNote({
+      openHomeworkCount: hbOpenHomework,
+      dutyName: hbDutyName,
+      dutyKeptUp: hbDutyKeptUp,
+      confirmedStreak: myStreak.streak,
+      broken: myStreak.broken,
+      questsDone: hbQuestsDone,
+      questsTotal: hbQuestsTotal,
+    })
+    const chronicle = buildChronicle({
+      milestones: myMilestones ?? [],
+      shieldUses: (allFreezes ?? []).filter(f => f.student_id === profile.id).map(f => ({ created_at: f.created_at })),
+      crystalUses: (allExtensions ?? []).filter(e => e.student_id === profile.id).map(e => ({ created_at: e.created_at })),
+      brokenNow: myStreak.broken,
+      today,
+    })
     myHeldenbuch = {
       streak: myActualStreak,
       confirmedStreak: myStreak.streak,
@@ -283,6 +316,8 @@ export default async function StreaksPage() {
       pendingMilestone: myPendingMilestone,
       milestones: myMilestones ?? [],
       achievementCounts: countAchievements(myAchievements ?? []),
+      guideNote,
+      chronicle,
     }
   }
 

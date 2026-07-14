@@ -12,6 +12,7 @@ import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate,
 import type { GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
+import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -364,6 +365,24 @@ export default async function HomePage() {
       nextStepHint: quests.find(q => !q.done)?.template.title ?? null,
     }
 
+    // ─── HELDENBUCH: stille Anerkennung + Chronik (siehe lib/heldenbuch.ts) ───
+    const guideNote = buildGuideNote({
+      openHomeworkCount: homeworkWithStatus.filter(h => !h.done).length,
+      dutyName: myDuty?.duty_name ?? null,
+      dutyKeptUp: keptUpStudents.has(user.id),
+      confirmedStreak,
+      broken,
+      questsDone: quests.filter(q => q.done).length,
+      questsTotal: quests.length,
+    })
+    const chronicle = buildChronicle({
+      milestones: myMilestones ?? [],
+      shieldUses: (freezesS ?? []).filter(f => f.student_id === user.id).map(f => ({ created_at: f.created_at })),
+      crystalUses: (extensionsS ?? []).filter(e => e.student_id === user.id).map(e => ({ created_at: e.created_at })),
+      brokenNow: broken,
+      today,
+    })
+
     return (
       <StudentHome
         fullName={profile.full_name}
@@ -377,8 +396,6 @@ export default async function HomePage() {
         streak={streak}
         confirmedStreak={confirmedStreak}
         broken={broken}
-        jokerAvailable={jokerAvailable}
-        jokerUsedThisSeason={jokerUsedThisSeason}
         pendingMilestone={pendingMilestone}
         classGoal={classGoal}
         classGoalDone={classGoalDoneValue}
@@ -386,7 +403,8 @@ export default async function HomePage() {
         quests={quests}
         questWeekStart={weekStart}
         socialProofPct={socialProofPct}
-        myMilestones={myMilestones ?? []}
+        guideNote={guideNote}
+        chronicle={chronicle}
         guildSection={guildSection}
         achievementCounts={achievementCounts}
         rucksack={rucksack}

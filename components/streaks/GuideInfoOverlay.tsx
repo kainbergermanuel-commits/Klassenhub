@@ -1,10 +1,25 @@
+'use client'
+
+import { createPortal } from 'react-dom'
 import type { JourneyTheme } from '@/lib/seasonTheme'
 
 /** Kindgerechtes Info-Overlay zum Guide: kurze Vorstellung + Kurzanleitung,
  *  wie die Reise funktioniert. Rein informativ, kein neuer Mechanismus.
- *  Wiederverwendet von ReiseOverview und WeeklyQuestCard. */
+ *  Wiederverwendet von ReiseOverview, WeeklyQuestCard und HeldenbuchCard.
+ *
+ *  ⚠️ Über createPortal direkt an document.body gehängt: manche Aufrufer
+ *  (z.B. HeldenbuchCard auf der Startseite) stecken in einem Vorfahren mit
+ *  `.animate-card-enter` — dessen Eintritts-Animation setzt per
+ *  `animation-fill-mode: both` dauerhaft eine `transform`-Eigenschaft, und
+ *  ein Vorfahre mit `transform` erzeugt laut CSS-Spec einen neuen Containing
+ *  Block für `position: fixed`-Kinder. Ohne Portal würde das Overlay dann
+ *  nur relativ zu dieser Karte statt zum ganzen Viewport positioniert
+ *  (live beobachtet: Popup erschien seitlich verschoben statt zentriert,
+ *  Backdrop nur über die Kartenfläche geklippt). Auf /streaks trat der Bug
+ *  nicht auf, da dort kein transformierter Vorfahre existiert. */
 export default function GuideInfoOverlay({ theme, onClose }: { theme: JourneyTheme; onClose: () => void }) {
-  return (
+  if (typeof document === 'undefined') return null
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4"
       onClick={onClose}
@@ -34,7 +49,7 @@ export default function GuideInfoOverlay({ theme, onClose }: { theme: JourneyThe
         </p>
 
         <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted mb-2">So funktioniert die Reise</p>
-        <ul className="flex flex-col gap-2.5 mb-1">
+        <ul className="flex flex-col gap-2.5 mb-4">
           <li className="flex items-start gap-2.5">
             <span className="msym text-[16px] text-kh-teal flex-shrink-0 mt-0.5" aria-hidden="true">task_alt</span>
             <span className="text-[13px] text-kh-dark/85 leading-snug">Jede erledigte, eltern-bestätigte Hausübung zählt für das Klassenziel.</span>
@@ -52,7 +67,16 @@ export default function GuideInfoOverlay({ theme, onClose }: { theme: JourneyThe
             <span className="text-[13px] text-kh-dark/85 leading-snug">Am Ende der Season wartet die letzte Etappe — dann geht die Reise im nächsten Monat woanders weiter.</span>
           </li>
         </ul>
+
+        {/* Story-Kostprobe: bewusst immer die ERSTE Etappe (unabhängig vom
+            eigenen Fortschritt) — spoilert nichts, gibt aber echten Ton/
+            Atmosphäre der aktuellen Season mit. */}
+        <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted mb-2">Kostprobe · {theme.stages[0].label}</p>
+        <p className="text-[13px] text-kh-dark/70 leading-snug italic border-l-2 border-kh-amber/40 pl-3">
+          {theme.stages[0].story}
+        </p>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

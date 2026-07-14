@@ -10,6 +10,7 @@ import TeacherQuestRegie, { type RegieQuest } from '@/components/streaks/Teacher
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import { getSeasonTheme } from '@/lib/seasonTheme'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
+import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
 
 interface StudentStreak {
   id: string
@@ -42,6 +43,8 @@ interface Props {
     pendingMilestone: number | null
     milestones: { milestone: number; confirmed_at: string }[]
     achievementCounts: AchievementCounts
+    guideNote: GuideNote
+    chronicle: ChronicleEntry[]
   } | null
   quests: QuestResult[]
   questWeekStart: string
@@ -80,13 +83,11 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
               streak={myHeldenbuch.streak}
               confirmedStreak={myHeldenbuch.confirmedStreak}
               broken={myHeldenbuch.broken}
-              jokerAvailable={myHeldenbuch.jokerAvailable}
-              jokerUsedThisSeason={myHeldenbuch.jokerUsedThisSeason}
               pendingMilestone={myHeldenbuch.pendingMilestone}
-              milestones={myHeldenbuch.milestones}
               season={currentSeason}
               achievementCounts={myHeldenbuch.achievementCounts}
-              showEmblem={false}
+              guideNote={myHeldenbuch.guideNote}
+              chronicle={myHeldenbuch.chronicle}
             />
             <RucksackCard
               state={{
