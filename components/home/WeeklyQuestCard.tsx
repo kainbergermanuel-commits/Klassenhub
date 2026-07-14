@@ -1,12 +1,13 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { chooseQuestPath } from '@/app/actions/chooseQuestPath'
 import { weeklyFocusTag } from '@/lib/quests'
 import { QUEST_FOCUS_LABELS } from '@/lib/questVault'
 import Avatar from '@/components/ui/Avatar'
+import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import type { QuestResult } from '@/lib/quests'
 import type { Guild, GuildMember, GuildQuestResult } from '@/lib/guilds'
 
@@ -59,21 +60,39 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
   const focus = weeklyFocusTag(weekStart)
   const portrait = showGuidePortrait ? GUIDE_PORTRAIT[theme.icon] : undefined
   const guildNarrative = guildSection ? guildSection.quest.template.narrative.replace('{guide}', theme.guide) : ''
+  const guideParts = theme.guide.split(' ')
+  const guideTitle = guideParts.slice(0, -1).join(' ')
+  const guideName = guideParts[guideParts.length - 1]
+  const [guideInfoOpen, setGuideInfoOpen] = useState(false)
 
   return (
     <div className="kh-card p-5">
       <div className="flex items-center gap-2 mb-1">
         <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>
         <h2 className="font-extrabold text-base text-kh-dark">Wochen-Quests</h2>
-        <span className="flex items-center gap-1.5 ml-auto">
-          {portrait && (
-            <span className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-white shadow-[0_2px_6px_rgba(20,40,45,.18)]">
+        {portrait && (
+          <button
+            type="button"
+            onClick={() => setGuideInfoOpen(true)}
+            className="flex items-center gap-2 ml-auto text-left"
+          >
+            <span className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-white shadow-[0_2px_6px_rgba(20,40,45,.18)]">
               <img src={portrait} alt="" className="absolute top-0 left-1/2 -translate-x-1/2 h-[430%] w-auto max-w-none" />
             </span>
-          )}
-          <span className="text-[12px] font-semibold text-kh-muted">{theme.guide}</span>
-        </span>
+            <span className="flex flex-col items-start gap-1">
+              <span className="text-[17px] font-extrabold text-kh-dark tracking-tight leading-tight">{guideName}</span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-kh-border/60 bg-white px-2 py-0.5 text-[10px] font-bold text-kh-muted">
+                <span className="msym text-[12px] text-kh-teal" aria-hidden="true">info</span>
+                {guideTitle}?
+              </span>
+            </span>
+          </button>
+        )}
       </div>
+
+      {guideInfoOpen && (
+        <GuideInfoOverlay theme={theme} onClose={() => setGuideInfoOpen(false)} />
+      )}
       <div className="mb-3">
         <span className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-kh-teal bg-kh-teal/10 px-2 py-0.5 rounded-full">
           <span className="msym text-[12px]">bolt</span>

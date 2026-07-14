@@ -86,18 +86,21 @@ export default function StoryHeroCard({ season, classGoal, classGoalDone, quests
 
         {/* Guide-Portrait — nimmt den linken Bereich der Card ein, Kopf ragt bewusst über den Kartenrand.
             Auf Mobile kleiner + weiter oben (keine Pillen-Reihe dort, die Platz bräuchte). */}
-        <div className="relative z-10 w-[32%] min-w-[80px] max-w-[140px] sm:w-[42%] sm:min-w-[130px] sm:max-w-[220px] flex-shrink-0 self-stretch pointer-events-none">
+        <div className="relative z-10 -ml-2.5 w-[29%] min-w-[70px] max-w-[120px] sm:w-[37%] sm:min-w-[115px] sm:max-w-[195px] flex-shrink-0 self-stretch pointer-events-none">
           <img
             src={portrait}
             alt={theme.guide}
-            className="absolute -top-7 left-[-6px] w-[100%] h-[calc(100%+28px)] sm:-top-6 sm:left-[-14px] sm:w-[122%] sm:h-[calc(100%+24px)] object-contain object-bottom"
+            className="absolute -top-7 left-[-6px] w-[113%] h-[calc(100%+28px)] sm:-top-6 sm:left-[-14px] sm:w-[137%] sm:h-[calc(100%+24px)] object-contain object-bottom"
           />
         </div>
 
         <div className="relative z-10 flex-1 min-w-0 flex flex-col justify-center">
           <div className="px-4 pt-5 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted">
-              {theme.name} · {theme.guide} · Etappe {activeStage + 1} von {theme.stages.length}
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-kh-dark">
+              {theme.name}
+            </p>
+            <p className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted">
+              {theme.guide} · Etappe {activeStage + 1} von {theme.stages.length}
             </p>
             <p className="mt-1.5 text-[13.5px] text-kh-dark leading-snug italic">
               {stage.story}

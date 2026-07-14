@@ -1,6 +1,10 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
-import { getSeasonTheme, currentStageIndex } from '@/lib/seasonTheme'
+import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
+import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import type { Role } from '@/lib/types'
 
 interface Props {
@@ -19,6 +23,8 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
   const clampedPct = Math.min(100, Math.max(0, pct))
   const activeStage = target ? currentStageIndex(clampedPct, theme.stages.length) : -1
   const Art = SEASON_ART[theme.icon]
+  const portrait = GUIDE_PORTRAIT[theme.icon]
+  const [guideInfoOpen, setGuideInfoOpen] = useState(false)
 
   return (
     <>
@@ -38,20 +44,40 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
         </div>
       </header>
 
-      <div className="relative rounded-2xl overflow-hidden mb-6">
-        <div className="absolute inset-0 pointer-events-none select-none">
+      <button
+        type="button"
+        onClick={() => setGuideInfoOpen(true)}
+        className="relative mb-6 flex items-stretch w-full text-left rounded-2xl min-h-[180px] group"
+      >
+        <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none select-none">
           {Art && <Art />}
         </div>
-        <div className="relative bg-gradient-to-br from-[#EFEAE0]/70 to-[#FAF8F3]/70 px-5 py-4">
+        {portrait && (
+          <div className="relative z-10 w-[92px] flex-shrink-0 self-stretch pointer-events-none">
+            <img
+              src={portrait}
+              alt={theme.guide}
+              className="absolute bottom-[-14px] left-[-10px] w-[112px] max-w-none h-auto object-contain"
+            />
+          </div>
+        )}
+        <div className="relative z-10 flex-1 min-w-0 rounded-r-2xl bg-gradient-to-br from-[#EFEAE0]/70 to-[#FAF8F3]/70 px-5 py-4 flex flex-col justify-center">
           {target ? (
             <>
               <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted mb-1">Klassenziel-Fortschritt</p>
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 rounded-full bg-white/60 overflow-hidden">
+                <div className="relative flex-1 h-2 rounded-full bg-white/60 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-[#B8721E] to-[#F5C842] transition-all duration-700"
                     style={{ width: `${clampedPct}%` }}
                   />
+                  {theme.stages.slice(1).map((stage, i) => (
+                    <span
+                      key={stage.label}
+                      className="absolute top-0 bottom-0 w-px bg-white/70"
+                      style={{ left: `${((i + 1) / theme.stages.length) * 100}%` }}
+                    />
+                  ))}
                 </div>
                 <span className="text-[13px] font-extrabold text-kh-dark flex-shrink-0">{clampedPct}%</span>
               </div>
@@ -62,7 +88,15 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
             </p>
           )}
         </div>
-      </div>
+        <span className="absolute z-10 top-3 right-3 flex items-center gap-1 rounded-full bg-white/85 pl-2 pr-2.5 py-1 text-[10.5px] font-bold text-kh-muted shadow-sm group-hover:bg-white transition-colors">
+          <span className="msym text-[14px] text-kh-teal" aria-hidden="true">info</span>
+          {theme.guide.split(' ')[0]}?
+        </span>
+      </button>
+
+      {guideInfoOpen && (
+        <GuideInfoOverlay theme={theme} onClose={() => setGuideInfoOpen(false)} />
+      )}
 
       <div className="flex flex-col gap-4">
         {theme.stages.map((stage, i) => {
