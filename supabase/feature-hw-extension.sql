@@ -34,6 +34,17 @@ create policy "homework_extensions_own_read" on public.homework_extensions
   for select to authenticated
   using (student_id = auth.uid());
 
+-- Eltern lesen Verlängerungen ihres verknüpften Kindes (siehe profiles.child_id,
+-- gleiches Muster wie add-hw-parent-confirmation.sql) — nötig, damit die
+-- Meilenstein-Berechnung bei einer Eltern-Bestätigung (confirmHomeworkCompletion.ts)
+-- eine per Zeitkristall überbrückte Lücke korrekt berücksichtigt.
+drop policy if exists "homework_extensions_parent_read" on public.homework_extensions;
+create policy "homework_extensions_parent_read" on public.homework_extensions
+  for select to authenticated
+  using (
+    student_id = (select child_id from public.profiles where id = auth.uid() and role = 'parent')
+  );
+
 -- Lehrer liest Verlängerungen der eigenen Klasse(n) — Transparenz, Prinzip 5.
 drop policy if exists "homework_extensions_teacher_read" on public.homework_extensions;
 create policy "homework_extensions_teacher_read" on public.homework_extensions

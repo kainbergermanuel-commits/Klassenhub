@@ -14,7 +14,7 @@ export interface PendingConfirmation {
   due_date: string
 }
 
-export default function ParentHwConfirmList({ items, childFirstName }: { items: PendingConfirmation[]; childFirstName: string }) {
+export default function ParentHwConfirmList({ items, childFirstName, nudgedHomeworkIds }: { items: PendingConfirmation[]; childFirstName: string; nudgedHomeworkIds?: Set<string> }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [confirmed, setConfirmed] = useState<Set<string>>(new Set())
@@ -96,7 +96,9 @@ export default function ParentHwConfirmList({ items, childFirstName }: { items: 
         )}
       </div>
       <div className="flex flex-col gap-2">
-        {pending.map(item => (
+        {pending.map(item => {
+          const nudged = nudgedHomeworkIds?.has(item.homework_id)
+          return (
           <div key={item.homework_id} className="flex items-center gap-3 bg-gradient-to-l from-[#FDF8EA] to-[#FDF1D6] border border-[#F0C040]/50 rounded-[14px] px-3 py-2.5">
             <div
               className="w-9 h-9 rounded-[10px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
@@ -105,7 +107,15 @@ export default function ParentHwConfirmList({ items, childFirstName }: { items: 
               {item.subject_short}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-[13px] text-kh-dark truncate">{item.title}</div>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-semibold text-[13px] text-kh-dark truncate">{item.title}</span>
+                {nudged && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#D97B3D] bg-[#D97B3D]/12 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    <span className="msym text-[11px]">mail</span>
+                    {childFirstName} bittet darum
+                  </span>
+                )}
+              </div>
               <div className="text-[11px] font-semibold text-kh-muted mt-0.5">{item.subject}</div>
             </div>
             <button
@@ -117,7 +127,8 @@ export default function ParentHwConfirmList({ items, childFirstName }: { items: 
               {loading === item.homework_id ? '…' : 'Bestätigen'}
             </button>
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

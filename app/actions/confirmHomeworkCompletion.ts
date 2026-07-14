@@ -66,20 +66,27 @@ async function recordReachedMilestones(
   const today = todayISO()
   const schoolYearStart = schoolYearStartISO()
 
-  const [{ data: allHw }, { data: confirmedCompletions }, { data: existing }] = await Promise.all([
+  const [{ data: allHw }, { data: confirmedCompletions }, { data: existing }, { data: freezes }, { data: extensions }] = await Promise.all([
     supabase.from('homework').select('id,due_date').eq('class_id', classId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
     supabase.from('homework_completions').select('homework_id').eq('student_id', studentId).not('confirmed_by_parent_at', 'is', null),
     supabase.from('streak_confirmations').select('milestone').eq('student_id', studentId),
+    supabase.from('streak_freezes').select('homework_id').eq('student_id', studentId),
+    supabase.from('homework_extensions').select('homework_id,extra_days').eq('student_id', studentId),
   ])
   const hw = allHw ?? []
+  // Joker + Zeitkristall einbeziehen — sonst könnte ein durch sie überbrücktes
+  // Loch einen tatsächlich erreichten Meilenstein verdecken oder fälschlich
+  // als "gerade überschritten" melden (siehe lib/streak.ts effectiveDueDate).
+  const frozenIds = new Set((freezes ?? []).map(f => f.homework_id))
+  const extensionMap = new Map((extensions ?? []).map(e => [e.homework_id, e.extra_days]))
 
   // Bestätigter Streak NACH dieser Bestätigung – und davor (ohne die eben
   // bestätigte HÜ rekonstruiert), um das Überschreiten einer Schwelle zu erkennen.
   const confirmedIdsAfter = new Set((confirmedCompletions ?? []).map(c => c.homework_id))
   const confirmedIdsBefore = new Set(confirmedIdsAfter)
   for (const id of justConfirmedHwIds) confirmedIdsBefore.delete(id)
-  const streakAfter = computeStreak(confirmedIdsAfter, hw, today)
-  const streakBefore = computeStreak(confirmedIdsBefore, hw, today)
+  const streakAfter = computeStreak(confirmedIdsAfter, hw, today, frozenIds, extensionMap)
+  const streakBefore = computeStreak(confirmedIdsBefore, hw, today, frozenIds, extensionMap)
 
   // History-Chronik: erreichte Meilensteine einmalig protokollieren.
   const alreadyRecorded = new Set((existing ?? []).map(m => m.milestone))

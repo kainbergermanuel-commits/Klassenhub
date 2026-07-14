@@ -24,12 +24,15 @@ interface ParentHomeProps {
   /** Eltern-bestätigter Streak des Kindes – verdient die Flammen (Live-Spiegel). */
   childConfirmedStreak: number
   pendingConfirmations: PendingConfirmation[]
+  /** Botenfeder (Balance-Fahrplan Phase 3): HÜ-IDs, bei denen das Kind aktiv
+   *  um Bestätigung gebeten hat — hebt den Eintrag in der Liste dezent hervor. */
+  nudgedHomeworkIds?: Set<string>
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, classGoal, classGoalDone,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, classGoal, classGoalDone,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
@@ -125,7 +128,7 @@ export default function ParentHome({
       </div>
 
       {/* HÜ-Bestätigungen – bestätigte HÜ verdienen automatisch die Streak-Flammen */}
-      <ParentHwConfirmList items={pendingConfirmations} childFirstName={childFirst} />
+      <ParentHwConfirmList items={pendingConfirmations} childFirstName={childFirst} nudgedHomeworkIds={nudgedHomeworkIds} />
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">

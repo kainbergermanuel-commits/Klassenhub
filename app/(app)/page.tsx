@@ -466,6 +466,14 @@ export default async function HomePage() {
       due_date: c.homework?.due_date ?? '',
     }))
 
+    // Botenfeder (Balance-Fahrplan Phase 3): welche offenen Bestätigungen hat
+    // das Kind aktiv angestupst? Bisher gab es nur die Sende-Seite — hier die
+    // fehlende Konsumseite fürs Eltern-Dashboard.
+    const { data: childNudges } = child
+      ? await supabase.from('parent_nudges').select('homework_id').eq('student_id', child.id)
+      : { data: [] }
+    const nudgedHomeworkIds = new Set((childNudges ?? []).map(n => n.homework_id))
+
     const childHwWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: childDoneIds.has(h.id) }))
 
     return (
@@ -483,6 +491,7 @@ export default async function HomePage() {
         childStreak={childStreak}
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}
+        nudgedHomeworkIds={nudgedHomeworkIds}
         classGoal={classGoal}
         classGoalDone={countClassGoalDone(allHwForStreak, allCompletionsParent ?? [])}
       />

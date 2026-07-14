@@ -155,39 +155,71 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
         {/* Nav */}
         <nav className="flex flex-col gap-0.5 px-3 pt-3 flex-1 overflow-y-auto">
           {navItems.map(item => {
+            const isStreaksItem = item.href === '/streaks'
+            const onStreaksFamily = isStreaksItem && pathname.startsWith('/streaks')
+            const onReise = isStreaksItem && pathname === '/streaks/reise'
             const active = pathname === item.href
+            // Wie in der Desktop-Sidebar: "Abenteuer" bleibt nur dezent grün
+            // markiert, wenn die Unterseite "Die Reise" aktiv ist — die Pille
+            // selbst wandert auf den Unterlink darunter.
+            const halfActive = onReise
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                  active
-                    ? 'bg-kh-teal-light text-kh-dark'
-                    : 'text-kh-muted hover:bg-[#EDEDEC]'
-                }`}
-              >
-                {active && (
-                  <span className="absolute left-0 top-0 bottom-0 w-[3.8px] gradient-teal rounded-l-xl" />
-                )}
-                <span
-                  className="msym text-[22px] flex-shrink-0"
-                  style={{
-                    fontVariationSettings: `'FILL' ${active ? 1 : 0}`,
-                    color: active ? '#0F8A82' : undefined,
-                  }}
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                    active
+                      ? 'bg-kh-teal-light text-kh-dark'
+                      : halfActive
+                      ? 'text-kh-teal'
+                      : 'text-kh-muted hover:bg-[#EDEDEC]'
+                  }`}
                 >
-                  {item.icon}
-                </span>
-                <span className={`flex-1 text-[14px] ${active ? 'font-bold' : 'font-semibold'}`}>
-                  {item.label}
-                </span>
-                {item.badge ? (
-                  <span className="min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center gradient-amber text-white shadow-[0_2px_6px_rgba(201,138,43,.4)]">
-                    {item.badge}
+                  {active && (
+                    <span className="absolute left-0 top-0 bottom-0 w-[3.8px] gradient-teal rounded-l-xl" />
+                  )}
+                  <span
+                    className="msym text-[22px] flex-shrink-0"
+                    style={{
+                      fontVariationSettings: `'FILL' ${active || halfActive ? 1 : 0}`,
+                      color: active || halfActive ? '#0F8A82' : undefined,
+                    }}
+                  >
+                    {item.icon}
                   </span>
-                ) : null}
-              </Link>
+                  <span className={`flex-1 text-[14px] ${active ? 'font-bold' : 'font-semibold'}`}>
+                    {item.label}
+                  </span>
+                  {item.badge ? (
+                    <span className="min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center gradient-amber text-white shadow-[0_2px_6px_rgba(201,138,43,.4)]">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </Link>
+
+                {/* Unterlink "Die Reise" — nur sichtbar, solange man auf einer
+                    /streaks-Seite ist, analog zur Desktop-Sidebar. */}
+                {onStreaksFamily && (
+                  <Link
+                    href="/streaks/reise"
+                    onClick={() => setOpen(false)}
+                    className={`relative flex items-center gap-2 py-2 pl-[42px] pr-3.5 mx-0 rounded-lg text-[13px] transition-all ${
+                      onReise
+                        ? 'bg-kh-teal-light text-kh-dark font-bold'
+                        : 'text-kh-muted hover:text-kh-dark hover:bg-[#EDEDEC] font-semibold'
+                    }`}
+                  >
+                    <span
+                      className="msym text-[16px] flex-shrink-0"
+                      style={{ fontVariationSettings: `'FILL' ${onReise ? 1 : 0}`, color: onReise ? '#0F8A82' : undefined }}
+                    >
+                      map
+                    </span>
+                    Die Reise
+                  </Link>
+                )}
+              </div>
             )
           })}
         </nav>
