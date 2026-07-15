@@ -82,6 +82,7 @@ const THEMES: JourneyTheme[] = [
 export const GUIDE_PORTRAIT: Partial<Record<string, string>> = {
   landscape: '/images/characters/vala.webp', // Bergführerin Vala, Bergexpedition
   rocket_launch: '/images/characters/ari.webp', // Bordcomputer ARI, Weltraummission
+  map: '/images/characters/isla.webp', // Kartografin Isla, Schatzsuche
 }
 
 /** Position im Schuljahres-Fahrplan (0=September … 10=Juli/August) für einen
