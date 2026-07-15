@@ -20,6 +20,11 @@ export type Profile = {
   special_role: SpecialRole | null
   is_admin: boolean
   joined_class_at: string | null
+  /** "Mein Guide": persönlich gewählter Guide fürs Heldenbuch (Theme-Icon-
+   *  Key, z. B. 'landscape'). NULL = kein Favorit, Fallback = aktuelle
+   *  Klassenwelt. Nur wirksam, wenn der Guide bereits freigeschaltet ist
+   *  (siehe isArcUnlocked in lib/seasonTheme.ts). */
+  preferred_guide_icon: string | null
 }
 
 export type TimetableEntry = {

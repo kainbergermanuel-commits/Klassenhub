@@ -81,6 +81,7 @@ const THEMES: JourneyTheme[] = [
  *  Illustrationen werden nach und nach ergänzt. */
 export const GUIDE_PORTRAIT: Partial<Record<string, string>> = {
   landscape: '/images/characters/vala.webp', // Bergführerin Vala, Bergexpedition
+  rocket_launch: '/images/characters/ari.webp', // Bordcomputer ARI, Weltraummission
 }
 
 /** Wählt ein Thema anhand des Season-Keys ('YYYY-MM'), rotierend pro Monat. */
@@ -125,6 +126,24 @@ export const SCHOOL_YEAR_ARCS: SchoolYearArc[] = [
   { name: 'Der Weltenbaum', icon: 'park', guide: 'Wächterin des Weltenbaums', tagline: 'Ein uralter Baum, der alle bereisten Welten miteinander verwebt.', focus: 'Rückblick & Verbindung', monthLabel: 'Juni', built: false, teaser: 'Am Ende des Jahres wachsen alle bisherigen Welten zu einem einzigen Baum zusammen.' },
   { name: 'Sonnenhafen', icon: 'wb_sunny', guide: 'Alle Guides gemeinsam', tagline: 'Der Ort, von dem jede Guide-Figur erzählt — und zu dem am Ende alle zurückkehren.', focus: 'Ankommen & Feiern', monthLabel: 'Juli – August', built: false, teaser: 'Dorthin, erzählt jede Guide-Figur, führt am Ende jede Reise.' },
 ]
+
+/** Index eines Arcs im Schuljahres-Fahrplan (0-basiert), oder -1 falls
+ *  unbekannt. Gemeinsame Basis für "freigeschaltet?"-Prüfungen (Jahres-
+ *  übersicht, Guide-Picker) — eine Quelle der Wahrheit statt zweier. */
+export function schoolYearIndex(icon: string): number {
+  return SCHOOL_YEAR_ARCS.findIndex(arc => arc.icon === icon)
+}
+
+/** Ist die Welt/der Guide zu `icon` bereits erreicht (aktuelle oder
+ *  vergangene Etappe im Schuljahres-Fahrplan)? `currentThemeName` kommt aus
+ *  `getSeasonTheme(currentSeason).name` — derselbe Bezugspunkt wie überall
+ *  sonst im Reise-System. */
+export function isArcUnlocked(icon: string, currentThemeName: string): boolean {
+  const currentIndex = SCHOOL_YEAR_ARCS.findIndex(arc => arc.name === currentThemeName)
+  const targetIndex = schoolYearIndex(icon)
+  if (currentIndex < 0 || targetIndex < 0) return false
+  return targetIndex <= currentIndex
+}
 
 /** Index der aktuell erreichten Etappe (0-basiert) für einen Fortschritt in %. */
 export function currentStageIndex(pct: number, stageCount: number): number {

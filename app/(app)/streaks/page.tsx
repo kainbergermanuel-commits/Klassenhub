@@ -10,6 +10,7 @@ import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate,
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
+import { getSeasonTheme, isArcUnlocked } from '@/lib/seasonTheme'
 import StreakOverview from '@/components/streaks/StreakOverview'
 import type { RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 
@@ -273,9 +274,19 @@ export default async function StreaksPage() {
     milestones: { milestone: number; confirmed_at: string }[]
     achievementCounts: AchievementCounts
     guideNote: GuideNote
+    noteGuideIcon: string
+    preferredGuideIcon: string | null
     chronicle: ChronicleEntry[]
   } | null = null
   if (profile.role === 'student' && myStreak) {
+    // ─── MEIN GUIDE: persönliche Wahl (falls freigeschaltet) statt Guide der
+    // aktuellen Klassenwelt — siehe app/actions/saveGuidePreference.ts. ───────
+    const currentThemeName = getSeasonTheme(currentSeason).name
+    const preferredGuideIcon = (profile as { preferred_guide_icon?: string | null }).preferred_guide_icon ?? null
+    const effectiveGuideIcon = preferredGuideIcon && isArcUnlocked(preferredGuideIcon, currentThemeName)
+      ? preferredGuideIcon
+      : getSeasonTheme(currentSeason).icon
+
     const [{ data: myMilestones }, { data: myAchievements }, { data: recentNudges }] = await Promise.all([
       supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', profile.id).order('confirmed_at', { ascending: false }),
       supabase.from('achievements').select('kind,key,achieved_at').eq('student_id', profile.id),
@@ -295,7 +306,7 @@ export default async function StreaksPage() {
       broken: myStreak.broken,
       questsDone: hbQuestsDone,
       questsTotal: hbQuestsTotal,
-    })
+    }, effectiveGuideIcon)
     const chronicle = buildChronicle({
       milestones: myMilestones ?? [],
       shieldUses: (allFreezes ?? []).filter(f => f.student_id === profile.id).map(f => ({ created_at: f.created_at })),
@@ -318,6 +329,8 @@ export default async function StreaksPage() {
       milestones: myMilestones ?? [],
       achievementCounts: countAchievements(myAchievements ?? []),
       guideNote,
+      noteGuideIcon: effectiveGuideIcon,
+      preferredGuideIcon,
       chronicle,
     }
   }

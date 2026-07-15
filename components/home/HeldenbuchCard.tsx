@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { MILESTONES, flameCount } from '@/lib/streak'
-import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
+import { getSeasonTheme, GUIDE_PORTRAIT, SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
 import RucksackButton from '@/components/streaks/RucksackButton'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
+import GuidePickerModal from '@/components/streaks/GuidePickerModal'
 import WappenMosaic from './WappenMosaic'
 import type { RucksackState } from '@/components/streaks/RucksackItems'
 import type { AchievementCounts } from '@/lib/achievements'
@@ -17,8 +18,16 @@ interface Props {
   pendingMilestone: number | null
   season: string
   achievementCounts: AchievementCounts
-  /** Stille Anerkennung — private Guide-Beobachtung (siehe lib/heldenbuch.ts). */
+  /** Stille Anerkennung — private Guide-Beobachtung (siehe lib/heldenbuch.ts).
+   *  Bereits mit der Stimme des effektiven Guides gebaut (siehe noteGuideIcon). */
   guideNote: GuideNote
+  /** Theme-Icon des Guides, dessen Stimme guideNote gerade spricht — der
+   *  persönlich gewählte ("Mein Guide"), falls freigeschaltet, sonst der
+   *  Guide der aktuellen Klassenwelt. Bestimmt Portrait/Name im Notiz-Block. */
+  noteGuideIcon: string
+  /** Roh gespeicherte Wahl (auch falls gerade noch gesperrt) — nur fürs
+   *  Vorauswählen im Picker. null = noch nichts gewählt. */
+  preferredGuideIcon: string | null
   /** Datierte Rückschau: Meilensteine, eingesetzte Items, erloschene Flamme. */
   chronicle: ChronicleEntry[]
   /** Rucksack-Zugang als Icon+Overlay im Header. Nur setzen, wo keine volle
@@ -44,15 +53,22 @@ const CHRONICLE_META: Record<ChronicleEntry['kind'], { icon: string; color: stri
  *  dem ELTERN-BESTÄTIGTEN Streak (`confirmedStreak`) — das ist der verdiente,
  *  flammen-tragende Wert; der (höhere) unbestätigte Streak wird nur als
  *  "warten auf Bestätigung" ausgewiesen. */
-export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendingMilestone, season, achievementCounts, guideNote, chronicle, rucksack = null, showArcChip = true }: Props) {
+export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendingMilestone, season, achievementCounts, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, rucksack = null, showArcChip = true }: Props) {
   const theme = getSeasonTheme(season)
-  const portrait = GUIDE_PORTRAIT[theme.icon]
-  const guideFirst = theme.guide.split(' ').pop()
+  // Der Guide, dessen Stimme gerade spricht (Mein Guide, falls gewählt +
+  // freigeschaltet — sonst der Guide der aktuellen Klassenwelt). Fällt auf
+  // theme zurück, falls der Icon-Key aus irgendeinem Grund nicht im
+  // Fahrplan steht (kann praktisch nicht passieren, aber sauberer als crash).
+  const noteArc = SCHOOL_YEAR_ARCS.find(a => a.icon === noteGuideIcon)
+  const noteGuideName = noteArc?.guide ?? theme.guide
+  const notePortrait = GUIDE_PORTRAIT[noteGuideIcon]
+  const guideFirst = noteGuideName.split(' ').pop()
   const nextMilestone = MILESTONES.find(m => m > confirmedStreak)
   const flames = flameCount(confirmedStreak)
   const pending = Math.max(0, streak - confirmedStreak)
 
   const [arcInfoOpen, setArcInfoOpen] = useState(false)
+  const [guidePickerOpen, setGuidePickerOpen] = useState(false)
   const [streakOpen, setStreakOpen] = useState(false)
   const [chronicleExpanded, setChronicleExpanded] = useState(false)
 
@@ -125,20 +141,39 @@ export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendin
         </div>
       </div>
 
-      {/* Stille Anerkennung — Guide-Portrait + private Beobachtung */}
+      {/* Stille Anerkennung — Guide-Portrait + private Beobachtung. Zeigt den
+          persönlich gewählten Guide ("Mein Guide"), nicht zwangsläufig den
+          der aktuellen Klassenwelt — die beiden können auseinanderlaufen. */}
       <div className="flex items-start gap-2.5 mb-4 rounded-xl bg-[#FAF8F3] p-3">
-        {portrait ? (
-          <img src={portrait} alt={theme.guide} className="w-10 h-10 rounded-full object-cover object-top ring-2 ring-white shadow-sm flex-shrink-0 bg-[#EFEAE0]" />
+        {notePortrait ? (
+          <img src={notePortrait} alt={noteGuideName} className="w-10 h-10 rounded-full object-cover object-top ring-2 ring-white shadow-sm flex-shrink-0 bg-[#EFEAE0]" />
         ) : (
           <span className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E0A94B] to-[#B8721E] flex items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm">
-            <span className="msym text-[20px] text-white" aria-hidden="true">{theme.icon}</span>
+            <span className="msym text-[20px] text-white" aria-hidden="true">{noteGuideIcon}</span>
           </span>
         )}
-        <div className="min-w-0">
-          <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide">{guideFirst} bemerkt</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide">{guideFirst} bemerkt</p>
+            <button
+              type="button"
+              onClick={() => setGuidePickerOpen(true)}
+              className="text-[10px] font-bold text-kh-teal hover:opacity-70 transition-opacity flex-shrink-0"
+            >
+              Mein Guide
+            </button>
+          </div>
           <p className="text-[12.5px] text-kh-dark/85 leading-snug mt-0.5">{guideNote.text}</p>
         </div>
       </div>
+
+      {guidePickerOpen && (
+        <GuidePickerModal
+          currentIcon={preferredGuideIcon}
+          currentThemeName={theme.name}
+          onClose={() => setGuidePickerOpen(false)}
+        />
+      )}
 
       {/* Zweispaltig: Rückschau (links) · Wappen-Mosaik (rechts) */}
       <div className="flex gap-4">

@@ -27,7 +27,11 @@ export interface GuideNoteSignals {
   questsTotal: number
 }
 
-export function buildGuideNote(s: GuideNoteSignals): GuideNote {
+type GuideNoteVoice = (s: GuideNoteSignals) => GuideNote
+
+/** Neutrale Standard-Stimme — greift für jeden Guide, der noch keine eigenen
+ *  Formulierungen hat (Mein Guide: Prinzip 4, kein Vorab-Content-Berg). */
+const GENERIC_VOICE: GuideNoteVoice = s => {
   if (s.dutyKeptUp && s.dutyName) {
     return { icon: 'volunteer_activism', text: `Danke, dass du dich so zuverlässig um „${s.dutyName}“ kümmerst — die Klasse verlässt sich auf dich.` }
   }
@@ -48,6 +52,46 @@ export function buildGuideNote(s: GuideNoteSignals): GuideNote {
     return { icon: 'trending_up', text: `Schon ${s.questsDone} von ${s.questsTotal} Quests diese Woche — du bist gut unterwegs.` }
   }
   return { icon: 'waving_hand', text: 'Schön, dass du da bist. Ich sehe jeden Schritt, den du gehst — und jeder zählt.' }
+}
+
+/** Vala-Stimme (Bergführerin) — dieselben 7 Situationen, aber in ihrem
+ *  Bergexpeditions-Ton. Erste ausformulierte Persönlichkeit für "Mein Guide";
+ *  weitere Guides bekommen ihre eigene Stimme erst, sobald sie wählbar sind. */
+const VALA_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `Auf dich ist Verlass, wie auf ein gutes Seil: „${s.dutyName}“ hast du zuverlässig übernommen — die Klasse kann sich auf dich stützen.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus — auch auf dem Berg geht mal eine Rast nicht wie geplant. Morgen brechen wir einfach neu auf.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Hausübung' : 'Hausübungen'
+    return { icon: 'visibility', text: `Ich seh von hier oben noch ${s.openHomeworkCount} ${hw} vor dir liegen — ein Schritt nach dem anderen, du schaffst das.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} Tage in Folge dabeigeblieben — das ist echte Ausdauer, wie bei einer guten Bergtour. Ich hab's gesehen.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Alle Etappen dieser Woche gemeistert — stark erklommen!' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `Schon ${s.questsDone} von ${s.questsTotal} Quests diese Woche geschafft — guter Fortschritt am Hang.` }
+  }
+  return { icon: 'waving_hand', text: 'Schön, dass du mit dabei bist. Ich behalte jeden deiner Schritte im Blick — und jeder bringt dich weiter.' }
+}
+
+/** Guide-Stimmen nach Theme-Icon — derselbe Schlüssel wie GUIDE_PORTRAIT/
+ *  SEASON_ART. Fehlt ein Eintrag, greift GENERIC_VOICE. */
+const GUIDE_VOICES: Partial<Record<string, GuideNoteVoice>> = {
+  landscape: VALA_VOICE,
+}
+
+/** `guideIcon` bestimmt, wessen Stimme spricht — bei "Mein Guide" der
+ *  persönlich gewählte (falls freigeschaltet), sonst der Guide der aktuell
+ *  laufenden Klassenwelt (siehe resolveGuideTheme in app-Seiten). */
+export function buildGuideNote(s: GuideNoteSignals, guideIcon?: string): GuideNote {
+  const voice = (guideIcon && GUIDE_VOICES[guideIcon]) || GENERIC_VOICE
+  return voice(s)
 }
 
 // ─── Chronik / Logbuch ───────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ import type { GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
+import { getSeasonTheme, isArcUnlocked } from '@/lib/seasonTheme'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -366,6 +367,13 @@ export default async function HomePage() {
     }
 
     // ─── HELDENBUCH: stille Anerkennung + Chronik (siehe lib/heldenbuch.ts) ───
+    // Mein Guide: persönliche Wahl (falls freigeschaltet) statt Guide der
+    // aktuellen Klassenwelt — siehe app/actions/saveGuidePreference.ts.
+    const currentThemeName = getSeasonTheme(currentSeason).name
+    const preferredGuideIcon = (profile as { preferred_guide_icon?: string | null }).preferred_guide_icon ?? null
+    const effectiveGuideIcon = preferredGuideIcon && isArcUnlocked(preferredGuideIcon, currentThemeName)
+      ? preferredGuideIcon
+      : getSeasonTheme(currentSeason).icon
     const guideNote = buildGuideNote({
       openHomeworkCount: homeworkWithStatus.filter(h => !h.done).length,
       dutyName: myDuty?.duty_name ?? null,
@@ -374,7 +382,7 @@ export default async function HomePage() {
       broken,
       questsDone: quests.filter(q => q.done).length,
       questsTotal: quests.length,
-    })
+    }, effectiveGuideIcon)
     const chronicle = buildChronicle({
       milestones: myMilestones ?? [],
       shieldUses: (freezesS ?? []).filter(f => f.student_id === user.id).map(f => ({ created_at: f.created_at })),
@@ -405,6 +413,8 @@ export default async function HomePage() {
         questWeekStart={weekStart}
         socialProofPct={socialProofPct}
         guideNote={guideNote}
+        noteGuideIcon={effectiveGuideIcon}
+        preferredGuideIcon={preferredGuideIcon}
         chronicle={chronicle}
         guildSection={guildSection}
         achievementCounts={achievementCounts}

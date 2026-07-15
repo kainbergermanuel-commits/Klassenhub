@@ -41,6 +41,8 @@ interface StudentHomeProps {
   /** Anteil der Klasse mit mind. 1 Erledigung diese Woche, anonym (keine Namen). `null` = zu kleine Klasse. */
   socialProofPct: number | null
   guideNote: GuideNote
+  noteGuideIcon: string
+  preferredGuideIcon: string | null
   chronicle: ChronicleEntry[]
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
   achievementCounts: AchievementCounts
@@ -48,7 +50,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, guideNote, chronicle, guildSection, achievementCounts, rucksack,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -105,7 +107,7 @@ export default function StudentHome({
               </div>
             )}
             <div className="relative z-10 animate-card-enter" style={{ animationDelay: '180ms' }}>
-              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} pendingMilestone={pendingMilestone} season={season} achievementCounts={achievementCounts} guideNote={guideNote} chronicle={chronicle} rucksack={rucksack} />
+              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} pendingMilestone={pendingMilestone} season={season} achievementCounts={achievementCounts} guideNote={guideNote} noteGuideIcon={noteGuideIcon} preferredGuideIcon={preferredGuideIcon} chronicle={chronicle} rucksack={rucksack} />
             </div>
           </div>
         </div>

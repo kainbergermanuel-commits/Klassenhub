@@ -43,6 +43,8 @@ interface Props {
     milestones: { milestone: number; confirmed_at: string }[]
     achievementCounts: AchievementCounts
     guideNote: GuideNote
+    noteGuideIcon: string
+    preferredGuideIcon: string | null
     chronicle: ChronicleEntry[]
   } | null
   quests: QuestResult[]
@@ -77,6 +79,8 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
               season={currentSeason}
               achievementCounts={myHeldenbuch.achievementCounts}
               guideNote={myHeldenbuch.guideNote}
+              noteGuideIcon={myHeldenbuch.noteGuideIcon}
+              preferredGuideIcon={myHeldenbuch.preferredGuideIcon}
               chronicle={myHeldenbuch.chronicle}
             />
             <RucksackCard

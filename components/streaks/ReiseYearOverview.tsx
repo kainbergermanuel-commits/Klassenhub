@@ -79,7 +79,7 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
                   {isFuture ? (
                     <>
                       <p className="text-[13.5px] font-bold text-kh-dark/70">{arc.guide}</p>
-                      <p className="text-[12.5px] text-kh-muted italic mt-0.5 leading-snug">{arc.teaser}</p>
+                      <p className="text-[12.5px] text-kh-muted italic mt-0.5 leading-snug max-w-[80%]">{arc.teaser}</p>
                     </>
                   ) : (
                     <>
