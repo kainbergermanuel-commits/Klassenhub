@@ -156,12 +156,49 @@ export default async function HomePage() {
     const homeworkWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: doneIds.has(h.id) }))
 
     const studentIdsS = (allStudents ?? []).map(s => s.id)
-    const [{ data: freezesS }, { data: extensionsS }] = studentIdsS.length > 0
-      ? await Promise.all([
-          supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIdsS),
-          supabase.from('homework_extensions').select('student_id,homework_id,extra_days,created_at').in('student_id', studentIdsS),
-        ])
-      : [{ data: [] }, { data: [] }]
+    const dutyIds = duties.map(d => d.id)
+    const reminderIds = upcomingReminders.map(r => r.id)
+    const allHwIds = (allHwForStreak ?? []).map(h => h.id)
+    const weekStart = dutyWeekStart
+    const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
+
+    // ─── Alle voneinander unabhängigen Folge-Queries gebündelt (vorher 6
+    // sequenzielle Round-Trips) — jede hängt nur von IDs/Daten ab, die durch
+    // den ersten Batch oben schon vorliegen, nicht voneinander. ─────────────
+    const [
+      { data: freezesS },
+      { data: extensionsS },
+      { data: myViews },
+      { data: dutyCompletionsRaw },
+      { data: allCompletionsStudent },
+      { data: questOverrides },
+      { data: myChoices },
+      { data: myMilestones },
+      { data: recentNudges },
+    ] = await Promise.all([
+      studentIdsS.length > 0
+        ? supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIdsS)
+        : Promise.resolve({ data: [] }),
+      studentIdsS.length > 0
+        ? supabase.from('homework_extensions').select('student_id,homework_id,extra_days,created_at').in('student_id', studentIdsS)
+        : Promise.resolve({ data: [] }),
+      reminderIds.length > 0
+        ? supabase.from('reminder_views').select('reminder_id').eq('student_id', user.id).in('reminder_id', reminderIds)
+        : Promise.resolve({ data: [] }),
+      dutyIds.length > 0
+        ? supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', dutyIds)
+        : Promise.resolve({ data: [] }),
+      allHwIds.length > 0
+        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
+        : Promise.resolve({ data: [] }),
+      supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
+      supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', user.id).eq('week_start', weekStart),
+      supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', user.id).order('confirmed_at', { ascending: false }),
+      // Botenfeder (Balance-Fahrplan Phase 3) — hier schon mitgeladen statt erst
+      // bei den Erfolgen weiter unten, da nur von user.id abhängig.
+      supabase.from('parent_nudges').select('created_at').eq('student_id', user.id).order('created_at', { ascending: false }).limit(5),
+    ])
+
     const frozenByStudentS = groupFrozenByStudent(freezesS ?? [])
     const freezeUsedThisSeasonS = new Set((freezesS ?? []).filter(f => f.created_at.slice(0, 7) === currentSeason).map(f => f.student_id))
 
@@ -174,21 +211,10 @@ export default async function HomePage() {
       if (e.created_at.slice(0, 7) === currentSeason) crystalUsedThisSeasonS.add(e.student_id)
     }
 
-    const reminderIds = upcomingReminders.map(r => r.id)
-    const myViewedIds: string[] = []
-    if (reminderIds.length > 0) {
-      const { data: myViews } = await supabase
-        .from('reminder_views').select('reminder_id')
-        .eq('student_id', user.id).in('reminder_id', reminderIds)
-      myViewedIds.push(...(myViews ?? []).map(v => v.reminder_id))
-    }
+    const myViewedIds: string[] = (myViews ?? []).map(v => v.reminder_id)
     const myDuty = duties.find(d => d.assignee_ids.includes(user.id)) ?? null
 
     // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
-    const dutyIds = duties.map(d => d.id)
-    const { data: dutyCompletionsRaw } = dutyIds.length > 0
-      ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', dutyIds)
-      : { data: [] }
     const { doneByDutyStudent, keptUpStudents } = buildDutyDone(duties, dutyCompletionsRaw ?? [])
     const myDutyDoneWeekdays = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, user.id) : []
     const dutyDoneCount = myDutyDoneWeekdays.length
@@ -211,10 +237,6 @@ export default async function HomePage() {
 
     // Alle Erledigungen der Klasse (nur eltern-bestätigte) — Basis für eigenen
     // Streak, Gilden-Aggregation und Social-Proof-Nudge weiter unten.
-    const allHwIds = (allHwForStreak ?? []).map(h => h.id)
-    const { data: allCompletionsStudent } = allHwIds.length > 0
-      ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
-      : { data: [] }
     const confirmedByStudentS = new Map<string, Set<string>>()
     for (const c of allCompletionsStudent ?? []) {
       if ((c as any).confirmed_by_parent_at) {
@@ -235,13 +257,6 @@ export default async function HomePage() {
     const crystalAvailable = broken && !crystalUsedThisSeason
 
     // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────
-    const weekStart = dutyWeekStart
-    const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
-
-    const [{ data: questOverrides }, { data: myChoices }] = await Promise.all([
-      supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
-      supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', user.id).eq('week_start', weekStart),
-    ])
     const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
 
     const weekHw = (allHwForStreak ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
@@ -275,9 +290,7 @@ export default async function HomePage() {
     const socialProofPct = classSize >= 3 ? Math.round((studentsActiveThisWeek.size / classSize) * 100) : null
 
     // ─── HELDENBUCH (eigene Meilensteine, keine Klasse-Ansicht) ──────────────
-    const { data: myMilestones } = await supabase
-      .from('streak_confirmations').select('milestone,confirmed_at')
-      .eq('student_id', user.id).order('confirmed_at', { ascending: false })
+    // myMilestones kommt bereits aus dem gebündelten Batch weiter oben.
 
     // ─── GILDEN (Phase 3): kooperative Wochen-Quest in Kleingruppe ──────────
     // Komplett aus bereits geladenen Daten berechnet, keine neue Query.
@@ -338,13 +351,13 @@ export default async function HomePage() {
       // Statistik, das Ergebnis wird bewusst nicht geprüft/geworfen.
       await supabase.from('achievements').upsert(newAchievements as never, { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true })
     }
-    const [{ data: allMyAchievements }, { data: recentNudges }] = await Promise.all([
-      supabase.from('achievements').select('kind,key,achieved_at').eq('student_id', user.id),
-      // Lokales Datum per String-Slice vergleichen statt DB-seitigem gte-
-      // Zeitbereich (created_at ist UTC, ein naiver "heute 00:00"-String
-      // wäre nahe Mitternacht in Europe/Vienna falsch) — siehe sendParentNudge.ts.
-      supabase.from('parent_nudges').select('created_at').eq('student_id', user.id).order('created_at', { ascending: false }).limit(5),
-    ])
+    // Frischer Read nach dem Upsert, damit gerade neu vergebene Erfolge sofort
+    // mitgezählt werden. recentNudges (Botenfeder) kommt bereits aus dem
+    // gebündelten Batch weiter oben — lokales Datum per String-Slice statt
+    // DB-seitigem gte-Zeitbereich verglichen (created_at ist UTC, ein naiver
+    // "heute 00:00"-String wäre nahe Mitternacht in Europe/Vienna falsch) —
+    // siehe sendParentNudge.ts.
+    const { data: allMyAchievements } = await supabase.from('achievements').select('kind,key,achieved_at').eq('student_id', user.id)
     const achievementCounts = countAchievements(allMyAchievements ?? [])
     const myConfirmedIdsForNudge = confirmedByStudentS.get(user.id) ?? new Set<string>()
     const pendingConfirmationCount = [...doneIds].filter(id => !myConfirmedIdsForNudge.has(id)).length
