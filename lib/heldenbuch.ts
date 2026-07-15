@@ -80,10 +80,62 @@ const VALA_VOICE: GuideNoteVoice = s => {
   return { icon: 'waving_hand', text: 'Schön, dass du mit dabei bist. Ich behalte jeden deiner Schritte im Blick — und jeder bringt dich weiter.' }
 }
 
+/** ARI-Stimme (Bordcomputer) — dieselben 7 Situationen, aber knapp, technisch,
+ *  in Systemmeldungen ("Status: …") statt warmer Bergführerin-Ansprache. */
+const ARI_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `Systemcheck „${s.dutyName}“: durchgehend grün. Verlässlichkeit dieser Größenordnung sehe ich selten, Crew-Mitglied.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Statusmeldung: Kontrollleuchte erloschen. Kein Systemausfall, nur eine Unterbrechung — nächster Countdown startet, wann du willst.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Aufgabe' : 'Aufgaben'
+    return { icon: 'visibility', text: `Scanner zeigt noch ${s.openHomeworkCount} offene ${hw} an. Checkliste Punkt für Punkt — ich berechne bereits den Kurs danach.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} Tage in Folge ohne Systemausfall protokolliert. Diese Werte, Crew-Mitglied, sind außergewöhnlich stabil.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Alle Missionsziele dieser Woche erfüllt. Log-Eintrag: einwandfreie Ausführung.' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `${s.questsDone} von ${s.questsTotal} Missionszielen abgeschlossen. Kurs stimmt, weiter so.` }
+  }
+  return { icon: 'waving_hand', text: 'Willkommen an Bord. Alle deine Schritte laufen über meine Sensoren — jeder einzelne zählt für die Mission.' }
+}
+
+/** Isla-Stimme (Kartografin) — dieselben 7 Situationen, neugierig-abenteuerlich,
+ *  in Karten-/Spuren-Metaphern statt Berg- oder Bordcomputer-Sprache. */
+const ISLA_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `„${s.dutyName}“ hast du zuverlässig wie ein guter Kompass gehalten — auf so jemanden verlässt sich die ganze Expedition.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Spur ist gerade verweht — passiert selbst erfahrenen Schatzsucherinnen. Morgen zeichnen wir sie einfach neu.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Spur' : 'Spuren'
+    return { icon: 'visibility', text: `Auf meiner Karte sehe ich noch ${s.openHomeworkCount} unentdeckte ${hw} — folg ihnen einfach der Reihe nach, du bist näher dran, als du denkst.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} Tage in Folge der Spur gefolgt, ohne abzubrechen — das ist echtes Entdeckerinnen-Talent. Ich hab's notiert.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Alle Spuren dieser Woche gefunden — die Schatzkammer steht euch offen!' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `Schon ${s.questsDone} von ${s.questsTotal} Spuren dieser Woche entdeckt — die Karte füllt sich.` }
+  }
+  return { icon: 'waving_hand', text: 'Schön, dass du mit auf Expedition bist. Ich behalte jede deiner Spuren im Blick — und jede führt uns weiter.' }
+}
+
 /** Guide-Stimmen nach Theme-Icon — derselbe Schlüssel wie GUIDE_PORTRAIT/
  *  SEASON_ART. Fehlt ein Eintrag, greift GENERIC_VOICE. */
 const GUIDE_VOICES: Partial<Record<string, GuideNoteVoice>> = {
   landscape: VALA_VOICE,
+  rocket_launch: ARI_VOICE,
+  map: ISLA_VOICE,
 }
 
 /** `guideIcon` bestimmt, wessen Stimme spricht — bei "Mein Guide" der
