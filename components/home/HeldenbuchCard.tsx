@@ -24,13 +24,19 @@ interface Props {
   /** Rucksack-Zugang als Icon+Overlay im Header. Nur setzen, wo keine volle
    *  Rucksack-Card daneben steht (Startseite) — auf `/streaks` = null. */
   rucksack?: RucksackState | null
+  /** Arc-Chip (Theme + Guide + Info-Overlay) ausblenden, wo der Seitenkopf
+   *  diese Rolle bereits übernimmt (AdventureHero auf `/streaks`). */
+  showArcChip?: boolean
 }
 
 const CHRONICLE_META: Record<ChronicleEntry['kind'], { icon: string; color: string; fill: number }> = {
-  milestone: { icon: 'military_tech', color: '#C98A2B', fill: 1 },
-  shield:    { icon: 'shield',        color: '#0F8A82', fill: 1 },
-  crystal:   { icon: 'change_history', color: '#9C5FD1', fill: 1 },
-  break:     { icon: 'local_fire_department', color: '#B8AF9C', fill: 0 },
+  milestone:   { icon: 'military_tech', color: '#C98A2B', fill: 1 },
+  shield:      { icon: 'shield',        color: '#0F8A82', fill: 1 },
+  crystal:     { icon: 'change_history', color: '#9C5FD1', fill: 1 },
+  break:       { icon: 'local_fire_department', color: '#B8AF9C', fill: 0 },
+  quest:       { icon: 'task_alt',      color: '#0F8A82', fill: 1 },
+  guild_quest: { icon: 'diversity_3',   color: '#5965B8', fill: 1 },
+  class_goal:  { icon: 'flag',          color: '#B8721E', fill: 1 },
 }
 
 /** Private Rückschau auf die eigene Reise — bewusst kein Vergleich mit
@@ -38,7 +44,7 @@ const CHRONICLE_META: Record<ChronicleEntry['kind'], { icon: string; color: stri
  *  dem ELTERN-BESTÄTIGTEN Streak (`confirmedStreak`) — das ist der verdiente,
  *  flammen-tragende Wert; der (höhere) unbestätigte Streak wird nur als
  *  "warten auf Bestätigung" ausgewiesen. */
-export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendingMilestone, season, achievementCounts, guideNote, chronicle, rucksack = null }: Props) {
+export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendingMilestone, season, achievementCounts, guideNote, chronicle, rucksack = null, showArcChip = true }: Props) {
   const theme = getSeasonTheme(season)
   const portrait = GUIDE_PORTRAIT[theme.icon]
   const guideFirst = theme.guide.split(' ').pop()
@@ -61,18 +67,20 @@ export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendin
       </div>
 
       {/* Aktueller Story-Arc — Klick öffnet Erklärung + Guide + Story-Kostprobe */}
-      <button
-        type="button"
-        onClick={() => setArcInfoOpen(true)}
-        className="flex items-center gap-1.5 mb-3 -mt-0.5 rounded-full bg-kh-amber/10 hover:bg-kh-amber/15 transition-colors pl-2 pr-2.5 py-1"
-      >
-        <span className="msym text-[14px] text-kh-amber" aria-hidden="true">{theme.icon}</span>
-        <span className="text-[11.5px] font-bold text-kh-dark">{theme.name}</span>
-        <span className="text-[10.5px] text-kh-muted">· {theme.guide}</span>
-        <span className="msym text-[13px] text-kh-muted ml-0.5" aria-hidden="true">info</span>
-      </button>
+      {showArcChip && (
+        <button
+          type="button"
+          onClick={() => setArcInfoOpen(true)}
+          className="flex items-center gap-1.5 mb-3 -mt-0.5 rounded-full bg-kh-amber/10 hover:bg-kh-amber/15 transition-colors pl-2 pr-2.5 py-1"
+        >
+          <span className="msym text-[14px] text-kh-amber" aria-hidden="true">{theme.icon}</span>
+          <span className="text-[11.5px] font-bold text-kh-dark">{theme.name}</span>
+          <span className="text-[10.5px] text-kh-muted">· {theme.guide}</span>
+          <span className="msym text-[13px] text-kh-muted ml-0.5" aria-hidden="true">info</span>
+        </button>
+      )}
 
-      {arcInfoOpen && <GuideInfoOverlay theme={theme} onClose={() => setArcInfoOpen(false)} />}
+      {showArcChip && arcInfoOpen && <GuideInfoOverlay theme={theme} onClose={() => setArcInfoOpen(false)} />}
 
       {/* Streak-Zeile — Overlay mit Details erscheint beim Hover/Tap auf die Flammen */}
       <div className="flex items-center gap-3 mb-3">
@@ -135,7 +143,7 @@ export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendin
       {/* Zweispaltig: Rückschau (links) · Wappen-Mosaik (rechts) */}
       <div className="flex gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide mb-1.5">Rückschau</p>
+          <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide mb-1.5">Logbuch</p>
           {chronicle.length === 0 ? (
             <p className="text-[12px] text-kh-muted font-medium leading-snug">
               Noch nichts eingetragen — die ersten 5 HÜ in Folge warten auf dich.

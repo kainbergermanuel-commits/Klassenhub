@@ -278,7 +278,7 @@ export default async function StreaksPage() {
   if (profile.role === 'student' && myStreak) {
     const [{ data: myMilestones }, { data: myAchievements }, { data: recentNudges }] = await Promise.all([
       supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', profile.id).order('confirmed_at', { ascending: false }),
-      supabase.from('achievements').select('kind').eq('student_id', profile.id),
+      supabase.from('achievements').select('kind,key,achieved_at').eq('student_id', profile.id),
       // Lokales Datum per String-Slice vergleichen statt DB-seitigem gte-
       // Zeitbereich (created_at ist UTC) — siehe sendParentNudge.ts.
       supabase.from('parent_nudges').select('created_at').eq('student_id', profile.id).order('created_at', { ascending: false }).limit(5),
@@ -300,6 +300,7 @@ export default async function StreaksPage() {
       milestones: myMilestones ?? [],
       shieldUses: (allFreezes ?? []).filter(f => f.student_id === profile.id).map(f => ({ created_at: f.created_at })),
       crystalUses: (allExtensions ?? []).filter(e => e.student_id === profile.id).map(e => ({ created_at: e.created_at })),
+      achievements: myAchievements ?? [],
       brokenNow: myStreak.broken,
       today,
     })

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
+import ReiseYearOverview from '@/components/streaks/ReiseYearOverview'
 import type { Role } from '@/lib/types'
 
 interface Props {
@@ -25,6 +26,7 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
   const Art = SEASON_ART[theme.icon]
   const portrait = GUIDE_PORTRAIT[theme.icon]
   const [guideInfoOpen, setGuideInfoOpen] = useState(false)
+  const [tab, setTab] = useState<'aktuell' | 'jahr'>('aktuell')
 
   return (
     <>
@@ -44,6 +46,28 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
         </div>
       </header>
 
+      <div className="mb-5 flex gap-1.5 rounded-xl bg-[#F3F0EA] p-1 w-fit">
+        {([
+          ['aktuell', 'Aktuelle Welt'],
+          ['jahr', 'Jahresübersicht'],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`px-3.5 py-1.5 rounded-lg text-[13px] font-bold transition-colors ${
+              tab === key ? 'bg-white text-kh-dark shadow-sm' : 'text-kh-muted hover:text-kh-dark'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'jahr' ? (
+        <ReiseYearOverview currentThemeName={theme.name} />
+      ) : (
+      <>
       <button
         type="button"
         onClick={() => setGuideInfoOpen(true)}
@@ -103,7 +127,8 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
         </div>
         <span className="absolute z-10 top-3 right-3 flex items-center gap-1 rounded-full bg-white/85 pl-2 pr-2.5 py-1 text-[10.5px] font-bold text-kh-muted shadow-sm group-hover:bg-white transition-colors">
           <span className="msym text-[14px] text-kh-teal" aria-hidden="true">info</span>
-          {theme.guide.split(' ')[0]}?
+          {/* Letztes Wort = Figurenname ("Vala?"), nicht der Rollen-Titel davor. */}
+          {theme.guide.split(' ').pop()}?
         </span>
       </button>
 
@@ -153,6 +178,8 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
           )
         })}
       </div>
+      </>
+      )}
     </>
   )
 }

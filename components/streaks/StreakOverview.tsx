@@ -2,13 +2,12 @@ import type { Role } from '@/lib/types'
 import type { QuestResult } from '@/lib/quests'
 import type { AchievementCounts } from '@/lib/achievements'
 import Avatar from '@/components/ui/Avatar'
-import ClassGoalCard from '@/components/streaks/ClassGoalCard'
+import AdventureHero from '@/components/streaks/AdventureHero'
 import HeldenbuchCard from '@/components/home/HeldenbuchCard'
 import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
 import TeacherQuestRegie, { type RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 import { VETERAN_MILESTONE } from '@/lib/streak'
-import { getSeasonTheme } from '@/lib/seasonTheme'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
 
@@ -53,26 +52,16 @@ interface Props {
 }
 
 export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, teacherRegie, guildSection }: Props) {
-  const theme = getSeasonTheme(currentSeason)
   return (
     <>
-      <header className="mb-6 flex items-center gap-3.5">
-        <div className="w-11 h-11 max-md:w-10 max-md:h-10 rounded-2xl bg-gradient-to-br from-[#B8721E] to-[#F5C842] shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
-          <img src="/flame.svg" alt="" className="w-6 h-6" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Abenteuer</h1>
-          <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">
-            {theme.name} · Begleitet von {theme.guide}
-          </p>
-        </div>
-      </header>
+      {/* Welt-Einstieg — Titel, Guide UND Klassenreise in einer Card (vorher
+          zwei Banner mit demselben Berg-Motiv). Guide/Portrait/Overlay leben
+          hier, deshalb blenden Quest-Card + Heldenbuch ihre Theme-Duplikate aus. */}
+      <AdventureHero season={currentSeason} role={role} goal={classGoal} done={classGoalDone} />
 
       <div className="flex flex-col gap-6">
-        <ClassGoalCard role={role} goal={classGoal} done={classGoalDone} season={currentSeason} />
-
         {(quests.length > 0 || guildSection) && (
-          <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} guildSection={guildSection} />
+          <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} guildSection={guildSection} showGuidePortrait={false} />
         )}
 
         {myHeldenbuch && (
@@ -80,6 +69,7 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
           // Rucksack-Item-Tooltips nicht verdeckt werden.
           <div className="relative z-20 grid md:grid-cols-2 gap-6 items-start">
             <HeldenbuchCard
+              showArcChip={false}
               streak={myHeldenbuch.streak}
               confirmedStreak={myHeldenbuch.confirmedStreak}
               broken={myHeldenbuch.broken}

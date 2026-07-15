@@ -338,7 +338,7 @@ export default async function HomePage() {
       await supabase.from('achievements').upsert(newAchievements as never, { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true })
     }
     const [{ data: allMyAchievements }, { data: recentNudges }] = await Promise.all([
-      supabase.from('achievements').select('kind').eq('student_id', user.id),
+      supabase.from('achievements').select('kind,key,achieved_at').eq('student_id', user.id),
       // Lokales Datum per String-Slice vergleichen statt DB-seitigem gte-
       // Zeitbereich (created_at ist UTC, ein naiver "heute 00:00"-String
       // wäre nahe Mitternacht in Europe/Vienna falsch) — siehe sendParentNudge.ts.
@@ -379,6 +379,7 @@ export default async function HomePage() {
       milestones: myMilestones ?? [],
       shieldUses: (freezesS ?? []).filter(f => f.student_id === user.id).map(f => ({ created_at: f.created_at })),
       crystalUses: (extensionsS ?? []).filter(e => e.student_id === user.id).map(e => ({ created_at: e.created_at })),
+      achievements: allMyAchievements ?? [],
       brokenNow: broken,
       today,
     })

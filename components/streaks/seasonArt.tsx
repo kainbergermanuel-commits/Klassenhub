@@ -65,7 +65,7 @@ function TreasureArt() {
   )
 }
 
-export const SEASON_ART: Record<string, () => React.ReactElement> = {
+export const SEASON_ART: Partial<Record<string, () => React.ReactElement>> = {
   landscape: MountainArt,
   rocket_launch: SpaceArt,
   map: TreasureArt,

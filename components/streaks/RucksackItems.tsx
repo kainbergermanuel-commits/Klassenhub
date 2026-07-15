@@ -372,8 +372,16 @@ function Item({
 
   return (
     <div
-      className="group/item flex flex-col items-center gap-1.5 rounded-xl bg-[#FAF8F3] px-2 py-3 cursor-default text-center"
+      role="button"
+      tabIndex={0}
+      aria-expanded={isOpen}
+      aria-label={`${title} — Details ${isOpen ? 'schließen' : 'anzeigen'}`}
+      className="group/item flex flex-col items-center gap-1.5 rounded-xl bg-[#FAF8F3] px-2 py-3 cursor-default text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-kh-teal"
       onClick={(e) => { e.stopPropagation(); onToggle() }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() }
+        if (e.key === 'Escape' && isOpen) onToggle()
+      }}
     >
       <span className="relative">
         <span

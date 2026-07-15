@@ -1,4 +1,7 @@
 import { VETERAN_MILESTONE } from '@/lib/streak'
+import { findQuestTemplate } from '@/lib/questVault'
+import { findGuildQuestTemplate } from '@/lib/guilds'
+import type { AchievementKind } from '@/lib/types'
 
 /** Datenbausteine für das Heldenbuch, die aus Roh-Signalen abgeleitet werden —
  *  bewusst als reine Funktionen (kein DB-Zugriff), damit Startseite und
@@ -47,11 +50,12 @@ export function buildGuideNote(s: GuideNoteSignals): GuideNote {
   return { icon: 'waving_hand', text: 'Schön, dass du da bist. Ich sehe jeden Schritt, den du gehst — und jeder zählt.' }
 }
 
-// ─── Chronik (Rückschau) ─────────────────────────────────────────────────────
+// ─── Chronik / Logbuch ───────────────────────────────────────────────────────
 // Zusammengeführte, datierte Ereignisliste: Meilensteine + eingesetzte Items
-// (Schutzschild/Zeitkristall) + aktuell erloschene Flamme. Absteigend sortiert.
+// (Schutzschild/Zeitkristall) + abgeschlossene Quests/Gilden-Quests/Klassenziele
+// (= das Quest-Logbuch, Cluster A) + aktuell erloschene Flamme. Absteigend.
 
-export type ChronicleKind = 'milestone' | 'shield' | 'crystal' | 'break'
+export type ChronicleKind = 'milestone' | 'shield' | 'crystal' | 'break' | AchievementKind
 
 export interface ChronicleEntry {
   kind: ChronicleKind
@@ -65,6 +69,8 @@ export function buildChronicle(input: {
   milestones: { milestone: number; confirmed_at: string }[]
   shieldUses: { created_at: string }[]
   crystalUses: { created_at: string }[]
+  /** Protokollierte Erfolge (achievements-Tabelle) fürs Quest-Logbuch. */
+  achievements?: { kind: AchievementKind; key: string; achieved_at: string }[]
   brokenNow: boolean
   today: string
 }): ChronicleEntry[] {
@@ -79,6 +85,15 @@ export function buildChronicle(input: {
   }
   for (const s of input.shieldUses) out.push({ kind: 'shield', label: 'Schutzschild eingesetzt', date: s.created_at })
   for (const c of input.crystalUses) out.push({ kind: 'crystal', label: 'Zeitkristall eingesetzt', date: c.created_at })
+  for (const a of input.achievements ?? []) {
+    if (a.kind === 'quest') {
+      out.push({ kind: 'quest', label: findQuestTemplate(a.key)?.title ?? 'Wochen-Quest geschafft', date: a.achieved_at })
+    } else if (a.kind === 'guild_quest') {
+      out.push({ kind: 'guild_quest', label: findGuildQuestTemplate(a.key)?.title ?? 'Gilden-Quest geschafft', note: 'Gilde', date: a.achieved_at })
+    } else {
+      out.push({ kind: 'class_goal', label: 'Klassenziel erreicht', note: 'ganze Klasse', date: a.achieved_at })
+    }
+  }
   // Aktuell gerissene Flamme als jüngstes Ereignis (Ende des heutigen Tages,
   // damit es über heutige Meilensteine sortiert). Nur der Ist-Zustand — es gibt
   // (bewusst) kein persistiertes Historien-Log gerissener Streaks.
