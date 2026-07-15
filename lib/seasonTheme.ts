@@ -84,10 +84,27 @@ export const GUIDE_PORTRAIT: Partial<Record<string, string>> = {
   rocket_launch: '/images/characters/ari.webp', // Bordcomputer ARI, Weltraummission
 }
 
-/** Wählt ein Thema anhand des Season-Keys ('YYYY-MM'), rotierend pro Monat. */
+/** Position im Schuljahres-Fahrplan (0=September … 10=Juli/August) für einen
+ *  0-basierten Kalendermonat (0=Januar … 11=Dezember). Muss zu SCHOOL_YEAR_ARCS
+ *  passen (weiter unten in dieser Datei) — eine Sequenz, keine zwei. */
+function schoolYearArcIndex(monthIndex: number): number {
+  return Math.min((monthIndex - 8 + 12) % 12, 10) // Juli(10)+August(11) teilen sich Sonnenhafen
+}
+
+/** Wählt ein Thema anhand des Season-Keys ('YYYY-MM') — folgt dem echten
+ *  Schuljahres-Fahrplan (September → Juli/August), nicht mehr einer reinen
+ *  Monats-Rotation. Nur die ersten drei Welten haben volle Etappen-Story
+ *  (siehe THEMES); liegt der Fahrplan-Monat auf einer noch nicht gebauten
+ *  Welt, bleibt die zuletzt gebaute aktiv (Prinzip 4: kein Monat ganz ohne
+ *  Story) — bis mehr Welten Content bekommen, rückt das automatisch nach. */
 export function getSeasonTheme(season: string): JourneyTheme {
   const monthIndex = Number(season.slice(5, 7)) - 1
-  return THEMES[monthIndex % THEMES.length]
+  const arcIndex = schoolYearArcIndex(monthIndex)
+  for (let i = arcIndex; i >= 0; i--) {
+    const theme = THEMES.find(t => t.icon === SCHOOL_YEAR_ARCS[i].icon)
+    if (theme) return theme
+  }
+  return THEMES[0]
 }
 
 /** Ein Eintrag im Schuljahres-Fahrplan (siehe SCHOOL_YEAR_ARCS). Welten ohne
