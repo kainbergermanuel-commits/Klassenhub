@@ -31,27 +31,48 @@ export default function AllArcsOverview() {
 
         return (
           <div key={arc.name} className="flex flex-col gap-3">
-            {/* ── Story-Header: ÜBER der Card, reine Typografie, kein Glas-Panel ── */}
-            <div className="px-1">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted">{arc.monthLabel}</span>
-                <span
-                  className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full ${
-                    arc.built ? 'text-kh-teal bg-kh-teal/15' : 'text-kh-muted bg-[#EFEAE0]'
-                  }`}
-                >
-                  {arc.built ? 'Gebaut' : 'Nur Teaser'}
-                </span>
-                {!portrait && !locationArt && (
-                  <span className="text-[9.5px] font-extrabold text-kh-amber bg-kh-amber/15 px-2 py-0.5 rounded-full">Kein Portrait</span>
-                )}
+            {/* ── Story-Header: ÜBER der Card, reine Typografie, kein Glas-Panel ──
+                Auf Mobile steht die Guide-Figur hier im Header (rechts neben dem
+                Text), damit die Etappen-Texte in der Card darunter die volle
+                Cardbreite nutzen können. Ab md wandert die Figur zurück in die
+                Card (dort groß, unten ausgerichtet, neben dem Text). */}
+            <div className="px-1 flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted">{arc.monthLabel}</span>
+                  <span
+                    className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full ${
+                      arc.built ? 'text-kh-teal bg-kh-teal/15' : 'text-kh-muted bg-[#EFEAE0]'
+                    }`}
+                  >
+                    {arc.built ? 'Gebaut' : 'Nur Teaser'}
+                  </span>
+                  {!portrait && !locationArt && (
+                    <span className="text-[9.5px] font-extrabold text-kh-amber bg-kh-amber/15 px-2 py-0.5 rounded-full">Kein Portrait</span>
+                  )}
+                </div>
+                <h3 className="font-extrabold text-[21px] text-kh-dark leading-tight">{arc.name}</h3>
+                <p className="text-[13px] text-kh-muted font-semibold mt-1">{arc.guide} · {arc.focus}</p>
+                <p className="text-[13.5px] text-kh-dark/85 italic mt-1.5 leading-snug">{arc.tagline}</p>
+                <p className="text-[12px] text-kh-dark/70 leading-snug mt-1.5">
+                  <span className="font-bold text-kh-muted">Teaser: </span>{arc.teaser}
+                </p>
               </div>
-              <h3 className="font-extrabold text-[21px] text-kh-dark leading-tight">{arc.name}</h3>
-              <p className="text-[13px] text-kh-muted font-semibold mt-1">{arc.guide} · {arc.focus}</p>
-              <p className="text-[13.5px] text-kh-dark/85 italic mt-1.5 leading-snug">{arc.tagline}</p>
-              <p className="text-[12px] text-kh-dark/70 leading-snug mt-1.5">
-                <span className="font-bold text-kh-muted">Teaser: </span>{arc.teaser}
-              </p>
+              {!locationArt && (
+                <div className="md:hidden flex-shrink-0">
+                  {portrait ? (
+                    <img
+                      src={portrait}
+                      alt={arc.guide}
+                      className="h-[104px] w-auto max-w-[76px] object-contain object-bottom drop-shadow-[0_4px_10px_rgba(20,40,45,.25)]"
+                    />
+                  ) : (
+                    <span className="w-[56px] h-[56px] rounded-2xl bg-gradient-to-br from-[#E0A94B] to-[#B8721E] flex items-center justify-center ring-2 ring-white shadow-sm">
+                      <span className="msym text-[24px] text-white" aria-hidden="true">{arc.icon}</span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="relative overflow-hidden rounded-2xl kh-card p-5">
@@ -89,32 +110,34 @@ export default function AllArcsOverview() {
                 </div>
               )}
 
-              {/* ── Inhalt: Figur links (groß, unten ausgerichtet), Etappen-Texte rechts ── */}
+              {/* ── Inhalt: Figur links (groß, unten ausgerichtet, nur ab md — auf
+                  Mobile steht die Guide-Figur stattdessen im Header oben),
+                  Etappen-Texte rechts (auf Mobile volle Cardbreite) ── */}
               <div className="relative z-10 flex gap-4 items-end">
-                {/* Volle Guide-Figur (nicht rundes Portrait) im linken Bereich,
-                    deutlich größer als ein Portrait, am unteren Card-Rand verankert
-                    (items-end), als stünde sie auf dem Boden der Card. Nach HÖHE
-                    statt Breite skaliert: manche Bilder zeigen zwei Figuren
-                    nebeneinander (z.B. Coralie & Nauto), die dadurch ein breiteres,
-                    kürzeres Format haben — bei fester Breite wirkten sie kleiner.
-                    Feste Höhe hält alle Guides optisch gleich groß. */}
+                {/* Volle Guide-Figur (nicht rundes Portrait), deutlich größer als
+                    ein Portrait, am unteren Card-Rand verankert (items-end), als
+                    stünde sie auf dem Boden der Card. Nach HÖHE statt Breite
+                    skaliert: manche Bilder zeigen zwei Figuren nebeneinander
+                    (z.B. Coralie & Nauto), die dadurch ein breiteres, kürzeres
+                    Format haben — bei fester Breite wirkten sie kleiner. Feste
+                    Höhe hält alle Guides optisch gleich groß. */}
                 {!locationArt && portrait && (
-                  <div className="flex-shrink-0">
+                  <div className="hidden md:block flex-shrink-0">
                     <img
                       src={portrait}
                       alt={arc.guide}
-                      className="h-[230px] md:h-[340px] max-h-[80vh] w-auto max-w-[260px] object-contain object-bottom drop-shadow-[0_8px_16px_rgba(20,40,45,.35)]"
+                      className="h-[340px] max-h-[80vh] w-auto max-w-[260px] object-contain object-bottom drop-shadow-[0_8px_16px_rgba(20,40,45,.35)]"
                     />
                   </div>
                 )}
                 {/* Für Welten ohne Figur und ohne Ortsbild (Fallback): Icon-Kachel. */}
                 {!locationArt && !portrait && (
-                  <span className="w-[90px] h-[90px] rounded-2xl bg-gradient-to-br from-[#E0A94B] to-[#B8721E] flex items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm self-start">
+                  <span className="hidden md:flex w-[90px] h-[90px] rounded-2xl bg-gradient-to-br from-[#E0A94B] to-[#B8721E] items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm self-start">
                     <span className="msym text-[38px] text-white" aria-hidden="true">{arc.icon}</span>
                   </span>
                 )}
 
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 w-full">
                   {/* Etappen-Texte */}
                   {story ? (
                     <div className="flex flex-col gap-2.5">
