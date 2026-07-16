@@ -73,15 +73,16 @@ export default function AdventureHero({ season, role, goal, done }: Props) {
           )}
         </div>
 
-        {/* Guide-Portrait — volle Card-Höhe, Kopf ragt bewusst über den Rand.
-            Auf Mobile ausgeblendet (das hohe Glas-Panel würde die Figur klein
-            und verloren wirken lassen, und der Platz fehlt dem Titel). */}
+        {/* Guide-Portrait — volle Card-Höhe, unten verankert, Füße ragen bewusst
+            unten und links über den Rand. Auf Mobile ausgeblendet (das hohe
+            Glas-Panel würde die Figur klein und verloren wirken lassen, und der
+            Platz fehlt dem Titel). */}
         {portrait ? (
           <div className="relative z-10 -ml-2.5 w-[17%] min-w-[64px] max-w-[150px] flex-shrink-0 self-stretch pointer-events-none max-md:hidden">
             <img
               src={portrait}
               alt={theme.guide}
-              className="absolute -top-6 left-[-8px] w-[125%] max-h-[290px] h-[calc(100%+24px)] object-contain object-left-bottom"
+              className="absolute bottom-[-24px] left-[-8px] w-[125%] max-h-[290px] h-[calc(100%+24px)] object-contain object-left-bottom"
             />
           </div>
         ) : (
