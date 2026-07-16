@@ -1,6 +1,6 @@
 'use client'
 
-import { SCHOOL_YEAR_ARCS, GUIDE_PORTRAIT, LOCATION_ART, findBuiltTheme } from '@/lib/seasonTheme'
+import { SCHOOL_YEAR_ARCS, GUIDE_PORTRAIT, LOCATION_ART, findBuiltTheme, ARC_STORY_DRAFTS } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 
 /** Admin-only Vorschau: ALLE geplanten Welten des Schuljahres-Fahrplans auf
@@ -12,8 +12,8 @@ export default function AllArcsOverview() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-[12.5px] text-kh-muted font-medium leading-snug -mt-1">
-        Admin-Vorschau: alle {SCHOOL_YEAR_ARCS.length} Welten des Fahrplans, unabhängig vom Klassenfortschritt —
-        inkl. voller Etappen-Texte, wo bereits gebaut.
+        Admin-Vorschau: alle {SCHOOL_YEAR_ARCS.length} Welten des Fahrplans mit vollem Etappen-Text, unabhängig vom Klassenfortschritt.
+        Gebaute Welten sind live, die übrigen zeigen den fertig geschriebenen Story-Entwurf.
       </p>
 
       {SCHOOL_YEAR_ARCS.map(arc => {
@@ -21,6 +21,10 @@ export default function AllArcsOverview() {
         const portrait = GUIDE_PORTRAIT[arc.icon]
         const locationArt = LOCATION_ART[arc.icon]
         const builtTheme = findBuiltTheme(arc.icon)
+        // Gebaute Welt (aus THEMES) ODER fertig geschriebener Entwurf (ARC_STORY_DRAFTS).
+        // Beide liefern goalTitle/stepNoun/stages; der Draft hat nur keine nudge-Funktion.
+        const draft = ARC_STORY_DRAFTS[arc.icon]
+        const story = builtTheme ?? draft ?? null
 
         return (
           <div key={arc.name} className="relative overflow-hidden rounded-2xl kh-card p-5">
@@ -93,12 +97,12 @@ export default function AllArcsOverview() {
               <p className="text-[12.5px] text-kh-dark/80 italic leading-snug">{arc.teaser}</p>
             </div>
 
-            {builtTheme ? (
+            {story ? (
               <div className="relative z-10 mt-4 flex flex-col gap-2.5">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted">
-                  Etappen-Story ({builtTheme.stages.length}) · Ziel: „{builtTheme.goalTitle}“ · Einheit: {builtTheme.stepNoun}
+                  {builtTheme ? 'Etappen-Story' : 'Etappen-Story (Entwurf, noch nicht live)'} ({story.stages.length}) · Ziel: „{story.goalTitle}“ · Einheit: {story.stepNoun}
                 </p>
-                {builtTheme.stages.map((stage, i) => (
+                {story.stages.map((stage, i) => (
                   <div key={stage.label} className="rounded-xl bg-white/75 p-3">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="msym text-[16px] text-kh-amber" aria-hidden="true">{stage.icon}</span>
@@ -107,11 +111,13 @@ export default function AllArcsOverview() {
                     <p className="text-[12.5px] text-kh-dark/80 leading-snug italic">{stage.story}</p>
                   </div>
                 ))}
-                <p className="text-[12px] text-kh-muted italic">Nudge-Beispiel (3 offen): {builtTheme.nudge(3)}</p>
+                {builtTheme && (
+                  <p className="text-[12px] text-kh-muted italic">Nudge-Beispiel (3 offen): {builtTheme.nudge(3)}</p>
+                )}
               </div>
             ) : (
               <p className="relative z-10 mt-4 text-[12.5px] text-kh-muted font-medium italic">
-                Noch keine Etappen-Story geschrieben — nur Teaser-Content vorhanden.
+                Noch keine Etappen-Story geschrieben, nur Teaser-Content vorhanden.
               </p>
             )}
           </div>

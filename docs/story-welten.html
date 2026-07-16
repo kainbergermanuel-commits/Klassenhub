@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KlassenHub · Story-Welten</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesque:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --paper:#F1ECE1; --card:#FBF9F3; --card2:#F6F1E6; --ink:#16292E; --muted:#5C6B6A;
+    --teal:#0F8A82; --amber:#B8721E; --violet:#5965B8; --rose:#C15B76; --good:#2E9C6E;
+    --line:#E2D9C7; --gold:#E0A94B;
+    --display:"Bricolage Grotesque",system-ui,sans-serif;
+    --body:"Hanken Grotesque",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --paper:#14201F; --card:#1B2A28; --card2:#20302D; --ink:#EAF1EC; --muted:#9DB0AC;
+      --teal:#37B6AB; --amber:#E0A94B; --violet:#8A93E0; --rose:#E48AA2; --good:#4FCB93; --line:#2C3E3A; --gold:#EDC06A; }
+  }
+  :root[data-theme="dark"]{ --paper:#14201F; --card:#1B2A28; --card2:#20302D; --ink:#EAF1EC; --muted:#9DB0AC;
+    --teal:#37B6AB; --amber:#E0A94B; --violet:#8A93E0; --rose:#E48AA2; --good:#4FCB93; --line:#2C3E3A; --gold:#EDC06A; }
+  :root[data-theme="light"]{ --paper:#F1ECE1; --card:#FBF9F3; --card2:#F6F1E6; --ink:#16292E; --muted:#5C6B6A;
+    --teal:#0F8A82; --amber:#B8721E; --violet:#5965B8; --rose:#C15B76; --good:#2E9C6E; --line:#E2D9C7; --gold:#E0A94B; }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+
+  .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:12px;padding-bottom:12px}
+  .word{font-family:var(--display);font-weight:800;letter-spacing:-.02em;font-size:16px;display:flex;align-items:center;gap:8px}
+  .word .dot{width:11px;height:11px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 22%,transparent)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);font-weight:600}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .lg{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+  .hero{padding:54px 0 30px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);font-weight:700}
+  h1{font-family:var(--display);font-weight:800;letter-spacing:-.03em;font-size:clamp(34px,6vw,58px);line-height:1.02;margin:14px 0 0}
+  .lede{font-size:18px;color:var(--muted);max-width:60ch;margin:18px 0 0}
+  .thesis{margin:26px 0 0;padding:18px 20px;background:var(--card);border-left:4px solid var(--gold);border-radius:0 14px 14px 0;box-shadow:0 8px 22px rgba(20,40,45,.06)}
+  .thesis b{color:var(--ink)}
+
+  section{padding:30px 0;border-top:1px solid var(--line)}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  .sec-num{font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:700}
+  h2{font-family:var(--display);font-weight:800;letter-spacing:-.02em;font-size:clamp(24px,3.4vw,34px);margin:0}
+  h3{font-family:var(--display);font-weight:700;letter-spacing:-.01em;font-size:20px;margin:22px 0 2px}
+  p{margin:12px 0}
+  .sub{color:var(--muted);font-size:15px;margin-top:2px}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;line-height:1.4}
+  .c-built{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+  .c-new{background:color-mix(in srgb,var(--teal) 15%,transparent);color:var(--teal)}
+  .c-low{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+  .c-mid{background:color-mix(in srgb,var(--amber) 16%,transparent);color:var(--amber)}
+  .c-high{background:color-mix(in srgb,var(--rose) 16%,transparent);color:var(--rose)}
+  .c-cliff{background:color-mix(in srgb,var(--rose) 14%,transparent);color:var(--rose)}
+  .tag{font-family:var(--mono);font-size:11.5px;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--muted)}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:14px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:640px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--card2);font-family:var(--display);font-weight:700;font-size:12.5px;letter-spacing:.01em}
+  tr:last-child td{border-bottom:none}
+  td .g{color:var(--muted);font-size:12.5px}
+
+  /* Arc card */
+  .arc{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;margin:22px 0;box-shadow:0 10px 26px rgba(20,40,45,.05)}
+  .arc-top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .arc-emoji{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 30%,var(--card)) 0%,color-mix(in srgb,var(--amber) 22%,var(--card)) 100%);flex-shrink:0}
+  .arc-title{font-family:var(--display);font-weight:800;font-size:23px;letter-spacing:-.01em;margin:0}
+  .arc-meta{color:var(--muted);font-size:13.5px;margin-top:2px}
+  .arc-spec{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:12px}
+  .arc-spec b{color:var(--ink)}
+  .arc-intro{font-size:14.5px;color:var(--muted);margin:16px 0 6px;font-style:italic}
+
+  /* stage timeline */
+  .stages{margin-top:12px}
+  .stage{position:relative;padding-left:44px;padding-bottom:20px}
+  .stage:last-child{padding-bottom:0}
+  .node{position:absolute;left:0;top:2px;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--amber));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:14px;z-index:2}
+  .stage:not(:last-child)::before{content:"";position:absolute;left:14.5px;top:30px;bottom:0;width:2px;background:var(--line)}
+  .stage-label{font-family:var(--display);font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .stage-story{font-size:14px;color:var(--ink);margin:6px 0 0;opacity:.9}
+  .handover{margin-top:8px;font-size:13px;color:var(--teal);font-weight:600;display:flex;align-items:flex-start;gap:7px}
+  .handover::before{content:"→";font-weight:800}
+
+  .idea{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:14px 0}
+  .idea h3{margin-top:0}
+  ul.clean{margin:10px 0;padding-left:20px}
+  ul.clean li{margin:6px 0}
+  .callout{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:16px 0;font-size:14px}
+  .callout b{color:var(--ink)}
+
+  footer{border-top:1px solid var(--line);padding:26px 0 60px;color:var(--muted);font-size:13px}
+  .src{font-family:var(--mono);font-size:12.5px;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+  a{color:var(--teal)}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <div class="word"><span class="dot"></span>KlassenHub · Story-Welten</div>
+  <div class="legend">
+    <span><i class="lg" style="background:var(--good)"></i>gebaut</span>
+    <span><i class="lg" style="background:var(--teal)"></i>neu geschrieben</span>
+    <span><i class="lg" style="background:var(--rose)"></i>Cliffhanger</span>
+  </div>
+</div></div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">Story-Bibel · Schuljahr September bis August</div>
+    <h1>Die Reise durch elf Welten</h1>
+    <p class="lede">Ein durchgehender Erzählbogen für alle Guide-Welten der Klassenreise: kindgerecht (10 bis 14), fantasievoll, abenteuerlich und ohne heikle Themen. Jede Welt steht für sich, aber ein einziges Geheimnis verbindet sie alle vom ersten bis zum letzten Monat.</p>
+    <div class="thesis">
+      <b>Der rote Faden.</b> Ein kleiner, warm leuchtender <b>Splitter</b> voller unlesbarer Zeichen begleitet die Klasse durch das ganze Jahr. In jeder Welt erwacht ein Zeichen und die Klasse versteht ein Stück mehr. Am Ende, im Weltenbaum, zeigt sich die Wahrheit: Der Splitter ist gar kein Stein, sondern ein <b>Same</b>, das Herz des Weltenbaums. Gepflanzt wächst er zu einem Baum, dessen Krone die Tür zum <b>Sonnenhafen</b> öffnet, dem Ort, von dem jede Reise ausging.
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">00</span><h2>Der rote Faden im Überblick</h2></div>
+    <p class="sub">Der Splitter wird in Islas Schatzkammer gefunden (bestehender Arc, November) und erst im Weltenbaum vollständig entschlüsselt. Jede Welt lässt genau ein Zeichen aufleuchten und liefert ein Puzzleteil der Wahrheit. Die erwachten Zeichen fügen sich Stück für Stück zum <b>Wappen des Weltenbaums</b> zusammen, was sich hübsch an das bereits gebaute <span class="src">WappenMosaic</span> anknüpfen lässt (siehe Interaktive Ideen).</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Welt · Monat</th><th>Guide</th><th>Am Splitter erwacht</th><th>Was die Klasse versteht</th></tr></thead>
+        <tbody>
+          <tr><td>Bergexpedition<br><span class="g">September</span></td><td>Vala</td><td>Vorahnung: ein fernes warmes Licht vom Gipfel</td><td>Es gibt ein Ziel jenseits aller Welten</td></tr>
+          <tr><td>Weltraummission<br><span class="g">Oktober</span></td><td>ARI</td><td>Ein Summen aus keinem bekannten System</td><td>Etwas ruft, aber niemand weiß, was</td></tr>
+          <tr><td>Schatzsuche<br><span class="g">November</span></td><td>Isla</td><td>Der Splitter wird gefunden</td><td>Es ist eine Art Karte, aber unlesbar</td></tr>
+          <tr><td>Terra Nova<br><span class="g">Dezember</span></td><td>Sprout</td><td>1. Zeichen: das Blatt</td><td>Der Splitter lebt, er antwortet dem Wachsen</td></tr>
+          <tr><td>Tiefsee-Expedition<br><span class="g">Jänner</span></td><td>Coralie & Nauto</td><td>2. Zeichen: die Welle</td><td>Er ist uralt und summt eine Melodie</td></tr>
+          <tr><td>Chroniken der Zeit<br><span class="g">Februar</span></td><td>Der Chronist</td><td>3. Zeichen: die Sanduhr</td><td>Wer ihn schuf: die ersten Wanderer der Welten</td></tr>
+          <tr><td>Inselreich<br><span class="g">März</span></td><td>Finn</td><td>4. Zeichen: der Anker</td><td>Er ist ein Schlüssel, der Orte verbindet</td></tr>
+          <tr><td>Sternenkarte<br><span class="g">April</span></td><td>Nox</td><td>5. Zeichen: der Stern</td><td>Wohin er zeigt: ein warmer Ort am Horizont</td></tr>
+          <tr><td>Werkstatt der Erfinder<br><span class="g">Mai</span></td><td>Tüftel</td><td>6. Zeichen: das Zahnrad</td><td>Wie man ihn zusammenfügt, und dass er ein Same ist</td></tr>
+          <tr><td>Der Weltenbaum<br><span class="g">Juni</span></td><td>Wächterin</td><td>Letztes Zeichen: der Baum, Wappen vollständig</td><td>Die Wahrheit: das Herz des Weltenbaums, der Weg heim ist offen</td></tr>
+          <tr><td>Sonnenhafen<br><span class="g">Juli / August</span></td><td>Alle gemeinsam</td><td>Der Same ist zum Baum geworden</td><td>Zuhause. Jede Reise führte genau hierher</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <b>Anschluss an die bestehenden drei Welten (erledigt).</b> Berg, Weltraum und Schatzsuche sind jetzt angepasst: alle Gedankenstriche entfernt und der Faden sanft eingewoben. Vala sieht vom Gipfel ein fernes warmes Licht, ARI empfängt beim Mondvorbeiflug ein Summen aus keinem bekannten System, und in Islas Schatzkammer liegt der Splitter zwischen dem Gold. Ab Terra Nova trägt die Klasse ihn dann bewusst weiter.
+    </div>
+
+    <div class="callout">
+      <b>Guide-Staffel (durchgängig).</b> Alle elf Welten hängen jetzt lückenlos zusammen: Jede Welt stellt am Ende die nächste Figur namentlich vor, im Ton „ich kenne jemanden, der euch weiterführen wird". Die ganze Kette lautet Vala → ARI → Isla → Sprout → Coralie &amp; Nauto → Der Chronist → Finn → Nox → Tüftel → Wächterin, und im Weltenbaum übergibt nicht ein einzelner Guide, sondern alle gemeinsam warten schon im Sonnenhafen.
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>Die elf Welten, Etappe für Etappe</h2></div>
+    <p class="sub">Pro Welt fünf Etappen mit vollem Story-Text. Jede Etappe endet mit einem kleinen Cliffhanger, die letzte mit der Übergabe an den nächsten Guide. Stilregel durchgehend: kaum Gedankenstriche, fließende Sätze. Die bestehenden drei Welten sind der Vollständigkeit halber knapp zusammengefasst, ihre Story-Texte bleiben unverändert.</p>
+
+    <!-- BUILT 1-3 (summary) -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">⛰️</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">1 · Bergexpedition <span class="chip c-built">gebaut</span></p>
+          <p class="arc-meta">September · Bergführerin Vala · „Der Aufstieg der Klasse" · zählt in <b>Schritten</b></p>
+        </div>
+      </div>
+      <p class="arc-intro">Bereits live, Story jetzt dash-frei und mit Faden-Anker. Etappen: Basislager, Waldpfad, Steiler Aufstieg, Fels &amp; Grat, Gipfel. Eingebaut: Vom Gipfel aus sieht die Klasse in der Ferne ein warmes Licht, das zu keiner von Valas Karten passt.</p>
+    </div>
+
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">🚀</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">2 · Weltraummission <span class="chip c-built">gebaut</span></p>
+          <p class="arc-meta">Oktober · Bordcomputer ARI · „Die Mission der Klasse" · zählt in <b>Systemchecks</b></p>
+        </div>
+      </div>
+      <p class="arc-intro">Bereits live, Story jetzt dash-frei und mit Faden-Anker. Etappen: Startrampe, Erdumlaufbahn, Mondvorbeiflug, Asteroidenfeld, Zielplanet. Eingebaut: Beim Mondvorbeiflug empfängt ARI ein Summen, das aus keinem bekannten Sternsystem stammt, und zeichnet es auf.</p>
+    </div>
+
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">🗺️</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">3 · Schatzsuche <span class="chip c-built">gebaut</span></p>
+          <p class="arc-meta">November · Kartografin Isla · „Die Schatzsuche der Klasse" · zählt in <b>Spuren</b></p>
+        </div>
+      </div>
+      <p class="arc-intro">Bereits live, Story jetzt dash-frei und mit Faden-Anker. Etappen: Alte Landkarte, Dschungelpfad, Verborgene Höhle, Letzte Spur, Schatzkammer. Eingebaut: In der Schatzkammer liegt zwischen dem Gold der leuchtende Splitter voller Zeichen. Isla erkennt eine Art Karte darin, kann sie aber noch nicht lesen. Hier beginnt der Faden.</p>
+    </div>
+
+    <!-- ARC 4 TERRA NOVA -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">🌱</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">4 · Terra Nova <span class="chip c-new">neu geschrieben</span></p>
+          <p class="arc-meta">Dezember · Ranger-Drohne „Sprout"</p>
+          <div class="arc-spec">
+            <span class="tag">goalTitle: Das Erwachen des Ödlands</span>
+            <span class="tag">stepNoun: Trieben</span>
+          </div>
+        </div>
+      </div>
+      <p class="arc-intro">Ein totes, graues Ödland soll wieder zum Leben erwachen. Und der Splitter, den die Klasse aus Islas Schatzkammer mitgebracht hat, reagiert hier zum allerersten Mal.</p>
+      <div class="stages">
+        <div class="stage"><div class="node">1</div>
+          <div class="stage-label">Das graue Ödland <span class="tag">terrain</span></div>
+          <p class="stage-story">Willkommen im Ödland. Hier wächst seit langer Zeit kein einziger Halm mehr, der Boden ist rissig und grau, so weit ihr sehen könnt. Sprout schwirrt aufgeregt um euch herum und deutet auf den Splitter in eurer Hand, der hier fast erloschen wirkt. „Dieser Ort war einmal voller Leben, das spüre ich. Bringen wir es zurück, dann wacht vielleicht auch euer seltsamer Stein wieder auf." Packt an, jeder erledigte Auftrag ist ein Samen im trockenen Boden.</p></div>
+        <div class="stage"><div class="node">2</div>
+          <div class="stage-label">Die ersten Sprossen <span class="tag">grass</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Habt ihr das gesehen? Zwischen den Rissen schiebt sich das erste zarte Grün ans Licht, winzig und mutig. Und im selben Moment beginnt eines der Zeichen auf dem Splitter ganz leise zu glimmen, warm wie eine kleine Flamme. Sprout kommt so abrupt zum Stehen, dass es fast einen Purzelbaum macht. „Der Stein antwortet dem Leben! Das erste Zeichen ist erwacht. Aber was bedeutet es nur?"</p></div>
+        <div class="stage"><div class="node">3</div>
+          <div class="stage-label">Der Wurzelteppich <span class="tag">forest</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Aus den ersten Sprossen ist ein dichter Teppich aus Wurzeln und Blättern geworden, der sich über das ganze Ödland legt. Doch etwas ist merkwürdig: Die Wurzeln wachsen nicht kreuz und quer, sondern alle in dieselbe Richtung, als würden sie etwas suchen, das tief unter der Erde verborgen liegt. Sprout legt lauschend ein Blatt-Ohr auf den Boden. „Da unten ist etwas. Etwas sehr, sehr Altes. Grabt vorsichtig weiter."</p></div>
+        <div class="stage"><div class="node">4</div>
+          <div class="stage-label">Der schlafende Setzling <span class="tag">park</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Unter dem Wurzelteppich findet ihr ihn: einen uralten Setzling, halb zu Stein geworden, der hier seit unzähligen Jahren wartet. Als das Licht des Splitters ihn berührt, zittern seine winzigen Blätter, als würde er aus einem langen Schlaf erwachen. Ganz langsam neigt sich der Setzling zur Seite und zeigt mit seiner Spitze in die Ferne, dorthin, wo am Horizont ein tiefblaues Meer schimmert. Sprout flüstert: „Er zeigt uns den Weg. Aber wohin nur?"</p></div>
+        <div class="stage"><div class="node">5</div>
+          <div class="stage-label">Das blühende Tal <span class="tag">local_florist</span></div>
+          <p class="stage-story">Geschafft! Aus dem grauen Ödland ist ein blühendes Tal geworden, voller Farben, Summen und Leben. Das erwachte Zeichen auf dem Splitter leuchtet jetzt klar und deutlich: ein kleines Blatt, gefolgt von einer geschwungenen Welle. Sprout schwirrt stolz vor eurer Nase. „Diese Welt ist nur ein einziger Ast von etwas viel Größerem, das ahne ich jetzt. Und der Splitter zeigt zum Wasser, hinunter in die Tiefe."</p>
+          <p class="handover">Übergang zu Coralie &amp; Nauto: „Ich kenne jemanden, der euch dort weiterführen wird: Dr. Coralie und ihren Tintenfisch Nauto. Folgt dem Wasser, ein Tauchboot wartet schon, und tief unten schläft das nächste Zeichen."</p></div>
+      </div>
+    </div>
+
+    <!-- ARC 5 TIEFSEE -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">🌊</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">5 · Tiefsee-Expedition <span class="chip c-new">neu geschrieben</span></p>
+          <p class="arc-meta">Jänner · Dr. Coralie &amp; Tintenfisch Nauto</p>
+          <div class="arc-spec">
+            <span class="tag">goalTitle: Die Tauchfahrt der Klasse</span>
+            <span class="tag">stepNoun: Leuchtspuren</span>
+          </div>
+        </div>
+      </div>
+      <p class="arc-intro">Ein Tauchboot sinkt Schicht um Schicht ins Blau. Dr. Coralie ist eine ruhige Tiefsee-Forscherin, ihr Tintenfisch Nauto spricht durch Farben und Lichter. Sprouts Setzling hatte zum Meer gezeigt.</p>
+      <div class="stages">
+        <div class="stage"><div class="node">1</div>
+          <div class="stage-label">Das wartende Tauchboot <span class="tag">scuba_diving</span></div>
+          <p class="stage-story">An der Wasseroberfläche schaukelt euer Tauchboot, bereit zum Abtauchen. Dr. Coralie prüft ruhig jeden Hebel, während Nauto neugierig gegen die Scheibe tupft und in fröhlichem Blaugrün leuchtet. „Willkommen an Bord", sagt Coralie. „Da unten ist es dunkel und still, aber wunderschön. Und euer Splitter, seht nur, er glüht schon, als wüsste er, dass wir uns dem nächsten Zeichen nähern." Luken dicht, es geht hinab.</p></div>
+        <div class="stage"><div class="node">2</div>
+          <div class="stage-label">Die Dämmerzone <span class="tag">water_drop</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Immer tiefer sinkt das Boot, und das Licht der Sonne wird über euch zu einem blassen, fernen Schimmer. Um euch herum blinken plötzlich hunderte winzige Lichter auf, Quallen und Fische, die selbst leuchten wie Sterne unter Wasser. Nauto wird ganz aufgeregt und blinkt in genau demselben Muster wie ein Zeichen, das jetzt auf dem Splitter aufwacht. Coralie beugt sich vor. „Diese Lichter formen ein Muster. Und euer Stein antwortet ihnen."</p></div>
+        <div class="stage"><div class="node">3</div>
+          <div class="stage-label">Der leuchtende Graben <span class="tag">waves</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Vor euch öffnet sich ein tiefer Graben, an dessen Wänden uraltes Gestein in sanftem Licht glimmt. Nauto tastet mit einem Arm über eine alte, versunkene Säule und leuchtet plötzlich alarmiert auf: In den Stein sind dieselben Zeichen gemeißelt wie auf eurem Splitter. Doch die Botschaft ist nur zur Hälfte da. „Der Rest", sagt Coralie leise, „liegt noch tiefer. Traut ihr euch?"</p></div>
+        <div class="stage"><div class="node">4</div>
+          <div class="stage-label">Die stille Tiefe <span class="tag">blur_on</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Ganz unten ist es vollkommen still und dunkel, nur eure einzige Lampe wirft einen Kreis aus Licht. Hier findet ihr die zweite Hälfte der gemeißelten Zeichen, und als sie sich in Gedanken mit der ersten verbinden, ergeben sie ein Wort, das noch niemand aussprechen kann. Da beginnt der Splitter zu summen, einen einzigen klaren Ton, den er noch nie zuvor von sich gegeben hat. Der Ton hallt durch den Graben, und eine uralte Strömung erwacht und beginnt, euch sanft nach oben zu tragen.</p></div>
+        <div class="stage"><div class="node">5</div>
+          <div class="stage-label">Der Aufstieg <span class="tag">arrow_upward</span></div>
+          <p class="stage-story">Die Strömung hebt euch zurück ans Licht, und auf dem Splitter leuchtet nun ein zweites Zeichen: eine Welle, dazu der leise Ton, den ihr in der Tiefe gehört habt. „Diese Zeichen sind älter als jede Seekarte, älter als alles, woran sich das Meer erinnert", sagt Coralie nachdenklich. „Wer sie geschrieben hat, lebte vor unvorstellbar langer Zeit."</p>
+          <p class="handover">Übergang: „Nur jemand, der die Zeit selbst lesen kann, wüsste, wer das war." Nauto wickelt den Splitter behutsam ein und reicht ihn nach oben, dorthin, wo eine große Bibliothek und ein alter Chronist warten.</p></div>
+      </div>
+    </div>
+
+    <!-- ARC 6 CHRONIKEN -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">⏳</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">6 · Chroniken der Zeit <span class="chip c-new">neu geschrieben</span></p>
+          <p class="arc-meta">Februar · Der Chronist</p>
+          <div class="arc-spec">
+            <span class="tag">goalTitle: Die Chronik der Klasse</span>
+            <span class="tag">stepNoun: Seiten</span>
+          </div>
+        </div>
+      </div>
+      <p class="arc-intro">Eine Zeitreise durch die Epochen. Der Chronist, ein alter, gütiger Gelehrter, will herausfinden, WER die Zeichen einst schrieb. Dafür muss die Zeit selbst zurückgeblättert werden.</p>
+      <div class="stages">
+        <div class="stage"><div class="node">1</div>
+          <div class="stage-label">Die leere Chronik <span class="tag">menu_book</span></div>
+          <p class="stage-story">Willkommen in der größten Bibliothek, die ihr je gesehen habt, Regale bis zur Decke und darüber hinaus. In der Mitte liegt ein riesiges, leeres Buch, die Chronik dieses Jahres, die ihr gemeinsam füllen werdet. Der Chronist betrachtet euren Splitter durch seine runde Brille und hebt erstaunt die Augenbrauen. „Diese Schrift ist älter als jede Seite, die ich besitze. Um zu verstehen, wer sie schrieb, müssen wir zurückblättern, nicht in einem Buch, sondern in der Zeit selbst." Jede erledigte Aufgabe schreibt eine neue Seite.</p></div>
+        <div class="stage"><div class="node">2</div>
+          <div class="stage-label">Das erste Zeitalter <span class="tag">history_edu</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Mit jeder Seite, die ihr schreibt, blättert die Zeit weiter zurück, und plötzlich steht ihr in einem längst vergangenen Zeitalter. Eine Welt, so jung, dass es kaum etwas darauf gibt, nur weite, leere Ebenen und einen Himmel voller unbekannter Sterne. Am Horizont zieht eine Gruppe von Wanderern mit Laternen vorbei. Und einer von ihnen trägt einen Splitter, der genauso leuchtet wie eurer.</p></div>
+        <div class="stage"><div class="node">3</div>
+          <div class="stage-label">Der Riss in der Zeit <span class="tag">hourglass_empty</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Auf einmal gerät die Zeit ins Wanken, Seiten wirbeln durch die Luft wie Blätter im Sturm, und die Zeitalter drohen durcheinanderzugeraten. „Haltet die Chronik zusammen!", ruft der Chronist gegen den Wind. Ihr müsst zusammenhalten und die Seiten in der richtigen Ordnung festhalten, sonst verliert ihr den roten Faden für immer. Da glüht der Splitter warm auf und beruhigt den Sturm, als würde er selbst zur Zeit gehören.</p></div>
+        <div class="stage"><div class="node">4</div>
+          <div class="stage-label">Die Begegnung <span class="tag">auto_stories</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Als der Sturm sich legt, seht ihr sie ganz nah: die ersten Wanderer, wie sie behutsam die Samen ganzer Welten in den Boden legen, einen Berg hier, ein Meer dort, einen Himmel darüber. Sie sprechen leise von einer Heimat, zu der am Ende jeder Weg zurückführt, einem Ort aus warmem Licht. Doch bevor der Chronist den Namen dieses Ortes hören kann, verblasst die Vision und reißt euch zurück.</p></div>
+        <div class="stage"><div class="node">5</div>
+          <div class="stage-label">Zurück ins Jetzt <span class="tag">schedule</span></div>
+          <p class="stage-story">Ihr steht wieder in der Bibliothek, atemlos, und auf dem Splitter leuchtet nun ein drittes Zeichen: eine kleine Sanduhr. „Jetzt weiß ich, wer die Zeichen schrieb", sagt der Chronist und schließt die volle Chronik ehrfürchtig. „Es waren die ersten Wanderer, die alle Welten gepflanzt und diesen Splitter als Botschaft zurückgelassen haben. Doch wo ihre Heimat liegt, verrät die Zeit mir nicht."</p>
+          <p class="handover">Übergang: „Nur jemand, der Orte baut und verbindet, kann den Weg finden." Er weist nach Süden, wo eine einsame Sandbank im Meer auf ihren Hafenmeister wartet.</p></div>
+      </div>
+    </div>
+
+    <!-- ARC 7 INSELREICH -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">⚓</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">7 · Inselreich <span class="chip c-new">neu geschrieben</span></p>
+          <p class="arc-meta">März · Hafenmeister Finn</p>
+          <div class="arc-spec">
+            <span class="tag">goalTitle: Das Inselreich der Klasse</span>
+            <span class="tag">stepNoun: Steinen</span>
+          </div>
+        </div>
+      </div>
+      <p class="arc-intro">Aus einer einsamen Sandbank soll ein ganzes Reich wachsen. Hafenmeister Finn ist warmherzig und kräftig, ein Tau über der Schulter. Und der Splitter erweist sich hier als etwas ganz Besonderes.</p>
+      <div class="stages">
+        <div class="stage"><div class="node">1</div>
+          <div class="stage-label">Die einsame Sandbank <span class="tag">anchor</span></div>
+          <p class="stage-story">Mitten im weiten Meer liegt sie, eine kleine, kahle Sandbank, auf der nichts steht als ein einziger schiefer Pfahl. Finn springt an Land, das Tau über der Schulter, und breitet lachend die Arme aus. „Ich weiß, es sieht nach nicht viel aus. Aber glaubt mir, aus so einer Sandbank kann ein ganzes Reich werden, wenn viele Hände zusammenhelfen." Der Splitter summt kräftiger, sobald die Flut kommt und geht. Jeder Auftrag ist ein Stein für den Aufbau.</p></div>
+        <div class="stage"><div class="node">2</div>
+          <div class="stage-label">Der erste Steg <span class="tag">construction</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Stein um Stein legt ihr den ersten Steg ins Wasser, dann eine Mauer, dann das erste kleine Haus mit einer Laterne davor. Aus der kahlen Sandbank wird langsam ein winziger Hafen. Und als der Steg fertig ist, erwacht ein weiteres Zeichen auf dem Splitter, klar und fest wie ein Anker. Finn nickt anerkennend. „Seht ihr? Der Stein mag, was wir hier tun."</p></div>
+        <div class="stage"><div class="node">3</div>
+          <div class="stage-label">Der große Sturm <span class="tag">thunderstorm</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">In der Nacht zieht ein gewaltiger Sturm auf, der Wind heult und die Wellen schlagen hoch gegen euren jungen Hafen. „Haltet die Taue!", ruft Finn durch das Tosen, und gemeinsam stemmt ihr euch gegen den Sturm, damit er nicht alles fortreißt. Da leuchtet der Splitter so hell wie nie, und im Licht seht ihr, wie die Wellen etwas freispülen, das tief unter der Sandbank verborgen lag.</p></div>
+        <div class="stage"><div class="node">4</div>
+          <div class="stage-label">Das versunkene Tor <span class="tag">castle</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Als der Sturm sich legt, liegt es im ersten Morgenlicht vor euch: ein uraltes steinernes Tor, halb im Sand versunken, über und über bedeckt mit denselben Zeichen wie euer Splitter. Vorsichtig hebt ihr den Stein, und er gleitet in eine Vertiefung im Tor, als hätte er immer dorthin gehört. Ein tiefes Summen geht durch den Stein, das Tor beginnt zu leuchten, und für einen Moment zeigt sich dahinter ein Himmel voller Sterne. Doch dann erlischt das Licht wieder, und der Weg bleibt verschlossen.</p></div>
+        <div class="stage"><div class="node">5</div>
+          <div class="stage-label">Das leuchtende Reich <span class="tag">holiday_village</span></div>
+          <p class="stage-story">Aus der einsamen Sandbank ist ein leuchtendes kleines Inselreich geworden, mit Häusern, Stegen und Laternen, die sich im Wasser spiegeln. Auf dem Splitter glüht nun ein viertes Zeichen: ein Anker. „Jetzt verstehe ich, was ihr da tragt", sagt Finn und legt euch eine schwere Hand auf die Schulter. „Es ist eine Art Schlüssel, der Orte miteinander verbindet, ein Anker zwischen den Welten."</p>
+          <p class="handover">Übergang zu Nox: „Das Tor zeigt zum Nachthimmel. Und ich kenne jemanden, der die Sterne liest wie andere ein Buch und euch die Richtung weisen wird: Astronomin Nox in ihrer Sternwarte hoch über dem Meer."</p></div>
+      </div>
+    </div>
+
+    <!-- ARC 8 STERNENKARTE -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">✨</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">8 · Sternenkarte <span class="chip c-new">neu geschrieben</span></p>
+          <p class="arc-meta">April · Astronomin Nox</p>
+          <div class="arc-spec">
+            <span class="tag">goalTitle: Die Sternenkarte der Klasse</span>
+            <span class="tag">stepNoun: Sternen</span>
+          </div>
+        </div>
+      </div>
+      <p class="arc-intro">Ein leerer Nachthimmel füllt sich mit Licht. Astronomin Nox ist still und voller Staunen, ihr Fernrohr wie ein Wanderstab. Der Anker aus dem Inselreich zeigte hinauf zu den Sternen.</p>
+      <div class="stages">
+        <div class="stage"><div class="node">1</div>
+          <div class="stage-label">Der leere Nachthimmel <span class="tag">nights_stay</span></div>
+          <p class="stage-story">Von Nox' Sternwarte aus blickt ihr in einen Nachthimmel, der vollkommen leer ist, kein einziger Stern, nur tiefes, samtenes Schwarz. Nox lächelt und stützt sich auf ihr langes Fernrohr. „Ein leerer Himmel macht vielen Angst. Mir nicht. Denn heute Nacht füllen wir ihn gemeinsam mit Licht." Die Zeichen auf eurem Splitter scheinen den leeren Himmel widerzuspiegeln, als warteten auch sie darauf, vollständig zu werden.</p></div>
+        <div class="stage"><div class="node">2</div>
+          <div class="stage-label">Die ersten Sterne <span class="tag">star</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Mit jeder erledigten Aufgabe flammt oben ein neuer Stern auf, erst einer, dann drei, dann ein ganzes Feld aus funkelndem Licht. Auf dem Splitter erwacht ein fünftes Zeichen, ein heller Stern, der genauso leuchtet wie die am Himmel. Und die neuen Sterne, bemerkt ihr, ordnen sich nicht zufällig an. Sie beginnen, ein Muster zu bilden.</p></div>
+        <div class="stage"><div class="node">3</div>
+          <div class="stage-label">Das Sternbild <span class="tag">auto_awesome</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Immer mehr Sterne setzen sich zusammen, bis am Himmel ein großes Sternbild steht, das genau zu den Zeichen auf eurem Splitter passt. Nox hält den Atem an. „So ein Sternbild habe ich noch nie gesehen. Es sieht aus wie ein Baum aus Licht." Doch ein Stern fehlt noch, mitten in der Krone, und ohne ihn bleibt das Bild unvollständig.</p></div>
+        <div class="stage"><div class="node">4</div>
+          <div class="stage-label">Die verborgene Bahn <span class="tag">travel_explore</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Den fehlenden Stern findet ihr schließlich, versteckt hinter einer Wolkenbank, und als er endlich aufleuchtet, geschieht etwas Wunderbares: Aus dem Sternbild spannt sich eine leuchtende Bahn quer über den ganzen Himmel, ein Weg aus Sternen, der zu einem einzigen warmen Punkt am Horizont führt. „Dorthin", flüstert Nox. „Der Weg führt genau dorthin." Doch die Zeichen auf dem Splitter sind noch immer verstreut und ergeben noch kein Ganzes.</p></div>
+        <div class="stage"><div class="node">5</div>
+          <div class="stage-label">Die Karte am Himmel <span class="tag">map</span></div>
+          <p class="stage-story">Der volle Sternenweg leuchtet nun von einem Ende des Himmels zum anderen. „Jetzt wissen wir, wohin der Splitter zeigt", sagt Nox leise. „Zu einem warmen Hafen aus Licht, dort am Horizont. Aber die vielen einzelnen Zeichen müssen erst zu einem einzigen zusammengefügt werden, sonst öffnet sich der Weg nicht."</p>
+          <p class="handover">Übergang zu Tüftel: „Dafür kenne ich die geschicktesten Hände weit und breit, die euch weiterführen werden: Meisterin Tüftel in ihrer Werkstatt."</p></div>
+      </div>
+    </div>
+
+    <!-- ARC 9 WERKSTATT -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">⚙️</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">9 · Werkstatt der Erfinder <span class="chip c-new">neu geschrieben</span></p>
+          <p class="arc-meta">Mai · Meisterin Tüftel</p>
+          <div class="arc-spec">
+            <span class="tag">goalTitle: Die große Maschine der Klasse</span>
+            <span class="tag">stepNoun: Zahnrädern</span>
+          </div>
+        </div>
+      </div>
+      <p class="arc-intro">Zahnrad um Zahnrad erwacht eine Maschine. Meisterin Tüftel ist quirlig und clever, die Schutzbrille im Lockenhaar. Sie baut mit euch ein Gerät, das endlich lesen soll, was der Splitter verbirgt.</p>
+      <div class="stages">
+        <div class="stage"><div class="node">1</div>
+          <div class="stage-label">Die stille Werkstatt <span class="tag">build</span></div>
+          <p class="stage-story">In Tüftels Werkstatt hängt und liegt und stapelt sich alles, was man sich vorstellen kann: Zahnräder, Federn, Röhren, blinkende Knöpfe. Nur bewegt sich nichts, alles steht still. Tüftel schiebt sich die Schutzbrille auf die Stirn und grinst. „Ihr bringt mir also diesen geheimnisvollen Stein. Wunderbar! Dann bauen wir eben eine Maschine, die endlich liest, was er uns die ganze Zeit verschweigt." Jede Aufgabe ist ein Bauteil.</p></div>
+        <div class="stage"><div class="node">2</div>
+          <div class="stage-label">Das erste Zahnrad <span class="tag">settings</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Ihr setzt das erste große Zahnrad ein, dann ein zweites, ein drittes, und mit einem Ruck beginnen sie sich zu drehen. Die ganze Werkstatt erwacht ratternd zum Leben, Riemen laufen, Lichter blinken. Auf dem Splitter erwacht das sechste Zeichen, ein feines Zahnrad. „Sie läuft!", jubelt Tüftel und tanzt fast. „Jetzt müssen wir sie nur noch mit eurem Stein verbinden."</p></div>
+        <div class="stage"><div class="node">3</div>
+          <div class="stage-label">Die Verbindung <span class="tag">link</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Vorsichtig setzt ihr den Splitter in die Mitte der Maschine, und sofort beginnt sie, die verstreuten Zeichen zu ordnen und aneinanderzureihen. Doch dann stockt alles, ein Teil passt einfach nicht, die Maschine stottert und spuckt Funken. Tüftel kaut nachdenklich am Bleistift. „Irgendein Zahnrad fehlt uns noch. Ohne das letzte Teil bleibt die Botschaft ein Rätsel."</p></div>
+        <div class="stage"><div class="node">4</div>
+          <div class="stage-label">Der letzte Funke <span class="tag">bolt</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Nach langem Suchen und Tüfteln findet ihr das fehlende Zahnrad, und mit einem letzten Funken klickt es an seinen Platz. Die Maschine surrt auf, dreht sich schneller und schneller, und die einzelnen Zeichen des Splitters gleiten zusammen zu einer einzigen Form. Ihr traut euren Augen kaum: Es ist das Wappen eines großen Baumes. Und der Splitter wird plötzlich warm, ganz warm, und pocht leise wie ein kleines Herz. Das ist gar kein Stein. Das ist ein Samen.</p></div>
+        <div class="stage"><div class="node">5</div>
+          <div class="stage-label">Das fertige Werk <span class="tag">precision_manufacturing</span></div>
+          <p class="stage-story">Die Maschine hat es geschafft: Das ganze Wappen leuchtet nun vollständig, und die Botschaft ist fast entschlüsselt. „Ich habe in meinem Leben viel gebaut", sagt Tüftel und wischt sich die Hände ab, „aber so etwas noch nie. Euer Splitter ist ein Samen, und dieses Wappen gehört zu einem Weltenbaum."</p>
+          <p class="handover">Übergang: Sie legt euch den warmen, pochenden Samen in die Hände. „Ein Samen gehört gepflanzt. Bringt ihn zu der Einen, die den Baum hütet." Der Weg führt euch zu einem uralten Hügel.</p></div>
+      </div>
+    </div>
+
+    <!-- ARC 10 WELTENBAUM -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">🌳</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">10 · Der Weltenbaum <span class="chip c-new">neu geschrieben</span> <span class="chip c-cliff">Happy End</span></p>
+          <p class="arc-meta">Juni · Wächterin des Weltenbaums</p>
+          <div class="arc-spec">
+            <span class="tag">goalTitle: Der Weltenbaum der Klasse</span>
+            <span class="tag">stepNoun: Blättern</span>
+          </div>
+        </div>
+      </div>
+      <p class="arc-intro">Der große Höhepunkt. Die Wächterin erkennt sofort, was die Klasse da trägt. Hier löst sich das Geheimnis des ganzen Jahres, und der Weg nach Hause öffnet sich.</p>
+      <div class="stages">
+        <div class="stage"><div class="node">1</div>
+          <div class="stage-label">Der uralte Hügel <span class="tag">forest</span></div>
+          <p class="stage-story">Auf einem sanften Hügel stehen nur noch die mächtigen Wurzeln eines Baumes, der vor langer Zeit hier gewachsen sein muss. Die Wächterin, in ein Gewand aus Blättern gehüllt, kommt euch entgegen und lächelt, als sie den Samen in euren Händen sieht. „Ihr habt ihn die ganze Reise über getragen und wusstet es nicht. Das ist kein Splitter und war nie einer. Das ist ein Same. Das Herz des Weltenbaums." Jede letzte Aufgabe dieses Jahres lässt ein Blatt wachsen.</p></div>
+        <div class="stage"><div class="node">2</div>
+          <div class="stage-label">Das Pflanzen <span class="tag">compost</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Gemeinsam legt ihr den Samen behutsam in die alten Wurzeln, und langsam versinkt er in der Erde. Ein sanftes grünes Leuchten breitet sich aus, tief unter dem Boden, und der Hügel scheint zu atmen. Auf dem Wappen, das ihr in Tüftels Werkstatt gesehen habt, fehlt jetzt nur noch ein einziges Zeichen. Etwas Großes ist im Begriff zu erwachen.</p></div>
+        <div class="stage"><div class="node">3</div>
+          <div class="stage-label">Die erwachenden Äste <span class="tag">account_tree</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Aus der Erde steigt ein Stamm empor, dann recken sich Äste in den Himmel, einer nach dem anderen. Und auf jedem einzelnen Ast erscheint eine der Welten, durch die ihr gereist seid: ein Berg, ein ferner Planet, ein Dschungel, ein blühendes Tal, ein tiefes Meer, eine Bibliothek, ein Inselreich, ein Sternenhimmel, eine Werkstatt. Nur der höchste Ast von allen ist noch kahl und leer. „Es fehlt noch etwas", sagt die Wächterin leise. „Das Letzte und das Schönste."</p></div>
+        <div class="stage"><div class="node">4</div>
+          <div class="stage-label">Die letzte Krone <span class="tag">park</span> <span class="chip c-cliff">Cliffhanger</span></div>
+          <p class="stage-story">Mit der allerletzten Aufgabe schlägt auch der höchste Ast aus, und im selben Moment leuchtet das Wappen vollständig auf, alle Zeichen vereint zu einem einzigen. Der Same singt jetzt seine ganze Melodie, all die Töne der Reise auf einmal. Und endlich könnt ihr die Botschaft lesen, die er das ganze Jahr getragen hat: „Kehrt heim zum Sonnenhafen, von dem jede Reise ausging und zu dem jede zurückführt." Ganz oben in der Krone öffnet sich ein warmes, goldenes Licht wie eine Tür.</p></div>
+        <div class="stage"><div class="node">5</div>
+          <div class="stage-label">Der offene Weg <span class="tag">door_open</span></div>
+          <p class="stage-story">Der Weltenbaum steht nun vollständig da, gewaltig und leuchtend, seine Äste tragen alle Welten und seine Krone ist eine Tür aus warmem Licht. Alle Zeichen, alle Welten, alle Guides sind in diesem einen Baum miteinander verbunden. „Ihr habt den Weg nach Hause geöffnet", sagt die Wächterin bewegt. „Hinter der goldenen Krone liegt der Sonnenhafen, der Ort, von dem einst jede Reise ausging."</p>
+          <p class="handover">Übergang: Diesmal reicht nicht ein einzelner Guide den Weg weiter, sondern sie alle warten schon gemeinsam am anderen Ende des Lichts.</p></div>
+      </div>
+    </div>
+
+    <!-- ARC 11 SONNENHAFEN -->
+    <div class="arc">
+      <div class="arc-top">
+        <div class="arc-emoji">☀️</div>
+        <div style="flex:1;min-width:220px">
+          <p class="arc-title">11 · Sonnenhafen <span class="chip c-new">Epilog</span></p>
+          <p class="arc-meta">Juli / August · Alle Guides gemeinsam</p>
+          <div class="arc-spec">
+            <span class="tag">Sommerferien: kein Klassenziel, keine Etappen</span>
+          </div>
+        </div>
+      </div>
+      <p class="arc-intro">Kein Monat mit Aufgaben, sondern ein Ort zum Ankommen und Feiern. Statt Etappen ein warmer, ruhiger Abschluss der ganzen Reise.</p>
+      <div class="stages">
+        <div class="stage"><div class="node">☀</div>
+          <div class="stage-label">Ankunft im Sonnenhafen</div>
+          <p class="stage-story">Und dann tretet ihr durch die goldene Krone des Weltenbaums hindurch, und vor euch liegt er endlich: der Sonnenhafen. Warmes Licht auf alten Steinmauern, blaue Segel, ein Leuchtturm mit einer goldenen Sonne, Wimpel im Wind und das ruhige Glucksen des Wassers. Am Kai warten sie alle auf euch, jede einzelne Figur eurer langen Reise: Vala und ARI, Isla und Sprout, Coralie und Nauto, der Chronist, Finn, Nox, Tüftel und die Wächterin. Der Same ist zum Weltenbaum geworden, und sein Herz leuchtet nun warm über dem ganzen Hafen. „Das hier", sagen die Guides gemeinsam, „ist der Ort, von dem wir alle erzählt haben. Ihr seid zu Hause angekommen. Ruht euch aus, genießt die Sonne. Und wenn ein neues Jahr beginnt, wartet schon die nächste Reise irgendwo da draußen." Willkommen im Sonnenhafen.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Interaktive Ideen</h2></div>
+    <p class="sub">Wie sich die Geschichte anfühlbar machen lässt, ohne die Designprinzipien zu verletzen (kein Zwang, keine Suchtmechanik, kollektiv statt Einzel-Loot, Fortschritt bleibt immer an erledigte Hausübungen gekoppelt, nie an Rätsel). Aufwand jeweils grob geschätzt.</p>
+
+    <div class="idea">
+      <h3>Fundstück-Wörter im Story-Text <span class="chip c-mid">mittel</span></h3>
+      <p>Deine Idee, ausgebaut: Einzelne Wörter im Etappentext sind antippbar (dezent unterstrichen). Tippt man sie, öffnet sich ein kleines Popup „Hinweis gefunden!" mit einem Stück der entschlüsselten Botschaft oder einem Detail über den Splitter. Rein zum Entdecken, nichts wird verlangt. Technisch: Story-Text wird nicht mehr als reiner String gespeichert, sondern mit markierten Tokens; das Popup ist praktisch das bestehende <span class="src">GuideInfoOverlay</span> in klein. Das ist das <b>Signature-Feature</b> für den Story-Aspekt.</p>
+    </div>
+
+    <div class="idea">
+      <h3>Der Splitter als Jahres-Tracker <span class="chip c-mid">mittel</span> <span class="chip c-new">nutzt Bestehendes</span></h3>
+      <p>Jede abgeschlossene Welt lässt ein Zeichen am Splitter aufleuchten. Diese Zeichen sind genau die Facetten des bereits gebauten <span class="src">WappenMosaic</span> (das SVG-Wappenschild). Am Weltenbaum ist das Wappen komplett. Das verbindet die Jahres-Story direkt mit einem Element, das es schon gibt, und bleibt kollektiv (ganze Klasse, kein Einzel-Loot).</p>
+    </div>
+
+    <div class="idea">
+      <h3>Guide-Staffelübergabe <span class="chip c-low">gering</span></h3>
+      <p>Am Ende jeder Welt eine kurze Übergabe-Nachricht: Der aktuelle Guide reicht den Splitter an den nächsten weiter und stellt ihn vor (die „Übergang"-Zeilen oben sind schon fertig geschrieben). Das macht den Wechsel von Welt zu Welt spürbar. Technisch: ein zusätzliches optionales Story-Feld <span class="src">handover</span> an der letzten Etappe.</p>
+    </div>
+
+    <div class="idea">
+      <h3>Echte Cliffhanger-Vorschau <span class="chip c-low">gering</span></h3>
+      <p>Die gesperrte nächste Etappe zeigt heute „Der Guide verrät noch nichts". Stattdessen könnte dort der letzte Satz der vorigen Etappe als Cliffhanger stehen (die sind oben bewusst spannend geschrieben). Baut Vorfreude, ohne zu zwingen.</p>
+    </div>
+
+    <div class="idea">
+      <h3>Logbuch-Story-Momente <span class="chip c-low">gering</span> <span class="chip c-new">nutzt Bestehendes</span></h3>
+      <p>Das Heldenbuch-Logbuch (die <span class="src">Chronik</span>) bekommt datierte Einträge, wenn eine Welt abgeschlossen oder ein Zeichen am Splitter erwacht ist. So sammelt sich die Reise als persönliche Rückschau.</p>
+    </div>
+
+    <div class="idea">
+      <h3>„Mein Guide" spricht über den Splitter <span class="chip c-low">gering</span> <span class="chip c-new">nutzt Bestehendes</span></h3>
+      <p>Der persönlich gewählte Guide im Heldenbuch kommentiert ab und zu den Splitter in seiner eigenen Stimme (die Guide-Stimmen gibt es schon in <span class="src">lib/heldenbuch.ts</span>). Kleiner Aufwand, viel Persönlichkeit.</p>
+    </div>
+
+    <div class="idea">
+      <h3>Optionale Rätsel-Fundstücke <span class="chip c-mid">mittel</span></h3>
+      <p>An manchen Etappen ein kleines, freiwilliges Rätsel, dessen Antwort ein Zeichen „freischaltet" (nur Deko). Wichtig: Der Fortschritt bleibt strikt an erledigte Hausübungen gekoppelt, niemals an gelöste Rätsel, damit niemand blockiert wird, der ein Rätsel nicht knackt.</p>
+    </div>
+
+    <div class="idea">
+      <h3>Der Klang des Splitters <span class="chip c-high">hoch</span></h3>
+      <p>Pro Welt ein kurzer Ton oder Akkord, am Weltenbaum spielt die ganze Melodie. Sehr stimmungsvoll, aber Audio ist heikel (Autoplay-Regeln, Barrierefreiheit, muss abschaltbar sein). Eher später und klar optional.</p>
+    </div>
+
+    <div class="callout">
+      <b>Empfohlener Starter-Satz.</b> Klein anfangen mit den drei günstigen Bausteinen, die vorhandene Bausteine nutzen: <b>Jahres-Tracker am Wappen</b>, <b>Staffelübergabe</b> und <b>Cliffhanger-Vorschau</b>. Danach als Herzstück die <b>Fundstück-Wörter</b>. Der Rest ist Kür.
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Umsetzung: wie die Welten live gehen</h2></div>
+    <p>Aktuell sind nur drei Welten voll gebaut (in <span class="src">THEMES</span>), die restlichen acht existieren nur als Teaser. Dieses Doc ist die Vorlage, aus der eine Welt jederzeit „scharf geschaltet" werden kann.</p>
+    <ul class="clean">
+      <li>Pro Welt: einen <span class="src">JourneyTheme</span>-Eintrag in <span class="src">lib/seasonTheme.ts</span> ergänzen (Name, Icon, Guide, goalTitle, stepNoun, die fünf Etappen mit Story, nudge) und in <span class="src">SCHOOL_YEAR_ARCS</span> das Feld <span class="src">built</span> auf <span class="src">true</span> setzen.</li>
+      <li><b>Achtung, live-Wirkung:</b> Sobald eine Welt in <span class="src">THEMES</span> steht, kann sie über die Fallback-Logik zur aktiven Welt werden. Deshalb am besten <b>Monat für Monat</b> scharf schalten, passend zum Fahrplan, nicht alle auf einmal mitten im Jahr.</li>
+      <li>Die <b>Teaser</b> in <span class="src">SCHOOL_YEAR_ARCS</span> sind bereits aktualisiert und tragen den roten Faden. Sie erscheinen in der Jahresübersicht und in der Admin-Vorschau „Alle Welten".</li>
+      <li>Die bestehenden drei Welten sind bereits angepasst: dash-frei und mit eingewobenem Faden-Anker (Berg-Gipfel, ARI-Mondvorbeiflug, Islas Schatzkammer). Kein weiterer Handgriff nötig.</li>
+    </ul>
+    <div class="callout">
+      Sag einfach, welche Welt als Nächstes live soll, dann gieße ich die Story aus diesem Doc in <span class="src">THEMES</span> und verifiziere wie gewohnt (Typecheck, Build).
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap" style="padding:0">
+      KlassenHub · Story-Welten · v3 (2026-07-16) · Story-Bibel für die Klassenreise. Alle elf Welten dash-frei, über den Splitter-Faden verbunden und mit durchgängiger Guide-Staffel. Die Stories der noch nicht gebauten Welten sind als Entwurf in der Admin-Vorschau „Alle Welten" auf /streaks/reise sichtbar.
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
