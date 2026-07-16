@@ -103,7 +103,7 @@ export default function AllArcsOverview() {
                     <img
                       src={portrait}
                       alt={arc.guide}
-                      className="h-[230px] md:h-[300px] max-h-[80vh] w-auto max-w-[260px] object-contain object-bottom drop-shadow-[0_8px_16px_rgba(20,40,45,.35)]"
+                      className="h-[230px] md:h-[340px] max-h-[80vh] w-auto max-w-[260px] object-contain object-bottom drop-shadow-[0_8px_16px_rgba(20,40,45,.35)]"
                     />
                   </div>
                 )}
