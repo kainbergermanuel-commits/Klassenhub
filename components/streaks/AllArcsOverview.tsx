@@ -27,18 +27,19 @@ export default function AllArcsOverview() {
             {locationArt ? (
               // Orts-Illustration (kein Charakter, z.B. Sonnenhafen) — füllt die
               // ganze Card als Hintergrund, genau wie SEASON_ART bei den
-              // Charakter-Welten. Kein Guide-Avatar nötig: Sonnenhafen ist ein
-              // Spezial-Arc ohne einzelne Guide-Figur ("Alle Guides gemeinsam").
-              <div className="absolute inset-0 pointer-events-none select-none">
+              // Charakter-Welten. object-contain statt -cover: das Bild ist ein
+              // Freisteller (kein Vollformat-Foto), object-contain zeigt den
+              // ganzen Hafen ohne Beschnitt, der sanfte Verlauf füllt den Rest.
+              // Kein Guide-Avatar nötig: Sonnenhafen ist ein Spezial-Arc ohne
+              // einzelne Guide-Figur ("Alle Guides gemeinsam").
+              <div
+                className="absolute inset-0 pointer-events-none select-none"
+                style={{ background: 'linear-gradient(180deg, #EAF6FB 0%, #FDF6E3 45%, #FDF6E3 100%)' }}
+              >
                 <img
                   src={locationArt}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                  style={{ objectPosition: 'center 55%', transform: 'scale(1.15)' }}
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(180deg, rgba(253,246,227,0.05) 0%, rgba(253,246,227,0.45) 55%, #FDF6E3 100%)' }}
+                  className="absolute top-0 left-0 w-full h-auto object-contain"
                 />
               </div>
             ) : Art && (
