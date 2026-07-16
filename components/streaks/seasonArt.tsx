@@ -104,6 +104,57 @@ function ChronikArt() {
   )
 }
 
+function InselreichArt() {
+  return (
+    <div className="absolute inset-0 w-full h-full">
+      <img
+        src="/images/season-inselreich.webp"
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: 0.55, objectPosition: 'center 45%' }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(180deg, rgba(239,234,224,0.05) 0%, rgba(239,234,224,0.4) 55%, #FAF8F3 100%)' }}
+      />
+    </div>
+  )
+}
+
+function SternenkarteArt() {
+  return (
+    <div className="absolute inset-0 w-full h-full">
+      <img
+        src="/images/season-sternenkarte.webp"
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: 0.55, objectPosition: 'center 35%' }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(180deg, rgba(239,234,224,0.05) 0%, rgba(239,234,224,0.4) 55%, #FAF8F3 100%)' }}
+      />
+    </div>
+  )
+}
+
+function WerkstattArt() {
+  return (
+    <div className="absolute inset-0 w-full h-full">
+      <img
+        src="/images/season-werkstatt.webp"
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: 0.55, objectPosition: 'center 45%' }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(180deg, rgba(239,234,224,0.05) 0%, rgba(239,234,224,0.4) 55%, #FAF8F3 100%)' }}
+      />
+    </div>
+  )
+}
+
 export const SEASON_ART: Partial<Record<string, () => React.ReactElement>> = {
   landscape: MountainArt,
   rocket_launch: SpaceArt,
@@ -111,4 +162,7 @@ export const SEASON_ART: Partial<Record<string, () => React.ReactElement>> = {
   eco: TerraNovaArt,
   water: TiefseeArt,
   history_edu: ChronikArt,
+  anchor: InselreichArt,
+  auto_awesome: SternenkarteArt,
+  precision_manufacturing: WerkstattArt,
 }
