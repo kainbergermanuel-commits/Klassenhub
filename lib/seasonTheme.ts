@@ -83,6 +83,13 @@ export const GUIDE_PORTRAIT: Partial<Record<string, string>> = {
   landscape: '/images/characters/vala.webp', // Bergführerin Vala, Bergexpedition
   rocket_launch: '/images/characters/ari.webp', // Bordcomputer ARI, Weltraummission
   map: '/images/characters/isla.webp', // Kartografin Isla, Schatzsuche
+  eco: '/images/characters/sprout.webp', // Ranger-Drohne „Sprout“, Terra Nova
+  water: '/images/characters/nauto.webp', // Tintenfisch Nauto, Tiefsee-Expedition
+  history_edu: '/images/characters/chronicler.webp', // Der Chronist, Chroniken der Zeit
+  anchor: '/images/characters/finn.webp', // Hafenmeister Finn, Inselreich
+  auto_awesome: '/images/characters/nox.webp', // Astronomin Nox, Sternenkarte
+  precision_manufacturing: '/images/characters/tueftel.webp', // Meisterin Tüftel, Werkstatt der Erfinder
+  park: '/images/characters/weltenbaum-waechterin.webp', // Wächterin des Weltenbaums, Der Weltenbaum
 }
 
 /** Position im Schuljahres-Fahrplan (0=September … 10=Juli/August) für einen
