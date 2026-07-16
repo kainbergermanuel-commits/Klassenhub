@@ -72,7 +72,7 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
                     {!isFuture && (
                       <div
                         className="absolute inset-0 pointer-events-none select-none"
-                        style={{ background: 'linear-gradient(100deg, rgba(251,249,243,0.88) 0%, rgba(251,249,243,0.65) 42%, rgba(251,249,243,0.05) 72%)' }}
+                        style={{ background: 'linear-gradient(100deg, rgba(251,249,243,0.85) 0%, rgba(251,249,243,0.45) 30%, rgba(251,249,243,0) 55%)' }}
                       />
                     )}
                   </>
@@ -95,8 +95,8 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
                     </>
                   ) : (
                     <>
-                      <h3 className="font-extrabold text-[15.5px] text-kh-dark mb-0.5 max-w-[75%]">{arc.name}</h3>
-                      <p className="text-[12.5px] text-kh-dark/70 font-medium leading-snug max-w-[75%]">
+                      <h3 className="font-extrabold text-[15.5px] text-kh-dark mb-0.5 max-w-[50%]">{arc.name}</h3>
+                      <p className="text-[12.5px] text-kh-dark/70 font-medium leading-snug max-w-[50%]">
                         {arc.tagline} · Begleitet von {arc.guide}
                       </p>
                     </>
