@@ -43,7 +43,17 @@ export default async function HomePage() {
     { data: eventsRaw },
     { data: classGoalRow },
   ] = await Promise.all([
-    supabase.from('homework').select('*').eq('class_id', activeClassId).gt('due_date', today).order('due_date'),
+    // Ganzes Schuljahr statt nur "bevorstehend" — deckt alle drei Rollen-Zweige
+    // ab, die sonst je eine eigene, überlappende Schuljahres-Abfrage gestellt
+    // hätten (Streak-Berechnung, Klassenziel, Lehrer-"zuletzt erledigt").
+    // Absteigend sortiert, weil computeStreak/findBreakingHomework das so
+    // erwarten (Parametername `allHwDesc` in lib/streak.ts).
+    // Zweites Sortierkriterium (id) macht die Reihenfolge bei gleichem
+    // due_date deterministisch — sonst könnte die Ableitung von "bevorstehend"/
+    // "zuletzt erledigt" (unten) bei einem Datums-Gleichstand anders sortiert
+    // sein als die früheren separaten Abfragen (die selbst auch keinen
+    // Tiebreaker hatten, also ohnehin nicht garantiert stabil waren).
+    supabase.from('homework').select('*').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }).order('id', { ascending: false }),
     supabase.from('reminders').select('*').eq('class_id', activeClassId).gte('event_date', today).order('event_date').limit(8),
     supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', dutyWeekStart),
     supabase.from('events')
@@ -57,7 +67,12 @@ export default async function HomePage() {
 
   const classGoal = classGoalRow ? { target: classGoalRow.target, reward: classGoalRow.reward } : null
 
-  const homework = homeworkRaw ?? []
+  // Ganzes Schuljahr (rollenübergreifend wiederverwendet für Streak-Berechnung/
+  // Klassenziel) + die "bevorstehende" Teilmenge daraus abgeleitet statt separat
+  // abgefragt — Fenster 2 (Schuljahr) enthält Fenster 1 (bevorstehend) ohnehin
+  // komplett, da der Schuljahresbeginn immer vor heute liegt.
+  const homeworkAll = homeworkRaw ?? []
+  const homework = homeworkAll.filter(h => h.due_date > today).reverse() // aufsteigend für die Anzeige-Liste
   const upcomingReminders: Reminder[] = remindersArr ?? []
   const duties: Duty[] = weekDuties ?? []
 
@@ -81,17 +96,19 @@ export default async function HomePage() {
       { count: studentCount },
       { count: submittedCount },
       { data: allStudents },
-      { data: allHwForStreaks },
-      { data: recentHw },
     ] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
       supabase.from('homework_completions').select('homework_id', { count: 'exact', head: true }).in('homework_id', homework.map(h => h.id)),
       supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
-      supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
-      supabase.from('homework').select('id,title,subject,subject_short,subject_color,due_date').eq('class_id', activeClassId).lte('due_date', today).order('due_date', { ascending: false }).limit(3),
     ])
 
-    const allHwIds = (allHwForStreaks ?? []).map(h => h.id)
+    // allHwForStreaks/recentHw waren eigene Abfragen desselben Schuljahres-
+    // Fensters, das oben (homeworkAll) schon geladen ist — hier nur noch
+    // gefiltert/geschnitten statt neu abgefragt.
+    const allHwForStreaks = homeworkAll
+    const recentHw = homeworkAll.filter(h => h.due_date <= today).slice(0, 3)
+
+    const allHwIds = allHwForStreaks.map(h => h.id)
     const { data: allCompletions } = allHwIds.length > 0
       ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
       : { data: [] }
@@ -132,9 +149,9 @@ export default async function HomePage() {
         reminders={upcomingReminders}
         dutyEntries={dutyEntries}
         upcomingEvents={upcomingEvents}
-        recentHomework={(recentHw ?? []).map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
+        recentHomework={recentHw.map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
         classGoal={classGoal}
-        classGoalDone={countClassGoalDone(allHwForStreaks ?? [], allCompletions ?? [])}
+        classGoalDone={countClassGoalDone(allHwForStreaks, allCompletions ?? [])}
         season={currentSeason}
       />
     )
@@ -144,13 +161,15 @@ export default async function HomePage() {
   if (profile.role === 'student') {
     const [
       { data: completions },
-      { data: allHwForStreak },
       { data: allStudents },
     ] = await Promise.all([
       supabase.from('homework_completions').select('homework_id,completed_at').eq('student_id', user.id),
-      supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
       supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
     ])
+
+    // Ganzes Schuljahr kommt bereits aus dem rollenübergreifenden Batch oben
+    // (homeworkAll) — keine eigene Abfrage mehr nötig.
+    const allHwForStreak = homeworkAll
 
     const doneIds = new Set((completions ?? []).map(c => c.homework_id))
     const homeworkWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: doneIds.has(h.id) }))
@@ -158,7 +177,7 @@ export default async function HomePage() {
     const studentIdsS = (allStudents ?? []).map(s => s.id)
     const dutyIds = duties.map(d => d.id)
     const reminderIds = upcomingReminders.map(r => r.id)
-    const allHwIds = (allHwForStreak ?? []).map(h => h.id)
+    const allHwIds = allHwForStreak.map(h => h.id)
     const weekStart = dutyWeekStart
     const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
 
@@ -233,7 +252,7 @@ export default async function HomePage() {
       }))
 
     // Eigener Streak: sofort sichtbar (auch unbestätigt)
-    const streak = computeStreak(doneIds, allHwForStreak ?? [], today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id))
+    const streak = computeStreak(doneIds, allHwForStreak, today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id))
 
     // Alle Erledigungen der Klasse (nur eltern-bestätigte) — Basis für eigenen
     // Streak, Gilden-Aggregation und Social-Proof-Nudge weiter unten.
@@ -246,11 +265,11 @@ export default async function HomePage() {
     }
     // Eigener bestätigter Streak → verdient die Flammen. Pending = eigener (actual)
     // Meilenstein liegt über dem bereits bestätigten ⇒ "warte auf Eltern".
-    const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id))
+    const confirmedStreak = computeStreak(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak, today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id))
     const actualMs = currentMilestone(streak)
     const pendingMilestone = streak >= 5 && actualMs > currentMilestone(confirmedStreak) ? actualMs : null
 
-    const broken = findBreakingHomework(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak ?? [], today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id)) !== null
+    const broken = findBreakingHomework(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak, today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id)) !== null
     const jokerUsedThisSeason = freezeUsedThisSeasonS.has(user.id)
     const jokerAvailable = broken && !jokerUsedThisSeason
     const crystalUsedThisSeason = crystalUsedThisSeasonS.has(user.id)
@@ -259,12 +278,12 @@ export default async function HomePage() {
     // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────
     const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
 
-    const weekHw = (allHwForStreak ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
+    const weekHw = allHwForStreak.filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
     const questCtx = buildQuestContext({
       weekStart,
       weekEnd,
       studentId: user.id,
-      allHomework: allHwForStreak ?? [],
+      allHomework: allHwForStreak,
       ownCompletions: completions ?? [],
       confirmedHomeworkIds: confirmedByStudentS.get(user.id) ?? new Set(),
       reminders: upcomingReminders,
@@ -334,7 +353,7 @@ export default async function HomePage() {
     }
 
     // ─── ERFOLGE (Heldenbuch-Statistik) ───────────────────────────────────────
-    const classGoalDoneValue = countClassGoalDone(allHwForStreak ?? [], allCompletionsStudent ?? [])
+    const classGoalDoneValue = countClassGoalDone(allHwForStreak, allCompletionsStudent ?? [])
     const classGoalReached = !!classGoal && classGoalDoneValue >= classGoal.target
     const newAchievements = collectAchievements({
       studentId: user.id,
@@ -445,13 +464,13 @@ export default async function HomePage() {
 
     let childDoneIds = new Set<string>()
     let childStreak = 0 // actual – eigener Streak des Kindes (auch unbestätigt)
+    // Ganzes Schuljahr kommt bereits aus dem rollenübergreifenden Batch oben
+    // (homeworkAll) — keine eigene Abfrage mehr nötig. Nur befüllt, wenn ein
+    // Kind zugeordnet ist (identisches Verhalten wie zuvor).
     let allHwForStreak: { id: string; due_date: string }[] = []
     if (child) {
-      const [{ data: childCompletions }, { data: hwForStreak }] = await Promise.all([
-        supabase.from('homework_completions').select('homework_id').eq('student_id', child.id),
-        supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
-      ])
-      allHwForStreak = hwForStreak ?? []
+      const { data: childCompletions } = await supabase.from('homework_completions').select('homework_id').eq('student_id', child.id)
+      allHwForStreak = homeworkAll
       childDoneIds = new Set((childCompletions ?? []).map(c => c.homework_id))
     }
 
