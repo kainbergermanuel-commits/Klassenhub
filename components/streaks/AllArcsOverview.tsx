@@ -45,6 +45,7 @@ export default function AllArcsOverview() {
                   src={locationArt}
                   alt=""
                   className="absolute inset-0 w-full h-full object-contain"
+                  style={{ objectPosition: 'right center', transform: 'scale(1.12)', transformOrigin: 'right center' }}
                 />
               </div>
             ) : Art && (
