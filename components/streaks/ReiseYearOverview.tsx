@@ -59,17 +59,26 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
               >
                 {Art && (
                   // Vergangene/aktuelle Welten deutlich sichtbarer als vorher (0.85 →
-                  // 0.96) — Kontrast-Schutz übernimmt jetzt das Glas-Panel um den
-                  // Text unten, nicht mehr eine Abdunklung der ganzen Card.
-                  <div
-                    className="absolute inset-0 pointer-events-none select-none"
-                    style={{ filter: isFuture ? 'grayscale(0.9) brightness(1.08)' : 'none', opacity: isFuture ? 0.4 : 0.96 }}
-                  >
-                    <Art />
-                  </div>
+                  // 0.96). Kein Blur-Panel mehr (wirkte verwaschen) — stattdessen ein
+                  // gerichteter Verlauf nur über der linken Texthälfte (dort wo Titel/
+                  // Tagline stehen), rechts bleibt das Bild klar und ungedimmt.
+                  <>
+                    <div
+                      className="absolute inset-0 pointer-events-none select-none"
+                      style={{ filter: isFuture ? 'grayscale(0.9) brightness(1.08)' : 'none', opacity: isFuture ? 0.4 : 0.96 }}
+                    >
+                      <Art />
+                    </div>
+                    {!isFuture && (
+                      <div
+                        className="absolute inset-0 pointer-events-none select-none"
+                        style={{ background: 'linear-gradient(100deg, rgba(251,249,243,0.88) 0%, rgba(251,249,243,0.65) 42%, rgba(251,249,243,0.05) 72%)' }}
+                      />
+                    )}
+                  </>
                 )}
 
-                <div className={`relative z-10 ${Art && !isFuture ? 'rounded-xl bg-white/72 backdrop-blur-[3px] -mx-1.5 -my-1 px-2.5 py-2' : ''}`}>
+                <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted">{arc.monthLabel}</span>
                     {isCurrent && (
@@ -86,8 +95,8 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
                     </>
                   ) : (
                     <>
-                      <h3 className="font-extrabold text-[15.5px] text-kh-dark mb-0.5">{arc.name}</h3>
-                      <p className="text-[12.5px] text-kh-dark/70 font-medium leading-snug">
+                      <h3 className="font-extrabold text-[15.5px] text-kh-dark mb-0.5 max-w-[75%]">{arc.name}</h3>
+                      <p className="text-[12.5px] text-kh-dark/70 font-medium leading-snug max-w-[75%]">
                         {arc.tagline} · Begleitet von {arc.guide}
                       </p>
                     </>
