@@ -89,17 +89,17 @@ export default function AllArcsOverview() {
                 </div>
               )}
 
-              {/* ── Inhalt: Figur links (groß), Etappen-Texte rechts ────────── */}
-              <div className="relative z-10 flex gap-4">
+              {/* ── Inhalt: Figur links (groß, unten ausgerichtet), Etappen-Texte rechts ── */}
+              <div className="relative z-10 flex gap-4 items-end">
                 {/* Volle Guide-Figur (nicht rundes Portrait) im linken Bereich,
-                    deutlich größer als ein Portrait. sticky, damit sie bei langen
-                    Etappenlisten mitwandert. */}
+                    deutlich größer als ein Portrait, am unteren Card-Rand verankert
+                    (items-end), als stünde sie auf dem Boden der Card. */}
                 {!locationArt && portrait && (
-                  <div className="w-[170px] md:w-[220px] flex-shrink-0 self-stretch">
+                  <div className="w-[170px] md:w-[220px] flex-shrink-0">
                     <img
                       src={portrait}
                       alt={arc.guide}
-                      className="sticky top-4 w-full max-h-[80vh] object-contain object-bottom drop-shadow-[0_8px_16px_rgba(20,40,45,.35)]"
+                      className="w-full max-h-[80vh] object-contain object-bottom drop-shadow-[0_8px_16px_rgba(20,40,45,.35)]"
                     />
                   </div>
                 )}
