@@ -6,6 +6,7 @@ import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT } from '@/lib/seasonT
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import ReiseYearOverview from '@/components/streaks/ReiseYearOverview'
+import AllArcsOverview from '@/components/streaks/AllArcsOverview'
 import type { Role } from '@/lib/types'
 
 interface Props {
@@ -13,20 +14,23 @@ interface Props {
   pct: number
   target: number | null
   role: Role
+  /** Nur Admin-Lehrkräfte sehen den "Alle Welten"-Reiter (Redaktions-Vorschau
+   *  auf den kompletten Fahrplan, inkl. noch ungebauter Welten). */
+  isAdmin: boolean
 }
 
 /** "Die Reise": alle Kapitel der aktuellen Klassenreise, durchblätterbar —
  *  nicht nur die aktuelle Etappe. Erreichte Kapitel zeigen den vollen
  *  Story-Text, künftige sind angeteasert/gesperrt. Rein lesend, keine neue
  *  Mechanik (Prinzip 4: Story lädt ein, sie zwingt nicht). */
-export default function ReiseOverview({ season, pct, target, role }: Props) {
+export default function ReiseOverview({ season, pct, target, role, isAdmin }: Props) {
   const theme = getSeasonTheme(season)
   const clampedPct = Math.min(100, Math.max(0, pct))
   const activeStage = target ? currentStageIndex(clampedPct, theme.stages.length) : -1
   const Art = SEASON_ART[theme.icon]
   const portrait = GUIDE_PORTRAIT[theme.icon]
   const [guideInfoOpen, setGuideInfoOpen] = useState(false)
-  const [tab, setTab] = useState<'aktuell' | 'jahr'>('aktuell')
+  const [tab, setTab] = useState<'aktuell' | 'jahr' | 'alle'>('aktuell')
 
   return (
     <>
@@ -50,6 +54,7 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
         {([
           ['aktuell', 'Aktuelle Welt'],
           ['jahr', 'Jahresübersicht'],
+          ...(isAdmin ? [['alle', 'Alle Welten'] as const] : []),
         ] as const).map(([key, label]) => (
           <button
             key={key}
@@ -66,6 +71,8 @@ export default function ReiseOverview({ season, pct, target, role }: Props) {
 
       {tab === 'jahr' ? (
         <ReiseYearOverview currentThemeName={theme.name} />
+      ) : tab === 'alle' ? (
+        <AllArcsOverview />
       ) : (
       <>
       <button

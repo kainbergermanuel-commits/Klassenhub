@@ -115,6 +115,14 @@ export function getSeasonTheme(season: string): JourneyTheme {
   return THEMES[0]
 }
 
+/** Volles Thema (inkl. Etappen-Story) für einen Theme-Icon-Key, falls die
+ *  Welt bereits gebaut ist — sonst `undefined`. Für Admin-Vorschauen (z.B.
+ *  „Alle Welten" auf /streaks/reise), die unabhängig von der aktuell
+ *  laufenden Season auf einzelne Welten zugreifen wollen. */
+export function findBuiltTheme(icon: string): JourneyTheme | undefined {
+  return THEMES.find(t => t.icon === icon)
+}
+
 /** Ein Eintrag im Schuljahres-Fahrplan (siehe SCHOOL_YEAR_ARCS). Welten ohne
  *  volle Etappen-Story (built: false) tragen nur die Teaser-Angaben aus dem
  *  Konzeptdoc — Name, Guide, Kurzbeschreibung, Fokus. */

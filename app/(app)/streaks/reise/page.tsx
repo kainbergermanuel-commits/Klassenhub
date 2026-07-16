@@ -33,5 +33,5 @@ export default async function ReisePage() {
   const done = countClassGoalDone(allHw ?? [], completions ?? [])
   const pct = classGoal ? Math.min(100, Math.round((done / classGoal.target) * 100)) : 0
 
-  return <ReiseOverview season={currentSeason} pct={pct} target={classGoal?.target ?? null} role={profile.role} />
+  return <ReiseOverview season={currentSeason} pct={pct} target={classGoal?.target ?? null} role={profile.role} isAdmin={!!profile.is_admin} />
 }
