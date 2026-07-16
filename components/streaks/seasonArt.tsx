@@ -16,6 +16,7 @@ export const SEASON_ART_SRC: Partial<Record<string, string>> = {
   anchor: '/images/season-inselreich.webp',
   auto_awesome: '/images/season-sternenkarte.webp',
   precision_manufacturing: '/images/season-werkstatt.webp',
+  park: '/images/season-weltenbaum.webp',
 }
 
 /** Theme-Icon → objectPosition (fokussierter Bildausschnitt). */
@@ -29,6 +30,7 @@ export const SEASON_ART_POS: Partial<Record<string, string>> = {
   anchor: 'center 45%',
   auto_awesome: 'center 35%',
   precision_manufacturing: 'center 45%',
+  park: 'center 40%',
 }
 
 /** Fertige, dezent gedimmte Hintergrund-Komponente (img + Verlauf nach unten
