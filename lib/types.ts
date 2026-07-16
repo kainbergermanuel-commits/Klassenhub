@@ -457,3 +457,23 @@ export type Message = {
   requires_ack: boolean
   acknowledged_at: string | null
 }
+
+// Anwesenheit: nur ABWEICHUNGEN werden gespeichert (kein Eintrag = anwesend).
+// source 'parent' + confirmed_at null => offene Elternmeldung, die von der
+// Lehrperson noch bestätigt werden muss. Bewusst kein Status "krank"
+// (Gesundheitsdaten, DSGVO Art. 9) — siehe supabase/feature-anwesenheit.sql.
+export type AttendanceStatus = 'entschuldigt' | 'unentschuldigt'
+
+export type Attendance = {
+  id: string
+  class_id: string
+  student_id: string
+  date: string
+  status: AttendanceStatus
+  note: string
+  source: 'teacher' | 'parent'
+  reported_by: string
+  confirmed_by: string | null
+  confirmed_at: string | null
+  created_at: string
+}

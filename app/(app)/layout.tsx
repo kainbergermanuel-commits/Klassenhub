@@ -11,7 +11,7 @@ import RolePreviewBar from '@/components/layout/RolePreviewBar'
 import ClassGoalWatermark from '@/components/home/ClassGoalWatermark'
 import type { Profile, Class } from '@/lib/types'
 
-function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, messageUnread: number) {
+function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, messageUnread: number, attendancePending: number) {
   const isTeacher = profile.role === 'teacher'
 
   const all = [
@@ -20,6 +20,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
     { href: '/termine', icon: 'calendar_month', label: 'Termine' },
+    { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit', badge: attendancePending || undefined },
     ...(profile.role !== 'student' ? [
       { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined },
     ] : []),
@@ -51,6 +52,20 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
   ]
 
   return { all, bottom }
+}
+
+/** Lehrperson: Anzahl offener (unbestätigter) Abwesenheitsmeldungen der Eltern.
+ *  Solange die Tabelle `attendance` noch nicht migriert ist, liefert die
+ *  Abfrage einen Fehler → Badge bleibt still 0 (Feature schlicht unsichtbar). */
+async function computeAttendanceBadge(profile: Profile, classId: string | null): Promise<number> {
+  if (!classId || profile.role !== 'teacher') return 0
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('attendance' as never)
+    .select('id', { count: 'exact', head: true })
+    .eq('class_id', classId)
+    .is('confirmed_at', null)
+  return count ?? 0
 }
 
 /** Ungelesene bevorstehende Erinnerungen je Rolle. */
@@ -139,12 +154,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const teacherClasses = realProfile.role === 'teacher' ? await getTeacherClasses(realProfile.id) : []
 
-  const [hwOpen, reminderUnread, messageUnread] = await Promise.all([
+  const [hwOpen, reminderUnread, messageUnread, attendancePending] = await Promise.all([
     computeHwBadge(profile, activeClassId),
     computeReminderBadge(profile, user.id, activeClassId),
     computeMessageBadge(profile, user.id, activeClassId),
+    computeAttendanceBadge(profile, activeClassId),
   ])
-  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, messageUnread)
+  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, messageUnread, attendancePending)
 
   // Preview bar: nur für echten Lehrer
   let previewRole: string | null = null
