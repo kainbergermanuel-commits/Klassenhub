@@ -77,9 +77,28 @@ export default function AllArcsOverview() {
 
             <div className="relative overflow-hidden rounded-2xl kh-card p-5">
               {/* ── Hintergrund ─────────────────────────────────────────────── */}
-              {locationArt ? (
-                // Orts-Illustration (kein Charakter, z.B. Sonnenhafen): Freisteller,
-                // object-contain rechts, sanfter Verlauf dahinter.
+              {seasonSrc ? (
+                // Welten-Bild als Vollflächen-Hintergrund, für alle Welten inkl.
+                // Sonnenhafen einheitlich (das Bild ist eine echte Vollformat-Szene,
+                // kein Freisteller mehr). Bewusst höhere Deckkraft (0.9) als die
+                // geteilte SEASON_ART-Optik (0.55) — hier soll das Bild klar
+                // sichtbar sein. Nur ein leichter Verlauf unten für Zusammenhalt;
+                // die Etappen-Textkarten darunter sind bewusst transparent gehalten.
+                <div className="absolute inset-0 pointer-events-none select-none">
+                  <img
+                    src={seasonSrc}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: 0.9, objectPosition: seasonPos }}
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: 'linear-gradient(180deg, rgba(251,249,243,0) 0%, rgba(251,249,243,0.18) 70%, rgba(251,249,243,0.35) 100%)' }}
+                  />
+                </div>
+              ) : locationArt && (
+                // Fallback für eine Orts-Illustration ohne SEASON_ART-Eintrag
+                // (Freisteller): object-contain rechts, sanfter Verlauf dahinter.
                 <div
                   className="absolute inset-0 pointer-events-none select-none"
                   style={{ background: 'linear-gradient(180deg, #EAF6FB 0%, #FDF6E3 45%, #FDF6E3 100%)' }}
@@ -89,19 +108,6 @@ export default function AllArcsOverview() {
                     alt=""
                     className="absolute inset-0 w-full h-full object-contain"
                     style={{ objectPosition: 'right center', transform: 'scale(1.12)', transformOrigin: 'right center' }}
-                  />
-                </div>
-              ) : seasonSrc && (
-                // Welten-Bild als Vollflächen-Hintergrund. Bewusst höhere Deckkraft
-                // (0.9) als die geteilte SEASON_ART-Optik (0.55) — hier soll das Bild
-                // klar sichtbar sein. Nur ein leichter Verlauf unten für Zusammenhalt;
-                // die Etappen-Textkarten darunter sind bewusst transparent gehalten.
-                <div className="absolute inset-0 pointer-events-none select-none">
-                  <img
-                    src={seasonSrc}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{ opacity: 0.9, objectPosition: seasonPos }}
                   />
                   <div
                     className="absolute inset-0"
