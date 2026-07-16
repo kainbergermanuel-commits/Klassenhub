@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { reportAbsence, withdrawReport } from '@/app/actions/attendance'
 import type { Attendance } from '@/lib/types'
@@ -11,8 +11,91 @@ interface Props {
   today: string
 }
 
+const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+
+function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
+function getFirstWeekday(y: number, m: number) { return (new Date(y, m, 1).getDay() + 6) % 7 }
 function fmtDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+function formatDisplay(iso: string) { return new Date(`${iso}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'long' }) }
+
+/** Gleicher Aufbau wie der DatePicker in termine/AddEventModal.tsx — hier
+ *  ohne Vergangenheits-Sperre, weil Eltern auch rückwirkend melden können. */
+function DatePicker({ value, min, onChange }: { value: string; min?: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const sel = new Date(`${value}T00:00:00`)
+  const [viewYear, setViewYear] = useState(sel.getFullYear())
+  const [viewMonth, setViewMonth] = useState(sel.getMonth())
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [])
+
+  const daysInMonth = getDaysInMonth(viewYear, viewMonth)
+  const firstWeekday = getFirstWeekday(viewYear, viewMonth)
+
+  function prevMonth() { if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) } else setViewMonth(m => m - 1) }
+  function nextMonth() { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) } else setViewMonth(m => m + 1) }
+  function selectDay(day: number) {
+    const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    if (min && iso < min) return
+    onChange(iso); setOpen(false)
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark text-left flex items-center justify-between gap-2 focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition hover:border-kh-teal/50"
+      >
+        <span>{formatDisplay(value)}</span>
+        <span className="msym text-[18px] text-kh-muted">calendar_month</span>
+      </button>
+      {open && (
+        <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
+          <div className="flex items-center justify-between mb-3">
+            <button type="button" onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F6F3ED] text-kh-muted transition-colors">
+              <span className="msym text-[20px]">chevron_left</span>
+            </button>
+            <span className="font-extrabold text-[14px] text-kh-dark">{MONTHS[viewMonth]} {viewYear}</span>
+            <button type="button" onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F6F3ED] text-kh-muted transition-colors">
+              <span className="msym text-[20px]">chevron_right</span>
+            </button>
+          </div>
+          <div className="grid grid-cols-7 mb-1">
+            {WEEKDAYS.map(d => <div key={d} className="text-center text-[11px] font-bold text-kh-muted py-1">{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-y-1">
+            {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1
+              const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+              const isSelected = iso === value
+              const isPast = !!min && iso < min
+              return (
+                <button key={day} type="button" onClick={() => selectDay(day)} disabled={isPast}
+                  className={`h-8 w-full rounded-lg text-[13px] font-semibold transition-all
+                    ${isSelected ? 'bg-kh-teal text-white font-extrabold' : ''}
+                    ${!isSelected && !isPast ? 'hover:bg-[#F0FAF8] text-kh-dark' : ''}
+                    ${isPast ? 'text-kh-muted/40 cursor-not-allowed' : ''}`}
+                >
+                  {day}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function ParentView({ entries, childFirstName, today }: Props) {
@@ -23,6 +106,11 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  function onStartDateChange(v: string) {
+    setStartDate(v)
+    if (v > endDate) setEndDate(v)
+  }
 
   function submit() {
     setError(null)
@@ -62,38 +150,30 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
         <p className="text-[12.5px] text-kh-muted mb-4">
           Die Lehrperson sieht die Meldung sofort und bestätigt sie mit einem Tap. Eine Begründung ist freiwillig.
         </p>
-        <div className="flex gap-3 flex-wrap">
-          <label className="flex flex-col gap-1 text-[12px] font-bold text-kh-muted">
-            Von
-            <input
-              type="date" value={startDate}
-              onChange={e => { setStartDate(e.target.value); if (e.target.value > endDate) setEndDate(e.target.value) }}
-              className="px-3 py-2 rounded-xl border border-kh-border bg-white text-[14px] text-kh-dark font-semibold"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] font-bold text-kh-muted">
-            Bis
-            <input
-              type="date" value={endDate} min={startDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-kh-border bg-white text-[14px] text-kh-dark font-semibold"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] font-bold text-kh-muted flex-1 min-w-[200px]">
-            Notiz (freiwillig)
+        <div className="flex gap-3 flex-wrap items-start">
+          <div className="w-[168px]">
+            <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Von</label>
+            <DatePicker value={startDate} onChange={onStartDateChange} />
+          </div>
+          <div className="w-[168px]">
+            <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Bis</label>
+            <DatePicker value={endDate} min={startDate} onChange={setEndDate} />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Notiz (freiwillig)</label>
             <input
               type="text" value={note} maxLength={300}
               onChange={e => setNote(e.target.value)}
               placeholder="z. B. Arzttermin"
-              className="px-3 py-2 rounded-xl border border-kh-border bg-white text-[14px] text-kh-dark"
+              className="w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
             />
-          </label>
+          </div>
         </div>
         <div className="flex items-center gap-3 mt-4 flex-wrap">
           <button
             onClick={submit}
             disabled={isPending}
-            className="px-5 py-2.5 rounded-full text-[13.5px] font-bold text-white gradient-teal disabled:opacity-50"
+            className="px-5 py-2.5 rounded-full text-[13.5px] font-bold text-white gradient-teal hover:brightness-105 active:brightness-95 transition disabled:opacity-50 disabled:pointer-events-none"
           >
             {isPending ? 'Wird gemeldet …' : 'Abmelden'}
           </button>
@@ -131,7 +211,7 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
                   <button
                     onClick={() => withdraw(e.id)}
                     disabled={isPending}
-                    className="text-[12px] font-bold text-kh-muted underline underline-offset-2 disabled:opacity-50"
+                    className="text-[12px] font-bold text-kh-muted underline underline-offset-2 hover:text-kh-red transition-colors disabled:opacity-50 disabled:pointer-events-none"
                   >
                     Zurückziehen
                   </button>

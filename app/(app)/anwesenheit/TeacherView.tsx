@@ -136,7 +136,7 @@ export default function TeacherView({ students, entries, today }: Props) {
                     <button
                       onClick={() => handleReport(r.id, 'confirm')}
                       disabled={isPending}
-                      className="px-3.5 py-1.5 rounded-full text-[12.5px] font-bold text-white gradient-teal disabled:opacity-50"
+                      className="px-3.5 py-1.5 rounded-full text-[12.5px] font-bold text-white gradient-teal hover:brightness-105 active:brightness-95 transition disabled:opacity-50 disabled:pointer-events-none"
                     >
                       Bestätigen
                     </button>
@@ -144,7 +144,7 @@ export default function TeacherView({ students, entries, today }: Props) {
                       onClick={() => handleReport(r.id, 'reject')}
                       disabled={isPending}
                       title="Meldung ablehnen — das Kind gilt als anwesend"
-                      className="px-3.5 py-1.5 rounded-full text-[12.5px] font-bold text-kh-red bg-kh-red-light disabled:opacity-50"
+                      className="px-3.5 py-1.5 rounded-full text-[12.5px] font-bold text-kh-red bg-kh-red-light hover:bg-kh-red hover:text-white transition-colors disabled:opacity-50 disabled:pointer-events-none"
                     >
                       Ablehnen
                     </button>
@@ -162,8 +162,10 @@ export default function TeacherView({ students, entries, today }: Props) {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
-              tab === t ? 'bg-kh-dark text-white' : 'bg-white text-kh-muted shadow-[0_2px_8px_rgba(20,40,45,.06)]'
+            className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
+              tab === t
+                ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white shadow-[0_4px_12px_rgba(20,40,45,.18)]'
+                : 'bg-white text-kh-muted shadow-[0_2px_8px_rgba(20,40,45,.06)] hover:text-kh-dark'
             }`}
           >
             {t === 'tag' ? 'Tages-Abgleich' : 'Übersicht'}
@@ -176,15 +178,15 @@ export default function TeacherView({ students, entries, today }: Props) {
           {/* Tages-Navigation */}
           <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <button onClick={() => setDate(addDaysISO(-1, new Date(`${date}T00:00:00`)))} aria-label="Vortag" className="w-8 h-8 rounded-full bg-kh-bg flex items-center justify-center text-kh-dark">
+              <button onClick={() => setDate(addDaysISO(-1, new Date(`${date}T00:00:00`)))} aria-label="Vortag" className="w-8 h-8 rounded-full bg-kh-bg flex items-center justify-center text-kh-dark hover:bg-kh-page transition-colors">
                 <span className="msym text-[18px]">chevron_left</span>
               </button>
-              <button onClick={() => setDate(addDaysISO(1, new Date(`${date}T00:00:00`)))} aria-label="Nächster Tag" className="w-8 h-8 rounded-full bg-kh-bg flex items-center justify-center text-kh-dark">
+              <button onClick={() => setDate(addDaysISO(1, new Date(`${date}T00:00:00`)))} aria-label="Nächster Tag" className="w-8 h-8 rounded-full bg-kh-bg flex items-center justify-center text-kh-dark hover:bg-kh-page transition-colors">
                 <span className="msym text-[18px]">chevron_right</span>
               </button>
               <span className="font-extrabold text-[15px] text-kh-dark ml-1">{dayLabel}</span>
               {!isToday && (
-                <button onClick={() => setDate(today)} className="ml-1 px-2.5 py-1 rounded-full text-[11.5px] font-bold text-kh-teal bg-kh-teal-light">
+                <button onClick={() => setDate(today)} className="ml-1 px-2.5 py-1 rounded-full text-[11.5px] font-bold text-kh-teal bg-kh-teal-light hover:bg-kh-teal hover:text-white transition-colors">
                   Heute
                 </button>
               )}
@@ -195,8 +197,8 @@ export default function TeacherView({ students, entries, today }: Props) {
           </div>
 
           {/* Klassenliste */}
-          <div className="space-y-1.5">
-            {students.length === 0 && <div className="text-kh-muted text-[14px] py-6 text-center">Keine Schüler:innen in dieser Klasse.</div>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+            {students.length === 0 && <div className="col-span-full text-kh-muted text-[14px] py-6 text-center">Keine Schüler:innen in dieser Klasse.</div>}
             {students.map(s => {
               const status = rowStatus(s.id)
               const key = `${s.id}|${date}`
@@ -228,13 +230,15 @@ export default function TeacherView({ students, entries, today }: Props) {
                           role="radio"
                           aria-checked={active}
                           title={meta.label}
-                          className="px-2.5 py-1.5 rounded-full text-[12px] font-bold transition-all disabled:opacity-60"
+                          className={`px-2.5 py-1.5 rounded-full text-[12px] font-bold transition-all disabled:opacity-60 ${
+                            active ? '' : 'opacity-[0.65] hover:opacity-100'
+                          }`}
                           style={active
                             ? { background: meta.color, color: '#fff' }
-                            : { background: meta.bg, color: meta.color, opacity: 0.65 }}
+                            : { background: meta.bg, color: meta.color }}
                         >
-                          <span className="max-md:hidden">{meta.label}</span>
-                          <span className="md:hidden">{meta.short}</span>
+                          <span className="max-lg:hidden">{meta.label}</span>
+                          <span className="lg:hidden">{meta.short}</span>
                         </button>
                       )
                     })}
@@ -252,7 +256,7 @@ export default function TeacherView({ students, entries, today }: Props) {
             <h2 className="font-extrabold text-[16px] text-kh-dark">Fehltage pro Kind</h2>
             <span className="text-[12px] text-kh-muted font-medium">seit Schuljahresbeginn · Schultage, keine Stunden</span>
           </div>
-          <div className="space-y-1.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
             {summary.map(({ student, e, u }) => (
               <div key={student.id} className="kh-card-flat px-3.5 py-2.5 flex items-center gap-3">
                 <Avatar name={student.full_name} color={student.avatar_color} seed={student.avatar_seed} hairColor={student.avatar_hair_color} skinColor={student.avatar_skin_color} size={34} />
