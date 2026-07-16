@@ -93,13 +93,17 @@ export default function AllArcsOverview() {
               <div className="relative z-10 flex gap-4 items-end">
                 {/* Volle Guide-Figur (nicht rundes Portrait) im linken Bereich,
                     deutlich größer als ein Portrait, am unteren Card-Rand verankert
-                    (items-end), als stünde sie auf dem Boden der Card. */}
+                    (items-end), als stünde sie auf dem Boden der Card. Nach HÖHE
+                    statt Breite skaliert: manche Bilder zeigen zwei Figuren
+                    nebeneinander (z.B. Coralie & Nauto), die dadurch ein breiteres,
+                    kürzeres Format haben — bei fester Breite wirkten sie kleiner.
+                    Feste Höhe hält alle Guides optisch gleich groß. */}
                 {!locationArt && portrait && (
-                  <div className="w-[170px] md:w-[220px] flex-shrink-0">
+                  <div className="flex-shrink-0">
                     <img
                       src={portrait}
                       alt={arc.guide}
-                      className="w-full max-h-[80vh] object-contain object-bottom drop-shadow-[0_8px_16px_rgba(20,40,45,.35)]"
+                      className="h-[230px] md:h-[300px] max-h-[80vh] w-auto max-w-[260px] object-contain object-bottom drop-shadow-[0_8px_16px_rgba(20,40,45,.35)]"
                     />
                   </div>
                 )}
