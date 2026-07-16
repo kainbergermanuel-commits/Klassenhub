@@ -3,6 +3,7 @@ import FeatureCard from './FeatureCard'
 import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
+import AttendanceParentCard, { type ChildAbsenceEntry } from './AttendanceParentCard'
 import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { flameCount } from '@/lib/streak'
@@ -27,12 +28,15 @@ interface ParentHomeProps {
   /** Botenfeder (Balance-Fahrplan Phase 3): HÜ-IDs, bei denen das Kind aktiv
    *  um Bestätigung gebeten hat — hebt den Eintrag in der Liste dezent hervor. */
   nudgedHomeworkIds?: Set<string>
+  /** Heutige + kommende Abwesenheiten des Kindes (Anwesenheits-Startkarte) */
+  childUpcomingAbsences: ChildAbsenceEntry[]
+  today: string
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, classGoal, classGoalDone,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, classGoal, classGoalDone,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
@@ -132,6 +136,13 @@ export default function ParentHome({
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
+          {/* Anwesenheit: Ein-Tap-Abmeldung + Status — auch auf Mobile sichtbar */}
+          <AttendanceParentCard
+            childFirstName={childFirst}
+            upcomingEntries={childUpcomingAbsences}
+            today={todayIso}
+          />
+
           {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-2 gap-4 max-md:hidden">
             <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '0ms' }}>

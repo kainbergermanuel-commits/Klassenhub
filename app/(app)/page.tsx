@@ -96,11 +96,27 @@ export default async function HomePage() {
       { count: studentCount },
       { count: submittedCount },
       { data: allStudents },
+      { data: attendanceRaw },
     ] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
       supabase.from('homework_completions').select('homework_id', { count: 'exact', head: true }).in('homework_id', homework.map(h => h.id)),
       supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
+      // Anwesenheit für die Startkarte: heutige Einträge + alle offenen
+      // Elternmeldungen in einem Rutsch (statt zwei Abfragen).
+      supabase.from('attendance' as never)
+        .select('id,student_id,date,status,source,note,confirmed_at')
+        .eq('class_id', activeClassId)
+        .or(`date.eq.${today},confirmed_at.is.null`)
+        .order('date') as unknown as Promise<{ data: { id: string; student_id: string; date: string; status: 'entschuldigt' | 'unentschuldigt'; source: 'teacher' | 'parent'; note: string; confirmed_at: string | null }[] | null }>,
     ])
+
+    const attendanceEntries = attendanceRaw ?? []
+    const attendancePendingReports = attendanceEntries
+      .filter(a => !a.confirmed_at)
+      .map(a => ({ id: a.id, student_id: a.student_id, date: a.date, note: a.note }))
+    const absentToday = attendanceEntries
+      .filter(a => a.date === today)
+      .map(a => ({ student_id: a.student_id, status: a.status, pending: !a.confirmed_at }))
 
     // allHwForStreaks/recentHw waren eigene Abfragen desselben Schuljahres-
     // Fensters, das oben (homeworkAll) schon geladen ist — hier nur noch
@@ -150,6 +166,9 @@ export default async function HomePage() {
         dutyEntries={dutyEntries}
         upcomingEvents={upcomingEvents}
         recentHomework={recentHw.map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
+        attendancePendingReports={attendancePendingReports}
+        absentToday={absentToday}
+        students={students}
         classGoal={classGoal}
         classGoalDone={countClassGoalDone(allHwForStreaks, allCompletions ?? [])}
         season={currentSeason}
@@ -529,10 +548,20 @@ export default async function HomePage() {
 
     // Botenfeder (Balance-Fahrplan Phase 3): welche offenen Bestätigungen hat
     // das Kind aktiv angestupst? Bisher gab es nur die Sende-Seite — hier die
-    // fehlende Konsumseite fürs Eltern-Dashboard.
-    const { data: childNudges } = child
-      ? await supabase.from('parent_nudges').select('homework_id').eq('student_id', child.id)
-      : { data: [] }
+    // fehlende Konsumseite fürs Eltern-Dashboard. Parallel dazu: heutige +
+    // kommende Abwesenheiten des Kindes für die Anwesenheits-Startkarte.
+    const [{ data: childNudges }, { data: childAbsencesRaw }] = child
+      ? await Promise.all([
+          supabase.from('parent_nudges').select('homework_id').eq('student_id', child.id),
+          supabase.from('attendance' as never)
+            .select('id,date,status,source,confirmed_at')
+            .eq('student_id', child.id)
+            .gte('date', today)
+            .order('date')
+            .limit(5) as unknown as Promise<{ data: { id: string; date: string; status: 'entschuldigt' | 'unentschuldigt'; source: 'teacher' | 'parent'; confirmed_at: string | null }[] | null }>,
+        ])
+      : [{ data: [] }, { data: [] }]
+    const childUpcomingAbsences = childAbsencesRaw ?? []
     const nudgedHomeworkIds = new Set((childNudges ?? []).map(n => n.homework_id))
 
     const childHwWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: childDoneIds.has(h.id) }))
@@ -553,6 +582,8 @@ export default async function HomePage() {
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}
         nudgedHomeworkIds={nudgedHomeworkIds}
+        childUpcomingAbsences={childUpcomingAbsences}
+        today={today}
         classGoal={classGoal}
         classGoalDone={countClassGoalDone(allHwForStreak, allCompletionsParent ?? [])}
       />

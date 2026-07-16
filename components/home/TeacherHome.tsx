@@ -11,6 +11,7 @@ import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
 import ClassGoalCard from './ClassGoalCard'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
+import AttendanceTeacherCard, { type PendingAttendanceReport, type AbsentTodayEntry } from './AttendanceTeacherCard'
 import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber, greeting } from '@/lib/date'
 import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 
@@ -126,6 +127,10 @@ interface TeacherHomeProps {
   dutyEntries: DutyEntry[]
   upcomingEvents: AgendaEvent[]
   recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
+  attendancePendingReports: PendingAttendanceReport[]
+  absentToday: AbsentTodayEntry[]
+  /** Alle Schüler:innen der Klasse (für Avatare der Anwesenheits-Karte) */
+  students: (Person & { id: string })[]
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
   season: string
@@ -133,7 +138,8 @@ interface TeacherHomeProps {
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  hwOpenStudents, reminders, dutyEntries, upcomingEvents, recentHomework, classGoal, classGoalDone, season,
+  hwOpenStudents, reminders, dutyEntries, upcomingEvents, recentHomework,
+  attendancePendingReports, absentToday, students, classGoal, classGoalDone, season,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -175,6 +181,13 @@ export default function TeacherHome({
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
+          {/* Anwesenheit: nur sichtbar, wenn es etwas zu tun/sehen gibt */}
+          <AttendanceTeacherCard
+            pendingReports={attendancePendingReports}
+            absentToday={absentToday}
+            students={students}
+          />
+
           {/* Feature cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
             <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
