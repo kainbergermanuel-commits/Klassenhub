@@ -1,6 +1,6 @@
 'use client'
 
-import { SCHOOL_YEAR_ARCS, GUIDE_PORTRAIT, findBuiltTheme } from '@/lib/seasonTheme'
+import { SCHOOL_YEAR_ARCS, GUIDE_PORTRAIT, LOCATION_ART, findBuiltTheme } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 
 /** Admin-only Vorschau: ALLE geplanten Welten des Schuljahres-Fahrplans auf
@@ -19,6 +19,7 @@ export default function AllArcsOverview() {
       {SCHOOL_YEAR_ARCS.map(arc => {
         const Art = SEASON_ART[arc.icon]
         const portrait = GUIDE_PORTRAIT[arc.icon]
+        const locationArt = LOCATION_ART[arc.icon]
         const builtTheme = findBuiltTheme(arc.icon)
 
         return (
@@ -26,6 +27,23 @@ export default function AllArcsOverview() {
             {Art && (
               <div className="absolute inset-0 pointer-events-none select-none opacity-70">
                 <Art />
+              </div>
+            )}
+
+            {/* Orts-Illustration (kein Charakter, z.B. Sonnenhafen) — deutlich
+                größer als ein Guide-Portrait und bewusst nicht als runder
+                Avatar, um den Unterschied "Ort vs. Figur" auch visuell klar
+                zu machen. */}
+            {locationArt && (
+              <div
+                className="relative z-10 mb-4 -mx-5 -mt-5 h-[260px] flex items-center justify-center overflow-hidden"
+                style={{ background: 'linear-gradient(180deg, #EAF6FB 0%, #FDF6E3 100%)' }}
+              >
+                <img
+                  src={locationArt}
+                  alt={`${arc.name} (Ort)`}
+                  className="h-full w-auto object-contain"
+                />
               </div>
             )}
 

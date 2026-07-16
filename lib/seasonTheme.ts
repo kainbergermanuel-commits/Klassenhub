@@ -92,6 +92,14 @@ export const GUIDE_PORTRAIT: Partial<Record<string, string>> = {
   park: '/images/characters/weltenbaum-waechterin.webp', // Wächterin des Weltenbaums, Der Weltenbaum
 }
 
+/** Orts-Illustrationen je Theme-Icon — anders als GUIDE_PORTRAIT keine
+ *  Charakter-Portraits, sondern der Ort selbst (z.B. Sonnenhafen, an den
+ *  am Ende jede Reise zurückführt). Getrennte Map, weil Orte in der UI
+ *  anders dargestellt werden (größeres Bild statt rundem Avatar). */
+export const LOCATION_ART: Partial<Record<string, string>> = {
+  wb_sunny: '/images/locations/sonnenhafen.webp', // Sonnenhafen, gemeinsames Sommerziel
+}
+
 /** Position im Schuljahres-Fahrplan (0=September … 10=Juli/August) für einen
  *  0-basierten Kalendermonat (0=Januar … 11=Dezember). Muss zu SCHOOL_YEAR_ARCS
  *  passen (weiter unten in dieser Datei) — eine Sequenz, keine zwei. */
