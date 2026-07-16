@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import type { JourneyTheme } from '@/lib/seasonTheme'
+import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 
 interface Props {
-  theme: JourneyTheme
-  portrait: string | undefined
+  /** Season-Key ('YYYY-MM') statt fertigem Theme-Objekt — JourneyTheme trägt
+   *  eine `nudge`-Funktion und lässt sich daher nicht als Server→Client-Prop
+   *  serialisieren (React-Fehler "Functions cannot be passed..."). Theme wird
+   *  client-seitig berechnet, genau wie in HeldenbuchCard/StoryHeroCard. */
+  season: string
   index: number
 }
 
@@ -15,7 +18,9 @@ interface Props {
  *  kein Lehrer, eine eigene dritte Kategorie. Klick öffnet dieselbe
  *  Kurzvorstellung wie im Heldenbuch (GuideInfoOverlay), damit an jeder
  *  Stelle dieselbe Erklärung steht. */
-export default function GuideCard({ theme, portrait, index }: Props) {
+export default function GuideCard({ season, index }: Props) {
+  const theme = getSeasonTheme(season)
+  const portrait = GUIDE_PORTRAIT[theme.icon]
   const [infoOpen, setInfoOpen] = useState(false)
 
   return (

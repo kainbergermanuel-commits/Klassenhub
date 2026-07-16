@@ -7,7 +7,6 @@ import GuideCard from '@/components/klasse/GuideCard'
 import PageHeader from '@/components/layout/PageHeader'
 import type { TeacherSubject } from '@/app/actions/saveTeacherSubjects'
 import { VETERAN_MILESTONE } from '@/lib/streak'
-import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { todayISO } from '@/lib/date'
 
 export default async function MeineKlassePage() {
@@ -64,9 +63,9 @@ export default async function MeineKlassePage() {
     .slice()
     .sort((a, b) => priority(a) - priority(b) || a.full_name.localeCompare(b.full_name))
 
-  // Guide der aktuell laufenden Klassenwelt — gemeinsam für alle, unabhängig
-  // von "Mein Guide" im Heldenbuch (siehe lib/seasonTheme.ts).
-  const currentTheme = getSeasonTheme(todayISO().slice(0, 7))
+  // Season-Key für den Guide der aktuell laufenden Klassenwelt — Theme wird
+  // in GuideCard (Client-Komponente) selbst berechnet, siehe dort.
+  const currentSeason = todayISO().slice(0, 7)
 
   return (
     <div>
@@ -92,7 +91,7 @@ export default async function MeineKlassePage() {
             index={i}
           />
         ))}
-        <GuideCard theme={currentTheme} portrait={GUIDE_PORTRAIT[currentTheme.icon]} index={teachers.length} />
+        <GuideCard season={currentSeason} index={teachers.length} />
         {students.map((s, i) => (
           <StudentCard
             key={s.id}
