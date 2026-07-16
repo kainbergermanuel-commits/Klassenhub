@@ -24,40 +24,42 @@ export default function AllArcsOverview() {
 
         return (
           <div key={arc.name} className="relative overflow-hidden rounded-2xl kh-card p-5">
-            {Art && (
+            {locationArt ? (
+              // Orts-Illustration (kein Charakter, z.B. Sonnenhafen) — füllt die
+              // ganze Card als Hintergrund, genau wie SEASON_ART bei den
+              // Charakter-Welten. Kein Guide-Avatar nötig: Sonnenhafen ist ein
+              // Spezial-Arc ohne einzelne Guide-Figur ("Alle Guides gemeinsam").
+              <div className="absolute inset-0 pointer-events-none select-none">
+                <img
+                  src={locationArt}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ objectPosition: 'center 55%', transform: 'scale(1.15)' }}
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{ background: 'linear-gradient(180deg, rgba(253,246,227,0.05) 0%, rgba(253,246,227,0.45) 55%, #FDF6E3 100%)' }}
+                />
+              </div>
+            ) : Art && (
               <div className="absolute inset-0 pointer-events-none select-none opacity-70">
                 <Art />
               </div>
             )}
 
-            {/* Orts-Illustration (kein Charakter, z.B. Sonnenhafen) — deutlich
-                größer als ein Guide-Portrait und bewusst nicht als runder
-                Avatar, um den Unterschied "Ort vs. Figur" auch visuell klar
-                zu machen. */}
-            {locationArt && (
-              <div
-                className="relative z-10 mb-4 -mx-5 -mt-5 h-[260px] flex items-center justify-center overflow-hidden"
-                style={{ background: 'linear-gradient(180deg, #EAF6FB 0%, #FDF6E3 100%)' }}
-              >
-                <img
-                  src={locationArt}
-                  alt={`${arc.name} (Ort)`}
-                  className="h-full w-auto object-contain"
-                />
-              </div>
-            )}
-
             <div className="relative z-10 flex gap-4">
-              {portrait ? (
-                <img
-                  src={portrait}
-                  alt={arc.guide}
-                  className="w-20 h-20 rounded-full object-cover object-top ring-2 ring-white shadow-sm flex-shrink-0 bg-[#EFEAE0]"
-                />
-              ) : (
-                <span className="w-20 h-20 rounded-full bg-gradient-to-br from-[#E0A94B] to-[#B8721E] flex items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm">
-                  <span className="msym text-[32px] text-white" aria-hidden="true">{arc.icon}</span>
-                </span>
+              {!locationArt && (
+                portrait ? (
+                  <img
+                    src={portrait}
+                    alt={arc.guide}
+                    className="w-20 h-20 rounded-full object-cover object-top ring-2 ring-white shadow-sm flex-shrink-0 bg-[#EFEAE0]"
+                  />
+                ) : (
+                  <span className="w-20 h-20 rounded-full bg-gradient-to-br from-[#E0A94B] to-[#B8721E] flex items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm">
+                    <span className="msym text-[32px] text-white" aria-hidden="true">{arc.icon}</span>
+                  </span>
+                )
               )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -69,7 +71,7 @@ export default function AllArcsOverview() {
                   >
                     {arc.built ? 'Gebaut' : 'Nur Teaser'}
                   </span>
-                  {!portrait && (
+                  {!portrait && !locationArt && (
                     <span className="text-[9.5px] font-extrabold text-kh-amber bg-kh-amber/15 px-2 py-0.5 rounded-full">Kein Portrait</span>
                   )}
                 </div>
