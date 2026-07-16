@@ -36,12 +36,12 @@ export default function ClassGoalCard({ goal, done, season }: Props) {
       href="/streaks"
       className="block bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50 hover:border-kh-teal/40 transition-colors max-md:rounded-2xl max-md:border-0 max-md:bg-gradient-to-br max-md:from-white max-md:via-white max-md:to-kh-page max-md:shadow-[0_8px_16px_rgba(20,40,45,.10)]"
     >
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark min-w-0">
-          <span className="msym text-[20px] text-[#B9791A] flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>{theme.icon}</span>
-          <span className="truncate">{theme.goalTitle}</span>
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h2 className="flex items-start gap-2 font-extrabold text-base text-kh-dark leading-snug min-w-0">
+          <span className="msym text-[20px] text-[#B9791A] flex-shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>{theme.icon}</span>
+          <span className="line-clamp-2">{theme.goalTitle}</span>
         </h2>
-        <span className="text-[11.5px] font-semibold text-kh-muted flex-shrink-0 whitespace-nowrap">{monthLabel(`${season}-01`)}</span>
+        <span className="text-[11.5px] font-semibold text-kh-muted flex-shrink-0 whitespace-nowrap mt-0.5">{monthLabel(`${season}-01`)}</span>
       </div>
       <p className="text-[12.5px] text-kh-muted font-medium mb-3.5">
         {theme.name} · {done} von {goal.target} {theme.stepNoun}
