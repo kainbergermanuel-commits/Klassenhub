@@ -55,18 +55,21 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
               <div
                 className={`relative overflow-hidden rounded-2xl px-4 py-3.5 ${
                   isFuture ? `border border-dashed border-kh-border/70 ${Art ? '' : 'bg-[#F9F7F2]'}` : 'kh-card'
-                } ${isPast ? 'opacity-70' : ''}`}
+                }`}
               >
                 {Art && (
+                  // Vergangene/aktuelle Welten deutlich sichtbarer als vorher (0.85 →
+                  // 0.96) — Kontrast-Schutz übernimmt jetzt das Glas-Panel um den
+                  // Text unten, nicht mehr eine Abdunklung der ganzen Card.
                   <div
                     className="absolute inset-0 pointer-events-none select-none"
-                    style={{ filter: isFuture ? 'grayscale(0.9) brightness(1.08)' : 'none', opacity: isFuture ? 0.4 : 0.85 }}
+                    style={{ filter: isFuture ? 'grayscale(0.9) brightness(1.08)' : 'none', opacity: isFuture ? 0.4 : 0.96 }}
                   >
                     <Art />
                   </div>
                 )}
 
-                <div className="relative z-10">
+                <div className={`relative z-10 ${Art && !isFuture ? 'rounded-xl bg-white/72 backdrop-blur-[3px] -mx-1.5 -my-1 px-2.5 py-2' : ''}`}>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted">{arc.monthLabel}</span>
                     {isCurrent && (
@@ -84,7 +87,7 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
                   ) : (
                     <>
                       <h3 className="font-extrabold text-[15.5px] text-kh-dark mb-0.5">{arc.name}</h3>
-                      <p className="text-[12.5px] text-kh-muted font-medium leading-snug">
+                      <p className="text-[12.5px] text-kh-dark/70 font-medium leading-snug">
                         {arc.tagline} · Begleitet von {arc.guide}
                       </p>
                     </>
