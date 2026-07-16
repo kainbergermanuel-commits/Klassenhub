@@ -30,6 +30,11 @@ export default function AllArcsOverview() {
               // Charakter-Welten. object-contain statt -cover: das Bild ist ein
               // Freisteller (kein Vollformat-Foto), object-contain zeigt den
               // ganzen Hafen ohne Beschnitt, der sanfte Verlauf füllt den Rest.
+              // ⚠️ w-full + h-full (nicht h-auto!): die Card ist bei Sonnenhafen
+              // recht kurz (noch nicht gebaut, wenig Text) — h-auto skaliert
+              // nach Breite und ließ den Hafen unten von der Card abschneiden
+              // (nur die Turmspitze blieb sichtbar). h-full zwingt object-contain,
+              // sich nach der tatsächlichen Card-Höhe zu richten, nie beschnitten.
               // Kein Guide-Avatar nötig: Sonnenhafen ist ein Spezial-Arc ohne
               // einzelne Guide-Figur ("Alle Guides gemeinsam").
               <div
@@ -39,7 +44,7 @@ export default function AllArcsOverview() {
                 <img
                   src={locationArt}
                   alt=""
-                  className="absolute top-0 left-0 w-full h-auto object-contain"
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
               </div>
             ) : Art && (
