@@ -9,7 +9,7 @@ import FeatureCard from './FeatureCard'
 import DutyCard, { type DutyEntry } from './DutyCard'
 import TermineCard from './TermineCard'
 import AgendaPanel from './AgendaPanel'
-import ClassGoalBadge from './ClassGoalBadge'
+import ClassGoalCard from './ClassGoalCard'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
 import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber, greeting } from '@/lib/date'
 import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
@@ -149,17 +149,14 @@ export default function TeacherHome({
 
   return (
     <>
-      <header className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start mb-6">
-        <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
-          <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
-            <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight">{greeting()}, {firstName}!</h1>
-            <p className="text-sm text-kh-muted font-medium mt-1">{today} · Klasse {klass?.name}</p>
-          </div>
+      <header className="flex items-center gap-3 min-w-0 mb-6 max-md:pr-16">
+        <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
+          <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
         </div>
-        <ClassGoalBadge goal={classGoal} done={classGoalDone} season={season} />
+        <div className="min-w-0">
+          <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight">{greeting()}, {firstName}!</h1>
+          <p className="text-sm text-kh-muted font-medium mt-1">{today} · Klasse {klass?.name}</p>
+        </div>
       </header>
 
       {/* Schwebender „Neue HÜ"-Button unter dem Burger (nur Mobile, nur Startseite) */}
@@ -286,6 +283,9 @@ export default function TeacherHome({
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="teacher" classId={classId} userId={userId} />
+            </div>
+            <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
+              <ClassGoalCard goal={classGoal} done={classGoalDone} season={season} />
             </div>
           </div>
         </div>
