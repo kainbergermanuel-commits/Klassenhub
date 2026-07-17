@@ -227,7 +227,7 @@ export default async function HomePage() {
         ? supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', dutyIds)
         : Promise.resolve({ data: [] }),
       allHwIds.length > 0
-        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
+        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at,completed_at').in('homework_id', allHwIds)
         : Promise.resolve({ data: [] }),
       supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', user.id).eq('week_start', weekStart),
       supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', user.id).order('confirmed_at', { ascending: false }),
@@ -341,14 +341,27 @@ export default async function HomePage() {
       .filter((t): t is NonNullable<typeof t> => !!t)
       .map(t => computeQuestProgress(t, questCtx, choiceByTemplate.get(t.key)))
 
-    // ─── SOCIAL-PROOF-NUDGE (anonym, keine Namen) ────────────────────────────
-    // Ab 3 Schüler:innen, damit der Prozentwert niemanden einzeln erkennbar macht.
+    // ─── WOCHEN-PULS (kollektive + dynamische Norm statt statischer %-Norm) ───
+    // Neugestaltung des früheren Social-Proof-Banners: statt eines statischen
+    // deskriptiven Prozentwerts ("X % deiner Klasse …"), der bei niedrigem Stand
+    // laut Norm-Forschung ins Gegenteil kippt (Bumerang-Effekt, Schultz et al.
+    // 2007; Cialdini et al. 2006), zwei nicht-vergleichende Signale:
+    //  • total = diese Woche GEMEINSAM erledigte HÜ (monotoner Sammel-Wert ohne
+    //    Nenner → kann nie "keiner macht mit" sagen, kollektiv statt Einzel-
+    //    vergleich, deckt sich mit Hebel 1/Prinzip 1).
+    //  • today = heute davon dazugekommen → Momentum/dynamische Norm (Sparkman &
+    //    Walton 2017: wirkt gerade dann, wenn der statische Stand niedrig ist).
+    // Kleinstklassen-Riegel (>=3) bleibt vorsichtshalber, obwohl ein reiner
+    // Output-Zähler ohnehin keine Einzelperson verrät.
     const weekHwIdSet = new Set(weekHw.map(h => h.id))
-    const studentsActiveThisWeek = new Set(
-      (allCompletionsStudent ?? []).filter(c => weekHwIdSet.has(c.homework_id)).map(c => c.student_id)
-    )
+    const weekCompletions = (allCompletionsStudent ?? []).filter(c => weekHwIdSet.has(c.homework_id))
     const classSize = (allStudents ?? []).length
-    const socialProofPct = classSize >= 3 ? Math.round((studentsActiveThisWeek.size / classSize) * 100) : null
+    const weekPulse = classSize >= 3
+      ? {
+          total: weekCompletions.length,
+          today: weekCompletions.filter(c => (c as { completed_at?: string | null }).completed_at?.slice(0, 10) === today).length,
+        }
+      : null
 
     // ─── HELDENBUCH (eigene Meilensteine, keine Klasse-Ansicht) ──────────────
     // myMilestones kommt bereits aus dem gebündelten Batch weiter oben.
@@ -493,7 +506,7 @@ export default async function HomePage() {
         quests={quests}
         questWeekStart={weekStart}
         riddles={riddleProp}
-        socialProofPct={socialProofPct}
+        weekPulse={weekPulse}
         guideNote={guideNote}
         noteGuideIcon={effectiveGuideIcon}
         preferredGuideIcon={preferredGuideIcon}

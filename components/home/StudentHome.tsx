@@ -3,6 +3,7 @@ import StudentOpenHomework from './StudentWeekHomework'
 import StoryHeroCard from './StoryHeroCard'
 import WeeklyQuestCard from './WeeklyQuestCard'
 import RiddleList from './RiddleList'
+import WeekPulse from './WeekPulse'
 import HeldenbuchCard from './HeldenbuchCard'
 import DutyModule from './DutyModule'
 import AnimateIn from '@/components/ui/AnimateIn'
@@ -43,8 +44,9 @@ interface StudentHomeProps {
   questWeekStart: string
   /** Interaktive Rätsel (Arc-Item der aktiven Welt + ggf. Splitter-Rätsel). */
   riddles: { riddle: Riddle; solved: boolean }[]
-  /** Anteil der Klasse mit mind. 1 Erledigung diese Woche, anonym (keine Namen). `null` = zu kleine Klasse. */
-  socialProofPct: number | null
+  /** Wochen-Puls: kollektiver Sammel-Wert + Momentum statt statischer %-Norm
+   *  (siehe WeekPulse.tsx). `null` = zu kleine Klasse. */
+  weekPulse: { total: number; today: number } | null
   guideNote: GuideNote
   noteGuideIcon: string
   preferredGuideIcon: string | null
@@ -55,7 +57,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, socialProofPct, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, weekPulse, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -94,12 +96,9 @@ export default function StudentHome({
             <RiddleList riddles={riddles} />
           </AnimateIn>
 
-          {socialProofPct !== null && (
-            <AnimateIn delay={90} className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#F0FAF9] border border-kh-teal/20">
-              <span className="msym text-[18px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
-              <p className="text-[13px] font-semibold text-kh-dark">
-                {socialProofPct}&nbsp;% deiner Klasse sind diese Woche schon dabei — schließ dich an!
-              </p>
+          {weekPulse !== null && (
+            <AnimateIn delay={90}>
+              <WeekPulse total={weekPulse.total} today={weekPulse.today} />
             </AnimateIn>
           )}
 
