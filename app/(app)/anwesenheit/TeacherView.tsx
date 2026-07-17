@@ -79,7 +79,7 @@ function StudentStatsDetail({ studentEntries, today }: { studentEntries: Attenda
   const toneClass = { red: 'text-kh-red bg-kh-red-light', amber: 'text-kh-amber bg-kh-amber-light', muted: 'text-kh-muted bg-kh-bg' }
 
   return (
-    <div className="rounded-2xl bg-kh-bg/60 p-4 space-y-4">
+    <div className="p-4 space-y-4">
       {insights.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {insights.map((ins, i) => (
@@ -427,33 +427,36 @@ export default function TeacherView({ students, entries, today }: Props) {
               const open = openStatsId === student.id
               return (
                 <Fragment key={student.id}>
-                  <button
-                    onClick={() => hasDays && setOpenStatsId(open ? null : student.id)}
-                    disabled={!hasDays}
-                    className={`kh-card-flat px-3.5 py-2.5 flex items-center gap-3 w-full text-left transition-colors ${
-                      hasDays ? 'cursor-pointer hover:bg-kh-bg' : 'cursor-default'
-                    } ${open ? 'bg-kh-bg' : ''}`}
-                    aria-expanded={hasDays ? open : undefined}
+                  <div
+                    className={`kh-card-flat overflow-hidden ${open ? 'col-span-full' : ''}`}
+                    style={open ? { background: 'linear-gradient(180deg, #FAF7F0 0%, #F3EEE1 100%)' } : undefined}
                   >
-                    <Avatar name={student.full_name} color={student.avatar_color} seed={student.avatar_seed} hairColor={student.avatar_hair_color} skinColor={student.avatar_skin_color} size={34} />
-                    <div className="flex-1 font-bold text-[14px] text-kh-dark truncate">{student.full_name}</div>
-                    <div className="flex items-center gap-2 text-[12.5px] font-bold">
-                      <span className="text-kh-dark">{e + u === 0 ? '—' : `${e + u} ${e + u === 1 ? 'Tag' : 'Tage'}`}</span>
-                      {e > 0 && <span className="px-2 py-0.5 rounded-full text-kh-amber bg-kh-amber-light">{e} E</span>}
-                      {u > 0 && <span className="px-2 py-0.5 rounded-full text-kh-red bg-kh-red-light">{u} U</span>}
-                    </div>
-                    {hasDays && (
-                      <span className={`msym text-[18px] text-kh-muted transition-transform ${open ? 'rotate-180' : ''}`}>expand_more</span>
-                    )}
-                  </button>
-                  {open && (
-                    <div className="col-span-full">
+                    <button
+                      onClick={() => hasDays && setOpenStatsId(open ? null : student.id)}
+                      disabled={!hasDays}
+                      className={`px-3.5 py-2.5 flex items-center gap-3 w-full text-left transition-colors ${
+                        hasDays && !open ? 'cursor-pointer hover:bg-kh-bg' : ''
+                      } ${hasDays ? 'cursor-pointer' : 'cursor-default'}`}
+                      aria-expanded={hasDays ? open : undefined}
+                    >
+                      <Avatar name={student.full_name} color={student.avatar_color} seed={student.avatar_seed} hairColor={student.avatar_hair_color} skinColor={student.avatar_skin_color} size={34} />
+                      <div className="flex-1 font-bold text-[14px] text-kh-dark truncate">{student.full_name}</div>
+                      <div className="flex items-center gap-2 text-[12.5px] font-bold">
+                        <span className="text-kh-dark">{e + u === 0 ? '—' : `${e + u} ${e + u === 1 ? 'Tag' : 'Tage'}`}</span>
+                        {e > 0 && <span className="px-2 py-0.5 rounded-full text-kh-amber bg-kh-amber-light">{e} E</span>}
+                        {u > 0 && <span className="px-2 py-0.5 rounded-full text-kh-red bg-kh-red-light">{u} U</span>}
+                      </div>
+                      {hasDays && (
+                        <span className={`msym text-[18px] text-kh-muted transition-transform ${open ? 'rotate-180' : ''}`}>expand_more</span>
+                      )}
+                    </button>
+                    {open && (
                       <StudentStatsDetail
                         studentEntries={entries.filter(en => en.student_id === student.id)}
                         today={today}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </Fragment>
               )
             })}
