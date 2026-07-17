@@ -29,10 +29,11 @@ function fmtDate(iso: string, today: string) {
   return d.toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
-/** Anwesenheit auf der Eltern-Startseite: Kind mit EINEM Tap für heute
- *  abmelden (Inline-Bestätigung statt Modal) — der häufigste Fall („Kind ist
- *  krank aufgewacht") braucht so keine eigene Seite. Gemeldete/kommende
- *  Abwesenheiten sind sofort sichtbar, unbestätigte direkt zurückziehbar. */
+/** Anwesenheits-Modul für die rechte Seitenspalte der Eltern-Startseite:
+ *  Kind mit EINEM Tap für heute abmelden (Inline-Bestätigung statt Modal) —
+ *  der häufigste Fall („Kind ist krank aufgewacht") braucht so keine eigene
+ *  Seite. Gemeldete/kommende Abwesenheiten sind sofort sichtbar,
+ *  unbestätigte direkt zurückziehbar. */
 export default function AttendanceParentCard({ childFirstName, upcomingEntries, today }: Props) {
   const router = useRouter()
   const [confirming, setConfirming] = useState(false)
@@ -76,48 +77,50 @@ export default function AttendanceParentCard({ childFirstName, upcomingEntries, 
   }
 
   return (
-    <div className="animate-card-enter rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ background: 'linear-gradient(135deg, #F0FAF6 0%, #FEFEFC 100%)' }}>
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark whitespace-nowrap min-w-0">
-          <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>event_busy</span>
-          <span className="truncate">Anwesenheit</span>
-        </h2>
-        <Link href="/anwesenheit" className="text-sm font-semibold text-kh-teal hover:underline flex-shrink-0">Mehr</Link>
+    <div className="bg-white rounded-[20px] p-5 shadow-sm border border-kh-border/50 max-md:rounded-2xl max-md:border-0 max-md:bg-gradient-to-br max-md:from-white max-md:via-white max-md:to-kh-page max-md:shadow-[0_8px_16px_rgba(20,40,45,.10)]">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="msym text-[19px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>event_busy</span>
+        <h2 className="flex-1 font-extrabold text-[15px] text-kh-dark truncate">Anwesenheit</h2>
+        <Link
+          href="/anwesenheit"
+          className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity flex-shrink-0"
+          aria-label="Zur Anwesenheit"
+        >
+          <span className="msym text-[19px]">arrow_forward</span>
+        </Link>
       </div>
 
-      {error && <div className="text-[12.5px] font-semibold text-kh-red mb-2">{error}</div>}
+      {error && <div className="text-[12px] font-semibold text-kh-red mb-2">{error}</div>}
 
       {/* Gemeldete / kommende Abwesenheiten */}
       {(upcomingEntries.length > 0 || sent) && (
-        <div className="flex flex-col gap-1.5 mb-3">
+        <div className="flex flex-col gap-0.5 mb-3">
           {sent && !todayEntry && (
-            <div className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2">
-              <span className="font-bold text-[13px] text-kh-dark">Heute</span>
-              <span className="flex-1" />
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold text-kh-amber bg-kh-amber-light">Gemeldet ✓</span>
+            <div className="flex items-center gap-2.5 px-1 py-[5px]">
+              <span className="flex-1 font-semibold text-[13px] text-kh-dark">Heute</span>
+              <span className="text-[11px] font-bold text-kh-amber">Gemeldet ✓</span>
             </div>
           )}
           {upcomingEntries.map(e => {
             const pending = !e.confirmed_at
-            const chip = pending
-              ? { label: 'Gemeldet', color: '#C98A2B', bg: '#F8ECD6' }
+            const tone = pending
+              ? { label: 'Gemeldet', color: '#C98A2B' }
               : e.status === 'entschuldigt'
-                ? { label: 'Entschuldigt', color: '#2E9C6E', bg: '#DDF0E7' }
-                : { label: 'Unentschuldigt', color: '#E06B57', bg: '#FDECEA' }
+                ? { label: 'Entschuldigt', color: '#2E9C6E' }
+                : { label: 'Unentschuldigt', color: '#E06B57' }
             return (
-              <div key={e.id} className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2 flex-wrap">
-                <span className="font-bold text-[13px] text-kh-dark">{fmtDate(e.date, today)}</span>
-                <span className="flex-1" />
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ color: chip.color, background: chip.bg }}>
-                  {chip.label}
-                </span>
+              <div key={e.id} className="flex items-center gap-2.5 px-1 py-[5px]">
+                <span className="flex-1 min-w-0 font-semibold text-[13px] text-kh-dark truncate">{fmtDate(e.date, today)}</span>
+                <span className="text-[11px] font-bold flex-shrink-0" style={{ color: tone.color }}>{tone.label}</span>
                 {pending && e.source === 'parent' && (
                   <button
                     onClick={() => withdraw(e.id)}
                     disabled={busy}
-                    className="text-[11.5px] font-bold text-kh-muted underline underline-offset-2 hover:text-kh-red transition-colors disabled:opacity-50"
+                    title="Meldung zurückziehen"
+                    aria-label={`Meldung für ${fmtDate(e.date, today)} zurückziehen`}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-kh-muted hover:text-kh-red hover:bg-kh-red-light transition-colors disabled:opacity-50 flex-shrink-0"
                   >
-                    Zurückziehen
+                    <span className="msym text-[14px]">close</span>
                   </button>
                 )}
               </div>
@@ -129,41 +132,41 @@ export default function AttendanceParentCard({ childFirstName, upcomingEntries, 
       {/* Ein-Tap-Abmeldung für heute (Inline-Bestätigung, kein Modal) */}
       {showQuickAction && (
         confirming ? (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col gap-2">
             <span className="text-[13px] font-semibold text-kh-dark">{childFirstName} heute abmelden?</span>
-            <button
-              onClick={reportToday}
-              disabled={busy}
-              className="px-4 py-2 rounded-full text-[12.5px] font-bold text-white gradient-teal hover:brightness-105 active:brightness-95 transition disabled:opacity-50"
-            >
-              {busy ? 'Wird gemeldet …' : 'Ja, abmelden'}
-            </button>
-            <button
-              onClick={() => setConfirming(false)}
-              disabled={busy}
-              className="px-3 py-2 rounded-full text-[12.5px] font-bold text-kh-muted hover:bg-kh-bg transition-colors"
-            >
-              Abbrechen
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={reportToday}
+                disabled={busy}
+                className="flex-1 py-2 rounded-full text-[12.5px] font-bold text-white gradient-teal hover:brightness-105 active:brightness-95 transition disabled:opacity-50"
+              >
+                {busy ? 'Wird gemeldet …' : 'Ja, abmelden'}
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                disabled={busy}
+                className="px-3.5 py-2 rounded-full text-[12.5px] font-bold text-kh-muted hover:bg-kh-bg transition-colors"
+              >
+                Abbrechen
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex flex-col gap-1.5">
             <button
               onClick={() => setConfirming(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-bold text-kh-teal bg-kh-teal-light hover:bg-kh-teal hover:text-white transition-colors"
+              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-full text-[12.5px] font-bold text-kh-teal bg-kh-teal-light hover:bg-kh-teal hover:text-white transition-colors"
             >
               <span className="msym text-[16px]">event_busy</span>
               {childFirstName} heute abmelden
             </button>
-            <span className="text-[12px] text-kh-muted font-medium">Krank? Ein Tap genügt — die Lehrperson sieht es sofort.</span>
+            <span className="text-[11.5px] text-kh-muted font-medium text-center">Krank? Ein Tap genügt — die Lehrperson sieht es sofort.</span>
           </div>
         )
       )}
 
-      {upcomingEntries.length === 0 && !sent && !showQuickAction && (
-        <p className="text-[13px] text-kh-muted font-medium">
-          {isWeekend ? 'Wochenende — abmelden geht ab Montag wieder.' : `${childFirstName} ist heute abgemeldet.`}
-        </p>
+      {upcomingEntries.length === 0 && !sent && !showQuickAction && isWeekend && (
+        <p className="text-[12.5px] text-kh-muted font-medium">Wochenende — abmelden geht ab Montag wieder.</p>
       )}
     </div>
   )

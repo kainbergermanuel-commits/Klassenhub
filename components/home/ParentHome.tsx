@@ -136,12 +136,15 @@ export default function ParentHome({
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
-          {/* Anwesenheit: Ein-Tap-Abmeldung + Status — auch auf Mobile sichtbar */}
-          <AttendanceParentCard
-            childFirstName={childFirst}
-            upcomingEntries={childUpcomingAbsences}
-            today={todayIso}
-          />
+          {/* Anwesenheit — nur Mobile hier oben; auf Desktop sitzt die Karte
+              in der rechten Spalte unter dem Agenda-Panel */}
+          <div className="lg:hidden">
+            <AttendanceParentCard
+              childFirstName={childFirst}
+              upcomingEntries={childUpcomingAbsences}
+              today={todayIso}
+            />
+          </div>
 
           {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-2 gap-4 max-md:hidden">
@@ -209,6 +212,15 @@ export default function ParentHome({
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="parent" />
+            </div>
+            {/* Anwesenheit unter Terminen/Erinnerungen — nur Desktop
+                (auf Mobile sitzt die Karte oben in der Hauptspalte) */}
+            <div className="animate-card-enter max-lg:hidden" style={{ animationDelay: '160ms' }}>
+              <AttendanceParentCard
+                childFirstName={childFirst}
+                upcomingEntries={childUpcomingAbsences}
+                today={todayIso}
+              />
             </div>
           </div>
         </div>
