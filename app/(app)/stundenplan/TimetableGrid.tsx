@@ -123,6 +123,10 @@ function ReminderPin() {
 }
 
 export default function TimetableGrid({ entries, subjects, readonly = false, dueMarkers = [], reminderMarkers = [] }: Props) {
+  // Heutige Spalte hervorheben — getDay(): So=0, Mo=1 … Sa=6; das Grid nutzt
+  // 1–5 für Mo–Fr, am Wochenende gibt es kein Highlight. Client-seitig ist
+  // hier richtig (lokale Zeitzone des Geräts = die Schulwoche des Kindes).
+  const todayCol = (() => { const d = new Date().getDay(); return d >= 1 && d <= 5 ? d : null })()
   const reminderByDay = new Map<number, string[]>()
   for (const m of reminderMarkers) {
     if (!reminderByDay.has(m.day)) reminderByDay.set(m.day, [])
@@ -186,10 +190,13 @@ export default function TimetableGrid({ entries, subjects, readonly = false, due
             {DAYS.map((d, di) => {
               const day = di + 1
               const reminderTitles = reminderByDay.get(day)
+              const isToday = day === todayCol
               return (
-                <th key={d} className="pb-3 text-center text-[11px] font-bold text-kh-muted uppercase tracking-wide">
+                <th key={d} className={`pb-3 text-center text-[11px] font-bold uppercase tracking-wide ${isToday ? 'text-kh-teal' : 'text-kh-muted'}`}>
                   <span className="relative inline-flex items-center gap-1">
-                    {d}
+                    {isToday
+                      ? <span className="rounded-full bg-kh-teal/12 px-2 py-0.5">{d}</span>
+                      : d}
                     {reminderTitles && reminderTitles.length > 0 && (
                       <BadgeTooltip
                         label={`Erinnerung: ${reminderTitles.join(', ')}`}
@@ -223,7 +230,7 @@ export default function TimetableGrid({ entries, subjects, readonly = false, due
                 const doneEntries = dueEntries?.filter(e => e.done)
 
                 return (
-                  <td key={day} className="p-0.5">
+                  <td key={day} className={`p-0.5 ${day === todayCol ? 'bg-kh-teal/[0.05]' : ''}`}>
                     <div className="relative">
                       <button
                         onClick={() => !readonly && setPopup({ day, slot })}

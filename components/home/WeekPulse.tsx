@@ -21,7 +21,11 @@ interface Props {
 export default function WeekPulse({ total, today }: Props) {
   const empty = total === 0
 
-  const icon = empty ? 'rocket_launch' : 'local_fire_department'
+  // 'footprint' statt 'rocket_launch': rocket_launch ist ARIs Guide-Icon
+  // (Weltraummission, seasonTheme.ts) — hier würde es fälschlich einen
+  // Welt-Bezug signalisieren. Fußspuren passen wörtlich zur Copy
+  // ("die ersten Schritte zählen").
+  const icon = empty ? 'footprint' : 'local_fire_department'
   const message = empty
     ? 'Eine neue Woche beginnt — die ersten Schritte zählen.'
     : today > 1
