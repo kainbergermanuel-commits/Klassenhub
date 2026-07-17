@@ -2,6 +2,7 @@ import AgendaPanel from './AgendaPanel'
 import StudentOpenHomework from './StudentWeekHomework'
 import StoryHeroCard from './StoryHeroCard'
 import WeeklyQuestCard from './WeeklyQuestCard'
+import RiddleList from './RiddleList'
 import HeldenbuchCard from './HeldenbuchCard'
 import DutyModule from './DutyModule'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
@@ -10,6 +11,7 @@ import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { AchievementCounts } from '@/lib/achievements'
 import type { RucksackState } from '@/components/streaks/RucksackItems'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
+import type { Riddle } from '@/lib/riddles'
 import { greeting } from '@/lib/date'
 
 interface DutyPartner {
@@ -38,6 +40,8 @@ interface StudentHomeProps {
   season: string
   quests: QuestResult[]
   questWeekStart: string
+  /** Interaktive Rätsel (Arc-Item der aktiven Welt + ggf. Splitter-Rätsel). */
+  riddles: { riddle: Riddle; solved: boolean }[]
   /** Anteil der Klasse mit mind. 1 Erledigung diese Woche, anonym (keine Namen). `null` = zu kleine Klasse. */
   socialProofPct: number | null
   guideNote: GuideNote
@@ -50,7 +54,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, socialProofPct, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, socialProofPct, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -79,6 +83,11 @@ export default function StudentHome({
           {/* Wochen-Quests (inkl. Gilden-Quest als Block) */}
           <div className="animate-card-enter" style={{ animationDelay: '60ms' }}>
             <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} showGuidePortrait={false} guildSection={guildSection} />
+          </div>
+
+          {/* Interaktive Rätsel: Arc-Item + ggf. Splitter (Neugier + Nochmal-Lesen) */}
+          <div className="animate-card-enter" style={{ animationDelay: '75ms' }}>
+            <RiddleList riddles={riddles} />
           </div>
 
           {socialProofPct !== null && (

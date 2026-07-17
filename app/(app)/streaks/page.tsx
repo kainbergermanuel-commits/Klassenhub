@@ -10,7 +10,8 @@ import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate,
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
-import { getSeasonTheme, isArcUnlocked } from '@/lib/seasonTheme'
+import { getSeasonTheme, isArcUnlocked, splitterFound } from '@/lib/seasonTheme'
+import { riddleForArc, SPLITTER_RIDDLE, type Riddle } from '@/lib/riddles'
 import StreakOverview from '@/components/streaks/StreakOverview'
 
 export default async function StreaksPage() {
@@ -340,6 +341,24 @@ export default async function StreaksPage() {
     }
   }
 
+  // ─── RÄTSEL-QUESTS (Arc-Item + Splitter, siehe lib/riddles.ts) — dieselbe
+  // Liste wie auf der Startseite, damit /streaks konsistent ist. ───────────────
+  let riddlesForMe: { riddle: Riddle; solved: boolean }[] = []
+  if (profile.role === 'student') {
+    const { data: riddleSolves } = await supabase
+      .from('quest_riddle_solutions')
+      .select('riddle_key')
+      .eq('student_id', profile.id)
+    const solvedRiddleKeys = new Set((riddleSolves ?? []).map(r => (r as { riddle_key: string }).riddle_key))
+    const arcRiddle = riddleForArc(getSeasonTheme(currentSeason).icon)
+    riddlesForMe = [
+      arcRiddle,
+      splitterFound(getSeasonTheme(currentSeason).name) ? SPLITTER_RIDDLE : undefined,
+    ]
+      .filter((r): r is NonNullable<typeof r> => !!r)
+      .map(r => ({ riddle: r, solved: solvedRiddleKeys.has(r.key) }))
+  }
+
   const withStreak = studentData.filter(s => s.streak > 0)
   const noStreak = studentData.filter(s => s.streak === 0)
 
@@ -354,6 +373,7 @@ export default async function StreaksPage() {
       myHeldenbuch={myHeldenbuch}
       quests={questsForMe}
       questWeekStart={weekStart}
+      riddles={riddlesForMe}
       guildSection={guildSection}
     />
   )

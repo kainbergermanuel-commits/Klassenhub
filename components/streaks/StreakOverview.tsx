@@ -6,7 +6,9 @@ import AdventureHero from '@/components/streaks/AdventureHero'
 import HeldenbuchCard from '@/components/home/HeldenbuchCard'
 import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
+import RiddleList from '@/components/home/RiddleList'
 import { VETERAN_MILESTONE } from '@/lib/streak'
+import type { Riddle } from '@/lib/riddles'
 import { getSeasonTheme, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
@@ -49,10 +51,12 @@ interface Props {
   } | null
   quests: QuestResult[]
   questWeekStart: string
+  /** Interaktive Rätsel (Arc-Item + ggf. Splitter) — dieselbe Liste wie Start. */
+  riddles: { riddle: Riddle; solved: boolean }[]
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
 }
 
-export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, guildSection }: Props) {
+export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection }: Props) {
   const currentThemeName = getSeasonTheme(currentSeason).name
   return (
     <>
@@ -65,6 +69,8 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
         {(quests.length > 0 || guildSection) && (
           <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} guildSection={guildSection} showGuidePortrait={false} />
         )}
+
+        <RiddleList riddles={riddles} />
 
         {myHeldenbuch && (
           // relative z-20: hebt die Zeile über die Karten darunter, damit die

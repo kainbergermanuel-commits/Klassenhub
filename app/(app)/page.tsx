@@ -14,6 +14,7 @@ import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
 import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
+import { riddleForArc, SPLITTER_RIDDLE } from '@/lib/riddles'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -297,6 +298,29 @@ export default async function HomePage() {
     const crystalUsedThisSeason = crystalUsedThisSeasonS.has(user.id)
     const crystalAvailable = crystalWouldHelp(myConfirmedForStreak, allHwForStreak, today, myFrozenForStreak, myExtForStreak) && !crystalUsedThisSeason
 
+    // ─── RÄTSEL-QUEST (Arc-Item, siehe lib/riddles.ts) ───────────────────────
+    // Eine kleine eigene Query (nur student_id, indexiert) — bewusst NICHT in
+    // den großen Batch gequetscht, um den Destructure dort nicht fragil zu
+    // machen. Der Gelöst-Zustand ist dauerhaft (scope=''), das Rätsel-Item
+    // zeigt sich nur, solange seine Welt die aktive Klassenwelt ist.
+    const { data: riddleSolves } = await supabase
+      .from('quest_riddle_solutions')
+      .select('riddle_key')
+      .eq('student_id', user.id)
+    // as-Cast, weil die neue Tabelle noch nicht in den generierten Supabase-
+    // Typen steht (gleiches Muster wie andere frische Tabellen im Projekt).
+    const solvedRiddleKeys = new Set((riddleSolves ?? []).map(r => (r as { riddle_key: string }).riddle_key))
+    const arcRiddle = riddleForArc(getSeasonTheme(currentSeason).icon)
+    // Splitter-Rätsel (welten-übergreifend) erst zeigen, wenn der Splitter in
+    // der Story aufgetaucht ist (ab Schatzsuche) — dann sind alle Hinweise
+    // gelesen. Reihenfolge: Arc-Item zuerst, Splitter als seltenerer Moment.
+    const riddleProp = [
+      arcRiddle,
+      splitterFound(getSeasonTheme(currentSeason).name) ? SPLITTER_RIDDLE : undefined,
+    ]
+      .filter((r): r is NonNullable<typeof r> => !!r)
+      .map(r => ({ riddle: r, solved: solvedRiddleKeys.has(r.key) }))
+
     // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────
     const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
 
@@ -473,6 +497,7 @@ export default async function HomePage() {
         season={currentSeason}
         quests={quests}
         questWeekStart={weekStart}
+        riddles={riddleProp}
         socialProofPct={socialProofPct}
         guideNote={guideNote}
         noteGuideIcon={effectiveGuideIcon}
