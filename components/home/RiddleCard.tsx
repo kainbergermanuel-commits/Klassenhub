@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { solveQuestRiddle } from '@/app/actions/solveQuestRiddle'
-import type { Riddle } from '@/lib/riddles'
+import { shuffledFragments, type Riddle } from '@/lib/riddles'
 
 interface Props {
   riddle: Riddle
@@ -32,6 +32,7 @@ export default function RiddleCard({ riddle, solved, open, onOpenChange }: Props
   const [wrong, setWrong] = useState(false)
   const [justSolved, setJustSolved] = useState(false)
   const [input, setInput] = useState('')
+  const [orderKeys, setOrderKeys] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
 
   // Portal-Ziel erst nach dem Mount verfügbar (document existiert nicht beim
@@ -78,7 +79,7 @@ export default function RiddleCard({ riddle, solved, open, onOpenChange }: Props
 
         <p className="text-[13.5px] text-kh-dark font-medium leading-relaxed mb-4">{riddle.prompt}</p>
 
-        {riddle.kind === 'multiple_choice' ? (
+        {riddle.kind === 'multiple_choice' && (
           <div className="flex flex-col gap-2">
             {(riddle.options ?? []).map(o => (
               <button
@@ -92,7 +93,9 @@ export default function RiddleCard({ riddle, solved, open, onOpenChange }: Props
               </button>
             ))}
           </div>
-        ) : (
+        )}
+
+        {riddle.kind === 'password' && (
           <div className="flex flex-col gap-2">
             <input
               type="text"
@@ -114,6 +117,71 @@ export default function RiddleCard({ riddle, solved, open, onOpenChange }: Props
             </button>
           </div>
         )}
+
+        {riddle.kind === 'fragment_order' && (() => {
+          const fragments = riddle.fragments ?? []
+          const shuffled = shuffledFragments(riddle)
+          const available = shuffled.filter(f => !orderKeys.includes(f.key))
+          const complete = orderKeys.length === fragments.length && fragments.length > 0
+          return (
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted mb-1.5">Deine Reihenfolge</p>
+                {orderKeys.length === 0 ? (
+                  <p className="text-[12px] text-kh-muted/70 italic">Tippe unten die Spuren in der richtigen Reihenfolge an.</p>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    {orderKeys.map((key, idx) => {
+                      const frag = fragments.find(f => f.key === key)
+                      if (!frag) return null
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setOrderKeys(prev => prev.slice(0, idx))}
+                          disabled={pending}
+                          title="Antippen, um ab hier zurückzusetzen"
+                          className="flex items-start gap-2 text-left rounded-xl border border-kh-teal/40 bg-kh-teal/[0.06] px-3 py-2 text-[12.5px] font-semibold text-kh-dark hover:bg-kh-teal/[0.12] transition-colors disabled:opacity-50"
+                        >
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-kh-teal text-white text-[11px] font-extrabold flex items-center justify-center mt-px">{idx + 1}</span>
+                          {frag.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {available.length > 0 && (
+                <div>
+                  <p className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted mb-1.5">Spuren</p>
+                  <div className="flex flex-col gap-1.5">
+                    {available.map(f => (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setOrderKeys(prev => [...prev, f.key])}
+                        disabled={pending}
+                        className="text-left rounded-xl border border-kh-border/60 bg-white px-3 py-2 text-[12.5px] font-semibold text-kh-dark hover:border-kh-amber hover:bg-kh-amber/[0.05] transition-colors disabled:opacity-50"
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => answer(orderKeys.join(','))}
+                disabled={pending || !complete}
+                className="rounded-xl bg-kh-amber text-white font-extrabold text-[13px] px-3.5 py-2.5 hover:bg-kh-amber/90 transition-colors disabled:opacity-40"
+              >
+                Reihenfolge prüfen
+              </button>
+            </div>
+          )
+        })()}
 
         {wrong && (
           <p className="mt-3 flex items-start gap-1.5 text-[12.5px] text-kh-muted">

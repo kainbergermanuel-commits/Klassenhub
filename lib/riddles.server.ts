@@ -13,7 +13,13 @@ const CORRECT_ANSWER: Record<string, string | string[]> = {
   arc_landscape_gipfel: 'licht',
   arc_rocket_launch_summen: 'summen',
   arc_map_splitter: 'splitter',
-  splitter_verbindet: ['splitter', 'der splitter', 'ein splitter', 'splitterstein'],
+  splitter_teil2: ['splitter', 'der splitter', 'ein splitter', 'splitterstein'],
+}
+
+/** riddle_key → korrekte Reihenfolge der Fragment-Keys (kind='fragment_order').
+ *  Interne Keys, kein Freitext — daher exakter Vergleich statt Normalisierung. */
+const CORRECT_ORDER: Record<string, string[]> = {
+  splitter_teil1: ['berg', 'all', 'dschungel'],
 }
 
 /** Großzügige Normalisierung, damit ein Tippfehler bei Freitext-Rätseln nicht
@@ -29,8 +35,18 @@ function normalize(s: string): string {
 
 /** Prüft eine eingereichte Antwort server-seitig. Kein Werfen bei Falsch —
  *  der Aufrufer entscheidet über eine sanfte Rückmeldung (kein Beschämen,
- *  unbegrenzte Versuche). */
+ *  unbegrenzte Versuche).
+ *
+ *  Bei fragment_order-Rätseln übergibt der Client die gewählte Reihenfolge
+ *  als kommagetrennte Fragment-Keys (z.B. "berg,all,dschungel") — exakter
+ *  Vergleich, keine Normalisierung (interne Keys, kein Freitext). */
 export function checkRiddleAnswer(riddleKey: string, submitted: string): boolean {
+  const order = CORRECT_ORDER[riddleKey]
+  if (order) {
+    const given = submitted.split(',').map(s => s.trim()).filter(Boolean)
+    return given.length === order.length && given.every((k, i) => k === order[i])
+  }
+
   const correct = CORRECT_ANSWER[riddleKey]
   if (!correct) return false
   const accepted = Array.isArray(correct) ? correct : [correct]

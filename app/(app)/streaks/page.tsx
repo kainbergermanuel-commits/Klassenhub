@@ -11,7 +11,7 @@ import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
 import { getSeasonTheme, isArcUnlocked, splitterFound } from '@/lib/seasonTheme'
-import { riddleForArc, SPLITTER_RIDDLE, type Riddle } from '@/lib/riddles'
+import { activeRiddles, type Riddle } from '@/lib/riddles'
 import StreakOverview from '@/components/streaks/StreakOverview'
 
 export default async function StreaksPage() {
@@ -350,12 +350,7 @@ export default async function StreaksPage() {
       .select('riddle_key')
       .eq('student_id', profile.id)
     const solvedRiddleKeys = new Set((riddleSolves ?? []).map(r => (r as { riddle_key: string }).riddle_key))
-    const arcRiddle = riddleForArc(getSeasonTheme(currentSeason).icon)
-    riddlesForMe = [
-      arcRiddle,
-      splitterFound(getSeasonTheme(currentSeason).name) ? SPLITTER_RIDDLE : undefined,
-    ]
-      .filter((r): r is NonNullable<typeof r> => !!r)
+    riddlesForMe = activeRiddles(getSeasonTheme(currentSeason).icon, splitterFound(getSeasonTheme(currentSeason).name), solvedRiddleKeys)
       .map(r => ({ riddle: r, solved: solvedRiddleKeys.has(r.key) }))
   }
 

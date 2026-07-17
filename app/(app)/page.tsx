@@ -14,7 +14,7 @@ import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
 import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
-import { riddleForArc, SPLITTER_RIDDLE } from '@/lib/riddles'
+import { activeRiddles } from '@/lib/riddles'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -310,15 +310,10 @@ export default async function HomePage() {
     // as-Cast, weil die neue Tabelle noch nicht in den generierten Supabase-
     // Typen steht (gleiches Muster wie andere frische Tabellen im Projekt).
     const solvedRiddleKeys = new Set((riddleSolves ?? []).map(r => (r as { riddle_key: string }).riddle_key))
-    const arcRiddle = riddleForArc(getSeasonTheme(currentSeason).icon)
-    // Splitter-Rätsel (welten-übergreifend) erst zeigen, wenn der Splitter in
-    // der Story aufgetaucht ist (ab Schatzsuche) — dann sind alle Hinweise
-    // gelesen. Reihenfolge: Arc-Item zuerst, Splitter als seltenerer Moment.
-    const riddleProp = [
-      arcRiddle,
-      splitterFound(getSeasonTheme(currentSeason).name) ? SPLITTER_RIDDLE : undefined,
-    ]
-      .filter((r): r is NonNullable<typeof r> => !!r)
+    // Splitter-Rätsel (welten-übergreifend, zweistufig) erst zeigen, wenn der
+    // Splitter in der Story aufgetaucht ist (ab Schatzsuche); Stufe 2 erst nach
+    // Stufe 1 (siehe activeRiddles/requires in lib/riddles.ts).
+    const riddleProp = activeRiddles(getSeasonTheme(currentSeason).icon, splitterFound(getSeasonTheme(currentSeason).name), solvedRiddleKeys)
       .map(r => ({ riddle: r, solved: solvedRiddleKeys.has(r.key) }))
 
     // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────

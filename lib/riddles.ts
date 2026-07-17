@@ -12,11 +12,14 @@
  *  aktuellen Welt einlädt. Das seltene, welten-übergreifende Splitter-Rätsel
  *  kommt später als eigene, standalone Kadenz. */
 
-/** Zwei Kadenzen/Formen, bewusst beide im Pool (Manuels Entscheidung):
+/** Drei Kadenzen/Formen, bewusst alle im Pool (Manuels Entscheidung):
  *  - multiple_choice: antippen, barrierearm (jüngere Kinder, Legasthenie).
  *  - password: freies Tippen, wo das Zusammensetzen selbst der Reiz ist
- *    (Eltern dürfen helfen). Server-seitig großzügig normalisiert. */
-export type RiddleKind = 'multiple_choice' | 'password'
+ *    (Eltern dürfen helfen). Server-seitig großzügig normalisiert.
+ *  - fragment_order: Fragment-Chips in die richtige Reihenfolge tippen —
+ *    barrierearme Variante des "Passwort aus Fragmenten"-Gedankens (kein
+ *    Freitext nötig, aber echtes Nochmal-Lesen über mehrere Welten hinweg). */
+export type RiddleKind = 'multiple_choice' | 'password' | 'fragment_order'
 
 export interface RiddleOption {
   key: string
@@ -41,10 +44,20 @@ export interface Riddle {
   prompt: string
   /** Nur bei kind='multiple_choice'. Bei 'password' zeigt die UI ein Textfeld. */
   options?: RiddleOption[]
+  /** Nur bei kind='fragment_order': Fragmente, die in eine bestimmte
+   *  Reihenfolge gebracht werden müssen. Die Reihenfolge HIER im Array ist
+   *  NICHT die korrekte Lösung (die steht server-only) — sie wird beim
+   *  Anzeigen deterministisch gemischt (siehe shuffledFragments). */
+  fragments?: RiddleOption[]
   /** Nur bei kind='password': Platzhalter im Eingabefeld. */
   placeholder?: string
   /** Auflösungs-/Feier-Text nach korrekter Lösung (feiert, steuert nicht). */
   reward: string
+  /** Mehrstufige Rätsel (Teil1→Teil2): dieses Rätsel erscheint erst, wenn das
+   *  Rätsel mit diesem Key bereits gelöst ist — Neugier/Spannung ohne Zwang,
+   *  da es einfach still erscheint, sobald man bereit ist (kein "gesperrt"-
+   *  Zustand, kein Timer). `undefined` = sofort sichtbar (kein Vorgänger). */
+  requires?: string
 }
 
 /** Ein Story-Verständnis-Rätsel je gebauter Welt. Jede Frage zielt bewusst auf
@@ -102,23 +115,45 @@ export const RIDDLES: Riddle[] = [
 ]
 
 /** Das seltene, welten-übergreifende Splitter-Rätsel (die zweite Kadenz:
- *  „besonderer Moment" statt wöchentliches Häppchen). Freitext, weil das
- *  Zusammenführen der Hinweise aus drei Welten selbst der Reiz ist. Erscheint
- *  erst, wenn der Splitter in der Story aufgetaucht ist (ab Schatzsuche) — dann
- *  hat das Kind alle nötigen Hinweise gelesen. */
-export const SPLITTER_RIDDLE: Riddle = {
-  key: 'splitter_verbindet',
+ *  „besonderer Moment" statt wöchentliches Häppchen) — zweistufig, wie
+ *  Manuels Idee "Teil 1 in Welt A, Teil 2 in Welt B, zusammensetzen":
+ *
+ *  Teil 1 (fragment_order, barrierearm): drei Spur-Zitate aus den drei
+ *  gebauten Welten in der Reihenfolge antippen, in der die Klasse sie
+ *  durchlebt hat — zwingt zum Nochmal-Lesen aller drei Etappen auf
+ *  /streaks/reise, nicht nur Erinnern.
+ *  Teil 2 (password, `requires: splitter_teil1`): erscheint erst nach Teil 1,
+ *  fragt nach dem Namen des Dings, das alle drei Spuren verbindet. */
+export const SPLITTER_TEIL1: Riddle = {
+  key: 'splitter_teil1',
+  arcIcon: null,
+  kind: 'fragment_order',
+  itemLabel: 'Der Splitter — Spurensuche',
+  itemIcon: 'travel_explore',
+  intro: 'Drei Spuren ziehen sich leuchtend durch eure Reise. In welcher Reihenfolge seid ihr ihnen begegnet?',
+  prompt: 'Bringt die drei Spuren in die Reihenfolge, in der die Klasse sie erlebt hat — zuerst, zweitens, zuletzt.',
+  fragments: [
+    { key: 'berg', label: '„…ein warmes Licht, das zu keiner meiner Karten passt." (Vala, Gipfel)' },
+    { key: 'all', label: '„…ein Summen, das aus keinem System an Bord kommt." (ARI, Mondvorbeiflug)' },
+    { key: 'dschungel', label: '„…ein warm leuchtender Splitter, über und über bedeckt mit feinen Zeichen." (Isla, Schatzkammer)' },
+  ],
+  reward: 'Richtig! Erst das Licht am Gipfel, dann das Summen im All, zuletzt der Splitter selbst in der Schatzkammer. Aber was verbindet diese drei Spuren eigentlich? Vielleicht weißt du jetzt, wie das leuchtende Ding heißt …',
+}
+
+export const SPLITTER_TEIL2: Riddle = {
+  key: 'splitter_teil2',
   arcIcon: null,
   kind: 'password',
-  itemLabel: 'Der Splitter',
+  itemLabel: 'Der Splitter — Auflösung',
   itemIcon: 'auto_awesome',
-  intro: 'Etwas zieht sich leuchtend durch alle Welten. Kannst du es benennen?',
-  prompt: 'In Valas Bergwelt seht ihr am Gipfel ein rätselhaftes Licht. In ARIs Weltraum zeichnet der Bordcomputer ein seltsames Summen auf. In Islas Schatzkammer findet ihr schließlich einen kleinen, warm leuchtenden Stein voller feiner Zeichen — und Licht wie Summen gehören zu ihm. Wie heißt dieser Stein, der eure ganze Reise verbindet?',
+  requires: 'splitter_teil1',
+  intro: 'Du hast die drei Spuren richtig geordnet. Jetzt fehlt nur noch ein Wort.',
+  prompt: 'Licht am Gipfel, Summen im All, ein leuchtender Stein voller Zeichen in der Schatzkammer — alle drei gehören zu ein und demselben Ding. Wie heißt es?',
   placeholder: 'Lösungswort eingeben …',
   reward: 'Genau — der Splitter. Licht, Summen und Zeichen sind alle Teil von ihm. Du hast den roten Faden eurer ganzen Reise erkannt.',
 }
 
-const ALL_RIDDLES: Riddle[] = [...RIDDLES, SPLITTER_RIDDLE]
+const ALL_RIDDLES: Riddle[] = [...RIDDLES, SPLITTER_TEIL1, SPLITTER_TEIL2]
 
 /** Das Arc-Item-Rätsel der aktuell aktiven Welt (falls es eines gibt). */
 export function riddleForArc(arcIcon: string): Riddle | undefined {
@@ -127,4 +162,33 @@ export function riddleForArc(arcIcon: string): Riddle | undefined {
 
 export function findRiddle(key: string): Riddle | undefined {
   return ALL_RIDDLES.find(r => r.key === key)
+}
+
+/** Deterministisch gemischte Reihenfolge der Fragmente eines fragment_order-
+ *  Rätsels — stabil je Rätsel-Key (kein Neumischen bei jedem Render), aber
+ *  KEIN Hinweis auf die korrekte Lösung (die liegt server-only). Gleicher
+ *  Hash-Ansatz wie defaultWeeklyTemplateKeys (lib/quests.ts). */
+export function shuffledFragments(riddle: Riddle): RiddleOption[] {
+  const fragments = riddle.fragments ?? []
+  let h = 0
+  for (let i = 0; i < riddle.key.length; i++) h = (h * 31 + riddle.key.charCodeAt(i)) >>> 0
+  const arr = [...fragments]
+  for (let i = arr.length - 1; i > 0; i--) {
+    h = (Math.imul(h, 1103515245) + 12345) >>> 0
+    const j = h % (i + 1)
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+/** Alle aktuell sichtbaren Rätsel: das Arc-Item der aktiven Welt + die
+ *  freigeschalteten Stufen des Splitter-Rätsels (nur wenn ihr `requires`
+ *  bereits gelöst ist oder sie keins haben). Zentral hier statt in jeder
+ *  Server-Component dupliziert (Start + /streaks). */
+export function activeRiddles(arcIcon: string, splitterUnlocked: boolean, solvedKeys: Set<string>): Riddle[] {
+  const arc = riddleForArc(arcIcon)
+  const splitterChain = splitterUnlocked
+    ? [SPLITTER_TEIL1, SPLITTER_TEIL2].filter(r => !r.requires || solvedKeys.has(r.requires))
+    : []
+  return [arc, ...splitterChain].filter((r): r is Riddle => !!r)
 }
