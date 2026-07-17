@@ -98,8 +98,11 @@ export default function StudentHome({
             </AnimateIn>
           )}
 
-          {/* Open homework — all, sorted by urgency */}
-          <AnimateIn delay={240}>
+          {/* Open homework — all, sorted by urgency. Auf Mobile ganz oben
+              (Manuels Wunsch: erste Priorität ist "was ist zu tun"), auf
+              Desktop bleibt die bisherige Reihenfolge (order-first wirkt nur
+              unterhalb md, da beide Karten im selben Flex-Container sitzen). */}
+          <AnimateIn delay={240} className="max-md:order-first">
             <StudentOpenHomework homework={allHomework} userId={userId} />
           </AnimateIn>
         </div>
