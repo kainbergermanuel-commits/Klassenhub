@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { saveTimetableEntry } from '@/app/actions/timetable'
-import { SUBJECTS } from '@/lib/subjects'
 
 const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -11,7 +10,17 @@ const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40',
 interface Entry { day: number; slot: number; subject: string }
 interface DueMarker { day: number; subject: string; title: string; done: boolean }
 interface ReminderMarker { day: number; title: string }
-interface Props { entries: Entry[]; readonly?: boolean; dueMarkers?: DueMarker[]; reminderMarkers?: ReminderMarker[] }
+interface SubjectOption { label: string; short: string; color: string }
+interface Props {
+  entries: Entry[]
+  /** Fächer-Katalog für die Auswahl-Popup — kommt aus der DB (siehe
+   *  supabase/add-subjects-catalog.sql), nicht mehr fest importiert, damit
+   *  Admin-Änderungen am Katalog sich sofort hier widerspiegeln. */
+  subjects: SubjectOption[]
+  readonly?: boolean
+  dueMarkers?: DueMarker[]
+  reminderMarkers?: ReminderMarker[]
+}
 
 /**
  * Eigenes, gestyltes Tooltip statt title-Attribut (native Browser-Tooltips
@@ -113,7 +122,7 @@ function ReminderPin() {
   )
 }
 
-export default function TimetableGrid({ entries, readonly = false, dueMarkers = [], reminderMarkers = [] }: Props) {
+export default function TimetableGrid({ entries, subjects, readonly = false, dueMarkers = [], reminderMarkers = [] }: Props) {
   const reminderByDay = new Map<number, string[]>()
   for (const m of reminderMarkers) {
     if (!reminderByDay.has(m.day)) reminderByDay.set(m.day, [])
@@ -208,7 +217,7 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
                 const k = key(day, slot)
                 const value = grid.get(k) ?? ''
                 const isSaving = saving === k
-                const subj = SUBJECTS.find(s => s.label === value)
+                const subj = subjects.find(s => s.label === value)
                 const dueEntries = value ? dueByDaySubject.get(`${day}-${value}`) : undefined
                 const openEntries = dueEntries?.filter(e => !e.done)
                 const doneEntries = dueEntries?.filter(e => e.done)
@@ -265,7 +274,7 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
               {DAYS[popup.day - 1]}, {popup.slot}. Stunde
             </div>
             <div className="flex flex-col gap-0.5 max-h-[320px] overflow-y-auto">
-              {SUBJECTS.map(s => (
+              {subjects.map(s => (
                 <button
                   key={s.short}
                   onClick={() => select(popup.day, popup.slot, s.label)}
@@ -303,7 +312,7 @@ export default function TimetableGrid({ entries, readonly = false, dueMarkers = 
 
       {/* Legende */}
       {(() => {
-        const used = SUBJECTS.filter(s => [...grid.values()].includes(s.label))
+        const used = subjects.filter(s => [...grid.values()].includes(s.label))
         return used.length > 0 ? (
           <div className="flex flex-wrap gap-x-4 gap-y-2 mt-5 pt-4 border-t border-kh-border">
             {used.map(s => (

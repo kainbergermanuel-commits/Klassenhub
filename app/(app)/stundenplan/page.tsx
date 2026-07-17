@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getStundenplanMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from '@/lib/date'
 import TimetableGrid from './TimetableGrid'
+import ClassTimetableEditor from './ClassTimetableEditor'
 import PageHeader from '@/components/layout/PageHeader'
 
 function weekLabel(): string {
@@ -16,10 +17,44 @@ function weekLabel(): string {
 }
 
 export default async function StundenplanPage() {
-  const { user, profile } = await getEffectiveAuth()
+  const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user || !profile) redirect('/login')
 
-  // Nur Schüler und Eltern
+  const supabaseCommon = await createClient()
+  // Fächer-Katalog (Admin-verwaltet, siehe supabase/add-subjects-catalog.sql) —
+  // für alle Rollen dieselbe Quelle, damit Lehrer-Vorlage und Kind-Ansicht nie
+  // auseinanderlaufen können.
+  const { data: subjectRows } = await (supabaseCommon
+    .from('subjects' as never)
+    .select('label,short,color')
+    .order('sort_order') as unknown as Promise<{ data: { label: string; short: string; color: string }[] | null }>)
+  const subjects = subjectRows ?? []
+
+  // ─── LEHRER: Standard-Stundenplan der Klasse erstellen + pushen ────────────
+  if (profile.role === 'teacher') {
+    if (!activeClassId) redirect('/')
+    const { data: templateEntries } = await (supabaseCommon
+      .from('class_timetable_entries' as never)
+      .select('day,slot,subject')
+      .eq('class_id', activeClassId)
+      .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string }[] | null }>)
+
+    return (
+      <div>
+        <PageHeader
+          icon="calendar_view_week"
+          title="Stundenplan"
+          subtitle="Standard-Stundenplan der Klasse erstellen und an alle Kinder senden"
+          gradient="from-[#2F86C5] to-[#56AEE6]"
+        />
+        <div className="kh-card px-5 py-5">
+          <ClassTimetableEditor entries={templateEntries ?? []} subjects={subjects} />
+        </div>
+      </div>
+    )
+  }
+
+  // Sonst nur Schüler und Eltern
   if (profile.role !== 'student' && profile.role !== 'parent') redirect('/')
 
   const studentId = profile.role === 'student'
@@ -35,7 +70,7 @@ export default async function StundenplanPage() {
     )
   }
 
-  const supabase = await createClient()
+  const supabase = supabaseCommon
   const { data: entries } = await (supabase
     .from('timetable_entries' as never)
     .select('day,slot,subject')
@@ -107,7 +142,7 @@ export default async function StundenplanPage() {
         gradient="from-[#2F86C5] to-[#56AEE6]"
       />
       <div className="kh-card px-5 py-5">
-        <TimetableGrid entries={entries ?? []} readonly={isReadonly} dueMarkers={dueMarkers} reminderMarkers={reminderMarkers} />
+        <TimetableGrid entries={entries ?? []} subjects={subjects} readonly={isReadonly} dueMarkers={dueMarkers} reminderMarkers={reminderMarkers} />
       </div>
     </div>
   )

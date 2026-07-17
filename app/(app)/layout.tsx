@@ -23,6 +23,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined, section: 'Unterricht' },
     { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit', badge: attendancePending || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
+    { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
     { href: '/planung', icon: 'edit_calendar', label: 'Planung' },
     { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined, section: 'Kommunikation' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
