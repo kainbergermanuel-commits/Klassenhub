@@ -6,6 +6,7 @@ import { useStreakFreeze } from '@/app/actions/useStreakFreeze'
 import { useTimeCrystal } from '@/app/actions/useTimeCrystal'
 import { sendParentNudge } from '@/app/actions/sendParentNudge'
 import { VETERAN_MILESTONE } from '@/lib/streak'
+import { SPLITTER_SIGNS } from '@/lib/seasonTheme'
 
 /** Alle Signale, aus denen sich der Rucksack-Zustand ergibt — bewusst rein
  *  primitiv/serialisierbar, damit die Items sowohl in der Rucksack-Card
@@ -29,6 +30,11 @@ export interface RucksackState {
   guildName: string | null
   parentConfirmStreak: number
   nextStepHint: string | null
+  /** Der Splitter (roter Faden, siehe docs/2026-07-story-welten.html) — ab
+   *  Schatzsuche/November gefunden, seine 7 Zeichen erwachen automatisch mit
+   *  dem Fahrplan (siehe lib/seasonTheme.ts splitterFound/awakenedSignCount). */
+  splitterFound: boolean
+  awakenedSignCount: number
 }
 
 type ItemState = 'ready' | 'action' | 'spent' | 'locked'
@@ -43,12 +49,13 @@ const STATE_CHIP: Record<ItemState, { label: string; cls: string }> = {
 const WAPPEN_TARGET = 3
 const AMULETT_TARGET = 3
 
-/** Die 8 Rucksack-Item-Kacheln (3-spaltig). Jedes Item bildet ein echtes,
+/** Die 9 Rucksack-Item-Kacheln (3×3-Raster). Jedes Item bildet ein echtes,
  *  für alle gleich geltendes Signal ab. */
 export default function RucksackItems({ state }: { state: RucksackState }) {
   const { broken, jokerAvailable, jokerUsedThisSeason, crystalAvailable, crystalUsedThisSeason,
     pendingConfirmationCount, nudgeSentToday,
-    veteranEarned, confirmedStreak, totalAchievements, guildName, parentConfirmStreak, nextStepHint } = state
+    veteranEarned, confirmedStreak, totalAchievements, guildName, parentConfirmStreak, nextStepHint,
+    splitterFound, awakenedSignCount } = state
   const router = useRouter()
   // Welche Item-Tooltip-Kachel offen ist (per Index) — zentral statt pro Item,
   // damit immer nur EINER gleichzeitig offen ist und ein Klick außerhalb des
@@ -344,6 +351,53 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
               </button>
             )}
             {nudgeError && <span className="block text-[10.5px] font-semibold text-kh-red mt-1.5">Erinnerung konnte nicht geschickt werden.</span>}
+          </>
+        }
+      />
+
+      <Item
+        isOpen={openIndex === 8}
+        onToggle={() => setOpenIndex(i => (i === 8 ? null : 8))}
+        state={splitterFound ? 'ready' : 'locked'}
+        gradient={splitterFound ? 'linear-gradient(135deg, #F5C842, #B8721E)' : 'linear-gradient(135deg, #9CA3AF, #6E7E80)'}
+        dimmed={!splitterFound}
+        icon={<span className="msym text-[24px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>diamond</span>}
+        title="Splitter"
+        chipOverride={splitterFound ? { label: `${awakenedSignCount}/${SPLITTER_SIGNS.length}`, cls: 'text-kh-amber bg-kh-amber/15' } : undefined}
+        tooltip={
+          <>
+            <TipHead>Splitter</TipHead>
+            <TipBody>Ein kleiner, warm leuchtender Splitter voller unlesbarer Zeichen — auf jeder Welt, die ihr hinter euch lasst, erwacht eines davon. Was er ganz zusammengesetzt verrät, weiß noch niemand.</TipBody>
+            {splitterFound ? (
+              <>
+                <span className="block text-[11.5px] font-semibold mt-1.5 text-kh-muted">
+                  {awakenedSignCount === 0 ? 'Noch kein Zeichen erwacht — bald geht die Reise weiter.' : `${awakenedSignCount} von ${SPLITTER_SIGNS.length} Zeichen erwacht.`}
+                </span>
+                <span className="flex items-center gap-1.5 mt-2">
+                  {SPLITTER_SIGNS.map((sign, i) => {
+                    const awake = i < awakenedSignCount
+                    return (
+                      <span
+                        key={sign.label}
+                        title={awake ? `${sign.label} — ${sign.worldName}` : `${sign.label} — noch nicht erwacht`}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          awake ? 'bg-gradient-to-br from-[#F5C842] to-[#B8721E]' : 'bg-kh-muted/15'
+                        }`}
+                      >
+                        <span
+                          className={`msym text-[13px] ${awake ? 'text-white' : 'text-kh-muted/50'}`}
+                          style={{ fontVariationSettings: `'FILL' ${awake ? 1 : 0}` }}
+                        >
+                          {sign.icon}
+                        </span>
+                      </span>
+                    )
+                  })}
+                </span>
+              </>
+            ) : (
+              <span className="block text-[11.5px] font-semibold text-kh-muted mt-1.5">Noch nicht gefunden — irgendwo tief in einer fernen Welt.</span>
+            )}
           </>
         }
       />

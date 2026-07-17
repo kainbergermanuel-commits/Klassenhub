@@ -13,7 +13,7 @@ import type { GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
-import { getSeasonTheme, isArcUnlocked } from '@/lib/seasonTheme'
+import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -400,11 +400,16 @@ export default async function HomePage() {
     // DB-seitigem gte-Zeitbereich verglichen (created_at ist UTC, ein naiver
     // "heute 00:00"-String wäre nahe Mitternacht in Europe/Vienna falsch) —
     // siehe sendParentNudge.ts.
-    const { data: allMyAchievements } = await supabase.from('achievements').select('kind,key,achieved_at').eq('student_id', user.id)
+    const { data: allMyAchievements } = await supabase.from('achievements').select('kind,key,period,achieved_at').eq('student_id', user.id)
     const achievementCounts = countAchievements(allMyAchievements ?? [])
     const myConfirmedIdsForNudge = confirmedByStudentS.get(user.id) ?? new Set<string>()
     const pendingConfirmationCount = [...doneIds].filter(id => !myConfirmedIdsForNudge.has(id)).length
     const nudgeSentToday = (recentNudges ?? []).some(n => n.created_at.slice(0, 10) === today)
+
+    // currentThemeName wird schon hier gebraucht (Splitter-Zeichen im
+    // Rucksack) und weiter unten nochmal fürs Heldenbuch/Mein Guide — eine
+    // Berechnung statt zwei.
+    const currentThemeName = getSeasonTheme(currentSeason).name
 
     const rucksack = {
       broken,
@@ -420,12 +425,13 @@ export default async function HomePage() {
       guildName: guildSection?.guild.name ?? null,
       parentConfirmStreak: confirmedStreak,
       nextStepHint: quests.find(q => !q.done)?.template.title ?? null,
+      splitterFound: splitterFound(currentThemeName),
+      awakenedSignCount: awakenedSignCount(currentThemeName),
     }
 
     // ─── HELDENBUCH: stille Anerkennung + Chronik (siehe lib/heldenbuch.ts) ───
     // Mein Guide: persönliche Wahl (falls freigeschaltet) statt Guide der
     // aktuellen Klassenwelt — siehe app/actions/saveGuidePreference.ts.
-    const currentThemeName = getSeasonTheme(currentSeason).name
     const preferredGuideIcon = (profile as { preferred_guide_icon?: string | null }).preferred_guide_icon ?? null
     const effectiveGuideIcon = preferredGuideIcon && isArcUnlocked(preferredGuideIcon, currentThemeName)
       ? preferredGuideIcon

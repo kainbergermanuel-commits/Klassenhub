@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { chooseQuestPath } from '@/app/actions/chooseQuestPath'
 import { weeklyFocusTag } from '@/lib/quests'
-import { QUEST_FOCUS_LABELS } from '@/lib/questVault'
+import { QUEST_FOCUS_LABELS, resolveQuestNarrative } from '@/lib/questVault'
 import Avatar from '@/components/ui/Avatar'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import type { QuestResult } from '@/lib/quests'
@@ -105,7 +105,12 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
           // Nach einer Wahlpfad-Entscheidung zeigt die Anleitung des GEWÄHLTEN
           // Pfads (nicht mehr den allgemeinen "wähle deinen Weg"-Text) —
           // sonst sieht man nach der Wahl nicht mehr, was zu tun ist.
-          const narrative = (q.chosenChoice ? q.chosenChoice.narrative : q.template.narrative).replace('{guide}', theme.guide)
+          // Wahlpfad-Antworten (chosenChoice) bleiben guide-neutral formuliert
+          // (konkrete Anleitung, kein Erzähltext), nur die Vorlage selbst
+          // bekommt die guide-eigene Stimme.
+          const narrative = q.chosenChoice
+            ? q.chosenChoice.narrative
+            : resolveQuestNarrative(q.template.narrative, q.template.narrativeByGuide, theme.icon, theme.guide)
           const isMeister = q.template.tier === 'meister'
           return (
             <div

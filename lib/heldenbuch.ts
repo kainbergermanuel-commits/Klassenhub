@@ -1,6 +1,8 @@
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import { findQuestTemplate } from '@/lib/questVault'
 import { findGuildQuestTemplate } from '@/lib/guilds'
+import { WEEKLY_SEAL_KEY } from '@/lib/achievements'
+import { addDaysISO } from '@/lib/date'
 import type { AchievementKind } from '@/lib/types'
 
 /** Datenbausteine für das Heldenbuch, die aus Roh-Signalen abgeleitet werden —
@@ -151,7 +153,7 @@ export function buildGuideNote(s: GuideNoteSignals, guideIcon?: string): GuideNo
 // (Schutzschild/Zeitkristall) + abgeschlossene Quests/Gilden-Quests/Klassenziele
 // (= das Quest-Logbuch, Cluster A) + aktuell erloschene Flamme. Absteigend.
 
-export type ChronicleKind = 'milestone' | 'shield' | 'crystal' | 'break' | AchievementKind
+export type ChronicleKind = 'milestone' | 'shield' | 'crystal' | 'break' | 'weekly_seal' | AchievementKind
 
 export interface ChronicleEntry {
   kind: ChronicleKind
@@ -161,12 +163,25 @@ export interface ChronicleEntry {
   date: string
 }
 
+/** Wie viele Wochen in Folge das Wochensiegel bis inkl. `period` errungen
+ *  wurde (rückwärts über volle 7-Tage-Sprünge, `period` = week_start). */
+function weeklySealStreakAt(period: string, allPeriods: Set<string>): number {
+  let count = 0
+  let cursor = period
+  while (allPeriods.has(cursor)) {
+    count++
+    cursor = addDaysISO(-7, new Date(`${cursor}T00:00:00`))
+  }
+  return count
+}
+
 export function buildChronicle(input: {
   milestones: { milestone: number; confirmed_at: string }[]
   shieldUses: { created_at: string }[]
   crystalUses: { created_at: string }[]
-  /** Protokollierte Erfolge (achievements-Tabelle) fürs Quest-Logbuch. */
-  achievements?: { kind: AchievementKind; key: string; achieved_at: string }[]
+  /** Protokollierte Erfolge (achievements-Tabelle) fürs Quest-Logbuch —
+   *  `period` (week_start/season) wird für die Wochensiegel-Serie gebraucht. */
+  achievements?: { kind: AchievementKind; key: string; period: string; achieved_at: string }[]
   brokenNow: boolean
   today: string
 }): ChronicleEntry[] {
@@ -181,8 +196,23 @@ export function buildChronicle(input: {
   }
   for (const s of input.shieldUses) out.push({ kind: 'shield', label: 'Schutzschild eingesetzt', date: s.created_at })
   for (const c of input.crystalUses) out.push({ kind: 'crystal', label: 'Zeitkristall eingesetzt', date: c.created_at })
+
+  // Wochensiegel-Perioden vorab sammeln, damit jede Chronik-Zeile ihre
+  // Serienlänge kennt (wie viele Wochen in Folge bis zu genau dieser Woche).
+  const weeklySealPeriods = new Set(
+    (input.achievements ?? []).filter(a => a.kind === 'quest' && a.key === WEEKLY_SEAL_KEY).map(a => a.period)
+  )
+
   for (const a of input.achievements ?? []) {
-    if (a.kind === 'quest') {
+    if (a.kind === 'quest' && a.key === WEEKLY_SEAL_KEY) {
+      const streak = weeklySealStreakAt(a.period, weeklySealPeriods)
+      out.push({
+        kind: 'weekly_seal',
+        label: 'Wochensiegel — alle Quests geschafft',
+        note: streak >= 2 ? `${streak}. Woche in Folge` : undefined,
+        date: a.achieved_at,
+      })
+    } else if (a.kind === 'quest') {
       out.push({ kind: 'quest', label: findQuestTemplate(a.key)?.title ?? 'Wochen-Quest geschafft', date: a.achieved_at })
     } else if (a.kind === 'guild_quest') {
       out.push({ kind: 'guild_quest', label: findGuildQuestTemplate(a.key)?.title ?? 'Gilden-Quest geschafft', note: 'Gilde', date: a.achieved_at })

@@ -292,3 +292,50 @@ export function currentStageIndex(pct: number, stageCount: number): number {
   const idx = Math.floor((pct / 100) * (stageCount - 1))
   return Math.min(stageCount - 1, Math.max(0, idx))
 }
+
+// ─── DER SPLITTER (roter Faden, siehe docs/2026-07-story-welten.html) ───────
+// Der Splitter wird in Islas Schatzkammer (Schatzsuche/November) gefunden und
+// trägt sieben Zeichen, die je eines pro Welt von Terra Nova (Dezember) bis
+// zum Weltenbaum (Juni) erwachen. Bewusst KEIN neuer Datenbank-Zustand: ob ein
+// Zeichen erwacht ist, wird rein aus SCHOOL_YEAR_ARCS + der aktuell laufenden
+// Welt abgeleitet (dieselbe Quelle der Wahrheit wie isArcUnlocked) — für noch
+// nicht gebaute Welten (Prinzip 4: kein Vorab-Content-Berg) bleibt das
+// zugehörige Zeichen einfach ungeöffnet, bis die Welt live geht, und wacht
+// automatisch auf, sobald sie es tut.
+
+export interface SplitterSign {
+  /** Eigenes Icon für das Zeichen selbst (nicht das Welt-Icon) — z.B. eine
+   *  einzelne Sanduhr statt des Bücher-Icons der Chroniken-Welt. */
+  icon: string
+  label: string
+  worldName: string
+  /** Theme-Icon der Welt, in der dieses Zeichen erwacht (Schlüssel in
+   *  SCHOOL_YEAR_ARCS) — bestimmt, wann es "erwacht" ist. */
+  worldIcon: string
+}
+
+export const SPLITTER_SIGNS: SplitterSign[] = [
+  { icon: 'eco', label: 'Das Blatt', worldName: 'Terra Nova', worldIcon: 'eco' },
+  { icon: 'water', label: 'Die Welle', worldName: 'Tiefsee-Expedition', worldIcon: 'water' },
+  { icon: 'hourglass_empty', label: 'Die Sanduhr', worldName: 'Chroniken der Zeit', worldIcon: 'history_edu' },
+  { icon: 'anchor', label: 'Der Anker', worldName: 'Inselreich', worldIcon: 'anchor' },
+  { icon: 'star', label: 'Der Stern', worldName: 'Sternenkarte', worldIcon: 'auto_awesome' },
+  { icon: 'settings', label: 'Das Zahnrad', worldName: 'Werkstatt der Erfinder', worldIcon: 'precision_manufacturing' },
+  { icon: 'park', label: 'Der Baum', worldName: 'Der Weltenbaum', worldIcon: 'park' },
+]
+
+/** Ob der Splitter selbst schon gefunden ist (ab Schatzsuche/November, siehe
+ *  Story-Bibel: Isla findet ihn in ihrer Schatzkammer). */
+export function splitterFound(currentThemeName: string): boolean {
+  return isArcUnlocked('map', currentThemeName)
+}
+
+/** Wie viele der 7 Zeichen bereits erwacht sind: ein Zeichen erwacht, sobald
+ *  seine Welt im Fahrplan bereits vollständig hinter der Klasse liegt (die
+ *  aktuell laufende Welt selbst zählt noch nicht — ihr Zeichen erwacht erst,
+ *  wenn die NÄCHSTE Welt beginnt). Monoton wachsend, nie rückläufig. */
+export function awakenedSignCount(currentThemeName: string): number {
+  const currentIndex = SCHOOL_YEAR_ARCS.findIndex(arc => arc.name === currentThemeName)
+  if (currentIndex < 0) return 0
+  return SPLITTER_SIGNS.filter(s => schoolYearIndex(s.worldIcon) < currentIndex).length
+}

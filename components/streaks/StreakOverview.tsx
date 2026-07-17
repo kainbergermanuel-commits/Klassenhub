@@ -7,6 +7,7 @@ import HeldenbuchCard from '@/components/home/HeldenbuchCard'
 import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
 import { VETERAN_MILESTONE } from '@/lib/streak'
+import { getSeasonTheme, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
 
@@ -52,6 +53,7 @@ interface Props {
 }
 
 export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, guildSection }: Props) {
+  const currentThemeName = getSeasonTheme(currentSeason).name
   return (
     <>
       {/* Welt-Einstieg — Titel, Guide UND Klassenreise in einer Card (vorher
@@ -96,6 +98,8 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
                 guildName: guildSection?.guild.name ?? null,
                 parentConfirmStreak: myHeldenbuch.confirmedStreak,
                 nextStepHint: quests.find(q => !q.done)?.template.title ?? null,
+                splitterFound: splitterFound(currentThemeName),
+                awakenedSignCount: awakenedSignCount(currentThemeName),
               }}
             />
           </div>

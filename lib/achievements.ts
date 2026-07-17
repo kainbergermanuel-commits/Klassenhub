@@ -7,6 +7,14 @@ export interface AchievementRow {
   period: string
 }
 
+/** Reservierter `key`-Wert innerhalb kind='quest' fürs Wochensiegel (siehe
+ *  collectAchievements) — kollidiert nie mit einem echten Quest-template_key,
+ *  da alle Vorlagen in questVault.ts sprechende Keys ohne Unterstriche am
+ *  Rand verwenden. Kein Schema-Wechsel nötig: die CHECK-Constraint auf `kind`
+ *  erlaubt 'quest' bereits, `period` (week_start) macht den Eintrag pro Woche
+ *  eindeutig — genau wie bei normalen Quest-Erfolgen. */
+export const WEEKLY_SEAL_KEY = '__weekly_seal__'
+
 /** Leitet aus dem aktuell berechneten Zustand (Quests/Gilden-Quest/Klassenziel)
  *  ab, welche Erfolge protokolliert werden sollen. Reine Funktion — das
  *  eigentliche Schreiben (idempotent, fehlertolerant) passiert separat in den
@@ -22,6 +30,13 @@ export function collectAchievements(params: {
   const rows: AchievementRow[] = []
   for (const q of params.quests) {
     if (q.done) rows.push({ student_id: params.studentId, kind: 'quest', key: q.template.key, period: params.weekStart })
+  }
+  // Wochensiegel: alle aktiven Wochen-Quests diese Woche geschafft (die
+  // kooperative Gilden-Quest zählt separat, siehe unten) — eine stille
+  // Anerkennung fürs Logbuch (Prinzip 2), KEIN neuer Spezialrang/Befugnis
+  // (Grundsatzentscheidung 3 zum Spezialrang-Set ist noch offen).
+  if (params.quests.length > 0 && params.quests.every(q => q.done)) {
+    rows.push({ student_id: params.studentId, kind: 'quest', key: WEEKLY_SEAL_KEY, period: params.weekStart })
   }
   if (params.guildQuest?.done) {
     rows.push({ student_id: params.studentId, kind: 'guild_quest', key: params.guildQuest.template.key, period: params.weekStart })

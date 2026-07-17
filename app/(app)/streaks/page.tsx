@@ -294,7 +294,7 @@ export default async function StreaksPage() {
 
     const [{ data: myMilestones }, { data: myAchievements }, { data: recentNudges }] = await Promise.all([
       supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', profile.id).order('confirmed_at', { ascending: false }),
-      supabase.from('achievements').select('kind,key,achieved_at').eq('student_id', profile.id),
+      supabase.from('achievements').select('kind,key,period,achieved_at').eq('student_id', profile.id),
       // Lokales Datum per String-Slice vergleichen statt DB-seitigem gte-
       // Zeitbereich (created_at ist UTC) — siehe sendParentNudge.ts.
       supabase.from('parent_nudges').select('created_at').eq('student_id', profile.id).order('created_at', { ascending: false }).limit(5),
