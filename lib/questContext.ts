@@ -10,6 +10,9 @@ import type { QuestContext, QuestFeasibility } from '@/lib/quests'
 export interface QuestContextInput {
   weekStart: string
   weekEnd: string
+  /** Heutiges Datum (ISO) — nötig, um "bereits fällige" HÜ dieser Woche von
+   *  noch bevorstehenden zu unterscheiden (weekDueDoneCount). */
+  today: string
   studentId: string
   /** Alle HÜ der Klasse (für dueByHwId) — Datumsfeld reicht. */
   allHomework: { id: string; due_date: string }[]
@@ -25,12 +28,16 @@ export interface QuestContextInput {
 }
 
 export function buildQuestContext(input: QuestContextInput): QuestContext {
-  const { weekStart, weekEnd, studentId, allHomework, ownCompletions, confirmedHomeworkIds,
+  const { weekStart, weekEnd, today, studentId, allHomework, ownCompletions, confirmedHomeworkIds,
     reminders, viewedReminderIds, events, dutyDoneCount, currentStreakLength } = input
 
   const weekHw = allHomework.filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
   const dueByHwId = new Map(allHomework.map(h => [h.id, h.due_date]))
   const doneHomeworkIds = new Set(ownCompletions.map(c => c.homework_id))
+
+  // Bereits fällige HÜ dieser Woche (due_date <= heute), die erledigt sind —
+  // deckelt streak_hold auf echte Beiträge dieser Woche, siehe lib/quests.ts.
+  const weekDueDoneCount = weekHw.filter(h => h.due_date <= today && doneHomeworkIds.has(h.id)).length
 
   const earlyHomeworkIds = new Set(
     ownCompletions
@@ -72,6 +79,7 @@ export function buildQuestContext(input: QuestContextInput): QuestContext {
     doneDatesThisWeek,
     dutyDoneCount,
     currentStreakLength,
+    weekDueDoneCount,
   }
 }
 

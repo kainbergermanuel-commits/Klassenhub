@@ -190,9 +190,16 @@ export interface GuildQuestResult {
   /** Per-Mitglied-Signale: Anzahl Mitglieder, die das Signal individuell
    *  erreichen. `distributed_homework`: Anzahl beitragender Mitglieder. */
   membersMet: number
-  /** Per-Mitglied-Signale: Gildengröße. `distributed_homework`: benötigte
-   *  Mindest-Beitragende (`minContributors`, auf Gildengröße gedeckelt). */
+  /** Per-Mitglied-Signale: Gildengröße (bzw. Dienst-Pool-Größe). `distributed_
+   *  homework`: benötigte Mindest-Beitragende (`minContributors`, auf
+   *  Gildengröße gedeckelt) — dort ist `total` bereits die Schwelle selbst. */
   total: number
+  /** Nur bei Per-Mitglied-Signalen gesetzt: ab wie vielen von `total` die
+   *  Quest erfüllt ist (i.d.R. 75 %, nicht "alle") — für eine UI, die den
+   *  Fortschrittsbalken korrekt bei der Schwelle statt bei `total` als "voll"
+   *  markieren will. Bei `distributed_homework` fehlt das Feld, weil `total`
+   *  dort schon die Schwelle selbst ist. */
+  required?: number
   done: boolean
   /** Nur bei `distributed_homework` gesetzt: der gemeinsame HÜ-Fortschritt
    *  ("3 von 5 HÜ gesammelt"), zusätzlich zur Beitragenden-Zahl oben. */
@@ -253,5 +260,5 @@ export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: G
   // 3er-Gilde effektiv "alle 3" und die Erleichterung ginge verloren.
   const minShare = template.minShare ?? 0.75
   const required = poolSize > 0 ? Math.max(1, Math.floor(poolSize * minShare)) : 0
-  return { template, membersMet, total: poolSize, done: poolSize > 0 && membersMet >= required }
+  return { template, membersMet, total: poolSize, required, done: poolSize > 0 && membersMet >= required }
 }

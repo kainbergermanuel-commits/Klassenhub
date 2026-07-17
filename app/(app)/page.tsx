@@ -55,7 +55,7 @@ export default async function HomePage() {
     // Tiebreaker hatten, also ohnehin nicht garantiert stabil waren).
     supabase.from('homework').select('*').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }).order('id', { ascending: false }),
     supabase.from('reminders').select('*').eq('class_id', activeClassId).gte('event_date', today).order('event_date').limit(8),
-    supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', dutyWeekStart),
+    supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', dutyWeekStart).order('id'),
     supabase.from('events')
       .select('id,title,start_date,end_date,all_day,start_time,category,target_student_ids')
       .eq('class_id', activeClassId)
@@ -304,6 +304,7 @@ export default async function HomePage() {
     const questCtx = buildQuestContext({
       weekStart,
       weekEnd,
+      today,
       studentId: user.id,
       allHomework: allHwForStreak,
       ownCompletions: completions ?? [],

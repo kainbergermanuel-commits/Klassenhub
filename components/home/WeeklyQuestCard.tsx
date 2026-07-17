@@ -184,14 +184,19 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
                 {guildSection.quest.done ? 'task_alt' : 'radio_button_unchecked'}
               </span>
               <span className="font-semibold text-[14px] text-kh-dark flex-1 truncate">{guildSection.quest.template.title}</span>
-              <span className="text-[11px] font-bold text-kh-muted flex-shrink-0">{guildSection.quest.membersMet}/{guildSection.quest.total}</span>
+              <span className="text-[11px] font-bold text-kh-muted flex-shrink-0">
+                {guildSection.quest.membersMet}/{guildSection.quest.required ?? guildSection.quest.total}
+              </span>
             </div>
             <p className="text-[12px] text-kh-muted mt-1 pl-[26px]">{guildNarrative}</p>
             <div className="mt-2 pl-[26px] flex gap-1">
               {Array.from({ length: guildSection.quest.total }).map((_, i) => (
                 <div
                   key={i}
-                  className={`h-1.5 flex-1 rounded-full ${i < guildSection.quest.membersMet ? 'bg-kh-violet' : 'bg-kh-border/50'}`}
+                  title={guildSection.quest.required && i === guildSection.quest.required - 1 ? 'Ab hier ist die Quest geschafft' : undefined}
+                  className={`h-1.5 flex-1 rounded-full ${i < guildSection.quest.membersMet ? 'bg-kh-violet' : 'bg-kh-border/50'} ${
+                    guildSection.quest.required && i === guildSection.quest.required - 1 ? 'ring-2 ring-kh-violet/40 ring-offset-1' : ''
+                  }`}
                 />
               ))}
             </div>

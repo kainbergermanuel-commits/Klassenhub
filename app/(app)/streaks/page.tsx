@@ -156,7 +156,7 @@ export default async function StreaksPage() {
     ] = await Promise.all([
       supabase.from('reminders').select('id,event_date,target_student_ids').eq('class_id', activeClassId).gte('event_date', weekStart).lte('event_date', weekEnd),
       supabase.from('events').select('id,start_date,target_student_ids').eq('class_id', activeClassId).gte('start_date', weekStart).lte('start_date', weekEnd),
-      supabase.from('duties').select('id,assignee_ids,duty_name').eq('class_id', activeClassId).eq('week_start', weekStart),
+      supabase.from('duties').select('id,assignee_ids,duty_name').eq('class_id', activeClassId).eq('week_start', weekStart).order('id'),
       supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', profile.id).eq('week_start', weekStart),
     ])
 
@@ -173,10 +173,14 @@ export default async function StreaksPage() {
       ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', weekDutyIds)
       : { data: [] }
     const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
-    const myDuties = (weekDuty ?? []).filter(d => d.assignee_ids.includes(profile.id))
-    const dutyDoneCount = myDuties.length > 0
-      ? Math.max(...myDuties.map(d => dutyDoneWeekdays(doneByDutyStudent, d.id, profile.id).length))
-      : 0
+    // Genau EIN Dienst pro Kind (wie auf der Startseite, siehe page.tsx
+    // myDuty) — vorher zählte hier das Maximum über ALLE zugeteilten Dienste,
+    // während die Guide-Notiz weiter unten (hbDutyName) den ERSTEN nannte:
+    // bei zwei Diensten konnte der genannte Name nicht zum gezeigten
+    // Fortschritt passen, und der Fortschritt selbst wich von der Startseite ab.
+    const myDuty = (weekDuty ?? []).find(d => d.assignee_ids.includes(profile.id)) ?? null
+    const myDuties = myDuty ? [myDuty] : []
+    const dutyDoneCount = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, profile.id).length : 0
 
     const weekHw = (allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
     const myOwnCompletions = (allCompletions ?? [])
@@ -188,6 +192,7 @@ export default async function StreaksPage() {
     const questCtx = buildQuestContext({
       weekStart,
       weekEnd,
+      today,
       studentId: profile.id,
       allHomework: allHwDesc ?? [],
       ownCompletions: myOwnCompletions,

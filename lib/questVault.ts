@@ -99,7 +99,7 @@ export const QUEST_VAULT: QuestTemplate[] = [
   {
     key: 'streak_hold',
     title: 'Flamme am Leben halten',
-    narrative: '{guide} passt auf deine Flamme auf — halte deine Streak 3 Tage in Folge.',
+    narrative: '{guide} passt auf deine Flamme auf — halte deine Streak 3 HÜ in Folge.',
     focusTag: 'ausdauer',
     signals: [{ type: 'streak_hold', targetCount: 3 }],
   },
@@ -124,7 +124,7 @@ export const QUEST_VAULT: QuestTemplate[] = [
   {
     key: 'meister_ausdauer',
     title: 'Meisterhafte Ausdauer',
-    narrative: '{guide} ist beeindruckt: 5 Tage in Folge, ohne eine einzige Hausübung zu vergessen.',
+    narrative: '{guide} ist beeindruckt: 5 HÜ in Folge, ohne eine einzige zu vergessen.',
     focusTag: 'ausdauer',
     tier: 'meister',
     signals: [{ type: 'streak_hold', targetCount: 5 }],

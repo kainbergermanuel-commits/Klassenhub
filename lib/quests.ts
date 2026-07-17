@@ -30,9 +30,15 @@ export interface QuestContext {
    *  siehe duty_completions) — kein Alles-oder-nichts, damit Ziele wie
    *  "3 von 5 Tagen" möglich sind. */
   dutyDoneCount: number
-  /** Aktuelle (unbestätigte) Streak-Länge in Tagen — Grundlage für Ziele wie
-   *  "halte die Flamme 3 Tage in Folge". */
+  /** Aktuelle (unbestätigte) Streak-Länge in HÜ in Folge (nicht Kalendertage —
+   *  zwei an einem Tag fällige HÜ zählen doppelt) — Grundlage für Ziele wie
+   *  "halte die Flamme 3 HÜ in Folge". */
   currentStreakLength: number
+  /** Anzahl bereits fälliger HÜ dieser Woche, die erledigt sind — deckelt
+   *  streak_hold-Fortschritt auf tatsächliche Beiträge DIESER Woche (siehe
+   *  computeSignalProgress), damit eine schon lange laufende Streak eine
+   *  Wochen-Quest nicht ohne neues Zutun sofort erfüllt. */
+  weekDueDoneCount: number
 }
 
 export interface QuestProgress {
@@ -60,7 +66,12 @@ export function computeSignalProgress(signal: QuestSignal, ctx: QuestContext): Q
     case 'duty_done':
       return clamp(ctx.dutyDoneCount, signal.targetCount)
     case 'streak_hold':
-      return clamp(ctx.currentStreakLength, signal.targetCount)
+      // Gedeckelt auf HÜ, die DIESE Woche tatsächlich fällig+erledigt wurden
+      // (nicht die rohe Gesamt-Streak) — sonst wäre die Quest bei einer schon
+      // länger laufenden Streak am Montag ohne jedes Zutun sofort erfüllt.
+      // Ist die Streak gerissen, ist currentStreakLength ohnehin 0 und
+      // dominiert das Minimum.
+      return clamp(Math.min(ctx.currentStreakLength, ctx.weekDueDoneCount), signal.targetCount)
     case 'parent_confirm':
       return clamp(ctx.weekHomeworkIds.filter(id => ctx.confirmedHomeworkIds.has(id)).length, signal.targetCount)
   }
@@ -105,7 +116,7 @@ function signalLabel(signal: QuestSignal): string {
     case 'reminder': return 'Erinnerung gesehen'
     case 'event_ready': return 'Termin im Blick'
     case 'duty_done': return 'Diensttage erledigt'
-    case 'streak_hold': return 'Tage in Folge'
+    case 'streak_hold': return 'HÜ in Folge'
     case 'parent_confirm': return 'Eltern-Bestätigungen'
   }
 }
@@ -142,8 +153,13 @@ function signalFeasible(signal: QuestSignal, f: QuestFeasibility): boolean {
       return f.hasDuty
     case 'event_ready':
       return f.hasWeekEvent
-    case 'reminder':
     case 'streak_hold':
+      // Fortschritt ist auf diese Woche fällig+erledigte HÜ gedeckelt (siehe
+      // computeSignalProgress) — ohne fällige HÜ diese Woche wäre die Quest
+      // permanent unerreichbar, also genauso von hasWeekHomework abhängig
+      // wie die reinen HÜ-Signale.
+      return f.hasWeekHomework
+    case 'reminder':
       return true
   }
 }
