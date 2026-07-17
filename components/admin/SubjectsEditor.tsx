@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSubject, updateSubject, deleteSubject } from '@/app/actions/adminSubjects'
 
@@ -41,6 +41,28 @@ export default function SubjectsEditor({ initial }: { initial: Subject[] }) {
     })
   }
 
+  // Farbwahl: onBlur ist beim nativen Color-Picker unzuverlässig (macOS öffnet
+  // ein eigenes Panel → der Input blurred sofort BEIM ÖFFNEN mit dem alten
+  // Wert, und nach dem Wählen kommt kein zweiter Blur mehr — die Änderung
+  // würde nie gespeichert). Daher: debounced Save direkt auf onChange; der
+  // Timer fängt das kontinuierliche Feuern beim Ziehen im Picker ab. Die Ref
+  // liefert dem Timer den jeweils aktuellen Zeilen-Stand (Label/Kürzel könnten
+  // sich zwischenzeitlich geändert haben) ohne Side-Effect im State-Updater.
+  const subjectsRef = useRef(subjects)
+  subjectsRef.current = subjects
+  const colorTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  function changeColor(id: string, color: string) {
+    patchLocal(id, { color })
+    const timers = colorTimers.current
+    const existing = timers.get(id)
+    if (existing) clearTimeout(existing)
+    timers.set(id, setTimeout(() => {
+      timers.delete(id)
+      const s = subjectsRef.current.find(x => x.id === id)
+      if (s) saveEdit({ ...s, color })
+    }, 500))
+  }
+
   function remove(id: string) {
     if (!confirm('Dieses Fach wirklich entfernen? Bereits im Stundenplan eingetragene Stunden mit diesem Fach bleiben als Text stehen, verlieren aber ihre Farbe/Kürzel.')) return
     setError(null)
@@ -79,8 +101,7 @@ export default function SubjectsEditor({ initial }: { initial: Subject[] }) {
             <input
               type="color"
               value={s.color}
-              onChange={e => patchLocal(s.id, { color: e.target.value })}
-              onBlur={() => saveEdit(subjects.find(x => x.id === s.id)!)}
+              onChange={e => changeColor(s.id, e.target.value)}
               className="w-8 h-8 rounded-lg border border-kh-border/60 cursor-pointer flex-shrink-0"
               aria-label={`Farbe für ${s.label}`}
             />

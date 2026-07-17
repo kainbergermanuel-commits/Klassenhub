@@ -38,7 +38,11 @@ export default function AnimateIn({ delay = 0, className = '', style, children }
     <div
       className={settled ? className : `animate-card-enter ${className}`.trim()}
       style={settled ? style : { ...style, animationDelay: `${delay}ms` }}
-      onAnimationEnd={() => setSettled(true)}
+      // Guard: onAnimationEnd bubbelt auch von animierten KIND-Elementen hoch
+      // (React reicht Events sogar aus Portalen durch den React-Baum) — ohne
+      // den target-Check würde z.B. eine Kind-Animation die Sektion verfrüht
+      // "settlen" und die Eintritts-Animation abrupt beenden.
+      onAnimationEnd={e => { if (e.target === e.currentTarget) setSettled(true) }}
     >
       {children}
     </div>

@@ -57,15 +57,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     // "Abmelden" gerendert (Sidebar/MobileHeader).
   ]
 
-  const bottom = [
-    { href: '/', icon: 'home', label: 'Start' },
-    { href: '/hausaufgaben', icon: 'assignment', label: 'HÜ', badge: hwOpen || undefined },
-    { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
-    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerung' },
-    { href: '/termine', icon: 'calendar_month', label: 'Termine' },
-  ]
-
-  return { all, bottom }
+  return { all }
 }
 
 /** Lehrperson: Anzahl offener (unbestätigter) Abwesenheitsmeldungen der Eltern.
@@ -174,7 +166,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     computeMessageBadge(profile, user.id, activeClassId),
     computeAttendanceBadge(profile, activeClassId),
   ])
-  const { all, bottom } = buildNav(profile, hwOpen, reminderUnread, messageUnread, attendancePending)
+  const { all } = buildNav(profile, hwOpen, reminderUnread, messageUnread, attendancePending)
 
   // Preview bar: nur für echten Lehrer
   let previewRole: string | null = null

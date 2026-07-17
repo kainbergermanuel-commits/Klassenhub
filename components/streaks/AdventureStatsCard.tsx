@@ -37,9 +37,9 @@ export default function AdventureStatsCard({ students, title = 'Diese Woche im �
             <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={30} />
             <span className="min-w-0 flex-1 font-semibold text-[13px] text-kh-dark truncate">{s.full_name}</span>
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              <Stat icon="explore" label={`${s.questsDone}/${s.questsTotal}`} title="Wochen-Quests erledigt" />
-              <Stat icon="task_alt" label={`${s.hwConfirmed}`} title="Hausübungen bestätigt (diese Season)" />
-              <Stat icon="extension" label={`${s.riddlesSolved}`} title="Rätsel gelöst" />
+              <Stat icon="explore" label={`${s.questsDone}/${s.questsTotal}`} title="Wochen-Quests erledigt (diese Woche)" />
+              <Stat icon="task_alt" label={`${s.hwConfirmed}`} title="Hausübungen bestätigt (diese Woche)" />
+              <Stat icon="extension" label={`${s.riddlesSolved}`} title="Rätsel gelöst (insgesamt)" />
             </div>
           </div>
         ))}

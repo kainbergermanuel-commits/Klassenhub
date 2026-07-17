@@ -24,9 +24,11 @@ export default function WeekPulse({ total, today }: Props) {
   const icon = empty ? 'rocket_launch' : 'local_fire_department'
   const message = empty
     ? 'Eine neue Woche beginnt — die ersten Schritte zählen.'
-    : today > 0
+    : today > 1
       ? <>Eure Klasse hat diese Woche schon <strong className="font-extrabold">{total}</strong>&nbsp;{total === 1 ? 'Hausübung' : 'Hausübungen'} gemeinsam geschafft — und heute kommen laufend welche dazu.</>
-      : <>Eure Klasse hat diese Woche schon <strong className="font-extrabold">{total}</strong>&nbsp;{total === 1 ? 'Hausübung' : 'Hausübungen'} gemeinsam geschafft.</>
+      : today === 1
+        ? <>Eure Klasse hat diese Woche schon <strong className="font-extrabold">{total}</strong>&nbsp;{total === 1 ? 'Hausübung' : 'Hausübungen'} gemeinsam geschafft — heute ist gerade eine dazugekommen.</>
+        : <>Eure Klasse hat diese Woche schon <strong className="font-extrabold">{total}</strong>&nbsp;{total === 1 ? 'Hausübung' : 'Hausübungen'} gemeinsam geschafft.</>
 
   return (
     <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#F0FAF9] border border-kh-teal/20">

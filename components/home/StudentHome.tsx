@@ -91,10 +91,15 @@ export default function StudentHome({
             <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} showGuidePortrait={false} guildSection={guildSection} />
           </AnimateIn>
 
-          {/* Interaktive Rätsel: Arc-Item + ggf. Splitter (Neugier + Nochmal-Lesen) */}
-          <AnimateIn delay={75}>
-            <RiddleList riddles={riddles} />
-          </AnimateIn>
+          {/* Interaktive Rätsel: Arc-Item + ggf. Splitter (Neugier + Nochmal-Lesen).
+              Bedingung bewusst AUSSEN: RiddleList returned bei leerer Liste null,
+              der AnimateIn-Wrapper-div bliebe aber stehen und erzeugte im
+              flex-col gap-5 eine doppelte Lücke. */}
+          {riddles.length > 0 && (
+            <AnimateIn delay={75}>
+              <RiddleList riddles={riddles} />
+            </AnimateIn>
+          )}
 
           {weekPulse !== null && (
             <AnimateIn delay={90}>

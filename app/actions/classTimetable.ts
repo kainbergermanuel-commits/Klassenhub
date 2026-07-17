@@ -48,6 +48,10 @@ export async function pushClassTimetable(): Promise<{ studentCount: number }> {
 
   const studentIds = (students ?? []).map(s => s.id)
   if (studentIds.length === 0) return { studentCount: 0 }
+  // Server-seitiger Guard (nicht nur im Client): eine LEERE Vorlage darf nie
+  // gepusht werden — sonst würde der Delete unten alle persönlichen
+  // Stundenpläne der Klasse ersatzlos löschen.
+  if ((template ?? []).length === 0) throw new Error('Der Standard-Stundenplan ist leer — nichts zu senden.')
 
   const timetableTable = (supabase as unknown as { from: (t: string) => any }).from('timetable_entries')
 
@@ -56,13 +60,11 @@ export async function pushClassTimetable(): Promise<{ studentCount: number }> {
   const { error: deleteError } = await timetableTable.delete().in('student_id', studentIds)
   if (deleteError) throw new Error(deleteError.message)
 
-  if ((template ?? []).length > 0) {
-    const rows = studentIds.flatMap(studentId =>
-      (template ?? []).map(t => ({ student_id: studentId, day: t.day, slot: t.slot, subject: t.subject }))
-    )
-    const { error: insertError } = await timetableTable.insert(rows)
-    if (insertError) throw new Error(insertError.message)
-  }
+  const rows = studentIds.flatMap(studentId =>
+    (template ?? []).map(t => ({ student_id: studentId, day: t.day, slot: t.slot, subject: t.subject }))
+  )
+  const { error: insertError } = await timetableTable.insert(rows)
+  if (insertError) throw new Error(insertError.message)
 
   revalidatePath('/stundenplan')
   return { studentCount: studentIds.length }

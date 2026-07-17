@@ -28,7 +28,9 @@ interface StudentStreak {
 
 interface Props {
   role: Role
-  withStreak: StudentStreak[]
+  /** Nur für die Lehrer-Karte "Ohne aktive Streak" — die frühere
+   *  withStreak-Rangliste wurde 2026-07-13 bewusst entfernt (Leaderboard-
+   *  Evidenz), der Prop dazu ist inzwischen ebenfalls weg. */
   noStreak: StudentStreak[]
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
@@ -73,7 +75,7 @@ interface Props {
   }[]
 }
 
-export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection, adventureStats }: Props) {
+export default function StreakOverview({ role, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection, adventureStats }: Props) {
   const currentThemeName = getSeasonTheme(currentSeason).name
   return (
     <>
@@ -83,7 +85,10 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
       <AdventureHero season={currentSeason} role={role} goal={classGoal} done={classGoalDone} />
 
       <div className="flex flex-col gap-6">
-        {(role === 'teacher' || role === 'parent') && (
+        {/* Bedingungen bewusst AUSSEN am AnimateIn: die Karten returnen bei
+            leeren Daten null, der Wrapper-div bliebe aber stehen und erzeugte
+            im flex-col gap-6 eine doppelte Lücke. */}
+        {(role === 'teacher' || role === 'parent') && adventureStats.length > 0 && (
           <AnimateIn delay={0}>
             <AdventureStatsCard students={adventureStats} title={role === 'parent' ? 'Dein Kind diese Woche' : undefined} />
           </AnimateIn>
@@ -95,9 +100,11 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
           </AnimateIn>
         )}
 
-        <AnimateIn delay={60}>
-          <RiddleList riddles={riddles} />
-        </AnimateIn>
+        {riddles.length > 0 && (
+          <AnimateIn delay={60}>
+            <RiddleList riddles={riddles} />
+          </AnimateIn>
+        )}
 
         {myHeldenbuch && (
           // relative z-20: hebt die Zeile über die Karten darunter, damit die

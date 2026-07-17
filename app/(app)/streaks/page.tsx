@@ -378,6 +378,10 @@ export default async function StreaksPage() {
   let allAdventureStats: StudentAdventureStat[] = []
   if ((profile.role === 'teacher' || profile.role === 'parent') && studentIds.length > 0) {
     const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
+    // Für hwConfirmed: nur HÜ DIESER Woche zählen — die Karte heißt "Diese
+    // Woche im Überblick", vorher zählte sie Season-weit und mischte damit
+    // drei Zeiträume in einer Zeile (Quests=Woche, HÜ=Season, Rätsel=gesamt).
+    const statWeekHwIds = new Set((allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd).map(h => h.id))
     const [{ data: weekReminders }, { data: weekEvents }, { data: weekDuty }, { data: weekChoices }] = await Promise.all([
       supabase.from('reminders').select('id,event_date,target_student_ids').eq('class_id', activeClassId).gte('event_date', weekStart).lte('event_date', weekEnd),
       supabase.from('events').select('id,start_date,target_student_ids').eq('class_id', activeClassId).gte('start_date', weekStart).lte('start_date', weekEnd),
@@ -451,7 +455,7 @@ export default async function StreaksPage() {
         avatar_skin_color: s.avatar_skin_color ?? null,
         questsDone: results.filter(r => r.done).length,
         questsTotal: results.length,
-        hwConfirmed: [...confirmedIds].filter(id => seasonHwIds.has(id)).length,
+        hwConfirmed: [...confirmedIds].filter(id => statWeekHwIds.has(id)).length,
         riddlesSolved: riddleCountByStudent.get(s.id) ?? 0,
       }
     })
@@ -468,13 +472,11 @@ export default async function StreaksPage() {
     adventureStats = child ? allAdventureStats.filter(a => a.id === child.id) : []
   }
 
-  const withStreak = studentData.filter(s => s.streak > 0)
   const noStreak = studentData.filter(s => s.streak === 0)
 
   return (
     <StreakOverview
       role={profile.role}
-      withStreak={withStreak}
       noStreak={noStreak}
       classGoal={classGoal ? { target: classGoal.target, reward: classGoal.reward } : null}
       classGoalDone={classGoalConfirmedDone}

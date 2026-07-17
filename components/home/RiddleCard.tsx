@@ -51,6 +51,10 @@ export default function RiddleCard({ riddle, solved, open, onOpenChange }: Props
         router.refresh()
       } else {
         setWrong(true)
+        // Fragment-Reihenfolge bei Fehlversuch zurücksetzen — sonst bliebe
+        // der komplette falsche Stapel gewählt (Spuren-Liste leer, Button
+        // aktiv für identisches Re-Submit) und man müsste manuell abbauen.
+        if (riddle.kind === 'fragment_order') setOrderKeys([])
       }
     })
   }
@@ -186,7 +190,10 @@ export default function RiddleCard({ riddle, solved, open, onOpenChange }: Props
         {wrong && (
           <p className="mt-3 flex items-start gap-1.5 text-[12.5px] text-kh-muted">
             <span className="msym text-[15px] text-kh-amber flex-shrink-0 mt-px">emoji_objects</span>
-            Noch nicht ganz. Lies die Geschichte dieser Welt noch einmal in der „Reise" nach — die Antwort steht mittendrin. Versuch es dann einfach nochmal.
+            {riddle.arcIcon === null
+              // Welten-übergreifendes Rätsel (z.B. Splitter): auf MEHRERE Welten verweisen
+              ? 'Noch nicht ganz. Blättere in der „Reise" durch die Welten, die ihr schon bereist habt — die Spuren stecken in den Etappen-Geschichten. Versuch es dann einfach nochmal.'
+              : 'Noch nicht ganz. Lies die Geschichte dieser Welt noch einmal in der „Reise" nach — die Antwort steht mittendrin. Versuch es dann einfach nochmal.'}
           </p>
         )}
       </div>
