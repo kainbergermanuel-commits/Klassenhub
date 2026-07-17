@@ -210,7 +210,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="relative flex min-h-[calc(100dvh-1.5rem)] md:min-h-[calc(100dvh-42px)] max-md:min-h-[100dvh] rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
         <ClassGoalWatermark />
         <Sidebar profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} isPreview={!!previewRole} />
-        <main className="relative z-10 flex-1 min-w-0 overflow-y-auto scrollbar-kh">
+        {/* Kein eigener Scroll-Container: der äußere Wrapper hat nur
+            min-height (kein Cap), wächst also mit dem Inhalt mit — die
+            Seite scrollt nativ als Ganzes. overflow-y-auto hier erzeugte
+            bei hohem Inhalt einen zweiten, redundanten Scrollbalken
+            (Flexbox-Quirk: hypothetische vs. finale Höhe bei overflow:auto
+            auf einem gestreckten Flex-Item), ohne dass die Sidebar dadurch
+            fixiert blieb — sie wuchs ohnehin mit. */}
+        <main className="relative z-10 flex-1 min-w-0">
           <MobileHeader profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} />
           <div className="max-w-[1180px] mx-auto px-7 py-7 pb-20 max-md:px-4 max-md:py-5 max-md:pb-6 max-md:pt-[calc(env(safe-area-inset-top)+1.25rem)]">
             {children}
