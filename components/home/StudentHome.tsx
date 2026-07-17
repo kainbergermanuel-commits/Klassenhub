@@ -59,6 +59,11 @@ export default function StudentHome({
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
+  // Kontextabhängige Reihenfolge (Manuels Entscheidung): offene HÜ = Dringlichkeit
+  // vor Motivation, Hausübungen-Karte springt an die erste Stelle (Desktop UND
+  // Mobile — ein einheitliches Prinzip statt getrennter Regeln pro Breakpoint).
+  // Alles erledigt: die bisherige Reihenfolge bleibt, Abenteuer darf motivieren.
+  const hasOpenHomework = allHomework.some(h => !h.done)
 
   return (
     <>
@@ -98,11 +103,12 @@ export default function StudentHome({
             </AnimateIn>
           )}
 
-          {/* Open homework — all, sorted by urgency. Auf Mobile ganz oben
-              (Manuels Wunsch: erste Priorität ist "was ist zu tun"), auf
-              Desktop bleibt die bisherige Reihenfolge (order-first wirkt nur
-              unterhalb md, da beide Karten im selben Flex-Container sitzen). */}
-          <AnimateIn delay={240} className="max-md:order-first">
+          {/* Open homework — all, sorted by urgency. Springt an die erste
+              Stelle, sobald etwas offen ist (Dringlichkeit vor Motivation) —
+              beide Karten sitzen im selben Flex-Container, daher reicht die
+              order-Utility ohne DOM-Umbau. Alles erledigt: bisherige Position
+              (nach Abenteuer/Quests/Rätsel) bleibt. */}
+          <AnimateIn delay={hasOpenHomework ? 15 : 240} className={hasOpenHomework ? 'order-first' : ''}>
             <StudentOpenHomework homework={allHomework} userId={userId} />
           </AnimateIn>
         </div>
