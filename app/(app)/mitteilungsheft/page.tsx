@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getTeacherClasses } from '@/lib/auth'
 import ParentBooklet from '@/components/mitteilungsheft/ParentBooklet'
 import TeacherBooklets from '@/components/mitteilungsheft/TeacherBooklets'
+import AnimateIn from '@/components/ui/AnimateIn'
 import type { SenderAvatar } from '@/components/mitteilungsheft/MessageThread'
 import type { Message } from '@/lib/types'
 
@@ -37,13 +38,15 @@ export default async function MitteilungsheftPage() {
     }
 
     return (
-      <ParentBooklet
-        messages={(messages ?? []) as Message[]}
-        userId={user.id}
-        classId={activeClassId}
-        senderNames={senderNames}
-        senderAvatars={senderAvatars}
-      />
+      <AnimateIn delay={0}>
+        <ParentBooklet
+          messages={(messages ?? []) as Message[]}
+          userId={user.id}
+          classId={activeClassId}
+          senderNames={senderNames}
+          senderAvatars={senderAvatars}
+        />
+      </AnimateIn>
     )
   }
 
@@ -65,17 +68,19 @@ export default async function MitteilungsheftPage() {
   const students = (allStudents ?? []).filter(s => s.class_id === activeClassId)
 
   return (
-    <TeacherBooklets
-      parents={parents}
-      students={students}
-      allParents={allParents ?? []}
-      allStudents={allStudents ?? []}
-      classes={teacherClasses.map(c => ({ id: c.id, name: c.name }))}
-      messages={(messages ?? []) as Message[]}
-      broadcastMessages={(broadcastMessages ?? []) as Message[]}
-      userId={user.id}
-      ownName={profile.full_name}
-      classId={activeClassId}
-    />
+    <AnimateIn delay={0}>
+      <TeacherBooklets
+        parents={parents}
+        students={students}
+        allParents={allParents ?? []}
+        allStudents={allStudents ?? []}
+        classes={teacherClasses.map(c => ({ id: c.id, name: c.name }))}
+        messages={(messages ?? []) as Message[]}
+        broadcastMessages={(broadcastMessages ?? []) as Message[]}
+        userId={user.id}
+        ownName={profile.full_name}
+        classId={activeClassId}
+      />
+    </AnimateIn>
   )
 }

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild } from '@/lib/auth'
 import HomeworkList from '@/components/homework/HomeworkList'
+import AnimateIn from '@/components/ui/AnimateIn'
 import type { HomeworkWithStatus } from '@/lib/types'
 
 export default async function HomeworkPage() {
@@ -75,14 +76,16 @@ export default async function HomeworkPage() {
   const isStudentOrParent = profile.role === 'student' || profile.role === 'parent'
 
   return (
-    <HomeworkList
-      homework={homeworkWithStatus}
-      role={profile.role}
-      specialRole={profile.special_role}
-      userId={user.id}
-      classId={activeClassId}
-      subtitle={subtitle}
-      stats={isStudentOrParent ? { open: openCount, done: doneCount, missed: missedCount } : undefined}
-    />
+    <AnimateIn delay={0}>
+      <HomeworkList
+        homework={homeworkWithStatus}
+        role={profile.role}
+        specialRole={profile.special_role}
+        userId={user.id}
+        classId={activeClassId}
+        subtitle={subtitle}
+        stats={isStudentOrParent ? { open: openCount, done: doneCount, missed: missedCount } : undefined}
+      />
+    </AnimateIn>
   )
 }

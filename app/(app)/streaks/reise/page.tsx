@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO } from '@/lib/date'
 import { countClassGoalDone } from '@/lib/classGoal'
 import ReiseOverview from '@/components/streaks/ReiseOverview'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 /** "Die Reise": alle Kapitel der aktuellen Klassenreise durchblätterbar,
  *  nicht nur die aktuelle Etappe wie in der kompakten SeasonJourney-Leiste
@@ -33,5 +34,9 @@ export default async function ReisePage() {
   const done = countClassGoalDone(allHw ?? [], completions ?? [])
   const pct = classGoal ? Math.min(100, Math.round((done / classGoal.target) * 100)) : 0
 
-  return <ReiseOverview season={currentSeason} pct={pct} target={classGoal?.target ?? null} role={profile.role} isAdmin={!!profile.is_admin} />
+  return (
+    <AnimateIn delay={0}>
+      <ReiseOverview season={currentSeason} pct={pct} target={classGoal?.target ?? null} role={profile.role} isAdmin={!!profile.is_admin} />
+    </AnimateIn>
+  )
 }

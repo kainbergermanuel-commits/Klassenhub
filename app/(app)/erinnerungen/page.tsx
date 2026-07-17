@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import ReminderList from '@/components/erinnerungen/ReminderList'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 export default async function ErinnerungenPage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -44,15 +45,17 @@ export default async function ErinnerungenPage() {
   }
 
   return (
-    <ReminderList
-      reminders={reminders ?? []}
-      role={profile.role}
-      specialRole={profile.special_role}
-      userId={user.id}
-      classId={activeClassId}
-      viewersByReminder={viewersByReminder}
-      allStudentNames={allStudentNames}
-      myViewedIds={myViewedIds}
-    />
+    <AnimateIn delay={0}>
+      <ReminderList
+        reminders={reminders ?? []}
+        role={profile.role}
+        specialRole={profile.special_role}
+        userId={user.id}
+        classId={activeClassId}
+        viewersByReminder={viewersByReminder}
+        allStudentNames={allStudentNames}
+        myViewedIds={myViewedIds}
+      />
+    </AnimateIn>
   )
 }

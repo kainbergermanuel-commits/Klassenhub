@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAuth } from '@/lib/auth'
 import PageHeader from '@/components/layout/PageHeader'
 import SubjectsEditor from '@/components/admin/SubjectsEditor'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 export default async function AdminFaecherPage() {
   const { profile } = await getAuth()
@@ -22,9 +23,9 @@ export default async function AdminFaecherPage() {
         subtitle="Fächer für den Stundenplan verwalten — Name, Kürzel und Farbe"
         gradient="from-kh-dark to-[#2A4A55]"
       />
-      <div className="kh-card px-5 py-5">
+      <AnimateIn delay={0} className="kh-card px-5 py-5">
         <SubjectsEditor initial={subjects ?? []} />
-      </div>
+      </AnimateIn>
     </>
   )
 }

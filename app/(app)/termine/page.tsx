@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO } from '@/lib/date'
 import PageHeader from '@/components/layout/PageHeader'
 import TermineView from './TermineView'
+import AnimateIn from '@/components/ui/AnimateIn'
 import type { CalendarEvent } from '@/lib/types'
 
 export default async function TerminePage() {
@@ -31,7 +32,9 @@ export default async function TerminePage() {
         subtitle={`${upcomingCount} bevorstehend`}
         gradient="from-[#4C93C9] to-[#7EB8E5]"
       />
-      <TermineView events={events} role={profile.role} today={today} classId={activeClassId} userId={user.id} />
+      <AnimateIn delay={0}>
+        <TermineView events={events} role={profile.role} today={today} classId={activeClassId} userId={user.id} />
+      </AnimateIn>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import WeeklyQuestCard from './WeeklyQuestCard'
 import RiddleList from './RiddleList'
 import HeldenbuchCard from './HeldenbuchCard'
 import DutyModule from './DutyModule'
+import AnimateIn from '@/components/ui/AnimateIn'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { QuestResult } from '@/lib/quests'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
@@ -74,50 +75,48 @@ export default function StudentHome({
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6 mx-auto w-full">
           {/* Story-Hero: Etappe, Guide-Text, Maskottchen-Platzhalter */}
-          {/* relative z-20: eigener Stacking-Context durch animate-card-enter (transform in
-              fill-mode 'both'), sonst würden Tooltips/Vala-Überstand von Karten darunter verdeckt */}
-          <div className="relative z-20 animate-card-enter" style={{ animationDelay: '30ms' }}>
+          <AnimateIn delay={30} className="relative z-20">
             <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} />
-          </div>
+          </AnimateIn>
 
           {/* Wochen-Quests (inkl. Gilden-Quest als Block) */}
-          <div className="animate-card-enter" style={{ animationDelay: '60ms' }}>
+          <AnimateIn delay={60}>
             <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} showGuidePortrait={false} guildSection={guildSection} />
-          </div>
+          </AnimateIn>
 
           {/* Interaktive Rätsel: Arc-Item + ggf. Splitter (Neugier + Nochmal-Lesen) */}
-          <div className="animate-card-enter" style={{ animationDelay: '75ms' }}>
+          <AnimateIn delay={75}>
             <RiddleList riddles={riddles} />
-          </div>
+          </AnimateIn>
 
           {socialProofPct !== null && (
-            <div className="animate-card-enter flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#F0FAF9] border border-kh-teal/20" style={{ animationDelay: '90ms' }}>
+            <AnimateIn delay={90} className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#F0FAF9] border border-kh-teal/20">
               <span className="msym text-[18px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
               <p className="text-[13px] font-semibold text-kh-dark">
                 {socialProofPct}&nbsp;% deiner Klasse sind diese Woche schon dabei — schließ dich an!
               </p>
-            </div>
+            </AnimateIn>
           )}
 
           {/* Open homework — all, sorted by urgency */}
-          <div className="animate-card-enter" style={{ animationDelay: '240ms' }}>
+          <AnimateIn delay={240}>
             <StudentOpenHomework homework={allHomework} userId={userId} />
-          </div>
+          </AnimateIn>
         </div>
 
         <div className="relative">
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
-            <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
+            <AnimateIn delay={120}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
-            </div>
+            </AnimateIn>
             {myDuty && (
-              <div className="animate-card-enter" style={{ animationDelay: '150ms' }}>
+              <AnimateIn delay={150}>
                 <DutyModule dutyId={myDuty.id} dutyName={myDuty.name} partners={myDuty.partners} doneWeekdays={myDuty.doneWeekdays} />
-              </div>
+              </AnimateIn>
             )}
-            <div className="relative z-10 animate-card-enter" style={{ animationDelay: '180ms' }}>
+            <AnimateIn delay={180} className="relative z-10">
               <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} pendingMilestone={pendingMilestone} season={season} achievementCounts={achievementCounts} guideNote={guideNote} noteGuideIcon={noteGuideIcon} preferredGuideIcon={preferredGuideIcon} chronicle={chronicle} rucksack={rucksack} />
-            </div>
+            </AnimateIn>
           </div>
         </div>
       </div>

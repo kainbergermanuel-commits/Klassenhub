@@ -8,6 +8,7 @@ import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
 import RiddleList from '@/components/home/RiddleList'
 import AdventureStatsCard from '@/components/streaks/AdventureStatsCard'
+import AnimateIn from '@/components/ui/AnimateIn'
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import type { Riddle } from '@/lib/riddles'
 import { getSeasonTheme, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
@@ -83,19 +84,25 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
 
       <div className="flex flex-col gap-6">
         {(role === 'teacher' || role === 'parent') && (
-          <AdventureStatsCard students={adventureStats} title={role === 'parent' ? 'Dein Kind diese Woche' : undefined} />
+          <AnimateIn delay={0}>
+            <AdventureStatsCard students={adventureStats} title={role === 'parent' ? 'Dein Kind diese Woche' : undefined} />
+          </AnimateIn>
         )}
 
         {(quests.length > 0 || guildSection) && (
-          <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} guildSection={guildSection} showGuidePortrait={false} />
+          <AnimateIn delay={30}>
+            <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} guildSection={guildSection} showGuidePortrait={false} />
+          </AnimateIn>
         )}
 
-        <RiddleList riddles={riddles} />
+        <AnimateIn delay={60}>
+          <RiddleList riddles={riddles} />
+        </AnimateIn>
 
         {myHeldenbuch && (
           // relative z-20: hebt die Zeile über die Karten darunter, damit die
           // Rucksack-Item-Tooltips nicht verdeckt werden.
-          <div className="relative z-20 grid md:grid-cols-2 gap-6 items-start">
+          <AnimateIn delay={90} className="relative z-20 grid md:grid-cols-2 gap-6 items-start">
             <HeldenbuchCard
               showArcChip={false}
               streak={myHeldenbuch.streak}
@@ -128,12 +135,12 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
                 awakenedSignCount: awakenedSignCount(currentThemeName),
               }}
             />
-          </div>
+          </AnimateIn>
         )}
 
         {/* Students without streak (teacher only) */}
         {role === 'teacher' && noStreak.length > 0 && (
-          <div className="kh-card p-5">
+          <AnimateIn delay={120} className="kh-card p-5">
             <h2 className="font-extrabold text-base text-kh-dark mb-3">Ohne aktive Streak</h2>
             <div className="flex flex-wrap gap-2">
               {noStreak.map(s => (
@@ -143,7 +150,7 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
                 </div>
               ))}
             </div>
-          </div>
+          </AnimateIn>
         )}
       </div>
     </>

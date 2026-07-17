@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAuth } from '@/lib/auth'
 import StudentManageRow from './StudentManageRow'
 import StudentAddForm from './StudentAddForm'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 export default async function KlasseSchuelerPage({ params }: { params: Promise<{ id: string }> }) {
   const { profile } = await getAuth()
@@ -39,7 +40,7 @@ export default async function KlasseSchuelerPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mb-6">
+      <AnimateIn delay={0} className="grid grid-cols-2 gap-2 mb-6">
         {(students ?? []).map(s => (
           <StudentManageRow
             key={s.id}
@@ -51,12 +52,12 @@ export default async function KlasseSchuelerPage({ params }: { params: Promise<{
         {(students ?? []).length === 0 && (
           <div className="text-sm text-kh-muted font-medium py-4 text-center">Noch keine Schüler:innen in dieser Klasse.</div>
         )}
-      </div>
+      </AnimateIn>
 
-      <div className="border-t border-kh-border pt-5">
+      <AnimateIn delay={30} className="border-t border-kh-border pt-5">
         <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px] mb-3">Hinzufügen</div>
         <StudentAddForm classId={classId} />
-      </div>
+      </AnimateIn>
     </div>
   )
 }

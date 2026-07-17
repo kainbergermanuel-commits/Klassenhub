@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 interface Props {
   /** Season-Key ('YYYY-MM') statt fertigem Theme-Objekt — JourneyTheme trägt
@@ -24,7 +25,7 @@ export default function GuideCard({ season, index }: Props) {
   const [infoOpen, setInfoOpen] = useState(false)
 
   return (
-    <div className="h-full animate-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
+    <AnimateIn delay={index * 40} className="h-full">
       <button
         type="button"
         onClick={() => setInfoOpen(true)}
@@ -45,6 +46,6 @@ export default function GuideCard({ season, index }: Props) {
       </button>
 
       {infoOpen && <GuideInfoOverlay theme={theme} onClose={() => setInfoOpen(false)} />}
-    </div>
+    </AnimateIn>
   )
 }

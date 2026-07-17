@@ -1,6 +1,7 @@
 'use client'
 
 import Avatar from '@/components/ui/Avatar'
+import AnimateIn from '@/components/ui/AnimateIn'
 import type { TeacherSubject } from '@/app/actions/saveTeacherSubjects'
 
 interface Props {
@@ -31,7 +32,7 @@ export default function TeacherCard({ full_name, avatar_color, avatar_seed, avat
   const gradientColor = primary?.color ?? '#0F8A82'
 
   return (
-    <div className="h-full animate-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
+    <AnimateIn delay={index * 40} className="h-full">
     <div
       className="relative h-full rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)] flex flex-col items-center text-center gap-3 select-none overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
       style={{ background: `linear-gradient(135deg, ${gradientColor}22 0%, ${gradientColor}55 100%)` }}
@@ -79,6 +80,6 @@ export default function TeacherCard({ full_name, avatar_color, avatar_seed, avat
         </div>
       )}
     </div>
-    </div>
+    </AnimateIn>
   )
 }

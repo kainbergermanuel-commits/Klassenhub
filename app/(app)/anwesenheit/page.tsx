@@ -6,6 +6,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import TeacherView from './TeacherView'
 import ParentView from './ParentView'
 import StudentList from './StudentList'
+import AnimateIn from '@/components/ui/AnimateIn'
 import type { Attendance, Profile } from '@/lib/types'
 
 export default async function AnwesenheitPage() {
@@ -38,7 +39,9 @@ export default async function AnwesenheitPage() {
           subtitle={`${absentToday === 0 ? 'Alle anwesend heute' : `${absentToday} heute abwesend`}${pending > 0 ? ` · ${pending} offene ${pending === 1 ? 'Meldung' : 'Meldungen'}` : ''}`}
           gradient="from-[#2E9C6E] to-[#5BC392]"
         />
-        <TeacherView students={studentList} entries={entryList} today={today} />
+        <AnimateIn delay={0}>
+          <TeacherView students={studentList} entries={entryList} today={today} />
+        </AnimateIn>
       </div>
     )
   }
@@ -72,7 +75,7 @@ export default async function AnwesenheitPage() {
           gradient="from-[#2E9C6E] to-[#5BC392]"
         />
         {studentId && firstName
-          ? <ParentView entries={entries} childFirstName={firstName} today={today} />
+          ? <AnimateIn delay={0}><ParentView entries={entries} childFirstName={firstName} today={today} /></AnimateIn>
           : <div className="kh-card p-6 text-kh-muted text-[14px]">Deinem Profil ist noch kein Kind zugeordnet — bitte bei der Lehrperson melden.</div>}
       </div>
     )
@@ -88,7 +91,9 @@ export default async function AnwesenheitPage() {
         subtitle={`${entries.length === 0 ? 'Keine Fehltage' : `${entries.length} ${dayLabel}`} seit Schuljahresbeginn`}
         gradient="from-[#2E9C6E] to-[#5BC392]"
       />
-      <StudentList entries={entries} emptyText="Du warst bisher immer da — stark!" />
+      <AnimateIn delay={0}>
+        <StudentList entries={entries} emptyText="Du warst bisher immer da — stark!" />
+      </AnimateIn>
     </div>
   )
 }

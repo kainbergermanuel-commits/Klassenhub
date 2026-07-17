@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getRelevantMondayOfWeek, getMondayOfWeek, getWeekNumber, addDaysISO } from '@/lib/date'
 import PlanungWeek from './PlanungWeek'
 import PageHeader from '@/components/layout/PageHeader'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 interface Note { day: number; subject: string; content: string }
 
@@ -38,15 +39,17 @@ export default async function PlanungPage({ searchParams }: { searchParams: Prom
   return (
     <div>
       <PageHeader icon="edit_calendar" title="Planung" subtitle={`KW ${kw} · ${fmt(monday)} – ${fmt(friday)}`} />
-      <PlanungWeek
-        key={weekStart}
-        weekStart={weekStart}
-        prevWeek={addDaysISO(-7, monday)}
-        nextWeek={addDaysISO(7, monday)}
-        currentWeek={getRelevantMondayOfWeek()}
-        weekLabel={`KW ${kw}`}
-        initialNotes={notes}
-      />
+      <AnimateIn delay={0}>
+        <PlanungWeek
+          key={weekStart}
+          weekStart={weekStart}
+          prevWeek={addDaysISO(-7, monday)}
+          nextWeek={addDaysISO(7, monday)}
+          currentWeek={getRelevantMondayOfWeek()}
+          weekLabel={`KW ${kw}`}
+          initialNotes={notes}
+        />
+      </AnimateIn>
     </div>
   )
 }

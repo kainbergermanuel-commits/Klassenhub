@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getRelevantMondayOfWeek, getWeekNumber } from '@/lib/date'
 import DutyWeek from '@/components/dienste/DutyWeek'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 export default async function DienstePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -22,14 +23,16 @@ export default async function DienstePage() {
   const weekLabel = `KW ${getWeekNumber(weekStart)} · ${new Date(weekStart).toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })} – ${weekEnd.toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })}`
 
   return (
-    <DutyWeek
-      duties={duties ?? []}
-      students={students ?? []}
-      role={profile.role}
-      userId={user.id}
-      classId={activeClassId}
-      weekStart={weekStart}
-      weekLabel={weekLabel}
-    />
+    <AnimateIn delay={0}>
+      <DutyWeek
+        duties={duties ?? []}
+        students={students ?? []}
+        role={profile.role}
+        userId={user.id}
+        classId={activeClassId}
+        weekStart={weekStart}
+        weekLabel={weekLabel}
+      />
+    </AnimateIn>
   )
 }

@@ -5,6 +5,7 @@ import { getStundenplanMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from 
 import TimetableGrid from './TimetableGrid'
 import ClassTimetableEditor from './ClassTimetableEditor'
 import PageHeader from '@/components/layout/PageHeader'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 function weekLabel(): string {
   const mondayStr = getStundenplanMondayOfWeek()
@@ -47,9 +48,9 @@ export default async function StundenplanPage() {
           subtitle="Standard-Stundenplan der Klasse erstellen und an alle Kinder senden"
           gradient="from-[#2F86C5] to-[#56AEE6]"
         />
-        <div className="kh-card px-5 py-5">
+        <AnimateIn delay={0} className="kh-card px-5 py-5">
           <ClassTimetableEditor entries={templateEntries ?? []} subjects={subjects} />
-        </div>
+        </AnimateIn>
       </div>
     )
   }
@@ -141,9 +142,9 @@ export default async function StundenplanPage() {
         subtitle={`${weekLabel()}${isReadonly ? ' · Ansicht deines Kindes' : ''}`}
         gradient="from-[#2F86C5] to-[#56AEE6]"
       />
-      <div className="kh-card px-5 py-5">
+      <AnimateIn delay={0} className="kh-card px-5 py-5">
         <TimetableGrid entries={entries ?? []} subjects={subjects} readonly={isReadonly} dueMarkers={dueMarkers} reminderMarkers={reminderMarkers} />
-      </div>
+      </AnimateIn>
     </div>
   )
 }

@@ -7,6 +7,7 @@ import StudentHomeworkPanel from '@/components/klasse/StudentHomeworkPanel'
 import KlasseManageBar from '@/components/klasse/KlasseManageBar'
 import Avatar from '@/components/ui/Avatar'
 import PageHeader from '@/components/layout/PageHeader'
+import AnimateIn from '@/components/ui/AnimateIn'
 import type { Profile, Homework } from '@/lib/types'
 
 export default async function KlassePage() {
@@ -49,7 +50,7 @@ export default async function KlassePage() {
       />
 
       {/* Schüler */}
-      <div className="mb-6">
+      <AnimateIn delay={0} className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px]">
             Schüler:innen ({studentList.length})
@@ -67,10 +68,10 @@ export default async function KlassePage() {
           homework={homeworkList}
           completionsByStudent={completionsByStudent}
         />
-      </div>
+      </AnimateIn>
 
       {/* Eltern */}
-      <div>
+      <AnimateIn delay={60}>
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px]">
             Elternteile ({parentList.length})
@@ -101,7 +102,7 @@ export default async function KlassePage() {
             ))}
           </div>
         )}
-      </div>
+      </AnimateIn>
     </>
   )
 }

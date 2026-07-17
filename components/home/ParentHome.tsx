@@ -8,6 +8,7 @@ import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { flameCount } from '@/lib/streak'
 import { greeting } from '@/lib/date'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 interface ParentHomeProps {
   fullName: string
@@ -148,21 +149,21 @@ export default function ParentHome({
 
           {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-2 gap-4 max-md:hidden">
-            <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '0ms' }}>
+            <AnimateIn delay={0} className="relative hover:z-30 h-full">
               <FeatureCard
                 href="/hausaufgaben" gradient="amber" icon="assignment"
                 title="Hausübungen"
                 meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
                 progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
               />
-            </div>
-            <div className="relative hover:z-30 animate-card-enter h-full" style={{ animationDelay: '60ms' }}>
+            </AnimateIn>
+            <AnimateIn delay={60} className="relative hover:z-30 h-full">
               <TermineCard events={upcomingEvents} />
-            </div>
+            </AnimateIn>
           </div>
 
           {/* Child's homework */}
-          <div className="animate-card-enter rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ animationDelay: '180ms', background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
+          <AnimateIn delay={180} className="rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
             <div className="flex items-center justify-between gap-2 mb-3">
               <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark whitespace-nowrap min-w-0">
                 <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
@@ -205,23 +206,23 @@ export default function ParentHome({
                 ))}
               </div>
             )}
-          </div>
+          </AnimateIn>
         </div>
 
         <div className="relative">
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
-            <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
+            <AnimateIn delay={120}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="parent" />
-            </div>
+            </AnimateIn>
             {/* Anwesenheit unter Terminen/Erinnerungen — nur Desktop
                 (auf Mobile sitzt die Karte oben in der Hauptspalte) */}
-            <div className="animate-card-enter max-lg:hidden" style={{ animationDelay: '160ms' }}>
+            <AnimateIn delay={160} className="max-lg:hidden">
               <AttendanceParentCard
                 childFirstName={childFirst}
                 upcomingEntries={childUpcomingAbsences}
                 today={todayIso}
               />
-            </div>
+            </AnimateIn>
           </div>
         </div>
       </div>

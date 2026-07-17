@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Avatar from '@/components/ui/Avatar'
+import AnimateIn from '@/components/ui/AnimateIn'
 import { gendered } from '@/lib/gender'
 import type { SpecialRole, Gender } from '@/lib/types'
 
@@ -45,7 +46,7 @@ export default function StudentCard({ id, full_name, avatar_color, avatar_seed, 
   }
 
   return (
-    <div className="h-full animate-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
+    <AnimateIn delay={index * 40} className="h-full">
     <div
       onClick={handleClick}
       className={`relative h-full rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)] flex flex-col items-center text-center gap-3 select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-95 ${isMe ? '' : 'cursor-pointer'} ${isMe ? 'ring-2 ring-kh-teal/40' : ''} ${wobble ? 'animate-wobble' : ''}`}
@@ -94,6 +95,6 @@ export default function StudentCard({ id, full_name, avatar_color, avatar_seed, 
         {isMe && <span className="text-[11px] font-bold text-kh-teal mt-0.5 inline-block">Du</span>}
       </div>
     </div>
-    </div>
+    </AnimateIn>
   )
 }

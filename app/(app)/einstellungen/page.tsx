@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import ChangePasswordForm from '@/components/settings/ChangePasswordForm'
 import TeacherSubjectsEditor from '@/components/settings/TeacherSubjectsEditor'
 import PageHeader from '@/components/layout/PageHeader'
+import AnimateIn from '@/components/ui/AnimateIn'
 import type { TeacherSubject } from '@/app/actions/saveTeacherSubjects'
 
 export default async function SettingsPage() {
@@ -35,14 +36,18 @@ export default async function SettingsPage() {
       <PageHeader icon="settings" title="Einstellungen" subtitle={user.email} gradient="from-kh-muted to-[#8A9896]" />
       <div className="flex flex-col gap-4">
         {realProfile?.role === 'teacher' && effectiveProfile?.role === 'teacher' && (
-          <TeacherSubjectsEditor
-            key={activeClassId ?? 'default'}
-            initial={teacherSubjects}
-            activeClassId={activeClassId}
-            allClasses={allClasses}
-          />
+          <AnimateIn delay={0}>
+            <TeacherSubjectsEditor
+              key={activeClassId ?? 'default'}
+              initial={teacherSubjects}
+              activeClassId={activeClassId}
+              allClasses={allClasses}
+            />
+          </AnimateIn>
         )}
-        <ChangePasswordForm />
+        <AnimateIn delay={60}>
+          <ChangePasswordForm />
+        </AnimateIn>
       </div>
     </>
   )

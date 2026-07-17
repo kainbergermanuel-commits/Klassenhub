@@ -5,6 +5,7 @@ import { getAuth } from '@/lib/auth'
 import AdminManageBar from '@/components/admin/AdminManageBar'
 import AdminClassManageBar from '@/components/admin/AdminClassManageBar'
 import PageHeader from '@/components/layout/PageHeader'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 export default async function AdminPage() {
   const { user, profile } = await getAuth()
@@ -47,7 +48,7 @@ export default async function AdminPage() {
       <PageHeader icon="admin_panel_settings" title="Administration" subtitle="Klassen und Lehrpersonen verwalten" gradient="from-kh-dark to-[#2A4A55]" />
 
       {/* Klassen */}
-      <div className="mb-8">
+      <AnimateIn delay={0} className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px]">
             Klassen ({(classes ?? []).length})
@@ -80,10 +81,10 @@ export default async function AdminPage() {
             <div className="text-sm text-kh-muted font-medium">Noch keine Klassen angelegt.</div>
           )}
         </div>
-      </div>
+      </AnimateIn>
 
       {/* Lehrkräfte */}
-      <div>
+      <AnimateIn delay={30}>
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px]">
             Lehrpersonen ({(teachers ?? []).length})
@@ -136,10 +137,10 @@ export default async function AdminPage() {
             <div className="text-sm text-kh-muted font-medium">Noch keine Lehrpersonen angelegt.</div>
           )}
         </div>
-      </div>
+      </AnimateIn>
 
       {/* Fächer-Katalog (für den Stundenplan-Baustein) */}
-      <div className="mt-8">
+      <AnimateIn delay={60} className="mt-8">
         <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px] mb-3">Stundenplan</div>
         <Link
           href="/admin/faecher"
@@ -152,7 +153,7 @@ export default async function AdminPage() {
           </div>
           <span className="msym text-[20px] text-kh-muted">chevron_right</span>
         </Link>
-      </div>
+      </AnimateIn>
     </>
   )
 }
