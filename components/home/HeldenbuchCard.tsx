@@ -147,10 +147,10 @@ export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendin
           der aktuellen Klassenwelt — die beiden können auseinanderlaufen. */}
       <div className="flex items-start gap-2.5 mb-4 rounded-xl bg-[#FAF8F3] p-3">
         {notePortrait ? (
-          <img src={notePortrait} alt={noteGuideName} className="w-10 h-10 rounded-full object-cover object-top ring-2 ring-white shadow-sm flex-shrink-0 bg-[#EFEAE0]" />
+          <img src={notePortrait} alt={noteGuideName} className="w-14 h-14 rounded-full object-cover object-top ring-2 ring-white shadow-sm flex-shrink-0 bg-[#EFEAE0]" />
         ) : (
-          <span className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E0A94B] to-[#B8721E] flex items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm">
-            <span className="msym text-[20px] text-white" aria-hidden="true">{noteGuideIcon}</span>
+          <span className="w-14 h-14 rounded-full bg-gradient-to-br from-[#E0A94B] to-[#B8721E] flex items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm">
+            <span className="msym text-[26px] text-white" aria-hidden="true">{noteGuideIcon}</span>
           </span>
         )}
         <div className="min-w-0 flex-1">

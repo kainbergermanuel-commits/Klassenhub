@@ -284,6 +284,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       <Item
         isOpen={openIndex === 6}
         onToggle={() => setOpenIndex(i => (i === 6 ? null : 6))}
+        openUpward
         state={crystalState}
         gradient={crystalState === 'action' ? 'linear-gradient(135deg, #C084E8, #9C5FD1)' : 'linear-gradient(135deg, #9CA3AF, #6E7E80)'}
         dimmed={crystalState === 'spent'}
@@ -323,6 +324,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       <Item
         isOpen={openIndex === 7}
         onToggle={() => setOpenIndex(i => (i === 7 ? null : 7))}
+        openUpward
         state={nudgeState}
         gradient={nudgeState === 'action' ? 'linear-gradient(135deg, #F0A868, #D97B3D)' : 'linear-gradient(135deg, #9CA3AF, #6E7E80)'}
         dimmed={nudgeState !== 'action'}
@@ -358,6 +360,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
       <Item
         isOpen={openIndex === 8}
         onToggle={() => setOpenIndex(i => (i === 8 ? null : 8))}
+        openUpward
         state={splitterFound ? 'ready' : 'locked'}
         gradient={splitterFound ? 'linear-gradient(135deg, #F5C842, #B8721E)' : 'linear-gradient(135deg, #9CA3AF, #6E7E80)'}
         dimmed={!splitterFound}
@@ -406,7 +409,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
 }
 
 function Item({
-  state, gradient, dimmed, pulse, icon, title, tooltip, chipOverride, isOpen, onToggle,
+  state, gradient, dimmed, pulse, icon, title, tooltip, chipOverride, isOpen, onToggle, openUpward,
 }: {
   state: ItemState
   gradient: string
@@ -421,6 +424,12 @@ function Item({
    *  außerhalb des Rucksacks alles schließt. */
   isOpen: boolean
   onToggle: () => void
+  /** Für die unterste Zeile des 3×3-Rasters: der nach unten öffnende Tooltip
+   *  stößt sonst an das `overflow-hidden` der äußeren App-Shell
+   *  (app/(app)/layout.tsx) und wird dort unsichtbar abgeschnitten — betrifft
+   *  Desktop UND Mobile gleich, da die Klasse nicht responsive ist. Fix: die
+   *  unterste Reihe öffnet stattdessen nach oben. */
+  openUpward?: boolean
 }) {
   const chip = chipOverride ?? STATE_CHIP[state]
 
@@ -445,9 +454,13 @@ function Item({
           {icon}
         </span>
 
-        {/* Tooltip — direkt am Icon verankert, z-50 + zentriert nach unten. */}
+        {/* Tooltip — direkt am Icon verankert, z-50 + horizontal zentriert.
+         *  Öffnet normalerweise nach unten; die unterste Raster-Reihe (siehe
+         *  openUpward-Kommentar oben) öffnet stattdessen nach oben. */}
         <span
-          className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 w-max max-w-[220px] bg-white rounded-xl shadow-[0_8px_20px_rgba(20,40,45,.22)] p-3 text-left transition-opacity ${
+          className={`absolute left-1/2 -translate-x-1/2 z-50 w-max max-w-[220px] bg-white rounded-xl shadow-[0_8px_20px_rgba(20,40,45,.22)] p-3 text-left transition-opacity ${
+            openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          } ${
             isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto'
           }`}
         >

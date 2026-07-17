@@ -19,6 +19,12 @@ interface Props {
  *  in Zahlen, Monat und optionale Belohnung. */
 export default function ClassGoalCard({ goal, done, season }: Props) {
   const theme = getSeasonTheme(season)
+  // Kürzerer Titel für diese kompakte Sidebar-Card: die goalTitle-Werte
+  // folgen bei allen Welten dem Muster "<Ziel> der Klasse" (siehe
+  // seasonTheme.ts THEMES/ARC_STORY_DRAFTS) — Suffix strippen statt pro
+  // Welt einen zweiten Titel zu pflegen; no-op falls eine Welt (z.B. Terra
+  // Nova) dem Muster nicht folgt.
+  const shortGoalTitle = theme.goalTitle.replace(/ der Klasse$/, '')
   const pct = goal ? Math.min(100, Math.round((done / goal.target) * 100)) : 0
   const reached = goal ? done >= goal.target : false
 
@@ -39,7 +45,7 @@ export default function ClassGoalCard({ goal, done, season }: Props) {
       <div className="flex items-start justify-between gap-2 mb-1">
         <h2 className="flex items-start gap-2 font-extrabold text-base text-kh-dark leading-snug min-w-0">
           <span className="msym text-[20px] text-[#B9791A] flex-shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>{theme.icon}</span>
-          <span className="line-clamp-2">{theme.goalTitle}</span>
+          <span className="line-clamp-2">{shortGoalTitle}</span>
         </h2>
         <span className="text-[11.5px] font-semibold text-kh-muted flex-shrink-0 whitespace-nowrap mt-0.5">{monthLabel(`${season}-01`)}</span>
       </div>
@@ -48,19 +54,11 @@ export default function ClassGoalCard({ goal, done, season }: Props) {
         {reached && <span className="ml-1">🎉</span>}
       </p>
 
-      <div className="relative w-full h-2.5 rounded-full bg-[#F1ECE1] overflow-visible mt-2">
-        <div className="absolute inset-0 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full transition-[width] duration-[1200ms] ease-out"
-            style={{ width: `${animatedPct}%`, background: 'linear-gradient(90deg, #E8A020 0%, #F5C842 55%, #FBDD85 100%)' }}
-          />
-        </div>
-        <span
-          className="msym absolute -top-4 -translate-x-1/2 text-[19px] leading-none transition-[left] duration-[1200ms] ease-out text-[#B9791A]"
-          style={{ left: `${animatedPct}%`, fontVariationSettings: "'FILL' 1" }}
-        >
-          {theme.icon}
-        </span>
+      <div className="relative w-full h-2.5 rounded-full bg-[#F1ECE1] overflow-hidden mt-2">
+        <div
+          className="h-full rounded-full transition-[width] duration-[1200ms] ease-out"
+          style={{ width: `${animatedPct}%`, background: 'linear-gradient(90deg, #E8A020 0%, #F5C842 55%, #FBDD85 100%)' }}
+        />
       </div>
 
       <div className="flex items-center justify-between mt-3.5">

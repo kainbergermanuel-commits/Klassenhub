@@ -354,6 +354,105 @@ export default async function StreaksPage() {
       .map(r => ({ riddle: r, solved: solvedRiddleKeys.has(r.key) }))
   }
 
+  // ─── LEHRER-ÜBERSICHT: pro Kind Quests/HÜ/Rätsel diese Woche ────────────────
+  // Bewusst als eigener, unabhängig geladener Block (statt den bestehenden
+  // "nur für eingeloggten Schüler"-Quest-Block umzubauen) — geringeres Risiko,
+  // da der bereits funktionierende Schüler-Pfad unangetastet bleibt. Nutzt
+  // ausschließlich vorhandene Helper (buildQuestContext/computeQuestProgress/
+  // computeStreak), nur je Schüler statt nur für den eingeloggten aufgerufen.
+  let teacherStats: {
+    id: string
+    full_name: string
+    avatar_color: string
+    avatar_seed: string | null
+    avatar_hair_color: string | null
+    avatar_skin_color: string | null
+    questsDone: number
+    questsTotal: number
+    hwConfirmed: number
+    riddlesSolved: number
+  }[] = []
+  if (profile.role === 'teacher' && studentIds.length > 0) {
+    const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
+    const [{ data: weekReminders }, { data: weekEvents }, { data: weekDuty }, { data: weekChoices }] = await Promise.all([
+      supabase.from('reminders').select('id,event_date,target_student_ids').eq('class_id', activeClassId).gte('event_date', weekStart).lte('event_date', weekEnd),
+      supabase.from('events').select('id,start_date,target_student_ids').eq('class_id', activeClassId).gte('start_date', weekStart).lte('start_date', weekEnd),
+      supabase.from('duties').select('id,assignee_ids,duty_name').eq('class_id', activeClassId).eq('week_start', weekStart).order('id'),
+      supabase.from('quest_choices').select('student_id,template_key,choice_key').eq('class_id', activeClassId).eq('week_start', weekStart),
+    ])
+    const weekDutyIds = (weekDuty ?? []).map(d => d.id)
+    const weekReminderIds = (weekReminders ?? []).map(r => r.id)
+    const [{ data: dutyCompletionsRaw }, { data: allReminderViews }, { data: riddleSolvesAll }] = await Promise.all([
+      weekDutyIds.length > 0 ? supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', weekDutyIds) : Promise.resolve({ data: [] }),
+      weekReminderIds.length > 0 ? supabase.from('reminder_views').select('reminder_id,student_id').in('reminder_id', weekReminderIds).in('student_id', studentIds) : Promise.resolve({ data: [] }),
+      supabase.from('quest_riddle_solutions').select('student_id').eq('class_id', activeClassId),
+    ])
+    const { doneByDutyStudent } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
+
+    const viewsByStudent = new Map<string, Set<string>>()
+    for (const v of (allReminderViews ?? []) as { reminder_id: string; student_id: string }[]) {
+      if (!viewsByStudent.has(v.student_id)) viewsByStudent.set(v.student_id, new Set())
+      viewsByStudent.get(v.student_id)!.add(v.reminder_id)
+    }
+    const riddleCountByStudent = new Map<string, number>()
+    for (const r of (riddleSolvesAll ?? []) as { student_id: string }[]) {
+      riddleCountByStudent.set(r.student_id, (riddleCountByStudent.get(r.student_id) ?? 0) + 1)
+    }
+    const choicesByStudent = new Map<string, Map<string, string>>()
+    for (const c of (weekChoices ?? []) as { student_id: string; template_key: string; choice_key: string }[]) {
+      if (!choicesByStudent.has(c.student_id)) choicesByStudent.set(c.student_id, new Map())
+      choicesByStudent.get(c.student_id)!.set(c.template_key, c.choice_key)
+    }
+
+    teacherStats = (students ?? []).map(s => {
+      const doneIds = doneByStudent.get(s.id) ?? new Set<string>()
+      const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
+      const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today, frozenByStudent.get(s.id), extensionsByStudent.get(s.id))
+
+      const myDuty = (weekDuty ?? []).find(d => d.assignee_ids.includes(s.id)) ?? null
+      const dutyDoneCount = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, s.id).length : 0
+
+      const ownCompletions = (allCompletions ?? [])
+        .filter(c => c.student_id === s.id)
+        .map(c => ({ homework_id: c.homework_id, completed_at: (c as { completed_at?: string | null }).completed_at ?? null }))
+
+      const questCtx = buildQuestContext({
+        weekStart,
+        weekEnd,
+        today,
+        studentId: s.id,
+        allHomework: allHwDesc ?? [],
+        ownCompletions,
+        confirmedHomeworkIds: confirmedIds,
+        reminders: weekReminders ?? [],
+        viewedReminderIds: viewsByStudent.get(s.id) ?? new Set<string>(),
+        events: weekEvents ?? [],
+        dutyDoneCount,
+        currentStreakLength: actualStreak,
+      })
+      const feasibility = buildFeasibility(questCtx, !!myDuty)
+      const activeKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility)
+      const choiceByTemplate = choicesByStudent.get(s.id)
+      const results = activeKeys
+        .map(key => findQuestTemplate(key))
+        .filter((t): t is NonNullable<typeof t> => !!t)
+        .map(t => computeQuestProgress(t, questCtx, choiceByTemplate?.get(t.key)))
+
+      return {
+        id: s.id,
+        full_name: s.full_name,
+        avatar_color: s.avatar_color ?? '#0F8A82',
+        avatar_seed: s.avatar_seed ?? null,
+        avatar_hair_color: s.avatar_hair_color ?? null,
+        avatar_skin_color: s.avatar_skin_color ?? null,
+        questsDone: results.filter(r => r.done).length,
+        questsTotal: results.length,
+        hwConfirmed: [...confirmedIds].filter(id => seasonHwIds.has(id)).length,
+        riddlesSolved: riddleCountByStudent.get(s.id) ?? 0,
+      }
+    })
+  }
+
   const withStreak = studentData.filter(s => s.streak > 0)
   const noStreak = studentData.filter(s => s.streak === 0)
 
@@ -370,6 +469,7 @@ export default async function StreaksPage() {
       questWeekStart={weekStart}
       riddles={riddlesForMe}
       guildSection={guildSection}
+      teacherStats={teacherStats}
     />
   )
 }

@@ -7,6 +7,7 @@ import HeldenbuchCard from '@/components/home/HeldenbuchCard'
 import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
 import RiddleList from '@/components/home/RiddleList'
+import TeacherAdventureStats from '@/components/streaks/TeacherAdventureStats'
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import type { Riddle } from '@/lib/riddles'
 import { getSeasonTheme, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
@@ -54,9 +55,22 @@ interface Props {
   /** Interaktive Rätsel (Arc-Item + ggf. Splitter) — dieselbe Liste wie Start. */
   riddles: { riddle: Riddle; solved: boolean }[]
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
+  /** Nur für Lehrpersonen befüllt: pro Kind Quests/HÜ/Rätsel dieser Woche. */
+  teacherStats: {
+    id: string
+    full_name: string
+    avatar_color: string
+    avatar_seed: string | null
+    avatar_hair_color: string | null
+    avatar_skin_color: string | null
+    questsDone: number
+    questsTotal: number
+    hwConfirmed: number
+    riddlesSolved: number
+  }[]
 }
 
-export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection }: Props) {
+export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection, teacherStats }: Props) {
   const currentThemeName = getSeasonTheme(currentSeason).name
   return (
     <>
@@ -66,6 +80,8 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
       <AdventureHero season={currentSeason} role={role} goal={classGoal} done={classGoalDone} />
 
       <div className="flex flex-col gap-6">
+        {role === 'teacher' && <TeacherAdventureStats students={teacherStats} />}
+
         {(quests.length > 0 || guildSection) && (
           <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} guildSection={guildSection} showGuidePortrait={false} />
         )}
