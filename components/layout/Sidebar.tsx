@@ -14,6 +14,8 @@ interface NavItem {
   icon: string
   label: string
   badge?: number
+  /** Beginnt eine neue Gruppe — dezentes Label davor (bzw. Trennlinie, wenn eingeklappt) */
+  section?: string
 }
 
 interface SidebarProps {
@@ -175,6 +177,15 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
             const halfActive = onReise
             return (
               <div key={item.href}>
+                {item.section && (
+                  collapsed ? (
+                    <div className="h-px bg-kh-border/50 mx-2 my-2" />
+                  ) : (
+                    <div className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-kh-muted/60 px-3.5 pt-3.5 pb-1">
+                      {item.section}
+                    </div>
+                  )
+                )}
                 <Link
                   href={item.href}
                   title={collapsed ? item.label : undefined}

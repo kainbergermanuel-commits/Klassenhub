@@ -14,6 +14,8 @@ interface NavItem {
   icon: string
   label: string
   badge?: number
+  /** Beginnt eine neue Gruppe — dezentes Label davor (siehe Desktop-Sidebar) */
+  section?: string
 }
 
 interface Props {
@@ -165,6 +167,11 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
             const halfActive = onReise
             return (
               <div key={item.href}>
+                {item.section && (
+                  <div className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-kh-muted/60 px-3.5 pt-3 pb-1">
+                    {item.section}
+                  </div>
+                )}
                 <Link
                   href={item.href}
                   onClick={() => setOpen(false)}

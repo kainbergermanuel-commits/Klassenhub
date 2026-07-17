@@ -14,21 +14,34 @@ import type { Profile, Class } from '@/lib/types'
 function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, messageUnread: number, attendancePending: number) {
   const isTeacher = profile.role === 'teacher'
 
-  const all = [
+  // Lehrer-Nav: gruppiert (die Liste wurde zu lang für eine flache Aufzählung).
+  // `section` markiert den Beginn einer Gruppe — Sidebar/Drawer rendern davor
+  // ein dezentes Label (bzw. eine Trennlinie, wenn eingeklappt).
+  const all = isTeacher ? [
+    { href: '/', icon: 'home', label: 'Start' },
+    { href: '/streaks', icon: 'explore', label: 'Abenteuer' },
+    { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined, section: 'Unterricht' },
+    { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit', badge: attendancePending || undefined },
+    { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
+    { href: '/planung', icon: 'edit_calendar', label: 'Planung' },
+    { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined, section: 'Kommunikation' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
+    { href: '/termine', icon: 'calendar_month', label: 'Termine' },
+    { href: '/klasse', icon: 'groups', label: 'Klasse', section: 'Verwaltung' },
+    ...(profile.is_admin ? [
+      { href: '/admin', icon: 'admin_panel_settings', label: 'Admin' },
+    ] : []),
+  ] : [
     { href: '/', icon: 'home', label: 'Start' },
     { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
     { href: '/termine', icon: 'calendar_month', label: 'Termine' },
-    { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit', badge: attendancePending || undefined },
+    { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit' },
     ...(profile.role !== 'student' ? [
       { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined },
     ] : []),
     { href: '/streaks', icon: 'explore', label: 'Abenteuer' },
-    ...(isTeacher ? [
-      { href: '/planung', icon: 'edit_calendar', label: 'Planung' },
-      { href: '/klasse', icon: 'groups', label: 'Klasse' },
-    ] : []),
     ...(profile.is_admin ? [
       { href: '/admin', icon: 'admin_panel_settings', label: 'Admin' },
     ] : []),
