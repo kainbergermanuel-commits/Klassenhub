@@ -152,6 +152,7 @@ export default function TeacherHome({
 
   const hwSlots = studentCount * homeworkList.length
   const hwProgress = hwSlots > 0 ? (hwSubmittedCount / hwSlots) * 100 : 0
+  const hasAttendanceContent = attendancePendingReports.length > 0 || absentToday.length > 0
 
   return (
     <>
@@ -181,12 +182,17 @@ export default function TeacherHome({
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6">
-          {/* Anwesenheit: nur sichtbar, wenn es etwas zu tun/sehen gibt */}
-          <AttendanceTeacherCard
-            pendingReports={attendancePendingReports}
-            absentToday={absentToday}
-            students={students}
-          />
+          {/* Anwesenheit — nur Mobile hier oben; auf Desktop wandert die Karte
+              in die rechte Spalte unter das Agenda-Panel */}
+          {hasAttendanceContent && (
+            <div className="lg:hidden">
+              <AttendanceTeacherCard
+                pendingReports={attendancePendingReports}
+                absentToday={absentToday}
+                students={students}
+              />
+            </div>
+          )}
 
           {/* Feature cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
           <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
@@ -297,6 +303,17 @@ export default function TeacherHome({
             <div className="animate-card-enter" style={{ animationDelay: '120ms' }}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="teacher" classId={classId} userId={userId} />
             </div>
+            {/* Anwesenheit direkt unter Terminen/Erinnerungen — nur Desktop
+                (auf Mobile sitzt die Karte oben in der Hauptspalte) */}
+            {hasAttendanceContent && (
+              <div className="animate-card-enter max-lg:hidden" style={{ animationDelay: '150ms' }}>
+                <AttendanceTeacherCard
+                  pendingReports={attendancePendingReports}
+                  absentToday={absentToday}
+                  students={students}
+                />
+              </div>
+            )}
             <div className="animate-card-enter" style={{ animationDelay: '180ms' }}>
               <ClassGoalCard goal={classGoal} done={classGoalDone} season={season} />
             </div>
