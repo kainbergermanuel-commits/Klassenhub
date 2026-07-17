@@ -12,6 +12,7 @@ import { collectAchievements, countAchievements, type AchievementCounts } from '
 import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
 import { getSeasonTheme, isArcUnlocked, splitterFound } from '@/lib/seasonTheme'
 import { activeRiddles, type Riddle } from '@/lib/riddles'
+import { matchChild } from '@/lib/auth'
 import StreakOverview from '@/components/streaks/StreakOverview'
 
 export default async function StreaksPage() {
@@ -354,13 +355,15 @@ export default async function StreaksPage() {
       .map(r => ({ riddle: r, solved: solvedRiddleKeys.has(r.key) }))
   }
 
-  // ─── LEHRER-ÜBERSICHT: pro Kind Quests/HÜ/Rätsel diese Woche ────────────────
-  // Bewusst als eigener, unabhängig geladener Block (statt den bestehenden
-  // "nur für eingeloggten Schüler"-Quest-Block umzubauen) — geringeres Risiko,
-  // da der bereits funktionierende Schüler-Pfad unangetastet bleibt. Nutzt
-  // ausschließlich vorhandene Helper (buildQuestContext/computeQuestProgress/
-  // computeStreak), nur je Schüler statt nur für den eingeloggten aufgerufen.
-  let teacherStats: {
+  // ─── ABENTEUER-STATISTIK: pro Kind Quests/HÜ/Rätsel diese Woche ─────────────
+  // Für Lehrpersonen die ganze Klasse, für Eltern gefiltert auf das eigene
+  // Kind (siehe unten). Bewusst als eigener, unabhängig geladener Block
+  // (statt den bestehenden "nur für eingeloggten Schüler"-Quest-Block
+  // umzubauen) — geringeres Risiko, da der bereits funktionierende Schüler-
+  // Pfad unangetastet bleibt. Nutzt ausschließlich vorhandene Helper
+  // (buildQuestContext/computeQuestProgress/computeStreak), nur je Schüler
+  // statt nur für den eingeloggten aufgerufen.
+  type StudentAdventureStat = {
     id: string
     full_name: string
     avatar_color: string
@@ -371,8 +374,9 @@ export default async function StreaksPage() {
     questsTotal: number
     hwConfirmed: number
     riddlesSolved: number
-  }[] = []
-  if (profile.role === 'teacher' && studentIds.length > 0) {
+  }
+  let allAdventureStats: StudentAdventureStat[] = []
+  if ((profile.role === 'teacher' || profile.role === 'parent') && studentIds.length > 0) {
     const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
     const [{ data: weekReminders }, { data: weekEvents }, { data: weekDuty }, { data: weekChoices }] = await Promise.all([
       supabase.from('reminders').select('id,event_date,target_student_ids').eq('class_id', activeClassId).gte('event_date', weekStart).lte('event_date', weekEnd),
@@ -404,7 +408,7 @@ export default async function StreaksPage() {
       choicesByStudent.get(c.student_id)!.set(c.template_key, c.choice_key)
     }
 
-    teacherStats = (students ?? []).map(s => {
+    allAdventureStats = (students ?? []).map(s => {
       const doneIds = doneByStudent.get(s.id) ?? new Set<string>()
       const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
       const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today, frozenByStudent.get(s.id), extensionsByStudent.get(s.id))
@@ -453,6 +457,17 @@ export default async function StreaksPage() {
     })
   }
 
+  // Lehrer sehen die ganze Klasse, Eltern NUR das eigene Kind — die Berechnung
+  // oben läuft für alle Kinder (einfacher als ein Sonderpfad nur fürs eine
+  // Kind), aber an die UI geht für Eltern ausschließlich die gefilterte Zeile.
+  let adventureStats: StudentAdventureStat[] = []
+  if (profile.role === 'teacher') {
+    adventureStats = allAdventureStats
+  } else if (profile.role === 'parent') {
+    const child = matchChild(profile, students ?? []) ?? students?.[0] // Vorschau-Fallback wie in page.tsx
+    adventureStats = child ? allAdventureStats.filter(a => a.id === child.id) : []
+  }
+
   const withStreak = studentData.filter(s => s.streak > 0)
   const noStreak = studentData.filter(s => s.streak === 0)
 
@@ -469,7 +484,7 @@ export default async function StreaksPage() {
       questWeekStart={weekStart}
       riddles={riddlesForMe}
       guildSection={guildSection}
-      teacherStats={teacherStats}
+      adventureStats={adventureStats}
     />
   )
 }

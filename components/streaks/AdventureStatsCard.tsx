@@ -13,19 +13,23 @@ interface StudentStat {
   riddlesSolved: number
 }
 
-/** Lehrer-Übersicht auf /streaks: pro Kind ein Zeilen-Snapshot dieser Woche
+/** Abenteuer-Statistik auf /streaks: pro Kind ein Zeilen-Snapshot dieser Woche
  *  (Quests, bestätigte HÜ diese Season, gelöste Rätsel) — schlichte Info statt
- *  Gamifizierung der Lehrkraft-Ansicht (Prinzip 5: nur Schüler:innen werden
- *  bespielt). Kein Ranking/Sortierung nach Leistung — alphabetisch wie von
- *  der Query geliefert. */
-export default function TeacherAdventureStats({ students }: { students: StudentStat[] }) {
+ *  Gamifizierung der Lehrkraft-/Eltern-Ansicht (Prinzip 5: nur Schüler:innen
+ *  werden bespielt). Kein Ranking/Sortierung nach Leistung.
+ *
+ *  Wiederverwendet für beide Rollen: Lehrpersonen sehen die ganze Klasse
+ *  (mehrere Zeilen), Eltern nur eine einzige Zeile — ihr eigenes Kind (die
+ *  Filterung passiert bereits server-seitig in streaks/page.tsx, hier kommt
+ *  für Eltern nie mehr als ein Eintrag an). */
+export default function AdventureStatsCard({ students, title = 'Diese Woche im Überblick' }: { students: StudentStat[]; title?: string }) {
   if (students.length === 0) return null
 
   return (
     <div className="kh-card p-5">
       <div className="flex items-center gap-2 mb-3">
         <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>bar_chart</span>
-        <h2 className="font-extrabold text-base text-kh-dark">Diese Woche im Überblick</h2>
+        <h2 className="font-extrabold text-base text-kh-dark">{title}</h2>
       </div>
       <div className="flex flex-col gap-1.5">
         {students.map(s => (

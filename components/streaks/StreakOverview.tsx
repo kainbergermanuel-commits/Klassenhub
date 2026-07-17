@@ -7,7 +7,7 @@ import HeldenbuchCard from '@/components/home/HeldenbuchCard'
 import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
 import RiddleList from '@/components/home/RiddleList'
-import TeacherAdventureStats from '@/components/streaks/TeacherAdventureStats'
+import AdventureStatsCard from '@/components/streaks/AdventureStatsCard'
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import type { Riddle } from '@/lib/riddles'
 import { getSeasonTheme, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
@@ -55,8 +55,10 @@ interface Props {
   /** Interaktive Rätsel (Arc-Item + ggf. Splitter) — dieselbe Liste wie Start. */
   riddles: { riddle: Riddle; solved: boolean }[]
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
-  /** Nur für Lehrpersonen befüllt: pro Kind Quests/HÜ/Rätsel dieser Woche. */
-  teacherStats: {
+  /** Quests/HÜ/Rätsel dieser Woche — für Lehrpersonen die ganze Klasse
+   *  (mehrere Zeilen), für Eltern bereits server-seitig auf das eigene Kind
+   *  gefiltert (nie mehr als ein Eintrag). Für Schüler:innen leer. */
+  adventureStats: {
     id: string
     full_name: string
     avatar_color: string
@@ -70,7 +72,7 @@ interface Props {
   }[]
 }
 
-export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection, teacherStats }: Props) {
+export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection, adventureStats }: Props) {
   const currentThemeName = getSeasonTheme(currentSeason).name
   return (
     <>
@@ -80,7 +82,9 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
       <AdventureHero season={currentSeason} role={role} goal={classGoal} done={classGoalDone} />
 
       <div className="flex flex-col gap-6">
-        {role === 'teacher' && <TeacherAdventureStats students={teacherStats} />}
+        {(role === 'teacher' || role === 'parent') && (
+          <AdventureStatsCard students={adventureStats} title={role === 'parent' ? 'Dein Kind diese Woche' : undefined} />
+        )}
 
         {(quests.length > 0 || guildSection) && (
           <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={currentSeason} guildSection={guildSection} showGuidePortrait={false} />
