@@ -5,7 +5,7 @@ import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
-import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
+import { defaultWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
@@ -209,7 +209,6 @@ export default async function HomePage() {
       { data: myViews },
       { data: dutyCompletionsRaw },
       { data: allCompletionsStudent },
-      { data: questOverrides },
       { data: myChoices },
       { data: myMilestones },
       { data: recentNudges },
@@ -229,7 +228,6 @@ export default async function HomePage() {
       allHwIds.length > 0
         ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
         : Promise.resolve({ data: [] }),
-      supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
       supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', user.id).eq('week_start', weekStart),
       supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', user.id).order('confirmed_at', { ascending: false }),
       // Botenfeder (Balance-Fahrplan Phase 3) — hier schon mitgeladen statt erst
@@ -317,7 +315,7 @@ export default async function HomePage() {
       currentStreakLength: streak,
     })
     const feasibility = buildFeasibility(questCtx, !!myDuty)
-    const activeQuestKeys = resolveWeeklyTemplateKeys(activeClassId, weekStart, (questOverrides ?? []).map(q => q.template_key), 3, feasibility)
+    const activeQuestKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility)
     const quests: QuestResult[] = activeQuestKeys
       .map(key => findQuestTemplate(key))
       .filter((t): t is NonNullable<typeof t> => !!t)

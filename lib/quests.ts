@@ -203,9 +203,3 @@ export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, co
   }
   return picked
 }
-
-/** Aktive Vorlagen-Schlüssel für Klasse+Woche: Lehrer-Override (aus der
- *  `quests`-Tabelle) hat Vorrang vor der deterministischen Standardauswahl. */
-export function resolveWeeklyTemplateKeys(classId: string, weekStart: string, overrideKeys: string[], count = 3, feasibility?: QuestFeasibility): string[] {
-  return overrideKeys.length > 0 ? overrideKeys : defaultWeeklyTemplateKeys(classId, weekStart, count, feasibility)
-}

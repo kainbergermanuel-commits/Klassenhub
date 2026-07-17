@@ -3,16 +3,15 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp } from '@/lib/streak'
-import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateKeys, type QuestResult } from '@/lib/quests'
+import { computeQuestProgress, defaultWeeklyTemplateKeys, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
-import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
+import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult, type GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
 import { getSeasonTheme, isArcUnlocked } from '@/lib/seasonTheme'
 import StreakOverview from '@/components/streaks/StreakOverview'
-import type { RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 
 export default async function StreaksPage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -153,13 +152,11 @@ export default async function StreaksPage() {
       { data: weekReminders },
       { data: weekEvents },
       { data: weekDuty },
-      { data: questOverrides },
       { data: myChoices },
     ] = await Promise.all([
       supabase.from('reminders').select('id,event_date,target_student_ids').eq('class_id', activeClassId).gte('event_date', weekStart).lte('event_date', weekEnd),
       supabase.from('events').select('id,start_date,target_student_ids').eq('class_id', activeClassId).gte('start_date', weekStart).lte('start_date', weekEnd),
       supabase.from('duties').select('id,assignee_ids,duty_name').eq('class_id', activeClassId).eq('week_start', weekStart),
-      supabase.from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart),
       supabase.from('quest_choices').select('template_key,choice_key').eq('student_id', profile.id).eq('week_start', weekStart),
     ])
 
@@ -202,7 +199,7 @@ export default async function StreaksPage() {
       currentStreakLength: myActualStreak,
     })
     const feasibility = buildFeasibility(questCtx, myDuties.length > 0)
-    const activeQuestKeys = resolveWeeklyTemplateKeys(activeClassId, weekStart, (questOverrides ?? []).map(q => q.template_key), 3, feasibility)
+    const activeQuestKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility)
 
     questsForMe = activeQuestKeys
       .map(key => findQuestTemplate(key))
@@ -338,25 +335,6 @@ export default async function StreaksPage() {
     }
   }
 
-  // ─── SPIELLEITER-REGIE (nur Lehrer): Wochen-Quests sehen & tauschen ──────────
-  let teacherRegie: { activeQuests: RegieQuest[]; allTemplates: { key: string; title: string }[]; isOverride: boolean } | null = null
-  if (profile.role === 'teacher') {
-    const { data: questOverridesT } = await supabase
-      .from('quests').select('template_key').eq('class_id', activeClassId).eq('week_start', weekStart)
-    const overrideKeysT = (questOverridesT ?? []).map(q => q.template_key)
-    const isOverride = overrideKeysT.length > 0
-    const activeKeysT = isOverride ? overrideKeysT : defaultWeeklyTemplateKeys(activeClassId, weekStart)
-
-    teacherRegie = {
-      activeQuests: activeKeysT
-        .map(key => findQuestTemplate(key))
-        .filter((t): t is NonNullable<typeof t> => !!t)
-        .map(t => ({ key: t.key, title: t.title, narrative: t.narrative, focusTag: t.focusTag })),
-      allTemplates: QUEST_VAULT.map(t => ({ key: t.key, title: t.title })),
-      isOverride,
-    }
-  }
-
   const withStreak = studentData.filter(s => s.streak > 0)
   const noStreak = studentData.filter(s => s.streak === 0)
 
@@ -371,7 +349,6 @@ export default async function StreaksPage() {
       myHeldenbuch={myHeldenbuch}
       quests={questsForMe}
       questWeekStart={weekStart}
-      teacherRegie={teacherRegie}
       guildSection={guildSection}
     />
   )

@@ -6,7 +6,6 @@ import AdventureHero from '@/components/streaks/AdventureHero'
 import HeldenbuchCard from '@/components/home/HeldenbuchCard'
 import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
-import TeacherQuestRegie, { type RegieQuest } from '@/components/streaks/TeacherQuestRegie'
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
@@ -49,11 +48,10 @@ interface Props {
   } | null
   quests: QuestResult[]
   questWeekStart: string
-  teacherRegie: { activeQuests: RegieQuest[]; allTemplates: { key: string; title: string }[]; isOverride: boolean } | null
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
 }
 
-export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, teacherRegie, guildSection }: Props) {
+export default function StreakOverview({ role, withStreak, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, guildSection }: Props) {
   return (
     <>
       {/* Welt-Einstieg — Titel, Guide UND Klassenreise in einer Card (vorher
@@ -101,15 +99,6 @@ export default function StreakOverview({ role, withStreak, noStreak, classGoal, 
               }}
             />
           </div>
-        )}
-
-        {teacherRegie && (
-          <TeacherQuestRegie
-            activeQuests={teacherRegie.activeQuests}
-            allTemplates={teacherRegie.allTemplates}
-            weekStart={questWeekStart}
-            isOverride={teacherRegie.isOverride}
-          />
         )}
 
         {/* Students without streak (teacher only) */}
