@@ -45,13 +45,21 @@ export async function useStreakFreeze(): Promise<{ newStreak: number }> {
   const breakingHwId = findBreakingHomework(doneIds, hw, today, frozenIds, extensionMap)
   if (!breakingHwId) throw new Error('Kein gerissener Streak zum Retten')
 
+  // Wirkungs-Guard: ein Schild überbrückt genau EINE Lücke. Fehlt direkt davor
+  // (älter) die nächste HÜ ebenfalls, rettet er die Streak nicht — dann wird
+  // das 1×/Season-Item nicht verbraucht, sondern bleibt erhalten.
+  const currentStreak = computeStreak(doneIds, hw, today, frozenIds, extensionMap)
+  const newStreak = computeStreak(doneIds, hw, today, new Set([...frozenIds, breakingHwId]), extensionMap)
+  if (newStreak <= currentStreak) {
+    throw new Error('Der Schutzschild reicht hier nicht — direkt davor fehlt eine weitere Hausübung.')
+  }
+
   const { error } = await supabase.from('streak_freezes').insert({
     student_id: profile.id,
     homework_id: breakingHwId,
   } as never)
   if (error) throw new Error(error.message)
 
-  const newStreak = computeStreak(doneIds, hw, today, new Set([...frozenIds, breakingHwId]), extensionMap)
   revalidatePath('/streaks')
   revalidatePath('/')
   return { newStreak }

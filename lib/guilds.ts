@@ -178,6 +178,11 @@ export interface GuildQuestContext {
   doneByStudent: Map<string, Set<string>>
   confirmedByStudent: Map<string, Set<string>>
   dutyDoneByStudent: Set<string>
+  /** Wer diese Woche überhaupt einen Dienst hat (siehe buildDutyDone). Für die
+   *  Dienst-Quest zählt nur dieser Kreis, nicht die ganze Gilde — sonst wäre
+   *  „die meisten Mitglieder mit Dienst" für Gilden mit wenigen Dienst-Kindern
+   *  rechnerisch unerfüllbar. */
+  dutyAssignedStudents: Set<string>
 }
 
 export interface GuildQuestResult {
@@ -233,11 +238,20 @@ export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: G
         return false
     }
   }
-  const membersMet = guild.memberIds.filter(meetsSignal).length
+  // Dienst-Quest: nur Mitglieder mit tatsächlichem Dienst diese Woche zählen
+  // als Bezugsgröße (das Narrativ sagt „die meisten Mitglieder mit Dienst").
+  // Sonst müssten 75 % der GESAMTEN Gilde einen Dienst haben UND erfüllen —
+  // bei 2 Dienst-Kindern pro Dienst praktisch nie erreichbar. Andere Signale
+  // (HÜ, Eltern-Bestätigung) kann jedes Mitglied erbringen → ganze Gilde.
+  const eligible = template.signal.type === 'duty_done'
+    ? guild.memberIds.filter(id => ctx.dutyAssignedStudents.has(id))
+    : guild.memberIds
+  const poolSize = eligible.length
+  const membersMet = eligible.filter(meetsSignal).length
   // "X von Y" statt "alle" (Prinzip 1: kein einzelnes Kind blockiert/beschämt
   // die Gilde) — abgerundet, nie aufgerundet, sonst bliebe z.B. .75 bei einer
   // 3er-Gilde effektiv "alle 3" und die Erleichterung ginge verloren.
   const minShare = template.minShare ?? 0.75
-  const required = size > 0 ? Math.max(1, Math.floor(size * minShare)) : 0
-  return { template, membersMet, total: size, done: size > 0 && membersMet >= required }
+  const required = poolSize > 0 ? Math.max(1, Math.floor(poolSize * minShare)) : 0
+  return { template, membersMet, total: poolSize, done: poolSize > 0 && membersMet >= required }
 }

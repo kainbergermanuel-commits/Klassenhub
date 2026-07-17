@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO } from '@/lib/date'
-import { computeStreak, currentMilestone, findBreakingHomework } from '@/lib/streak'
+import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp } from '@/lib/streak'
 import { resolveWeeklyTemplateKeys, computeQuestProgress, defaultWeeklyTemplateKeys, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate, QUEST_VAULT } from '@/lib/questVault'
@@ -127,9 +127,11 @@ export default async function StreaksPage() {
     myPendingMilestone = myActualStreak >= 5 && actualMs > currentMilestone(myDisplayStreak) ? actualMs : null
     const broken = findBreakingHomework(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions) !== null
     const jokerUsedThisSeason = freezeUsedThisSeasonByStudent.has(profile.id)
-    const jokerAvailable = broken && !jokerUsedThisSeason
+    // Verfügbar nur, wenn das Item die Streak hier auch wirklich rettet
+    // (deckt sich mit dem Wirkungs-Guard in useStreakFreeze/useTimeCrystal).
+    const jokerAvailable = freezeWouldHelp(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions) && !jokerUsedThisSeason
     const crystalUsedThisSeason = crystalUsedThisSeasonByStudent.has(profile.id)
-    const crystalAvailable = broken && !crystalUsedThisSeason
+    const crystalAvailable = crystalWouldHelp(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions) && !crystalUsedThisSeason
     myStreak = { streak: myDisplayStreak, broken, jokerAvailable, jokerUsedThisSeason, crystalAvailable, crystalUsedThisSeason }
   }
 
@@ -173,7 +175,7 @@ export default async function StreaksPage() {
     const { data: dutyCompletionsRaw } = weekDutyIds.length > 0
       ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', weekDutyIds)
       : { data: [] }
-    const { doneByDutyStudent, keptUpStudents } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
+    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
     const myDuties = (weekDuty ?? []).filter(d => d.assignee_ids.includes(profile.id))
     const dutyDoneCount = myDuties.length > 0
       ? Math.max(...myDuties.map(d => dutyDoneWeekdays(doneByDutyStudent, d.id, profile.id).length))
@@ -227,6 +229,7 @@ export default async function StreaksPage() {
           doneByStudent,
           confirmedByStudent: confirmedDoneByStudent,
           dutyDoneByStudent: keptUpStudents,
+          dutyAssignedStudents,
         })
         const members: GuildMember[] = (students ?? [])
           .filter(s => myGuild.memberIds.includes(s.id))

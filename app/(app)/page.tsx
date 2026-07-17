@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO } from '@/lib/date'
-import { computeStreak, currentMilestone, findBreakingHomework, groupFrozenByStudent, VETERAN_MILESTONE } from '@/lib/streak'
+import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
 import { resolveWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
@@ -253,7 +253,7 @@ export default async function HomePage() {
     const myDuty = duties.find(d => d.assignee_ids.includes(user.id)) ?? null
 
     // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
-    const { doneByDutyStudent, keptUpStudents } = buildDutyDone(duties, dutyCompletionsRaw ?? [])
+    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents } = buildDutyDone(duties, dutyCompletionsRaw ?? [])
     const myDutyDoneWeekdays = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, user.id) : []
     const dutyDoneCount = myDutyDoneWeekdays.length
 
@@ -288,11 +288,16 @@ export default async function HomePage() {
     const actualMs = currentMilestone(streak)
     const pendingMilestone = streak >= 5 && actualMs > currentMilestone(confirmedStreak) ? actualMs : null
 
-    const broken = findBreakingHomework(confirmedByStudentS.get(user.id) ?? new Set(), allHwForStreak, today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id)) !== null
+    const myConfirmedForStreak = confirmedByStudentS.get(user.id) ?? new Set<string>()
+    const myFrozenForStreak = frozenByStudentS.get(user.id)
+    const myExtForStreak = extensionsByStudentS.get(user.id)
+    const broken = findBreakingHomework(myConfirmedForStreak, allHwForStreak, today, myFrozenForStreak, myExtForStreak) !== null
     const jokerUsedThisSeason = freezeUsedThisSeasonS.has(user.id)
-    const jokerAvailable = broken && !jokerUsedThisSeason
+    // Verfügbar nur, wenn das Item die Streak hier auch wirklich rettet
+    // (deckt sich mit dem Wirkungs-Guard in useStreakFreeze/useTimeCrystal).
+    const jokerAvailable = freezeWouldHelp(myConfirmedForStreak, allHwForStreak, today, myFrozenForStreak, myExtForStreak) && !jokerUsedThisSeason
     const crystalUsedThisSeason = crystalUsedThisSeasonS.has(user.id)
-    const crystalAvailable = broken && !crystalUsedThisSeason
+    const crystalAvailable = crystalWouldHelp(myConfirmedForStreak, allHwForStreak, today, myFrozenForStreak, myExtForStreak) && !crystalUsedThisSeason
 
     // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────
     const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
@@ -356,6 +361,7 @@ export default async function HomePage() {
           doneByStudent: doneByStudentAll,
           confirmedByStudent: confirmedByStudentAll,
           dutyDoneByStudent: keptUpStudents,
+          dutyAssignedStudents,
         })
         const members: GuildMember[] = (allStudents ?? [])
           .filter(s => myGuild.memberIds.includes(s.id))

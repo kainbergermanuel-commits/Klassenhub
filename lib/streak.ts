@@ -98,3 +98,51 @@ export const MILESTONES = [5, 10, 15, 20] as const
  *  "HÜ-Veteran": eigene Erledigungen werden nicht mehr von den Eltern
  *  bestätigt, sondern automatisch — als verdientes Privileg. */
 export const VETERAN_MILESTONE = 15
+
+/** Anzahl Tage, um die der Zeitkristall die Frist einer HÜ verlängert.
+ *  Single Source of Truth für Aktion (useTimeCrystal) und die Verfügbarkeits-
+ *  Berechnung auf den Seiten. */
+export const CRYSTAL_EXTENSION_DAYS = 3
+
+/**
+ * Ob ein Schutzschild (Joker) auf die aktuell reißende HÜ die Streak wirklich
+ * verlängert. Ein Schild überbrückt genau EINE Lücke — fehlt direkt davor
+ * (älter) die nächste HÜ ebenfalls, bringt er nichts. Verhindert, dass das
+ * 1×-pro-Season-Item wirkungslos verbraucht wird.
+ */
+export function freezeWouldHelp(
+  doneIds: Set<string>,
+  allHwDesc: { id: string; due_date: string }[],
+  today: string,
+  frozenIds?: Set<string>,
+  extensions?: Map<string, number>,
+): boolean {
+  const breaking = findBreakingHomework(doneIds, allHwDesc, today, frozenIds, extensions)
+  if (!breaking) return false
+  const before = computeStreak(doneIds, allHwDesc, today, frozenIds, extensions)
+  const after = computeStreak(doneIds, allHwDesc, today, new Set([...(frozenIds ?? []), breaking]), extensions)
+  return after > before
+}
+
+/**
+ * Ob ein Zeitkristall (Fristverlängerung um CRYSTAL_EXTENSION_DAYS) auf die
+ * aktuell reißende HÜ die Streak wirklich rettet. Nur dann darf das
+ * 1×-pro-Season-Item verbraucht werden — sonst verpufft es, wenn die HÜ schon
+ * zu weit überfällig ist (Verlängerung landet weiterhin in der Vergangenheit)
+ * oder eine jüngere erledigte HÜ den Bruchpunkt bereits fixiert hat.
+ */
+export function crystalWouldHelp(
+  doneIds: Set<string>,
+  allHwDesc: { id: string; due_date: string }[],
+  today: string,
+  frozenIds?: Set<string>,
+  extensions?: Map<string, number>,
+): boolean {
+  const breaking = findBreakingHomework(doneIds, allHwDesc, today, frozenIds, extensions)
+  if (!breaking) return false
+  const before = computeStreak(doneIds, allHwDesc, today, frozenIds, extensions)
+  const trial = new Map(extensions ?? [])
+  trial.set(breaking, CRYSTAL_EXTENSION_DAYS)
+  const after = computeStreak(doneIds, allHwDesc, today, frozenIds, trial)
+  return after > before
+}

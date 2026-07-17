@@ -4,10 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, schoolYearStartISO } from '@/lib/date'
-import { computeStreak, findBreakingHomework } from '@/lib/streak'
-
-/** Um wie viele Tage der Zeitkristall die Frist verlängert. */
-const EXTENSION_DAYS = 3
+import { computeStreak, findBreakingHomework, CRYSTAL_EXTENSION_DAYS } from '@/lib/streak'
 
 /** Setzt den Zeitkristall ein (1× pro Season) — verlängert die Frist der HÜ,
  *  an der die Streak des eingeloggten Schülers gerade reißt, um
@@ -43,16 +40,24 @@ export async function useTimeCrystal(): Promise<{ newStreak: number }> {
   const breakingHwId = findBreakingHomework(doneIds, hw, today, frozenIds, extensionMap)
   if (!breakingHwId) throw new Error('Keine reißende Streak zum Verlängern')
 
+  // Wirkungs-Guard: nur einsetzen, wenn die Verlängerung die Streak tatsächlich
+  // rettet. Sonst würde das 1×/Season-Item verpuffen (HÜ schon zu weit
+  // überfällig, oder eine jüngere erledigte HÜ hat den Bruchpunkt fixiert).
+  const currentStreak = computeStreak(doneIds, hw, today, frozenIds, extensionMap)
+  const newExtensionMap = new Map(extensionMap)
+  newExtensionMap.set(breakingHwId, CRYSTAL_EXTENSION_DAYS)
+  const newStreak = computeStreak(doneIds, hw, today, frozenIds, newExtensionMap)
+  if (newStreak <= currentStreak) {
+    throw new Error('Der Zeitkristall reicht hier nicht — die Frist liegt schon zu weit zurück.')
+  }
+
   const { error } = await supabase.from('homework_extensions').insert({
     student_id: profile.id,
     homework_id: breakingHwId,
-    extra_days: EXTENSION_DAYS,
+    extra_days: CRYSTAL_EXTENSION_DAYS,
   } as never)
   if (error) throw new Error(error.message)
 
-  const newExtensionMap = new Map(extensionMap)
-  newExtensionMap.set(breakingHwId, EXTENSION_DAYS)
-  const newStreak = computeStreak(doneIds, hw, today, frozenIds, newExtensionMap)
   revalidatePath('/streaks')
   revalidatePath('/')
   return { newStreak }

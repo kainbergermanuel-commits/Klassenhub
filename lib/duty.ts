@@ -35,7 +35,7 @@ export function buildDutyDone(
   duties: { id: string; assignee_ids: string[] }[],
   completions: { duty_id: string; student_id: string; weekday: number }[],
   from: Date = new Date(),
-): { doneByDutyStudent: Map<string, Set<number>>; keptUpStudents: Set<string> } {
+): { doneByDutyStudent: Map<string, Set<number>>; keptUpStudents: Set<string>; assignedStudents: Set<string> } {
   const doneByDutyStudent = new Map<string, Set<number>>()
   for (const c of completions) {
     const k = dutyStudentKey(c.duty_id, c.student_id)
@@ -53,7 +53,11 @@ export function buildDutyDone(
       keptUpStudents.add(sid)
     }
   }
-  return { doneByDutyStudent, keptUpStudents }
+  // Wer diese Woche überhaupt einen Dienst hat — Grundlage dafür, die
+  // Gilden-Dienst-Quest nur gegen die dienst-tragenden Mitglieder zu messen
+  // (nicht die ganze Gilde), siehe computeGuildQuestProgress.
+  const assignedStudents = new Set(assignments.keys())
+  return { doneByDutyStudent, keptUpStudents, assignedStudents }
 }
 
 /** Bestätigte Wochentage eines Kindes für einen konkreten Dienst (sortiert). */
