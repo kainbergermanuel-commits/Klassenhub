@@ -14,6 +14,7 @@ import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
 import AttendanceTeacherCard, { type PendingAttendanceReport, type AbsentTodayEntry } from './AttendanceTeacherCard'
 import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber, greeting } from '@/lib/date'
 import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
+import type { SubjectOption } from '@/lib/subjectsCatalog'
 import AnimateIn from '@/components/ui/AnimateIn'
 
 type StudentStatus = { id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }
@@ -138,12 +139,14 @@ interface TeacherHomeProps {
   /** Kollektiver Rückblick auf die letzte Woche (kein Ranking). `null` = ruhige
    *  Woche ohne bestätigte HÜ/Rätsel → Karte wird nicht gezeigt. */
   weeklyRecap: { hwConfirmed: number; activeKids: number; riddlesSolved: number } | null
+  /** Fächer-Katalog fürs "Neue Hausübung"-Modal (siehe lib/subjectsCatalog.ts). */
+  subjects: SubjectOption[]
 }
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
   hwOpenStudents, reminders, dutyEntries, upcomingEvents, recentHomework,
-  attendancePendingReports, absentToday, students, classGoal, classGoalDone, season, weeklyRecap,
+  attendancePendingReports, absentToday, students, classGoal, classGoalDone, season, weeklyRecap, subjects,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -181,7 +184,7 @@ export default function TeacherHome({
 
 
       {showModal && (
-        <AddHomeworkModal classId={classId} userId={userId} onClose={() => setShowModal(false)} />
+        <AddHomeworkModal classId={classId} userId={userId} subjects={subjects} onClose={() => setShowModal(false)} />
       )}
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">

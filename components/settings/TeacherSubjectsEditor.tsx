@@ -3,15 +3,17 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveTeacherSubjects, type TeacherSubject } from '@/app/actions/saveTeacherSubjects'
-import { SUBJECTS } from '@/lib/subjects'
+import type { SubjectOption } from '@/lib/subjectsCatalog'
 
 interface Props {
   initial: TeacherSubject[]
   activeClassId?: string | null
   allClasses?: { id: string; name: string }[]
+  /** Fächer-Katalog (Admin-verwaltet, siehe lib/subjectsCatalog.ts). */
+  subjects: SubjectOption[]
 }
 
-export default function TeacherSubjectsEditor({ initial, activeClassId, allClasses = [] }: Props) {
+export default function TeacherSubjectsEditor({ initial, activeClassId, allClasses = [], subjects }: Props) {
   const router = useRouter()
   const [selected, setSelected] = useState<TeacherSubject[]>(initial)
   const [saved, setSaved] = useState(false)
@@ -30,7 +32,7 @@ export default function TeacherSubjectsEditor({ initial, activeClassId, allClass
     router.refresh()
   }
 
-  function toggle(s: typeof SUBJECTS[0]) {
+  function toggle(s: SubjectOption) {
     setSelected(prev => {
       const exists = prev.find(x => x.short === s.short)
       if (exists) {
@@ -86,7 +88,7 @@ export default function TeacherSubjectsEditor({ initial, activeClassId, allClass
       <p className="text-[12.5px] text-kh-muted mb-4">Fächer auswählen · Stern = Hauptfach (bestimmt Kartenfarbe)</p>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {SUBJECTS.map(s => {
+        {subjects.map(s => {
           const active = selected.find(x => x.short === s.short)
           return (
             <button

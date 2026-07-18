@@ -6,6 +6,7 @@ import AddHomeworkModal from './AddHomeworkModal'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { HomeworkWithStatus, Role, SpecialRole } from '@/lib/types'
+import type { SubjectOption } from '@/lib/subjectsCatalog'
 
 interface Props {
   homework: HomeworkWithStatus[]
@@ -15,6 +16,7 @@ interface Props {
   classId: string
   subtitle: string
   stats?: { open: number; done: number; missed: number }
+  subjects: SubjectOption[]
 }
 
 function todayLocalISO() {
@@ -26,7 +28,7 @@ function monthLabel(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('de-AT', { month: 'long', year: 'numeric' })
 }
 
-export default function HomeworkList({ homework, role, specialRole, userId, classId, subtitle, stats }: Props) {
+export default function HomeworkList({ homework, role, specialRole, userId, classId, subtitle, stats, subjects }: Props) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
 
@@ -186,6 +188,7 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
         <AddHomeworkModal
           classId={classId}
           userId={userId}
+          subjects={subjects}
           asPending={asPending}
           onClose={() => setShowModal(false)}
         />

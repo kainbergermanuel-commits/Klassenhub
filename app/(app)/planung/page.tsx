@@ -5,6 +5,7 @@ import { getRelevantMondayOfWeek, getMondayOfWeek, getWeekNumber, addDaysISO } f
 import PlanungWeek from './PlanungWeek'
 import PageHeader from '@/components/layout/PageHeader'
 import AnimateIn from '@/components/ui/AnimateIn'
+import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 
 interface Note { day: number; subject: string; content: string }
 
@@ -19,16 +20,18 @@ export default async function PlanungPage({ searchParams }: { searchParams: Prom
     ? getMondayOfWeek(new Date(`${w}T00:00:00`))
     : getRelevantMondayOfWeek()
 
-  let notes: Note[] = []
-  if (activeClassId) {
-    const supabase = await createClient()
-    const { data } = await (supabase
-      .from('planning_notes' as never)
-      .select('day,subject,content')
-      .eq('class_id', activeClassId)
-      .eq('week_start', weekStart) as unknown as Promise<{ data: Note[] | null }>)
-    notes = data ?? []
-  }
+  const supabase = await createClient()
+  const [notesResult, subjects] = await Promise.all([
+    activeClassId
+      ? (supabase
+          .from('planning_notes' as never)
+          .select('day,subject,content')
+          .eq('class_id', activeClassId)
+          .eq('week_start', weekStart) as unknown as Promise<{ data: Note[] | null }>)
+      : Promise.resolve({ data: [] as Note[] }),
+    loadSubjectsCatalog(supabase),
+  ])
+  const notes = notesResult.data ?? []
 
   const monday = new Date(`${weekStart}T00:00:00`)
   const friday = new Date(monday)
@@ -48,6 +51,7 @@ export default async function PlanungPage({ searchParams }: { searchParams: Prom
           currentWeek={getRelevantMondayOfWeek()}
           weekLabel={`KW ${kw}`}
           initialNotes={notes}
+          subjects={subjects}
         />
       </AnimateIn>
     </div>

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { savePlanningNote, copyPreviousWeek } from '@/app/actions/planning'
-import { SUBJECTS } from '@/lib/subjects'
+import type { SubjectOption } from '@/lib/subjectsCatalog'
 
 const DAY_LABELS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
 const DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
@@ -17,6 +17,8 @@ interface Props {
   currentWeek: string
   weekLabel: string
   initialNotes: Note[]
+  /** Fächer-Katalog (Admin-verwaltet, siehe lib/subjectsCatalog.ts). */
+  subjects: SubjectOption[]
 }
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
@@ -60,7 +62,7 @@ function GrowingTextarea({ value, onChange, placeholder, autoFocus }: {
   )
 }
 
-export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek, weekLabel, initialNotes }: Props) {
+export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek, weekLabel, initialNotes, subjects }: Props) {
   const router = useRouter()
   const [notes, setNotes] = useState<Map<string, string>>(() => {
     const m = new Map<string, string>()
@@ -129,7 +131,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
     setCopying(false)
   }
 
-  /** Fach-Notizen eines Tages, sortiert nach SUBJECTS-Reihenfolge. */
+  /** Fach-Notizen eines Tages, sortiert nach Katalog-Reihenfolge. */
   function subjectsOfDay(day: number): string[] {
     const list: string[] = []
     for (const k of notes.keys()) {
@@ -138,7 +140,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
       const subject = k.slice(sep + 1)
       if (d === day && subject !== '') list.push(subject)
     }
-    return list.sort((a, b) => SUBJECTS.findIndex(s => s.label === a) - SUBJECTS.findIndex(s => s.label === b))
+    return list.sort((a, b) => subjects.findIndex(s => s.label === a) - subjects.findIndex(s => s.label === b))
   }
 
   /** Farbpunkte für die Tagesliste: Fächer mit Inhalt + grauer Punkt für allgemeine Notiz. */
@@ -147,14 +149,14 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
     if ((notes.get(noteKey(day, '')) ?? '').trim()) dots.push('#9AA6A7')
     for (const s of subjectsOfDay(day)) {
       if ((notes.get(noteKey(day, s)) ?? '').trim()) {
-        dots.push(SUBJECTS.find(x => x.label === s)?.color ?? '#6E7E80')
+        dots.push(subjects.find(x => x.label === s)?.color ?? '#6E7E80')
       }
     }
     return dots.slice(0, 4)
   }
 
   function subjectMeta(subject: string) {
-    return SUBJECTS.find(s => s.label === subject) ?? { label: subject, short: subject, color: '#6E7E80' }
+    return subjects.find(s => s.label === subject) ?? { label: subject, short: subject, color: '#6E7E80' }
   }
 
   const weekEmpty = notes.size === 0
@@ -260,7 +262,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
               </button>
               {pickerOpen && (
                 <div ref={pickerRef} className="absolute right-0 top-10 z-20 bg-white rounded-xl shadow-lg p-2 w-52 max-h-64 overflow-y-auto scrollbar-kh">
-                  {SUBJECTS.filter(s => !notes.has(noteKey(selectedDay, s.label))).map(s => (
+                  {subjects.filter(s => !notes.has(noteKey(selectedDay, s.label))).map(s => (
                     <button key={s.label} onClick={() => addSubjectNote(s.label)}
                       className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[13px] font-semibold text-kh-dark hover:bg-kh-page transition-colors">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />

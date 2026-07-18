@@ -15,6 +15,7 @@ import { collectAchievements, countAchievements, type AchievementCounts } from '
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
 import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
 import { activeRiddles } from '@/lib/riddles'
+import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
@@ -98,6 +99,7 @@ export default async function HomePage() {
       { count: submittedCount },
       { data: allStudents },
       { data: attendanceRaw },
+      subjects,
     ] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
       supabase.from('homework_completions').select('homework_id', { count: 'exact', head: true }).in('homework_id', homework.map(h => h.id)),
@@ -109,6 +111,8 @@ export default async function HomePage() {
         .eq('class_id', activeClassId)
         .or(`date.eq.${today},confirmed_at.is.null`)
         .order('date') as unknown as Promise<{ data: { id: string; student_id: string; date: string; status: 'entschuldigt' | 'unentschuldigt'; source: 'teacher' | 'parent'; note: string; confirmed_at: string | null }[] | null }>,
+      // Fächer-Katalog fürs "Neue Hausübung"-Modal (siehe lib/subjectsCatalog.ts).
+      loadSubjectsCatalog(supabase),
     ])
 
     const attendanceEntries = attendanceRaw ?? []
@@ -196,6 +200,7 @@ export default async function HomePage() {
         classGoalDone={countClassGoalDone(allHwForStreaks, allCompletions ?? [])}
         season={currentSeason}
         weeklyRecap={weeklyRecap}
+        subjects={subjects}
       />
     )
   }

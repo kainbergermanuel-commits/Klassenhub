@@ -4,22 +4,7 @@ import { useState, useTransition, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { todayISO } from '@/lib/date'
-
-const SUBJECTS = [
-  { label: 'Mathematik', short: 'M', color: '#0F8A82' },
-  { label: 'Deutsch', short: 'D', color: '#B0413E' },
-  { label: 'Englisch', short: 'E', color: '#2F6DB0' },
-  { label: 'Biologie', short: 'BU', color: '#10B981' },
-  { label: 'Geografie', short: 'GW', color: '#C98A2B' },
-  { label: 'Geschichte', short: 'GS', color: '#7B5EA7' },
-  { label: 'Physik', short: 'PH', color: '#0369A1' },
-  { label: 'Chemie', short: 'CH', color: '#9D174D' },
-  { label: 'Musik', short: 'MU', color: '#D44B9E' },
-  { label: 'Bew. & Sport', short: 'BSP', color: '#E07B35' },
-  { label: 'Digitale Grundbildung', short: 'DGB', color: '#6366F1' },
-  { label: 'Berufsorientierung', short: 'BO', color: '#64748B' },
-  { label: 'Sonstiges', short: 'Sonst.', color: '#6E7E80' },
-]
+import type { SubjectOption } from '@/lib/subjectsCatalog'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const MONTHS = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
@@ -159,11 +144,15 @@ function DatePicker({ value, min, onChange }: DatePickerProps) {
 interface Props {
   classId: string
   userId: string
+  /** Fächer-Katalog (Admin-verwaltet, siehe lib/subjectsCatalog.ts) — vom
+   *  Aufrufer server-seitig geladen und durchgereicht, damit hier keine
+   *  eigene Kopie der Liste existiert. */
+  subjects: SubjectOption[]
   asPending?: boolean
   onClose: () => void
 }
 
-export default function AddHomeworkModal({ classId, userId, asPending = false, onClose }: Props) {
+export default function AddHomeworkModal({ classId, userId, subjects, asPending = false, onClose }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [subjectIdx, setSubjectIdx] = useState(0)
@@ -172,11 +161,12 @@ export default function AddHomeworkModal({ classId, userId, asPending = false, o
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const subject = SUBJECTS[subjectIdx]
+  const subject = subjects[subjectIdx]
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (saving) return
+    if (!subject) { setError('Kein Fach ausgewählt.'); return }
     if (!title.trim() || !dueDate) { setError('Bitte alle Felder ausfüllen.'); return }
     setError(null)
     setSaving(true)
@@ -217,22 +207,26 @@ export default function AddHomeworkModal({ classId, userId, asPending = false, o
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="text-xs font-bold text-kh-dark mb-1.5 block">Fach</label>
-            <div className="flex flex-wrap gap-2">
-              {SUBJECTS.map((s, i) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  onClick={() => setSubjectIdx(i)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold transition-all"
-                  style={i === subjectIdx
-                    ? { background: s.color, color: '#fff' }
-                    : { background: '#F6F3ED', color: '#46565A' }
-                  }
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
+            {subjects.length === 0 ? (
+              <p className="text-[12.5px] text-kh-muted font-medium">Noch keine Fächer angelegt — die Administration verwaltet den Fächer-Katalog unter „Fächer-Katalog".</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {subjects.map((s, i) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => setSubjectIdx(i)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold transition-all"
+                    style={i === subjectIdx
+                      ? { background: s.color, color: '#fff' }
+                      : { background: '#F6F3ED', color: '#46565A' }
+                    }
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -258,7 +252,7 @@ export default function AddHomeworkModal({ classId, userId, asPending = false, o
 
           <button
             type="submit"
-            disabled={isPending || saving}
+            disabled={isPending || saving || subjects.length === 0}
             className="w-full bg-kh-teal text-white font-bold rounded-xl py-3.5 text-sm flex items-center justify-center gap-2 hover:bg-kh-dark transition disabled:opacity-60"
           >
             {isPending || saving

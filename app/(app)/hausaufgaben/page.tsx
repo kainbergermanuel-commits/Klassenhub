@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild } from '@/lib/auth'
 import HomeworkList from '@/components/homework/HomeworkList'
 import AnimateIn from '@/components/ui/AnimateIn'
+import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 import type { HomeworkWithStatus } from '@/lib/types'
 
 export default async function HomeworkPage() {
@@ -13,11 +14,17 @@ export default async function HomeworkPage() {
 
   const supabase = await createClient()
 
-  const { data: homeworkRaw } = await supabase
-    .from('homework')
-    .select('*')
-    .eq('class_id', activeClassId)
-    .order('due_date', { ascending: true })
+  // Fächer-Katalog parallel zur Hausübungsliste laden (Promise.all statt
+  // sequenziellem Await) — kostet dadurch keine zusätzliche wahrgenommene
+  // Ladezeit, nur ein 13-Zeilen-Query mehr im selben Bündel.
+  const [{ data: homeworkRaw }, subjects] = await Promise.all([
+    supabase
+      .from('homework')
+      .select('*')
+      .eq('class_id', activeClassId)
+      .order('due_date', { ascending: true }),
+    loadSubjectsCatalog(supabase),
+  ])
 
   const homework = homeworkRaw ?? []
 
@@ -85,6 +92,7 @@ export default async function HomeworkPage() {
         classId={activeClassId}
         subtitle={subtitle}
         stats={isStudentOrParent ? { open: openCount, done: doneCount, missed: missedCount } : undefined}
+        subjects={subjects}
       />
     </AnimateIn>
   )
