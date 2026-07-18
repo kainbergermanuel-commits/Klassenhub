@@ -134,7 +134,7 @@ export default function AnleitungOverview({ role }: { role: Role }) {
       {/* Zweispaltig auf Desktop: FAQ links, Vala mit Sprechblase rechts
           (sticky, bleibt beim Scrollen der Kartenliste sichtbar) — auf Mobile
           bleibt Vala oben, gestapelt vor dem Akkordeon (DOM-Reihenfolge). */}
-      <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-6 lg:items-start">
+      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_260px] lg:gap-6 lg:items-start">
         {/* Anleitungs-Akkordeon */}
         <div className="flex flex-col gap-2.5 order-2 lg:order-1">
           {guides.map((g, i) => {
