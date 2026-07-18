@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import type { EventCategory } from '@/lib/eventCategories'
@@ -54,6 +55,10 @@ export async function createEvent(input: EventInput & { targetStudentIds?: strin
     target_student_ids: input.targetStudentIds && input.targetStudentIds.length > 0 ? input.targetStudentIds : null,
   })
   if (error) throw new Error(error.message)
+  // Server-seitige Revalidierung, damit die Termine-Ansicht nach dem Anlegen
+  // deterministisch frisch ist (nicht nur vom Client-router.refresh() abhängig).
+  revalidatePath('/termine')
+  revalidatePath('/')
 }
 
 // Schüler:innen dürfen nur persönliche Termine für sich selbst anlegen (nie klassenweit, nie für andere)
@@ -79,6 +84,8 @@ export async function createOwnEvent(input: EventInput) {
     target_student_ids: [userId],
   })
   if (error) throw new Error(error.message)
+  revalidatePath('/termine')
+  revalidatePath('/')
 }
 
 export async function deleteEvent(id: string) {
@@ -93,4 +100,6 @@ export async function deleteEvent(id: string) {
   if (profile.role === 'student') query = query.eq('created_by', user.id)
   const { error } = await query
   if (error) throw new Error(error.message)
+  revalidatePath('/termine')
+  revalidatePath('/')
 }

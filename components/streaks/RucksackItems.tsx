@@ -467,7 +467,7 @@ function Item({
           {tooltip}
         </span>
       </span>
-      <p className="font-extrabold text-[11.5px] text-kh-dark leading-tight">{title}</p>
+      <p className="w-full font-extrabold text-[11.5px] text-kh-dark leading-tight break-words hyphens-auto">{title}</p>
       <span className={`text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-full flex-shrink-0 ${chip.cls}`}>
         {chip.label}
       </span>

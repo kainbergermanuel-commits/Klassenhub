@@ -154,11 +154,15 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
               </div>
             </div>
           )}
-          {/* Open / upcoming */}
+          {/* Anstehend / upcoming — gruppiert rein nach Fälligkeit in der Zukunft
+           *  (done UND offen), damit eine bereits erledigte HÜ mit künftigem
+           *  Fälligkeitsdatum sichtbar bleibt. Bewusst NICHT "Offen", sonst
+           *  widerspricht der Titel der Kopfstatistik ("0 offen"), obwohl eine
+           *  erledigte HÜ darunter steht. */}
           {open.length > 0 && (
             <div>
               <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px] mb-3">
-                Offen · {open.length}
+                Anstehend · {open.length}
               </div>
               <div className="flex flex-col gap-3">
                 {open.map(hw => (
