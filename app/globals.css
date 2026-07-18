@@ -49,6 +49,14 @@
     100% { transform: rotate(0deg); }
   }
   .animate-wobble { animation: wobble 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+  /* Feier-Mikromoment beim Rätsel-Lösen (Prinzip 2: Belohnung feiert) — ein
+     einmaliger, sanfter Scale-+-Glow-Puls, kein dauerhaftes Zappeln. */
+  @keyframes riddle-solve {
+    0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(15,138,130,0); }
+    35%  { transform: scale(1.025); box-shadow: 0 0 0 5px rgba(15,138,130,.22); }
+    100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(15,138,130,0); }
+  }
+  .animate-riddle-solve { animation: riddle-solve 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
 }
 
 @layer components {

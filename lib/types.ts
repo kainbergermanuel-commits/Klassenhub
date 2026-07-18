@@ -415,7 +415,7 @@ export type ParentNudge = {
 // Reines Log fürs Heldenbuch (Statistik-Zeilen) — siehe lib/achievements.ts.
 // Persistiert NICHT den Quest-Fortschritt selbst (der bleibt live berechnet),
 // nur DASS etwas irgendwann geschafft wurde.
-export type AchievementKind = 'quest' | 'guild_quest' | 'class_goal'
+export type AchievementKind = 'quest' | 'guild_quest' | 'class_goal' | 'riddle'
 
 export type Achievement = {
   student_id: string

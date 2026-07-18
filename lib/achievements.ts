@@ -55,6 +55,9 @@ export interface AchievementCounts {
 
 export function countAchievements(rows: { kind: AchievementKind }[]): AchievementCounts {
   const counts: AchievementCounts = { quest: 0, guild_quest: 0, class_goal: 0 }
-  for (const r of rows) counts[r.kind]++
+  // 'riddle' bewusst NICHT gezählt: der Wappen-Fragment-Zähler
+  // (quest+guild_quest+class_goal, siehe RucksackItems) soll durch Rätsel
+  // nicht verschoben werden — Rätsel werden nur im Logbuch gewürdigt.
+  for (const r of rows) if (r.kind !== 'riddle') counts[r.kind]++
   return counts
 }

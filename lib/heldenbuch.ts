@@ -1,6 +1,7 @@
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import { findQuestTemplate } from '@/lib/questVault'
 import { findGuildQuestTemplate } from '@/lib/guilds'
+import { findRiddle } from '@/lib/riddles'
 import { WEEKLY_SEAL_KEY } from '@/lib/achievements'
 import { addDaysISO } from '@/lib/date'
 import type { AchievementKind } from '@/lib/types'
@@ -216,6 +217,8 @@ export function buildChronicle(input: {
       out.push({ kind: 'quest', label: findQuestTemplate(a.key)?.title ?? 'Wochen-Quest geschafft', date: a.achieved_at })
     } else if (a.kind === 'guild_quest') {
       out.push({ kind: 'guild_quest', label: findGuildQuestTemplate(a.key)?.title ?? 'Gilden-Quest geschafft', note: 'Gilde', date: a.achieved_at })
+    } else if (a.kind === 'riddle') {
+      out.push({ kind: 'riddle', label: findRiddle(a.key)?.itemLabel ?? 'Rätsel gelöst', note: 'Rätsel', date: a.achieved_at })
     } else {
       out.push({ kind: 'class_goal', label: 'Klassenziel erreicht', note: 'ganze Klasse', date: a.achieved_at })
     }

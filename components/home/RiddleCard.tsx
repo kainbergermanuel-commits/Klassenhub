@@ -202,39 +202,50 @@ export default function RiddleCard({ riddle, solved, open, onOpenChange }: Props
 
   return (
     <>
-      <div className="flex items-start gap-3 rounded-xl bg-[#FAF8F3] px-3 py-3">
-        <span
-          className="msym text-[26px] text-kh-amber flex-shrink-0 mt-0.5"
-          style={{ fontVariationSettings: "'FILL' 1" }}
-          aria-hidden="true"
-        >
-          {riddle.itemIcon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="font-bold text-[14px] text-kh-dark">{riddle.itemLabel}</p>
-            {isSolved && (
-              <span className="flex items-center gap-0.5 text-[9.5px] font-extrabold text-kh-green bg-kh-green/12 px-2 py-0.5 rounded-full">
-                <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
-                gelöst
-              </span>
+      {isSolved && !justSolved ? (
+        // Item 4: bereits gelöst → kompakte Zeile (kein Regal-Staub in voller
+        // Kartengröße). Die Auflösung/Würdigung lebt jetzt im Logbuch.
+        <div className="flex items-center gap-2.5 rounded-xl bg-[#FAF8F3] px-3 py-2">
+          <span className="msym text-[17px] text-kh-green flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+          <p className="min-w-0 flex-1 text-[12.5px] font-semibold text-kh-dark truncate">{riddle.itemLabel}</p>
+          <span className="text-[10px] font-extrabold text-kh-green flex-shrink-0">gelöst</span>
+        </div>
+      ) : (
+        // Offen ODER gerade gelöst (justSolved → einmaliger Feier-Puls, Prinzip 2).
+        <div className={`flex items-start gap-3 rounded-xl bg-[#FAF8F3] px-3 py-3 ${justSolved ? 'animate-riddle-solve' : ''}`}>
+          <span
+            className="msym text-[26px] text-kh-amber flex-shrink-0 mt-0.5"
+            style={{ fontVariationSettings: "'FILL' 1" }}
+            aria-hidden="true"
+          >
+            {justSolved ? 'celebration' : riddle.itemIcon}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-bold text-[14px] text-kh-dark">{riddle.itemLabel}</p>
+              {isSolved && (
+                <span className="flex items-center gap-0.5 text-[9.5px] font-extrabold text-kh-green bg-kh-green/12 px-2 py-0.5 rounded-full">
+                  <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                  gelöst
+                </span>
+              )}
+            </div>
+            <p className="text-[12px] text-kh-muted mt-0.5">
+              {isSolved ? riddle.reward : riddle.intro}
+            </p>
+            {!isSolved && (
+              <button
+                type="button"
+                onClick={() => onOpenChange(true)}
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-kh-amber/15 text-kh-amber font-extrabold text-[12.5px] px-3 py-1.5 hover:bg-kh-amber/25 transition-colors"
+              >
+                <span className="msym text-[15px]">quiz</span>
+                Rätsel öffnen
+              </button>
             )}
           </div>
-          <p className="text-[12px] text-kh-muted mt-0.5">
-            {isSolved ? riddle.reward : riddle.intro}
-          </p>
-          {!isSolved && (
-            <button
-              type="button"
-              onClick={() => onOpenChange(true)}
-              className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-kh-amber/15 text-kh-amber font-extrabold text-[12.5px] px-3 py-1.5 hover:bg-kh-amber/25 transition-colors"
-            >
-              <span className="msym text-[15px]">quiz</span>
-              Rätsel öffnen
-            </button>
-          )}
         </div>
-      </div>
+      )}
 
       {/* Portal ins <body>: ein `fixed`-Overlay innerhalb eines Vorfahren mit
        *  CSS-`transform` (hier: die `animate-card-enter`-Einblendanimation der

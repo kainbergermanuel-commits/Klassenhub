@@ -41,6 +41,15 @@ export async function solveQuestRiddle(
   } as never, { onConflict: 'class_id,student_id,riddle_key,scope', ignoreDuplicates: true })
   if (error) throw new Error(error.message)
 
+  // Erfolg fürs Logbuch protokollieren (kind='riddle', period='' = dauerhaft) —
+  // fehlertolerant wie die übrigen achievements-Inserts: schlägt z.B. in der
+  // Lehrer-Vorschau-als-Schüler fehl (RLS prüft echten auth.uid()), das ist
+  // reine Bonus-Statistik und darf das Lösen selbst nicht scheitern lassen.
+  await supabase.from('achievements').upsert(
+    { student_id: profile.id, kind: 'riddle', key: riddleKey, period: '' } as never,
+    { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true }
+  )
+
   revalidatePath('/')
   revalidatePath('/streaks')
   return { ok: true }

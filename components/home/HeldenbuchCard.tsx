@@ -47,6 +47,7 @@ const CHRONICLE_META: Record<ChronicleEntry['kind'], { icon: string; color: stri
   guild_quest: { icon: 'diversity_3',   color: '#5965B8', fill: 1 },
   class_goal:  { icon: 'flag',          color: '#B8721E', fill: 1 },
   weekly_seal: { icon: 'workspace_premium', color: '#C98A2B', fill: 1 },
+  riddle:      { icon: 'extension',     color: '#B8721E', fill: 1 },
 }
 
 /** Private Rückschau auf die eigene Reise — bewusst kein Vergleich mit
