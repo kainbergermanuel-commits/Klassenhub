@@ -2,8 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import type { Role } from '@/lib/types'
+
+/** Volle Figur (keine runde Portrait-Kachel) — eigenes Bild für diese Seite,
+ *  nicht das GUIDE_PORTRAIT-Rundbild aus lib/seasonTheme.ts. Quelldatei ist
+ *  ca. 335×665px, daher bewusst nicht über ~180px Breite hinaus vergrößern. */
+const VALA_FULL_FIGURE = '/images/characters/vala-first-steps.webp'
 
 /** Eine Anleitung: welt-neutral, in Vala-Stimme. `roles` steuert, wem der
  *  Eintrag angezeigt wird — der Hub ist für alle drei Rollen erreichbar, aber
@@ -102,7 +106,6 @@ const GUIDES: Guide[] = [
 /** "Erste Schritte" — der durchblätterbare Anleitungs-Hub. Akkordeon-Karten,
  *  die erste ist offen. Rollen-gefiltert (siehe GUIDES.roles). */
 export default function AnleitungOverview({ role }: { role: Role }) {
-  const valaPortrait = GUIDE_PORTRAIT['landscape']
   const guides = GUIDES.filter(g => g.roles.includes(role))
   const [open, setOpen] = useState<number>(0)
 
@@ -128,57 +131,73 @@ export default function AnleitungOverview({ role }: { role: Role }) {
         </div>
       </header>
 
-      {/* Vala-Intro */}
-      <div className="kh-card p-5 mb-5 flex items-start gap-4">
-        {valaPortrait ? (
-          <img src={valaPortrait} alt="Bergführerin Vala" className="w-16 h-16 rounded-full object-cover object-top ring-2 ring-white shadow-sm flex-shrink-0 bg-[#EFEAE0]" />
-        ) : (
-          <span className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E0A94B] to-[#B8721E] flex items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm">
-            <span className="msym text-[28px] text-white" aria-hidden="true">landscape</span>
-          </span>
-        )}
-        <div className="min-w-0">
-          <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide mb-1">Bergführerin Vala</p>
-          <p className="text-[13.5px] text-kh-dark/90 leading-relaxed">{intro}</p>
-        </div>
-      </div>
-
-      {/* Anleitungs-Akkordeon */}
-      <div className="flex flex-col gap-2.5">
-        {guides.map((g, i) => {
-          const isOpen = open === i
-          return (
-            <div key={g.title} className="kh-card overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setOpen(isOpen ? -1 : i)}
-                aria-expanded={isOpen}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left"
-              >
-                <span className="w-9 h-9 rounded-xl bg-kh-teal/12 flex items-center justify-center flex-shrink-0">
-                  <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>{g.icon}</span>
-                </span>
-                <span className="flex-1 font-extrabold text-[14.5px] text-kh-dark">{g.title}</span>
-                {/* Hover-Hinweis statt Hintergrundfläche: der Pfeil sinkt beim
-                    Hover, solange die Karte zu ist (Einladung zum Aufklappen),
-                    und hebt sich beim Hover, sobald sie offen ist (Einladung
-                    zum Einklappen) — die Drehung selbst bleibt klick-gebunden. */}
-                <span
-                  className={`msym text-[20px] text-kh-muted flex-shrink-0 transition-transform duration-200 ${
-                    isOpen ? 'rotate-180 group-hover:-translate-y-1' : 'group-hover:translate-y-1'
-                  }`}
+      {/* Zweispaltig auf Desktop: FAQ links, Vala mit Sprechblase rechts
+          (sticky, bleibt beim Scrollen der Kartenliste sichtbar) — auf Mobile
+          bleibt Vala oben, gestapelt vor dem Akkordeon (DOM-Reihenfolge). */}
+      <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-6 lg:items-start">
+        {/* Anleitungs-Akkordeon */}
+        <div className="flex flex-col gap-2.5 order-2 lg:order-1">
+          {guides.map((g, i) => {
+            const isOpen = open === i
+            return (
+              <div key={g.title} className="kh-card overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setOpen(isOpen ? -1 : i)}
+                  aria-expanded={isOpen}
+                  className="group w-full flex items-center gap-3 px-4 py-3.5 text-left"
                 >
-                  expand_more
-                </span>
-              </button>
-              {isOpen && (
-                <div className="px-4 pb-4 pt-0.5 pl-[64px]">
-                  <p className="text-[13px] text-kh-dark/80 leading-relaxed">{g.body}</p>
-                </div>
-              )}
+                  <span className="w-9 h-9 rounded-xl bg-kh-teal/12 flex items-center justify-center flex-shrink-0">
+                    <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>{g.icon}</span>
+                  </span>
+                  <span className="flex-1 font-extrabold text-[14.5px] text-kh-dark">{g.title}</span>
+                  {/* Hover-Hinweis statt Hintergrundfläche: der Pfeil sinkt beim
+                      Hover, solange die Karte zu ist (Einladung zum Aufklappen),
+                      und hebt sich beim Hover, sobald sie offen ist (Einladung
+                      zum Einklappen) — die Drehung selbst bleibt klick-gebunden. */}
+                  <span
+                    className={`msym text-[20px] text-kh-muted flex-shrink-0 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180 group-hover:-translate-y-1' : 'group-hover:translate-y-1'
+                    }`}
+                  >
+                    expand_more
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="px-4 pb-4 pt-0.5 pl-[64px]">
+                    <p className="text-[13px] text-kh-dark/80 leading-relaxed">{g.body}</p>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Vala als volle Figur + Sprechblase */}
+        <div className="order-1 lg:order-2 mb-5 lg:mb-0 lg:sticky lg:top-7">
+          <div className="flex lg:flex-col items-center lg:items-center gap-4 lg:gap-0">
+            {/* Sprechblase: auf Desktop über der Figur (Pfeil zeigt nach unten
+                zu Vala), auf Mobile daneben (Pfeil zeigt nach links zu Vala) —
+                dieselbe Idee wie StudentCard.tsx, nur größenmäßig für Fließtext
+                statt einem kurzen Reaktions-Wort. */}
+            <div className="relative flex-1 min-w-0 lg:flex-none bg-white border border-kh-border shadow-[0_8px_20px_rgba(20,40,45,.10)] rounded-2xl px-4 py-3.5 order-2 lg:order-1 lg:mb-3">
+              <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide mb-1">Bergführerin Vala</p>
+              <p className="text-[12.5px] text-kh-dark/90 leading-relaxed">{intro}</p>
+              {/* Pfeil Desktop: unten Mitte, zeigt zur Figur darunter */}
+              <span className="hidden lg:block absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-t-[10px] border-l-transparent border-r-transparent border-t-kh-border" />
+              <span className="hidden lg:block absolute -bottom-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-white" />
+              {/* Pfeil Mobile: links Mitte, zeigt zur Figur daneben */}
+              <span className="lg:hidden absolute top-1/2 -translate-y-1/2 -left-2 w-0 h-0 border-t-[8px] border-b-[8px] border-r-[10px] border-t-transparent border-b-transparent border-r-kh-border" />
+              <span className="lg:hidden absolute top-1/2 -translate-y-1/2 -left-[7px] w-0 h-0 border-t-[7px] border-b-[7px] border-r-[9px] border-t-transparent border-b-transparent border-r-white" />
             </div>
-          )
-        })}
+
+            <img
+              src={VALA_FULL_FIGURE}
+              alt="Bergführerin Vala"
+              className="order-1 lg:order-2 w-[110px] lg:w-[180px] h-auto flex-shrink-0"
+            />
+          </div>
+        </div>
       </div>
     </>
   )
