@@ -22,7 +22,7 @@ const GUIDES: Guide[] = [
     title: 'Hausübungen',
     roles: ['student', 'parent'],
     body: (
-      <>Unter <b>Hausübungen</b> siehst du alles, was ansteht. Tippe eine Aufgabe an, wenn du sie erledigt hast — fertig. Ist etwas fällig, wandert die Hausübungs-Karte auf der Startseite ganz nach oben, damit du nichts übersiehst. Deine Eltern bestätigen die Erledigung dann noch kurz — das hält eure Flamme am Leben.</>
+      <>Unter <b>Hausübungen</b> siehst du alles, was gerade ansteht. Tippe eine Aufgabe an, sobald du sie erledigt hast, zum Beispiel „Übungsblatt Seite 12, Nummer 1 bis 6", und sie wird als erledigt markiert. Ist etwas bald fällig, wandert die Hausübungs-Karte auf der Startseite automatisch ganz nach oben, damit du nichts übersiehst. Deine Eltern bestätigen die Erledigung anschließend noch kurz mit einem Tippen, das hält eure gemeinsame Flamme am Leben.</>
     ),
   },
   {
@@ -30,7 +30,7 @@ const GUIDES: Guide[] = [
     title: 'Deine Flamme & der Rucksack',
     roles: ['student'],
     body: (
-      <>Jede bestätigte Hausübung hält deine <b>Flamme</b> am Brennen — ganz privat, ohne Rangliste. Im <b>Rucksack</b> sammeln sich Werkzeuge: der <b>Schutzschild</b> fängt einmal pro Monat eine vergessene Hausübung ab, der <b>Zeitkristall</b> verlängert eine Frist. Sie laden sich am Monatsanfang wieder auf. Tippe im Rucksack auf ein Item, dann erkläre ich dir, was es kann.</>
+      <>Jede von deinen Eltern bestätigte Hausübung hält deine <b>Flamme</b> am Brennen, ganz privat und ohne Rangliste. Reißt sie doch einmal ab, zum Beispiel weil eine Hausübung vergessen wurde, hilft dir vielleicht der <b>Rucksack</b> weiter. Dort sammeln sich nützliche Werkzeuge: Der <b>Schutzschild</b> fängt einmal pro Monat eine vergessene Hausübung ab, ohne dass die Flamme erlischt, und der <b>Zeitkristall</b> verlängert die Frist einer Hausübung um ein paar Tage. Beide laden sich am Monatsanfang wieder auf. Tippe im Rucksack einfach auf ein Werkzeug, dann erkläre ich dir genau, was es kann und ob es gerade einsatzbereit ist.</>
     ),
   },
   {
@@ -38,7 +38,7 @@ const GUIDES: Guide[] = [
     title: 'Wochen-Quests & Rätsel',
     roles: ['student'],
     body: (
-      <>Jede Woche warten ein paar <b>Quests</b> auf dich — kleine Ziele wie „an drei Tagen eine Hausübung". Manche lassen dich zwischen zwei Wegen wählen. Dazu gibt es <b>Rätsel</b>: Sie verlangen, dass du in der Geschichte unserer Welten nachliest — die Antworten verstecken sich in „Die Reise". Neugier lohnt sich.</>
+      <>Jede Woche warten ein paar <b>Quests</b> auf dich, kleine Ziele wie zum Beispiel „an drei verschiedenen Tagen eine Hausübung erledigen" oder „deinen Dienst zuverlässig übernehmen". Manche Quests lassen dich zwischen zwei Wegen wählen, etwa zwischen dem Pfad des Chronisten und dem Pfad des Boten. Dazu gibt es <b>Rätsel</b>: Sie verlangen, dass du in der Geschichte unserer Welten noch einmal nachliest, denn die Antworten verstecken sich in den Erzähltexten von „Die Reise". Neugier lohnt sich also wortwörtlich.</>
     ),
   },
   {
@@ -46,7 +46,7 @@ const GUIDES: Guide[] = [
     title: 'Erinnerungen & Termine',
     roles: ['student', 'parent'],
     body: (
-      <>Wichtige Hinweise deiner Lehrperson findest du unter <b>Erinnerungen</b>, alle Ausflüge, Schularbeiten und Feste unter <b>Termine</b>. Der nächste Termin steht immer oben. Manche Erinnerungen und Termine sind nur für dich bestimmt — die anderen sehen sie nicht.</>
+      <>Wichtige Hinweise deiner Lehrperson findest du unter <b>Erinnerungen</b>, zum Beispiel „Turnzeug für Mittwoch nicht vergessen". Alle Ausflüge, Schularbeiten und Feste stehen unter <b>Termine</b>, der nächste bevorstehende Termin wird dir dort immer zuerst angezeigt. Manche Erinnerungen und Termine sind gezielt nur an dich gerichtet, etwa ein persönlicher Referatstermin, die anderen Kinder der Klasse sehen sie dann gar nicht.</>
     ),
   },
   {
@@ -54,7 +54,7 @@ const GUIDES: Guide[] = [
     title: 'Dienste',
     roles: ['student'],
     body: (
-      <>Bist du diese Woche für einen <b>Dienst</b> eingeteilt (Tafel, Blumen …), siehst du das auf der Startseite. Tippe den Wochentag an, sobald du ihn erledigt hast — so weiß die Klasse, dass man sich auf dich verlassen kann.</>
+      <>Bist du diese Woche für einen <b>Dienst</b> eingeteilt, zum Beispiel Tafel wischen oder Blumen gießen, siehst du das direkt auf der Startseite. Tippe den jeweiligen Wochentag an, sobald du deinen Dienst erledigt hast. So weiß die ganze Klasse, dass man sich auf dich verlassen kann, ganz ohne dass jemand extra nachfragen muss.</>
     ),
   },
   {
@@ -62,7 +62,7 @@ const GUIDES: Guide[] = [
     title: 'Stundenplan',
     roles: ['student', 'parent'],
     body: (
-      <>Dein <b>Stundenplan</b> zeigt die ganze Woche, die heutige Spalte ist hervorgehoben. Ein kleines Zeichen an einer Stunde bedeutet: In diesem Fach ist bald eine Hausübung fällig. Deine Lehrperson gibt euch den Standard-Plan vor — einzelne Stunden kannst du selbst anpassen.</>
+      <>Dein <b>Stundenplan</b> zeigt dir die ganze Woche auf einen Blick, die heutige Spalte ist dabei farblich hervorgehoben. Ein kleines Warnzeichen an einer Stunde bedeutet, dass in diesem Fach demnächst eine Hausübung fällig wird. Deine Lehrperson gibt euch zu Schulbeginn einen Standard-Stundenplan vor, einzelne Stunden kannst du bei Bedarf aber selbst anpassen, etwa wenn du einen Freigegenstand besuchst.</>
     ),
   },
   {
@@ -70,7 +70,7 @@ const GUIDES: Guide[] = [
     title: 'Mitteilungsheft',
     roles: ['parent'],
     body: (
-      <>Das <b>Mitteilungsheft</b> ist Ihr direkter Draht zur Lehrperson — wie das klassische Heft, nur digital. Nachrichten landen hier gesammelt, Sie können jederzeit antworten.</>
+      <>Das <b>Mitteilungsheft</b> ist Ihr direkter digitaler Draht zur Lehrperson, ganz ähnlich wie das klassische Mitteilungsheft aus Papier, nur ohne dass etwas in der Schultasche verloren gehen kann. Nachrichten der Lehrperson landen hier gesammelt und übersichtlich, Sie können jederzeit direkt darauf antworten, zum Beispiel um eine Abwesenheit anzukündigen oder eine Rückfrage zu stellen.</>
     ),
   },
   {
@@ -78,7 +78,7 @@ const GUIDES: Guide[] = [
     title: 'Anwesenheit & Abmelden',
     roles: ['parent'],
     body: (
-      <>Ist Ihr Kind krank, können Sie es unter <b>Anwesenheit</b> mit einem Tippen abmelden. Die Lehrperson sieht die Meldung sofort und bestätigt sie. Vergangene Fehltage bleiben übersichtlich aufgelistet.</>
+      <>Ist Ihr Kind krank oder aus einem anderen Grund verhindert, können Sie es unter <b>Anwesenheit</b> mit wenigen Tippen abmelden, etwa mit dem Vermerk „Zahnarzttermin". Die Lehrperson sieht Ihre Meldung sofort und bestätigt sie anschließend. Vergangene Fehltage bleiben dabei übersichtlich aufgelistet, sodass Sie jederzeit den Überblick behalten.</>
     ),
   },
   {
@@ -86,7 +86,7 @@ const GUIDES: Guide[] = [
     title: 'Hausübungen bestätigen',
     roles: ['parent'],
     body: (
-      <>Wenn Ihr Kind eine Hausübung als erledigt markiert, taucht sie bei Ihnen zur <b>Bestätigung</b> auf. Ein kurzes Tippen genügt — das hält die Flamme Ihres Kindes am Leben und gibt der Lehrperson ein verlässliches Bild.</>
+      <>Sobald Ihr Kind eine Hausübung als erledigt markiert hat, taucht sie bei Ihnen zur <b>Bestätigung</b> auf. Ein kurzes Tippen genügt, zum Beispiel direkt nach dem gemeinsamen Kontrollieren der Aufgabe. Das hält die Flamme Ihres Kindes am Leben und gibt der Lehrperson gleichzeitig ein verlässliches Bild davon, wie zuverlässig zu Hause gearbeitet wird.</>
     ),
   },
   {
@@ -94,7 +94,7 @@ const GUIDES: Guide[] = [
     title: 'Die Klasse begleiten',
     roles: ['teacher'],
     body: (
-      <>Diese Seite ist vor allem für Kinder und Eltern gedacht — als Nachschlagewerk, das mit dem System mitwächst. Als Lehrperson finden Sie hier den Blick darauf, was Ihre Klasse sieht. Die Abenteuer-Statistik auf der Abenteuer-Seite gibt Ihnen den Wochenüberblick pro Kind.</>
+      <>Diese Seite ist vor allem für Kinder und deren Eltern gedacht, als Nachschlagewerk, das mit dem System mitwächst. Als Lehrperson finden Sie hier trotzdem einen nützlichen Blick darauf, was Ihre Klasse tatsächlich sieht und erlebt. Die Abenteuer-Statistik auf der Abenteuer-Seite gibt Ihnen zusätzlich einen kompakten Wochenüberblick pro Kind, zum Beispiel wie viele Quests oder Rätsel bereits gelöst wurden.</>
     ),
   },
 ]
@@ -107,10 +107,10 @@ export default function AnleitungOverview({ role }: { role: Role }) {
   const [open, setOpen] = useState<number>(0)
 
   const intro = role === 'parent'
-    ? 'Schön, dass Sie da sind. Ich bin Vala und begleite die Klasse durch ihre Abenteuer. Hier erkläre ich in Ruhe, wie alles funktioniert — jederzeit zum Nachlesen, ganz ohne Eile.'
+    ? 'Schön, dass Sie da sind. Ich bin Vala und begleite die Klasse durch ihre Abenteuer. Hier erkläre ich in Ruhe, wie alles funktioniert, jederzeit zum Nachlesen und ganz ohne Eile.'
     : role === 'teacher'
-      ? 'Willkommen. Ich bin Vala, die Bergführerin der Klasse. Diese Seite ist das Nachschlagewerk für Ihre Schüler:innen und deren Eltern — hier steht, wie sich die App anfühlt, wenn man Kind ist.'
-      : 'Hallo! Ich bin Vala, deine Bergführerin. Bevor wir losgehen, zeige ich dir in Ruhe, wie alles funktioniert. Du kannst jederzeit hierher zurückkommen und nachblättern — nichts musst du auswendig können.'
+      ? 'Willkommen. Ich bin Vala, die Bergführerin der Klasse. Diese Seite ist das Nachschlagewerk für Ihre Schüler:innen und deren Eltern, hier steht, wie sich die App anfühlt, wenn man Kind ist.'
+      : 'Hallo! Ich bin Vala, deine Bergführerin. Bevor wir losgehen, zeige ich dir in Ruhe, wie alles funktioniert. Du kannst jederzeit hierher zurückkommen und nachblättern, nichts musst du auswendig können.'
 
   return (
     <>
@@ -124,7 +124,7 @@ export default function AnleitungOverview({ role }: { role: Role }) {
         </Link>
         <div className="min-w-0">
           <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Erste Schritte</h1>
-          <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">So funktioniert KlassenHub — jederzeit zum Nachblättern</p>
+          <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">So funktioniert KlassenHub, jederzeit zum Nachblättern</p>
         </div>
       </header>
 
@@ -153,15 +153,20 @@ export default function AnleitungOverview({ role }: { role: Role }) {
                 type="button"
                 onClick={() => setOpen(isOpen ? -1 : i)}
                 aria-expanded={isOpen}
-                className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-[#FAF8F3] transition-colors"
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left"
               >
                 <span className="w-9 h-9 rounded-xl bg-kh-teal/12 flex items-center justify-center flex-shrink-0">
                   <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>{g.icon}</span>
                 </span>
                 <span className="flex-1 font-extrabold text-[14.5px] text-kh-dark">{g.title}</span>
+                {/* Hover-Hinweis statt Hintergrundfläche: der Pfeil sinkt beim
+                    Hover, solange die Karte zu ist (Einladung zum Aufklappen),
+                    und hebt sich beim Hover, sobald sie offen ist (Einladung
+                    zum Einklappen) — die Drehung selbst bleibt klick-gebunden. */}
                 <span
-                  className="msym text-[20px] text-kh-muted flex-shrink-0 transition-transform duration-200"
-                  style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}
+                  className={`msym text-[20px] text-kh-muted flex-shrink-0 transition-transform duration-200 ${
+                    isOpen ? 'rotate-180 group-hover:-translate-y-1' : 'group-hover:translate-y-1'
+                  }`}
                 >
                   expand_more
                 </span>
