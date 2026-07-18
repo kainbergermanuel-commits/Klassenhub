@@ -7,6 +7,7 @@ import { todayISO, addDaysISO } from '@/lib/date'
 import type { HomeworkWithStatus, Role } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
 import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Props {
   hw: HomeworkWithStatus
@@ -142,6 +143,7 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
   const [editDate, setEditDate] = useState(hw.due_date)
   const [saving, setSaving] = useState(false)
   const [deleted, setDeleted] = useState(false)
+  const { confirm, dialog } = useConfirm()
   const [showStudents, setShowStudents] = useState(false)
   const [students, setStudents] = useState<{ id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }[] | null>(null)
 
@@ -158,7 +160,14 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
   }
 
   async function deleteHw() {
-    if (!confirm(`"${hw.title}" wirklich löschen?`)) return
+    const ok = await confirm({
+      title: 'Hausübung löschen?',
+      message: `„${hw.title}" wird für die ganze Klasse entfernt. Das lässt sich nicht rückgängig machen.`,
+      confirmLabel: 'Löschen',
+      tone: 'danger',
+      icon: 'delete',
+    })
+    if (!ok) return
     setDeleted(true)
     const supabase = createClient()
     await supabase.from('homework').delete().eq('id', hw.id)
@@ -191,6 +200,7 @@ export default function HomeworkCard({ hw, role, userId }: Props) {
 
   return (
     <>
+      {dialog}
       <div
         className="rounded-2xl p-4 flex gap-3 items-start shadow-[0_8px_16px_rgba(20,40,45,.10)]"
         style={{

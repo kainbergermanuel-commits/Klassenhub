@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useTransition } from 'react'
 import { saveClassTimetableEntry, pushClassTimetable } from '@/app/actions/classTimetable'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -33,6 +34,7 @@ export default function ClassTimetableEditor({ entries, subjects }: Props) {
 
   const [pushing, startPushing] = useTransition()
   const [pushResult, setPushResult] = useState<{ ok: boolean; count?: number } | null>(null)
+  const { confirm, dialog } = useConfirm()
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -61,9 +63,15 @@ export default function ClassTimetableEditor({ entries, subjects }: Props) {
     setSaving(null)
   }
 
-  function handlePush() {
+  async function handlePush() {
     if (grid.size === 0) return
-    if (!confirm('Diesen Stundenplan an alle Kinder der Klasse senden? Bestehende, individuell eingetragene Stunden werden dabei überschrieben.')) return
+    const ok = await confirm({
+      title: 'An alle Kinder senden?',
+      message: 'Bestehende, individuell eingetragene Stunden der Kinder werden dabei durch diesen Standard-Stundenplan überschrieben.',
+      confirmLabel: 'Senden',
+      icon: 'send',
+    })
+    if (!ok) return
     setPushResult(null)
     startPushing(async () => {
       try {
@@ -83,6 +91,7 @@ export default function ClassTimetableEditor({ entries, subjects }: Props) {
 
   return (
     <div className="overflow-x-auto relative">
+      {dialog}
       <table className="w-full border-collapse text-sm table-fixed">
         <thead>
           <tr>

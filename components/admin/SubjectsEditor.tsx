@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSubject, updateSubject, deleteSubject } from '@/app/actions/adminSubjects'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Subject {
   id: string
@@ -24,6 +25,7 @@ export default function SubjectsEditor({ initial }: { initial: Subject[] }) {
   const [newLabel, setNewLabel] = useState('')
   const [newShort, setNewShort] = useState('')
   const [newColor, setNewColor] = useState('#0F8A82')
+  const { confirm, dialog } = useConfirm()
 
   function patchLocal(id: string, patch: Partial<Subject>) {
     setSubjects(prev => prev.map(s => (s.id === id ? { ...s, ...patch } : s)))
@@ -63,8 +65,15 @@ export default function SubjectsEditor({ initial }: { initial: Subject[] }) {
     }, 500))
   }
 
-  function remove(id: string) {
-    if (!confirm('Dieses Fach wirklich entfernen? Bereits im Stundenplan eingetragene Stunden mit diesem Fach bleiben als Text stehen, verlieren aber ihre Farbe/Kürzel.')) return
+  async function remove(id: string) {
+    const ok = await confirm({
+      title: 'Fach entfernen?',
+      message: 'Bereits im Stundenplan eingetragene Stunden mit diesem Fach bleiben als Text stehen, verlieren aber ihre Farbe und ihr Kürzel.',
+      confirmLabel: 'Entfernen',
+      tone: 'danger',
+      icon: 'delete',
+    })
+    if (!ok) return
     setError(null)
     startTransition(async () => {
       try {
@@ -95,6 +104,7 @@ export default function SubjectsEditor({ initial }: { initial: Subject[] }) {
 
   return (
     <div>
+      {dialog}
       <div className="flex flex-col gap-2 mb-5">
         {subjects.map(s => (
           <div key={s.id} className="flex items-center gap-2.5 bg-[#FAF8F3] rounded-xl px-3 py-2.5">
