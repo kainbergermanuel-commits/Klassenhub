@@ -113,7 +113,7 @@ export default function StudentHome({
               order-Utility ohne DOM-Umbau. Alles erledigt: bisherige Position
               (nach Abenteuer/Quests/Rätsel) bleibt. */}
           <AnimateIn delay={hasOpenHomework ? 15 : 240} className={hasOpenHomework ? 'order-first' : ''}>
-            <StudentOpenHomework homework={allHomework} userId={userId} />
+            <StudentOpenHomework homework={allHomework} userId={userId} season={season} />
           </AnimateIn>
         </div>
 

@@ -37,25 +37,39 @@ export default function AdventureStatsCard({ students, title = 'Diese Woche im �
             <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={30} />
             <span className="min-w-0 flex-1 font-semibold text-[13px] text-kh-dark truncate">{s.full_name}</span>
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              <Stat icon="explore" label={`${s.questsDone}/${s.questsTotal}`} title="Wochen-Quests erledigt (diese Woche)" />
-              <Stat icon="task_alt" label={`${s.hwConfirmed}`} title="Hausübungen bestätigt (diese Woche)" />
-              <Stat icon="extension" label={`${s.riddlesSolved}`} title="Rätsel gelöst (insgesamt)" />
+              <Stat icon="explore" label={`${s.questsDone}/${s.questsTotal}`} />
+              <Stat icon="task_alt" label={`${s.hwConfirmed}`} />
+              <Stat icon="extension" label={`${s.riddlesSolved}`} />
             </div>
           </div>
         ))}
+      </div>
+      {/* Legende statt Hover-title (auf Touch unsichtbar) — erklärt die drei
+          Icons einmal für alle Zeilen; macht die Karte zugleich ehrlich
+          nicht-interaktiv (keine Klick-/Hover-Erwartung mehr). */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-kh-border/60 text-[11px] font-medium text-kh-muted">
+        <LegendItem icon="explore" text="Quests diese Woche" />
+        <LegendItem icon="task_alt" text="HÜ bestätigt (Woche)" />
+        <LegendItem icon="extension" text="Rätsel gelöst (gesamt)" />
       </div>
     </div>
   )
 }
 
-function Stat({ icon, label, title }: { icon: string; label: string; title: string }) {
+function Stat({ icon, label }: { icon: string; label: string }) {
   return (
-    <span
-      title={title}
-      className="flex items-center gap-1 rounded-full bg-white border border-kh-border/60 px-2 py-1 text-[11px] font-bold text-kh-muted"
-    >
+    <span className="flex items-center gap-1 rounded-full bg-white border border-kh-border/60 px-2 py-1 text-[11px] font-bold text-kh-muted">
       <span className="msym text-[13px] text-kh-teal">{icon}</span>
       {label}
+    </span>
+  )
+}
+
+function LegendItem({ icon, text }: { icon: string; text: string }) {
+  return (
+    <span className="flex items-center gap-1">
+      <span className="msym text-[14px] text-kh-teal">{icon}</span>
+      {text}
     </span>
   )
 }
