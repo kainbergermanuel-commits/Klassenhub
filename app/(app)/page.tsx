@@ -130,6 +130,28 @@ export default async function HomePage() {
       ? await supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIds)
       : { data: [] }
 
+    // ─── WOCHENRÜCKBLICK (letzte Woche, kollektiv, kein Ranking) ─────────────
+    // Fenster: der Montag der letzten Woche bis Sonntag. Bewusst kollektive
+    // Summen (Prinzip 1/5: Klarheit für Lehrpersonen, keine Gamifizierung).
+    const lastWeekStart = addDaysISO(-7, new Date(`${dutyWeekStart}T00:00:00`))
+    const lastWeekEnd = addDaysISO(-1, new Date(`${dutyWeekStart}T00:00:00`))
+    const inLastWeek = (iso: string) => {
+      const d = localDateOf(iso)
+      return d >= lastWeekStart && d <= lastWeekEnd
+    }
+    const lastWeekConfirmations = (allCompletions ?? []).filter(c => {
+      const at = (c as { confirmed_by_parent_at?: string | null }).confirmed_by_parent_at
+      return at ? inLastWeek(at) : false
+    })
+    const { data: lastWeekRiddles } = await supabase
+      .from('quest_riddle_solutions').select('solved_at').eq('class_id', activeClassId)
+    const recapHwConfirmed = lastWeekConfirmations.length
+    const recapActiveKids = new Set(lastWeekConfirmations.map(c => c.student_id)).size
+    const recapRiddles = ((lastWeekRiddles ?? []) as { solved_at: string }[]).filter(r => inLastWeek(r.solved_at)).length
+    const weeklyRecap = (recapHwConfirmed > 0 || recapRiddles > 0)
+      ? { hwConfirmed: recapHwConfirmed, activeKids: recapActiveKids, riddlesSolved: recapRiddles }
+      : null
+
     const students = allStudents ?? []
     const studentMap = Object.fromEntries(students.map(s => [s.id, s.full_name.split(' ')[0]]))
     const dutyEntries = duties.map(d => ({
@@ -173,6 +195,7 @@ export default async function HomePage() {
         classGoal={classGoal}
         classGoalDone={countClassGoalDone(allHwForStreaks, allCompletions ?? [])}
         season={currentSeason}
+        weeklyRecap={weeklyRecap}
       />
     )
   }

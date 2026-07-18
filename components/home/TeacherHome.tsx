@@ -135,12 +135,15 @@ interface TeacherHomeProps {
   classGoal: { target: number; reward: string | null } | null
   classGoalDone: number
   season: string
+  /** Kollektiver Rückblick auf die letzte Woche (kein Ranking). `null` = ruhige
+   *  Woche ohne bestätigte HÜ/Rätsel → Karte wird nicht gezeigt. */
+  weeklyRecap: { hwConfirmed: number; activeKids: number; riddlesSolved: number } | null
 }
 
 export default function TeacherHome({
   fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
   hwOpenStudents, reminders, dutyEntries, upcomingEvents, recentHomework,
-  attendancePendingReports, absentToday, students, classGoal, classGoalDone, season,
+  attendancePendingReports, absentToday, students, classGoal, classGoalDone, season, weeklyRecap,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -193,6 +196,23 @@ export default function TeacherHome({
                 students={students}
               />
             </div>
+          )}
+
+          {/* Wochenrückblick — kollektiv, kein Ranking (Prinzip 1/5) */}
+          {weeklyRecap && (
+            <AnimateIn delay={0} className="kh-card p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>history</span>
+                <h2 className="font-extrabold text-base text-kh-dark">Rückblick: letzte Woche</h2>
+              </div>
+              <div className="flex flex-wrap gap-2.5">
+                <RecapStat icon="task_alt" value={weeklyRecap.hwConfirmed} label={weeklyRecap.hwConfirmed === 1 ? 'Hausübung bestätigt' : 'Hausübungen bestätigt'} />
+                <RecapStat icon="groups" value={weeklyRecap.activeKids} label={weeklyRecap.activeKids === 1 ? 'Kind aktiv dabei' : 'Kinder aktiv dabei'} />
+                {weeklyRecap.riddlesSolved > 0 && (
+                  <RecapStat icon="extension" value={weeklyRecap.riddlesSolved} label={weeklyRecap.riddlesSolved === 1 ? 'Rätsel gelöst' : 'Rätsel gelöst'} />
+                )}
+              </div>
+            </AnimateIn>
           )}
 
           {/* Feature cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
@@ -322,5 +342,17 @@ export default function TeacherHome({
         </div>
       </div>
     </>
+  )
+}
+
+function RecapStat({ icon, value, label }: { icon: string; value: number; label: string }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-xl bg-[#FAF8F3] px-3.5 py-2.5">
+      <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+      <div className="leading-tight">
+        <div className="font-extrabold text-[16px] text-kh-dark">{value}</div>
+        <div className="text-[11.5px] font-medium text-kh-muted">{label}</div>
+      </div>
+    </div>
   )
 }
