@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO } from '@/lib/date'
+import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO, localDateOf, todayLocal } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp } from '@/lib/streak'
 import { computeQuestProgress, defaultWeeklyTemplateKeys, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
@@ -304,7 +304,7 @@ export default async function StreaksPage() {
     const myOwnDoneIdsForNudge = doneByStudent.get(profile.id) ?? new Set<string>()
     const myConfirmedIdsForNudge = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const pendingConfirmationCount = [...myOwnDoneIdsForNudge].filter(id => !myConfirmedIdsForNudge.has(id)).length
-    const nudgeSentToday = (recentNudges ?? []).some(n => n.created_at.slice(0, 10) === today)
+    const nudgeSentToday = (recentNudges ?? []).some(n => localDateOf(n.created_at) === todayLocal())
     const guideNote = buildGuideNote({
       openHomeworkCount: hbOpenHomework,
       dutyName: hbDutyName,

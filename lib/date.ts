@@ -13,6 +13,25 @@ export function todayISO(): string {
   return toISODateLocal(new Date())
 }
 
+/** Kalendertag (YYYY-MM-DD) eines UTC-Zeitstempels in einer festen Zeitzone —
+ *  unabhängig davon, in welcher Zeitzone der Server läuft. Für "wurde das heute
+ *  gemacht?"-Vergleiche mit `completed_at`/`created_at` (die als UTC gespeichert
+ *  sind): naives `.slice(0,10)` würde in den Stunden nach UTC-Mitternacht
+ *  (= 1–2 Uhr Wiener Zeit) den falschen Tag liefern. IMMER beide Seiten des
+ *  Vergleichs über diesen Helper führen (todayLocal()), sonst mischt man Bezüge.
+ *  Bewusst NICHT für Streak-/Fälligkeits-Logik verwendet — die ist in sich
+ *  konsistent (todayISO gegen due_date), ein Wechsel dort wäre eine eigene,
+ *  riskantere Entscheidung. */
+export function localDateOf(iso: string, timeZone = 'Europe/Vienna'): string {
+  // 'en-CA' liefert das Format YYYY-MM-DD.
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone })
+}
+
+/** Heutiger Wiener Kalendertag (Gegenstück zu localDateOf für die Jetzt-Seite). */
+export function todayLocal(timeZone = 'Europe/Vienna'): string {
+  return localDateOf(new Date().toISOString(), timeZone)
+}
+
 /**
  * Beginn des aktuellen Schuljahres als YYYY-MM-DD (1. September).
  * Ab September → heuriges Jahr, davor → Vorjahr. Dient als untere Grenze

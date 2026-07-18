@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
-import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO } from '@/lib/date'
+import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
 import { defaultWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
@@ -359,7 +359,10 @@ export default async function HomePage() {
     const weekPulse = classSize >= 3
       ? {
           total: weekCompletions.length,
-          today: weekCompletions.filter(c => (c as { completed_at?: string | null }).completed_at?.slice(0, 10) === today).length,
+          today: weekCompletions.filter(c => {
+            const at = (c as { completed_at?: string | null }).completed_at
+            return at ? localDateOf(at) === todayLocal() : false
+          }).length,
         }
       : null
 
@@ -436,7 +439,7 @@ export default async function HomePage() {
     const achievementCounts = countAchievements(allMyAchievements ?? [])
     const myConfirmedIdsForNudge = confirmedByStudentS.get(user.id) ?? new Set<string>()
     const pendingConfirmationCount = [...doneIds].filter(id => !myConfirmedIdsForNudge.has(id)).length
-    const nudgeSentToday = (recentNudges ?? []).some(n => n.created_at.slice(0, 10) === today)
+    const nudgeSentToday = (recentNudges ?? []).some(n => localDateOf(n.created_at) === todayLocal())
 
     // currentThemeName wird schon hier gebraucht (Splitter-Zeichen im
     // Rucksack) und weiter unten nochmal fürs Heldenbuch/Mein Guide — eine
