@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
 import { gendered } from '@/lib/gender'
+import { STREAKS_SUBLINKS } from '@/lib/streaksNav'
 import type { Profile, Class } from '@/lib/types'
 
 interface NavItem {
@@ -169,12 +170,13 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
           {navItems.map(item => {
             const isStreaksItem = item.href === '/streaks'
             const onStreaksFamily = isStreaksItem && pathname.startsWith('/streaks')
-            const onReise = isStreaksItem && pathname === '/streaks/reise'
+            // Unterseiten von "Abenteuer" (durchblätterbar, jederzeit erreichbar).
+            const onSubPage = isStreaksItem && pathname.startsWith('/streaks/')
             const active = pathname === item.href
-            // Wenn die Unterseite "Die Reise" aktiv ist, bekommt "Abenteuer"
-            // nur noch eine dezente grüne Markierung statt der vollen Pille —
-            // die Pille selbst wandert auf den Unterlink (siehe unten).
-            const halfActive = onReise
+            // Auf einer Unterseite bekommt "Abenteuer" nur noch eine dezente
+            // grüne Markierung statt der vollen Pille — die Pille wandert auf
+            // den aktiven Unterlink (siehe unten).
+            const halfActive = onSubPage
             return (
               <div key={item.href}>
                 {item.section && (
@@ -229,31 +231,35 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                   ) : null}
                 </Link>
 
-                {/* Aufklappbares Untermenü: "Die Reise" nur sichtbar, solange man
-                    auf einer /streaks-Seite ist. Eigene, kleinere Pille, wenn
-                    aktiv — analog zu den Hauptlinks, aber schmaler/kompakter. */}
-                {!collapsed && onStreaksFamily && (
-                  <Link
-                    href="/streaks/reise"
-                    className={`relative flex items-center gap-2 py-1.5 px-3 ml-[30px] mr-1 rounded-lg text-[12.5px] transition-all duration-200 overflow-hidden ${
-                      onReise
-                        ? 'text-kh-dark font-bold shadow-sm'
-                        : 'text-kh-muted hover:text-kh-dark hover:bg-[#EDEDEC] font-semibold'
-                    }`}
-                    style={onReise ? { background: 'linear-gradient(to bottom right, #C2E6DF 0%, #E4F3F0 100%)' } : undefined}
-                  >
-                    {onReise && (
-                      <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full" style={{ background: 'linear-gradient(to top, #0F8A82 0%, #3DB5AC 100%)' }} />
-                    )}
-                    <span
-                      className="msym text-[15px] flex-shrink-0"
-                      style={{ fontVariationSettings: `'FILL' ${onReise ? 1 : 0}`, color: onReise ? '#0F8A82' : undefined }}
+                {/* Aufklappbares Untermenü: Abenteuer-Unterseiten, nur sichtbar,
+                    solange man auf einer /streaks-Seite ist. Eigene, kleinere
+                    Pille, wenn aktiv — analog zu den Hauptlinks, aber kompakter. */}
+                {!collapsed && onStreaksFamily && STREAKS_SUBLINKS.map(sub => {
+                  const subActive = pathname === sub.href
+                  return (
+                    <Link
+                      key={sub.href}
+                      href={sub.href}
+                      className={`relative flex items-center gap-2 py-1.5 px-3 ml-[30px] mr-1 rounded-lg text-[12.5px] transition-all duration-200 overflow-hidden ${
+                        subActive
+                          ? 'text-kh-dark font-bold shadow-sm'
+                          : 'text-kh-muted hover:text-kh-dark hover:bg-[#EDEDEC] font-semibold'
+                      }`}
+                      style={subActive ? { background: 'linear-gradient(to bottom right, #C2E6DF 0%, #E4F3F0 100%)' } : undefined}
                     >
-                      map
-                    </span>
-                    Die Reise
-                  </Link>
-                )}
+                      {subActive && (
+                        <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full" style={{ background: 'linear-gradient(to top, #0F8A82 0%, #3DB5AC 100%)' }} />
+                      )}
+                      <span
+                        className="msym text-[15px] flex-shrink-0"
+                        style={{ fontVariationSettings: `'FILL' ${subActive ? 1 : 0}`, color: subActive ? '#0F8A82' : undefined }}
+                      >
+                        {sub.icon}
+                      </span>
+                      {sub.label}
+                    </Link>
+                  )
+                })}
               </div>
             )
           })}

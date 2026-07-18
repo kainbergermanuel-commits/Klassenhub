@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
 import { gendered } from '@/lib/gender'
+import { STREAKS_SUBLINKS } from '@/lib/streaksNav'
 import type { Profile, Class } from '@/lib/types'
 
 interface NavItem {
@@ -159,12 +160,11 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
           {navItems.map(item => {
             const isStreaksItem = item.href === '/streaks'
             const onStreaksFamily = isStreaksItem && pathname.startsWith('/streaks')
-            const onReise = isStreaksItem && pathname === '/streaks/reise'
             const active = pathname === item.href
             // Wie in der Desktop-Sidebar: "Abenteuer" bleibt nur dezent grün
-            // markiert, wenn die Unterseite "Die Reise" aktiv ist — die Pille
-            // selbst wandert auf den Unterlink darunter.
-            const halfActive = onReise
+            // markiert, wenn eine Unterseite aktiv ist — die Pille wandert auf
+            // den aktiven Unterlink darunter.
+            const halfActive = isStreaksItem && pathname.startsWith('/streaks/')
             return (
               <div key={item.href}>
                 {item.section && (
@@ -205,27 +205,31 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
                   ) : null}
                 </Link>
 
-                {/* Unterlink "Die Reise" — nur sichtbar, solange man auf einer
+                {/* Abenteuer-Unterseiten — nur sichtbar, solange man auf einer
                     /streaks-Seite ist, analog zur Desktop-Sidebar. */}
-                {onStreaksFamily && (
-                  <Link
-                    href="/streaks/reise"
-                    onClick={() => setOpen(false)}
-                    className={`relative flex items-center gap-2 py-2 pl-[42px] pr-3.5 mx-0 rounded-lg text-[13px] transition-all ${
-                      onReise
-                        ? 'bg-kh-teal-light text-kh-dark font-bold'
-                        : 'text-kh-muted hover:text-kh-dark hover:bg-[#EDEDEC] font-semibold'
-                    }`}
-                  >
-                    <span
-                      className="msym text-[16px] flex-shrink-0"
-                      style={{ fontVariationSettings: `'FILL' ${onReise ? 1 : 0}`, color: onReise ? '#0F8A82' : undefined }}
+                {onStreaksFamily && STREAKS_SUBLINKS.map(sub => {
+                  const subActive = pathname === sub.href
+                  return (
+                    <Link
+                      key={sub.href}
+                      href={sub.href}
+                      onClick={() => setOpen(false)}
+                      className={`relative flex items-center gap-2 py-2 pl-[42px] pr-3.5 mx-0 rounded-lg text-[13px] transition-all ${
+                        subActive
+                          ? 'bg-kh-teal-light text-kh-dark font-bold'
+                          : 'text-kh-muted hover:text-kh-dark hover:bg-[#EDEDEC] font-semibold'
+                      }`}
                     >
-                      map
-                    </span>
-                    Die Reise
-                  </Link>
-                )}
+                      <span
+                        className="msym text-[16px] flex-shrink-0"
+                        style={{ fontVariationSettings: `'FILL' ${subActive ? 1 : 0}`, color: subActive ? '#0F8A82' : undefined }}
+                      >
+                        {sub.icon}
+                      </span>
+                      {sub.label}
+                    </Link>
+                  )
+                })}
               </div>
             )
           })}
