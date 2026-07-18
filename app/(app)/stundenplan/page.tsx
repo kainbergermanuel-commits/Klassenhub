@@ -34,11 +34,18 @@ export default async function StundenplanPage() {
   // ─── LEHRER: Standard-Stundenplan der Klasse erstellen + pushen ────────────
   if (profile.role === 'teacher') {
     if (!activeClassId) redirect('/')
-    const { data: templateEntries } = await (supabaseCommon
-      .from('class_timetable_entries' as never)
-      .select('day,slot,subject')
-      .eq('class_id', activeClassId)
-      .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string }[] | null }>)
+    const [{ data: templateEntries }, { data: pushRow }] = await Promise.all([
+      (supabaseCommon
+        .from('class_timetable_entries' as never)
+        .select('day,slot,subject')
+        .eq('class_id', activeClassId)
+        .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string }[] | null }>),
+      (supabaseCommon
+        .from('class_timetable_pushes' as never)
+        .select('pushed_at')
+        .eq('class_id', activeClassId)
+        .maybeSingle() as unknown as Promise<{ data: { pushed_at: string } | null }>),
+    ])
 
     return (
       <div>
@@ -49,7 +56,7 @@ export default async function StundenplanPage() {
           gradient="from-[#2F86C5] to-[#56AEE6]"
         />
         <AnimateIn delay={0} className="kh-card px-5 py-5">
-          <ClassTimetableEditor entries={templateEntries ?? []} subjects={subjects} />
+          <ClassTimetableEditor entries={templateEntries ?? []} subjects={subjects} lastPushedAt={pushRow?.pushed_at ?? null} />
         </AnimateIn>
       </div>
     )

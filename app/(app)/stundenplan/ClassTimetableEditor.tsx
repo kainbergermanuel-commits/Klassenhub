@@ -13,6 +13,8 @@ interface SubjectOption { label: string; short: string; color: string }
 interface Props {
   entries: Entry[]
   subjects: SubjectOption[]
+  /** ISO-Zeitstempel des letzten Pushes an die Kinder (null = noch nie). */
+  lastPushedAt: string | null
 }
 
 /** Standard-Stundenplan der Klasse (Lehrer-Feature): eigenständige, einfachere
@@ -22,7 +24,7 @@ interface Props {
  *  Überschreibt dabei bewusst bestehende Einträge der Kinder vollständig
  *  (Manuels Entscheidung: einfach & vorhersehbar), Kinder/Eltern können
  *  danach weiterhin wie gewohnt selbst bearbeiten. */
-export default function ClassTimetableEditor({ entries, subjects }: Props) {
+export default function ClassTimetableEditor({ entries, subjects, lastPushedAt }: Props) {
   const [grid, setGrid] = useState<Map<string, string>>(() => {
     const m = new Map<string, string>()
     for (const e of entries) m.set(`${e.day}-${e.slot}`, e.subject)
@@ -222,6 +224,17 @@ export default function ClassTimetableEditor({ entries, subjects }: Props) {
           <span className="text-[12.5px] font-semibold text-kh-red">Fehler beim Senden.</span>
         )}
       </div>
+      {/* "Zuletzt gesendet" — Vertrauen/Klarheit über Sessions hinweg. Nach
+          einem frischen Push sofort "gerade eben", sonst der gespeicherte
+          Zeitpunkt (class_timetable_pushes). */}
+      {(pushResult?.ok || lastPushedAt) && (
+        <p className="mt-2.5 flex items-center gap-1.5 text-[11.5px] text-kh-muted font-medium">
+          <span className="msym text-[14px]">schedule</span>
+          Zuletzt gesendet: {pushResult?.ok
+            ? 'gerade eben'
+            : new Date(lastPushedAt!).toLocaleString('de-AT', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+        </p>
+      )}
     </div>
   )
 }

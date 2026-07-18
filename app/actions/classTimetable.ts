@@ -66,6 +66,13 @@ export async function pushClassTimetable(): Promise<{ studentCount: number }> {
   const { error: insertError } = await timetableTable.insert(rows)
   if (insertError) throw new Error(insertError.message)
 
+  // Push-Zeitpunkt protokollieren (fehlertolerant — reine Anzeige-Info, darf
+  // den Push nicht scheitern lassen, siehe add-class-timetable-push-log.sql).
+  await (supabase as unknown as { from: (t: string) => any }).from('class_timetable_pushes').upsert(
+    { class_id: activeClassId, pushed_at: new Date().toISOString(), pushed_by: profile.id },
+    { onConflict: 'class_id' }
+  )
+
   revalidatePath('/stundenplan')
   return { studentCount: studentIds.length }
 }
