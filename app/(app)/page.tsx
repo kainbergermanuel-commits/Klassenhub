@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
-import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
-import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE } from '@/lib/streak'
+import { todayISO, getRelevantMondayOfWeek, getMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
+import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE, MILESTONES } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
 import { defaultWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
@@ -250,12 +250,17 @@ export default async function HomePage() {
         .eq('week_start', agendaWeekStart) as unknown as Promise<{ data: { day: number; subject: string; content: string }[] | null }>,
     ])
     const agenda = {
+      title: 'Heutige Agenda',
+      icon: 'today',
       entries: timetableEntries ?? [],
       notes: planningNotes ?? [],
       subjects,
-      todayWeekday,
+      focusWeekday: todayWeekday,
+      focusTabLabel: 'Heute',
+      focusDateLabel: new Date(`${today}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' }),
       weekStart: agendaWeekStart,
       weekLabel: `KW ${getWeekNumber(agendaWeekStart)}`,
+      showPlanningLinks: true,
     }
 
     return (
@@ -714,6 +719,80 @@ export default async function HomePage() {
 
     const childHwWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: childDoneIds.has(h.id) }))
 
+    // ─── AGENDA (Stundenplan des Kindes) + KIND-STATISTIK ─────────────────────
+    // Eltern lesen den gepushten timetable_entries des Kindes (nicht die
+    // Lehrer-Vorlage class_timetable_entries — RLS teacher-only). Fokus =
+    // morgen. Zusätzlich fünf Kind-Kennzahlen + Wochenrückblick fürs Panel.
+    const parentReminderIds = upcomingReminders.map(r => r.id)
+    const parentDutyIds = duties.map(d => d.id)
+    const [
+      parentSubjects,
+      { data: childTimetable },
+      { data: childReminderViews },
+      { data: parentDutyCompletions },
+      { data: childRiddleSolves },
+    ] = await Promise.all([
+      loadSubjectsCatalog(supabase),
+      child
+        ? supabase.from('timetable_entries' as never)
+            .select('day,slot,subject').eq('student_id', child.id)
+            .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string }[] | null }>
+        : Promise.resolve({ data: [] }),
+      child && parentReminderIds.length > 0
+        ? supabase.from('reminder_views').select('reminder_id').eq('student_id', child.id).in('reminder_id', parentReminderIds)
+        : Promise.resolve({ data: [] }),
+      child && parentDutyIds.length > 0
+        ? supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', parentDutyIds)
+        : Promise.resolve({ data: [] }),
+      child
+        ? supabase.from('quest_riddle_solutions').select('solved_at').eq('student_id', child.id)
+        : Promise.resolve({ data: [] }),
+    ])
+
+    const tomorrowDate = new Date(`${today}T00:00:00`)
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+    const tomorrowJsDay = tomorrowDate.getDay()
+    const tomorrowWeekday = tomorrowJsDay === 0 ? 7 : tomorrowJsDay
+    const parentWeekStart = getMondayOfWeek(tomorrowDate)
+    const parentAgenda = {
+      title: 'Stundenplan',
+      icon: 'calendar_view_week',
+      entries: childTimetable ?? [],
+      notes: [] as { day: number; subject: string; content: string }[],
+      subjects: parentSubjects,
+      focusWeekday: tomorrowWeekday,
+      focusTabLabel: 'Morgen',
+      focusDateLabel: tomorrowDate.toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' }),
+      weekStart: parentWeekStart,
+      weekLabel: `KW ${getWeekNumber(parentWeekStart)}`,
+      showPlanningLinks: false,
+    }
+
+    const nextMilestone = MILESTONES.find(m => m > childConfirmedStreak) ?? MILESTONES[MILESTONES.length - 1]
+    const { keptUpStudents: parentKeptUp, assignedStudents: parentAssigned } = buildDutyDone(duties, parentDutyCompletions ?? [])
+    const childHasDuty = child ? parentAssigned.has(child.id) : false
+
+    const lastWeekStartP = addDaysISO(-7, new Date(`${dutyWeekStart}T00:00:00`))
+    const lastWeekEndP = addDaysISO(-1, new Date(`${dutyWeekStart}T00:00:00`))
+    const inLastWeekP = (iso: string) => { const d = localDateOf(iso); return d >= lastWeekStartP && d <= lastWeekEndP }
+    const childLastWeekConfirmed = (allCompletionsParent ?? []).filter(c =>
+      c.student_id === child?.id && (c as { confirmed_by_parent_at?: string | null }).confirmed_by_parent_at
+      && inLastWeekP((c as { confirmed_by_parent_at: string }).confirmed_by_parent_at)
+    ).length
+    const childLastWeekRiddles = ((childRiddleSolves ?? []) as { solved_at: string }[]).filter(r => inLastWeekP(r.solved_at)).length
+    const childRecap = (childLastWeekConfirmed > 0 || childLastWeekRiddles > 0)
+      ? { hwConfirmed: childLastWeekConfirmed, riddlesSolved: childLastWeekRiddles }
+      : null
+
+    const childStats = {
+      reise: { streak: childConfirmedStreak, nextMilestone },
+      homework: { done: childHwWithStatus.filter(h => h.done).length, total: childHwWithStatus.length },
+      reminders: parentReminderIds.length > 0 ? { seen: (childReminderViews ?? []).length, total: parentReminderIds.length } : null,
+      termine: upcomingEvents.length,
+      dienst: childHasDuty ? { keptUp: parentKeptUp.has(child!.id) } : null,
+      recap: childRecap,
+    }
+
     return (
       <ParentHome
         fullName={profile.full_name}
@@ -732,8 +811,8 @@ export default async function HomePage() {
         nudgedHomeworkIds={nudgedHomeworkIds}
         childUpcomingAbsences={childUpcomingAbsences}
         today={today}
-        classGoal={classGoal}
-        classGoalDone={countClassGoalDone(allHwForStreak, allCompletionsParent ?? [])}
+        agenda={parentAgenda}
+        childStats={childStats}
       />
     )
   }

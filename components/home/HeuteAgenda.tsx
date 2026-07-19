@@ -5,7 +5,6 @@ import Link from 'next/link'
 
 // Slot→Zeit-Mapping identisch zum Stundenplan (TimetableGrid.tsx SLOT_TIMES).
 const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40', '14:35', '15:30', '16:25']
-const DAY_NAMES = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
 const DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
 
 interface Entry { day: number; slot: number; subject: string }
@@ -13,24 +12,35 @@ interface Note { day: number; subject: string; content: string }
 interface Subject { label: string; short: string; color: string }
 
 export interface AgendaData {
-  /** Standard-Stundenplan der Klasse (class_timetable_entries), day 1=Mo…5=Fr. */
+  /** Kartentitel, z.B. "Heutige Agenda" (Lehrer) oder "Stundenplan" (Eltern). */
+  title: string
+  /** Material-Symbol im Kartenkopf. */
+  icon: string
+  /** Stundenplan-Einträge, day 1=Mo…5=Fr. Lehrer: class_timetable_entries;
+   *  Eltern/Schüler: timetable_entries (gepushter Plan des Kindes). */
   entries: Entry[]
-  /** Planungs-Notizen der relevanten Woche (planning_notes), subject = Fach-Label. */
+  /** Planungs-Notizen (nur Lehrer; Eltern übergeben []). subject = Fach-Label. */
   notes: Note[]
   /** Fächer-Katalog für Kürzel + Farbe. */
   subjects: Subject[]
-  /** Heutiger Wochentag: 1=Mo … 7=So. */
-  todayWeekday: number
+  /** Fokus-Wochentag der Tagesansicht: 1=Mo … 7=So. */
+  focusWeekday: number
+  /** Beschriftung des Tages-Tabs, z.B. "Heute" oder "Morgen". */
+  focusTabLabel: string
+  /** Volles Datum des Fokustags, z.B. "Montag, 21. Juli". */
+  focusDateLabel: string
   /** Montag (YYYY-MM-DD) der angezeigten Woche. */
   weekStart: string
   /** z.B. "KW 29". */
   weekLabel: string
+  /** Fußzeile mit Stundenplan-/Planung-Links (nur Lehrer). */
+  showPlanningLinks: boolean
 }
 
-function fmtDate(weekStart: string, dayIdx0: number): string {
+function fmtDayNum(weekStart: string, dayIdx0: number): string {
   const d = new Date(`${weekStart}T00:00:00`)
   d.setDate(d.getDate() + dayIdx0)
-  return d.toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })
+  return d.toLocaleDateString('de-AT', { day: 'numeric' }) + '.'
 }
 
 /** Kleines Fach-Badge (Kürzel auf Farbverlauf), wie im HÜ-/Stundenplan-Stil. */
@@ -49,33 +59,31 @@ function SubjChip({ subj, size = 28 }: { subj: Subject; size?: number }) {
 }
 
 /**
- * "Heutige Agenda" — Header-Card über "Demnächst fällig" (nur Lehreransicht).
- * Bündelt den eigenen Unterricht + Planungs-Notizen, umschaltbar zwischen
- * Tages- (heute) und Wochenansicht. Bewusst KEINE Doppelung des Statistik-
- * Panels (Reise/HÜ/Erinnerungen/Termine/Dienste) — hier geht es um den
- * Stundenverlauf und die Notizen, die sonst nur unter /stundenplan bzw.
- * /planung sichtbar sind.
+ * Agenda-Header-Card über "Demnächst fällig". Bündelt den Stundenplan +
+ * (bei Lehrpersonen) die Planungs-Notizen, umschaltbar zwischen Tages- und
+ * Wochenansicht. Konfigurierbar für zwei Rollen:
+ *  • Lehrperson → "Heutige Agenda", Fokus = heute, mit Notizen + Links.
+ *  • Elternteil → "Stundenplan", Fokus = morgen, ohne Notizen/Links.
+ * Bewusst KEINE Doppelung des Statistik-Panels.
  */
 export default function HeuteAgenda({ data }: { data: AgendaData }) {
-  const { entries, notes, subjects, todayWeekday, weekStart, weekLabel } = data
-  const isSchoolday = todayWeekday >= 1 && todayWeekday <= 5
-  const [view, setView] = useState<'tag' | 'woche'>(isSchoolday ? 'tag' : 'woche')
+  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks } = data
+  const focusIsSchoolday = focusWeekday >= 1 && focusWeekday <= 5
+  const [view, setView] = useState<'tag' | 'woche'>(focusIsSchoolday ? 'tag' : 'woche')
 
   const subjMap = new Map(subjects.map(s => [s.label, s]))
   const subjOf = (label: string): Subject => subjMap.get(label) ?? { label, short: label.slice(0, 2).toUpperCase(), color: '#6E7E80' }
-
   const noteFor = (day: number, subject: string) => notes.find(n => n.day === day && n.subject === subject)?.content ?? null
 
   return (
     <div className="rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ background: 'linear-gradient(135deg, #F4F8FA 0%, #FEFEFC 60%)' }}>
-      {/* Kopf: Titel + Tag/Woche-Umschalter */}
       <div className="flex items-center justify-between gap-2 mb-4">
         <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark min-w-0">
-          <span className="msym text-[20px] text-[#3E8DB8] flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>today</span>
-          <span className="truncate">Heutige Agenda</span>
+          <span className="msym text-[20px] text-[#3E8DB8] flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+          <span className="truncate">{title}</span>
         </h2>
         <div className="flex items-center gap-1 rounded-full bg-white/70 p-0.5 border border-kh-border/50 flex-shrink-0">
-          {(['tag', 'woche'] as const).map(v => (
+          {([['tag', focusTabLabel], ['woche', 'Woche']] as const).map(([v, lbl]) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -83,7 +91,7 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
                 view === v ? 'bg-[#3E8DB8] text-white shadow-sm' : 'text-kh-muted hover:text-kh-dark'
               }`}
             >
-              {v === 'tag' ? 'Heute' : 'Woche'}
+              {lbl}
             </button>
           ))}
         </div>
@@ -91,19 +99,21 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
 
       {view === 'tag' ? (
         <TagView
-          weekday={todayWeekday}
-          entries={entries.filter(e => e.day === todayWeekday).sort((a, b) => a.slot - b.slot)}
-          notes={notes.filter(n => n.day === todayWeekday)}
+          weekday={focusWeekday}
+          tabLabel={focusTabLabel}
+          entries={entries.filter(e => e.day === focusWeekday).sort((a, b) => a.slot - b.slot)}
+          notes={notes.filter(n => n.day === focusWeekday)}
           subjOf={subjOf}
           noteFor={noteFor}
-          dateLabel={isSchoolday ? `${DAY_NAMES[todayWeekday - 1]}, ${fmtDate(weekStart, todayWeekday - 1)}` : null}
+          dateLabel={focusIsSchoolday ? focusDateLabel : null}
+          showPlanningLinks={showPlanningLinks}
         />
       ) : (
         <WocheView
           entries={entries}
           notes={notes}
           subjOf={subjOf}
-          todayWeekday={todayWeekday}
+          focusWeekday={focusWeekday}
           weekStart={weekStart}
           weekLabel={weekLabel}
         />
@@ -113,16 +123,17 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
 }
 
 function TagView({
-  weekday, entries, notes, subjOf, noteFor, dateLabel,
+  weekday, tabLabel, entries, notes, subjOf, noteFor, dateLabel, showPlanningLinks,
 }: {
   weekday: number
+  tabLabel: string
   entries: Entry[]
   notes: Note[]
   subjOf: (l: string) => Subject
   noteFor: (day: number, subject: string) => string | null
   dateLabel: string | null
+  showPlanningLinks: boolean
 }) {
-  // Notizen zu Fächern, die heute nicht im Stundenplan stehen → eigener Block.
   const scheduledSubjects = new Set(entries.map(e => e.subject))
   const looseNotes = notes.filter(n => !scheduledSubjects.has(n.subject))
 
@@ -130,8 +141,8 @@ function TagView({
     return (
       <div className="flex flex-col items-center justify-center text-center py-8">
         <span className="msym text-[34px] text-[#3E8DB8]/50 mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>weekend</span>
-        <p className="text-sm font-semibold text-kh-dark">Heute ist unterrichtsfrei</p>
-        <p className="text-[12.5px] text-kh-muted mt-0.5">Wechsle zur Wochenansicht für die kommende Woche.</p>
+        <p className="text-sm font-semibold text-kh-dark">{tabLabel} ist unterrichtsfrei</p>
+        <p className="text-[12.5px] text-kh-muted mt-0.5">Wechsle zur Wochenansicht für die Übersicht.</p>
       </div>
     )
   }
@@ -144,7 +155,7 @@ function TagView({
         <div className="flex items-center gap-3 rounded-xl bg-white/60 px-4 py-4">
           <span className="msym text-[22px] text-kh-muted flex-shrink-0">calendar_view_week</span>
           <div className="text-[13px] text-kh-muted font-medium">
-            Für heute ist kein Unterricht eingetragen.{' '}
+            Kein Unterricht eingetragen.{' '}
             <Link href="/stundenplan" className="font-bold text-[#3E8DB8] hover:underline">Stundenplan öffnen</Link>
           </div>
         </div>
@@ -195,28 +206,31 @@ function TagView({
         </div>
       )}
 
-      <div className="flex items-center gap-4 mt-3.5 pt-3 border-t border-kh-border/40">
-        <Link href="/stundenplan" className="flex items-center gap-1 text-[12.5px] font-semibold text-kh-muted hover:text-[#3E8DB8] transition-colors">
-          <span className="msym text-[15px]">calendar_view_week</span> Stundenplan
-        </Link>
-        <Link href="/planung" className="flex items-center gap-1 text-[12.5px] font-semibold text-kh-muted hover:text-[#3E8DB8] transition-colors">
-          <span className="msym text-[15px]">edit_calendar</span> Planung
-        </Link>
-      </div>
+      {showPlanningLinks && (
+        <div className="flex items-center gap-4 mt-3.5 pt-3 border-t border-kh-border/40">
+          <Link href="/stundenplan" className="flex items-center gap-1 text-[12.5px] font-semibold text-kh-muted hover:text-[#3E8DB8] transition-colors">
+            <span className="msym text-[15px]">calendar_view_week</span> Stundenplan
+          </Link>
+          <Link href="/planung" className="flex items-center gap-1 text-[12.5px] font-semibold text-kh-muted hover:text-[#3E8DB8] transition-colors">
+            <span className="msym text-[15px]">edit_calendar</span> Planung
+          </Link>
+        </div>
+      )}
     </>
   )
 }
 
 function WocheView({
-  entries, notes, subjOf, todayWeekday, weekStart, weekLabel,
+  entries, notes, subjOf, focusWeekday, weekStart, weekLabel,
 }: {
   entries: Entry[]
   notes: Note[]
   subjOf: (l: string) => Subject
-  todayWeekday: number
+  focusWeekday: number
   weekStart: string
   weekLabel: string
 }) {
+  const hasNotes = notes.length > 0
   return (
     <>
       <p className="text-[12.5px] font-semibold text-kh-muted mb-3 -mt-1">{weekLabel}</p>
@@ -225,18 +239,14 @@ function WocheView({
           const day = i + 1
           const dayEntries = entries.filter(e => e.day === day).sort((a, b) => a.slot - b.slot)
           const noteCount = notes.filter(n => n.day === day).length
-          const isToday = day === todayWeekday
-          return (
-            <Link
-              key={day}
-              href="/planung"
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
-                isToday ? 'bg-[#3E8DB8]/12 ring-1 ring-[#3E8DB8]/30' : 'bg-white/60 hover:bg-white/90'
-              }`}
-            >
+          const isFocus = day === focusWeekday
+          const Row = (
+            <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+              isFocus ? 'bg-[#3E8DB8]/12 ring-1 ring-[#3E8DB8]/30' : 'bg-white/60'
+            } ${hasNotes ? 'hover:bg-white/90' : ''}`}>
               <div className="flex flex-col items-center w-9 flex-shrink-0">
-                <span className={`text-[13px] font-extrabold leading-none ${isToday ? 'text-[#3E8DB8]' : 'text-kh-dark'}`}>{short}</span>
-                <span className="text-[10px] font-medium text-kh-muted mt-0.5">{fmtDate(weekStart, i).replace(/\s\w+$/, '')}</span>
+                <span className={`text-[13px] font-extrabold leading-none ${isFocus ? 'text-[#3E8DB8]' : 'text-kh-dark'}`}>{short}</span>
+                <span className="text-[10px] font-medium text-kh-muted mt-0.5">{fmtDayNum(weekStart, i)}</span>
               </div>
               <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1">
                 {dayEntries.length === 0 ? (
@@ -251,8 +261,12 @@ function WocheView({
                   {noteCount}
                 </span>
               )}
-            </Link>
+            </div>
           )
+          // Notizen sind nur für Lehrpersonen relevant → nur dann in die Planung verlinken.
+          return hasNotes
+            ? <Link key={day} href="/planung">{Row}</Link>
+            : <div key={day}>{Row}</div>
         })}
       </div>
     </>

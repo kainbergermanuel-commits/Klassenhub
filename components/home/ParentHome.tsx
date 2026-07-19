@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import FeatureCard from './FeatureCard'
-import TermineCard from './TermineCard'
+import HeuteAgenda, { type AgendaData } from './HeuteAgenda'
+import ChildStatsPanel, { type ChildStats } from './ChildStatsPanel'
 import AgendaPanel from './AgendaPanel'
 import ParentHwConfirmList, { type PendingConfirmation } from './ParentHwConfirmList'
 import AttendanceParentCard, { type ChildAbsenceEntry } from './AttendanceParentCard'
@@ -32,19 +32,20 @@ interface ParentHomeProps {
   /** Heutige + kommende Abwesenheiten des Kindes (Anwesenheits-Startkarte) */
   childUpcomingAbsences: ChildAbsenceEntry[]
   today: string
-  classGoal: { target: number; reward: string | null } | null
-  classGoalDone: number
+  /** Stundenplan des Kindes für die "Stundenplan"-Header-Card (Fokus morgen). */
+  agenda: AgendaData
+  /** Kind-Kennzahlen (inkl. Wochenrückblick) fürs Statistik-Panel der rechten Nav. */
+  childStats: ChildStats
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, classGoal, classGoalDone,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, agenda, childStats,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
   const hwTotal = childHomework.length
   const hwOpen = childHomework.filter(h => !h.done).length
-  const hwDone = hwTotal - hwOpen
 
   return (
     <>
@@ -147,20 +148,11 @@ export default function ParentHome({
             />
           </div>
 
-          {/* Cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
-          <div className="grid sm:grid-cols-2 gap-4 max-md:hidden">
-            <AnimateIn delay={0} className="relative hover:z-30 h-full">
-              <FeatureCard
-                href="/hausaufgaben" gradient="amber" icon="assignment"
-                title="Hausübungen"
-                meta={hwTotal > 0 ? `${hwDone}/${hwTotal} erledigt` : 'Keine aktiven HÜ'}
-                progress={hwTotal > 0 ? (hwDone / hwTotal) * 100 : undefined}
-              />
-            </AnimateIn>
-            <AnimateIn delay={60} className="relative hover:z-30 h-full">
-              <TermineCard events={upcomingEvents} />
-            </AnimateIn>
-          </div>
+          {/* Stundenplan des Kindes — Header-Card (Fokus morgen, Toggle Woche),
+              ersetzt die zwei Feature-Minicards. */}
+          <AnimateIn delay={0}>
+            <HeuteAgenda data={agenda} />
+          </AnimateIn>
 
           {/* Child's homework */}
           <AnimateIn delay={180} className="rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
@@ -222,6 +214,9 @@ export default function ParentHome({
                 upcomingEntries={childUpcomingAbsences}
                 today={todayIso}
               />
+            </AnimateIn>
+            <AnimateIn delay={180}>
+              <ChildStatsPanel stats={childStats} childFirst={childFirst} />
             </AnimateIn>
           </div>
         </div>
