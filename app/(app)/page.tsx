@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
-import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal } from '@/lib/date'
+import { todayISO, getRelevantMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE } from '@/lib/streak'
 import { countClassGoalDone } from '@/lib/classGoal'
 import { defaultWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
@@ -157,27 +157,106 @@ export default async function HomePage() {
       : null
 
     const students = allStudents ?? []
-    const studentMap = Object.fromEntries(students.map(s => [s.id, s.full_name.split(' ')[0]]))
-    const dutyEntries = duties.map(d => ({
-      name: d.duty_name,
-      names: d.assignee_ids.map((id: string) => studentMap[id] ?? '?'),
-    }))
 
-    const doneByStudent = new Map<string, Set<string>>()
-    for (const c of allCompletions ?? []) {
-      if (!doneByStudent.has(c.student_id)) doneByStudent.set(c.student_id, new Set())
-      doneByStudent.get(c.student_id)!.add(c.homework_id)
-    }
     const completionCountByHw = new Map<string, number>()
     for (const c of allCompletions ?? []) {
       completionCountByHw.set(c.homework_id, (completionCountByHw.get(c.homework_id) ?? 0) + 1)
     }
     const homeworkWithCounts = homework.map(h => ({ ...h, done: false, completion_count: completionCountByHw.get(h.id) ?? 0 }))
 
-    // Schüler mit mindestens einer offenen HÜ (für Avatar-Stack + Tooltip auf der HÜ-Card)
-    const hwOpenStudents = students.filter(s =>
-      homework.some(h => !(doneByStudent.get(s.id)?.has(h.id)))
-    )
+    // ─── STATISTIK-PANEL (rechte Nav der Lehrer-Startseite) ─────────────────
+    // Fünf Kennzahlen "auf einen Blick" — bewusst kollektive Anteile, kein
+    // Ranking (Prinzip 1/5): Reise (aktive Streaks), HÜ-Abgabequote, gesehene
+    // Erinnerungen, bevorstehende Termine, Dienst-Erfüllung dieser Woche.
+    const studentIds = students.map(s => s.id)
+    const statsReminderIds = upcomingReminders.map(r => r.id)
+    const statsDutyIds = duties.map(d => d.id)
+    const [
+      { data: statsFreezes },
+      { data: statsExtensions },
+      { data: statsReminderViews },
+      { data: statsDutyCompletions },
+    ] = await Promise.all([
+      studentIds.length > 0
+        ? supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIds)
+        : Promise.resolve({ data: [] }),
+      studentIds.length > 0
+        ? supabase.from('homework_extensions').select('student_id,homework_id,extra_days,created_at').in('student_id', studentIds)
+        : Promise.resolve({ data: [] }),
+      statsReminderIds.length > 0
+        ? supabase.from('reminder_views').select('reminder_id,student_id').in('reminder_id', statsReminderIds)
+        : Promise.resolve({ data: [] }),
+      statsDutyIds.length > 0
+        ? supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', statsDutyIds)
+        : Promise.resolve({ data: [] }),
+    ])
+
+    // Reise: Anzahl Kinder mit aktivem (eltern-bestätigtem) Streak ≥ 1
+    const statsFrozenByStudent = groupFrozenByStudent(statsFreezes ?? [])
+    const statsExtByStudent = new Map<string, Map<string, number>>()
+    for (const e of statsExtensions ?? []) {
+      if (!statsExtByStudent.has(e.student_id)) statsExtByStudent.set(e.student_id, new Map())
+      statsExtByStudent.get(e.student_id)!.set(e.homework_id, e.extra_days)
+    }
+    const statsConfirmedByStudent = new Map<string, Set<string>>()
+    for (const c of allCompletions ?? []) {
+      if ((c as { confirmed_by_parent_at?: string | null }).confirmed_by_parent_at) {
+        if (!statsConfirmedByStudent.has(c.student_id)) statsConfirmedByStudent.set(c.student_id, new Set())
+        statsConfirmedByStudent.get(c.student_id)!.add(c.homework_id)
+      }
+    }
+    let reiseActive = 0
+    for (const s of students) {
+      const st = computeStreak(
+        statsConfirmedByStudent.get(s.id) ?? new Set(),
+        allHwForStreaks, today,
+        statsFrozenByStudent.get(s.id), statsExtByStudent.get(s.id),
+      )
+      if (st >= 1) reiseActive++
+    }
+
+    // Erinnerungen: von allen möglichen (Kinder × bevorstehende Erinnerungen)
+    // wie viele wurden gesehen. Views von Kindern zählen, die evtl. nicht mehr
+    // in der Klasse sind, filtern wir gegen die aktuelle Schülerliste.
+    const studentIdSet = new Set(studentIds)
+    const reminderSeen = (statsReminderViews ?? []).filter(v => studentIdSet.has(v.student_id)).length
+    const reminderTotal = statsReminderIds.length * studentIds.length
+
+    // Dienste: wer diese Woche seinen Dienst durchgehend erledigt hat
+    const { keptUpStudents, assignedStudents } = buildDutyDone(duties, statsDutyCompletions ?? [])
+
+    const statsHwSlots = (studentCount ?? 0) * homework.length
+    const teacherStats = {
+      reise: { active: reiseActive, total: studentCount ?? 0 },
+      homework: { submitted: submittedCount ?? 0, slots: statsHwSlots, active: homework.length },
+      reminders: statsReminderIds.length > 0 ? { seen: reminderSeen, total: reminderTotal } : null,
+      termine: upcomingEvents.length,
+      dienste: statsDutyIds.length > 0 ? { done: keptUpStudents.size, assigned: assignedStudents.size } : null,
+      recap: weeklyRecap,
+    }
+
+    // ─── HEUTIGE AGENDA (Header-Card über "Demnächst fällig") ────────────────
+    // Eigener Unterricht + Planungs-Notizen der relevanten Woche, umschaltbar
+    // Tag/Woche. Bewusst getrennt vom Statistik-Panel (keine Doppelung).
+    const agendaWeekStart = getRelevantMondayOfWeek()
+    const jsDay = new Date(`${today}T00:00:00`).getDay() // 0=So … 6=Sa
+    const todayWeekday = jsDay === 0 ? 7 : jsDay // 1=Mo … 7=So
+    const [{ data: timetableEntries }, { data: planningNotes }] = await Promise.all([
+      supabase.from('class_timetable_entries' as never)
+        .select('day,slot,subject').eq('class_id', activeClassId)
+        .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string }[] | null }>,
+      supabase.from('planning_notes' as never)
+        .select('day,subject,content').eq('class_id', activeClassId)
+        .eq('week_start', agendaWeekStart) as unknown as Promise<{ data: { day: number; subject: string; content: string }[] | null }>,
+    ])
+    const agenda = {
+      entries: timetableEntries ?? [],
+      notes: planningNotes ?? [],
+      subjects,
+      todayWeekday,
+      weekStart: agendaWeekStart,
+      weekLabel: `KW ${getWeekNumber(agendaWeekStart)}`,
+    }
 
     return (
       <TeacherHome
@@ -186,20 +265,14 @@ export default async function HomePage() {
         classId={activeClassId}
         klass={klass}
         homeworkList={homeworkWithCounts}
-        hwSubmittedCount={submittedCount ?? 0}
-        studentCount={studentCount ?? 0}
-        hwOpenStudents={hwOpenStudents}
         reminders={upcomingReminders}
-        dutyEntries={dutyEntries}
         upcomingEvents={upcomingEvents}
         recentHomework={recentHw.map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
         attendancePendingReports={attendancePendingReports}
         absentToday={absentToday}
         students={students}
-        classGoal={classGoal}
-        classGoalDone={countClassGoalDone(allHwForStreaks, allCompletions ?? [])}
-        season={currentSeason}
-        weeklyRecap={weeklyRecap}
+        teacherStats={teacherStats}
+        agenda={agenda}
         subjects={subjects}
       />
     )

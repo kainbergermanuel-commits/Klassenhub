@@ -5,14 +5,12 @@ import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
 import Link from 'next/link'
-import FeatureCard from './FeatureCard'
-import DutyCard, { type DutyEntry } from './DutyCard'
-import TermineCard from './TermineCard'
+import HeuteAgenda, { type AgendaData } from './HeuteAgenda'
 import AgendaPanel from './AgendaPanel'
-import ClassGoalCard from './ClassGoalCard'
+import TeacherStatsPanel, { type TeacherStats } from './TeacherStatsPanel'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
 import AttendanceTeacherCard, { type PendingAttendanceReport, type AbsentTodayEntry } from './AttendanceTeacherCard'
-import { todayISO, addDaysISO, getMondayOfWeek, getWeekNumber, greeting } from '@/lib/date'
+import { todayISO, addDaysISO, greeting } from '@/lib/date'
 import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 import AnimateIn from '@/components/ui/AnimateIn'
@@ -122,31 +120,24 @@ interface TeacherHomeProps {
   classId: string
   klass: Class | null
   homeworkList: HomeworkWithStatus[]
-  hwSubmittedCount: number
-  studentCount: number
-  hwOpenStudents: Person[]
   reminders: Reminder[]
-  dutyEntries: DutyEntry[]
   upcomingEvents: AgendaEvent[]
   recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
   attendancePendingReports: PendingAttendanceReport[]
   absentToday: AbsentTodayEntry[]
   /** Alle Schüler:innen der Klasse (für Avatare der Anwesenheits-Karte) */
   students: (Person & { id: string })[]
-  classGoal: { target: number; reward: string | null } | null
-  classGoalDone: number
-  season: string
-  /** Kollektiver Rückblick auf die letzte Woche (kein Ranking). `null` = ruhige
-   *  Woche ohne bestätigte HÜ/Rätsel → Karte wird nicht gezeigt. */
-  weeklyRecap: { hwConfirmed: number; activeKids: number; riddlesSolved: number } | null
+  /** Kennzahlen (inkl. Wochenrückblick) fürs Statistik-Panel der rechten Nav. */
+  teacherStats: TeacherStats
+  /** Stundenplan + Planungs-Notizen für die "Heutige Agenda"-Header-Card. */
+  agenda: AgendaData
   /** Fächer-Katalog fürs "Neue Hausübung"-Modal (siehe lib/subjectsCatalog.ts). */
   subjects: SubjectOption[]
 }
 
 export default function TeacherHome({
-  fullName, userId, classId, klass, homeworkList, hwSubmittedCount, studentCount,
-  hwOpenStudents, reminders, dutyEntries, upcomingEvents, recentHomework,
-  attendancePendingReports, absentToday, students, classGoal, classGoalDone, season, weeklyRecap, subjects,
+  fullName, userId, classId, klass, homeworkList, reminders, upcomingEvents, recentHomework,
+  attendancePendingReports, absentToday, students, teacherStats, agenda, subjects,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
   const firstName = fullName.split(' ')[0]
@@ -157,8 +148,6 @@ export default function TeacherHome({
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
     .slice(0, 5)
 
-  const hwSlots = studentCount * homeworkList.length
-  const hwProgress = hwSlots > 0 ? (hwSubmittedCount / hwSlots) * 100 : 0
   const hasAttendanceContent = attendancePendingReports.length > 0 || absentToday.length > 0
 
   return (
@@ -201,45 +190,11 @@ export default function TeacherHome({
             </div>
           )}
 
-          {/* Wochenrückblick — kollektiv, kein Ranking (Prinzip 1/5) */}
-          {weeklyRecap && (
-            <AnimateIn delay={0} className="kh-card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>history</span>
-                <h2 className="font-extrabold text-base text-kh-dark">Rückblick: letzte Woche</h2>
-              </div>
-              <div className="flex flex-wrap gap-2.5">
-                <RecapStat icon="task_alt" value={weeklyRecap.hwConfirmed} label={weeklyRecap.hwConfirmed === 1 ? 'Hausübung bestätigt' : 'Hausübungen bestätigt'} />
-                <RecapStat icon="groups" value={weeklyRecap.activeKids} label={weeklyRecap.activeKids === 1 ? 'Kind aktiv dabei' : 'Kinder aktiv dabei'} />
-                {weeklyRecap.riddlesSolved > 0 && (
-                  <RecapStat icon="extension" value={weeklyRecap.riddlesSolved} label={weeklyRecap.riddlesSolved === 1 ? 'Rätsel gelöst' : 'Rätsel gelöst'} />
-                )}
-              </div>
-            </AnimateIn>
-          )}
-
-          {/* Feature cards — auf Mobile ausgeblendet (Stats wandern in den Header) */}
-          <div className="grid sm:grid-cols-3 gap-4 max-md:hidden">
-            <AnimateIn delay={0} className="relative hover:z-30 h-full">
-              <FeatureCard
-                href="/hausaufgaben" gradient="amber" icon="assignment"
-                title="Hausübungen"
-                meta={homeworkList.length > 0 ? `${homeworkList.length} aktiv · ${hwSubmittedCount}/${hwSlots} abgegeben` : 'Keine aktiven HÜ'}
-                progress={homeworkList.length > 0 ? hwProgress : undefined}
-                people={hwOpenStudents}
-                peopleTooltip={hwOpenStudents.length > 0 ? 'Noch offen' : undefined}
-              />
-            </AnimateIn>
-            <AnimateIn delay={60} className="relative hover:z-30 h-full">
-              <TermineCard events={upcomingEvents} />
-            </AnimateIn>
-            <AnimateIn delay={120} className="relative hover:z-30 h-full">
-              <DutyCard
-                title={`Dienste · KW ${getWeekNumber(getMondayOfWeek())}`}
-                entries={dutyEntries}
-              />
-            </AnimateIn>
-          </div>
+          {/* Heutige Agenda — Header-Card: eigener Unterricht + Planungs-Notizen,
+              umschaltbar Tag/Woche (ersetzt die drei Feature-Minicards). */}
+          <AnimateIn delay={0}>
+            <HeuteAgenda data={agenda} />
+          </AnimateIn>
 
           {/* Upcoming + Recent homework */}
           <AnimateIn delay={180} className="rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
@@ -339,23 +294,11 @@ export default function TeacherHome({
               </AnimateIn>
             )}
             <AnimateIn delay={180}>
-              <ClassGoalCard goal={classGoal} done={classGoalDone} season={season} />
+              <TeacherStatsPanel stats={teacherStats} />
             </AnimateIn>
           </div>
         </div>
       </div>
     </>
-  )
-}
-
-function RecapStat({ icon, value, label }: { icon: string; value: number; label: string }) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-xl bg-[#FAF8F3] px-3.5 py-2.5">
-      <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
-      <div className="leading-tight">
-        <div className="font-extrabold text-[16px] text-kh-dark">{value}</div>
-        <div className="text-[11.5px] font-medium text-kh-muted">{label}</div>
-      </div>
-    </div>
   )
 }
