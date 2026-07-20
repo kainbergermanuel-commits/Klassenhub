@@ -21,6 +21,44 @@ import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
 import type { HomeworkWithStatus, Reminder, Duty, AgendaEvent } from '@/lib/types'
 
+/**
+ * Label des nächsten Termins fürs Statistik-Panel ("Elternabend · morgen").
+ * Eine bloße Anzahl beantwortet nicht die eigentliche Frage — nämlich wann.
+ */
+function nextEventLabel(events: AgendaEvent[], today: string): string | null {
+  const next = events[0]
+  if (!next) return null
+  const days = Math.round(
+    (new Date(`${next.start_date}T00:00:00`).getTime() - new Date(`${today}T00:00:00`).getTime()) / 86_400_000,
+  )
+  const when =
+    days <= 0 ? 'heute'
+    : days === 1 ? 'morgen'
+    : days <= 13 ? `in ${days} Tagen`
+    : new Date(`${next.start_date}T00:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })
+  // Zeit zuerst: in der schmalen Nav wird hinten gekürzt, und das "wann" ist
+  // wichtiger als der vollständige Titel.
+  return `${when} · ${next.title}`
+}
+
+/** Prozent-Anteil, gerundet, 0 bei Nenner 0 (Server-Pendant zu pctOf im Panel). */
+const pctOfNum = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0)
+
+/** Anonyme Längenverteilung der Reisen — zeigt Streuung statt Rangliste. */
+function streakBuckets(streaks: number[]) {
+  const ranges: { label: string; min: number; max: number }[] = [
+    { label: '0', min: 0, max: 0 },
+    { label: '1–3', min: 1, max: 3 },
+    { label: '4–7', min: 4, max: 7 },
+    { label: '8–14', min: 8, max: 14 },
+    { label: '15+', min: 15, max: Infinity },
+  ]
+  return ranges.map(r => ({
+    label: r.label,
+    count: streaks.filter(s => s >= r.min && s <= r.max).length,
+  }))
+}
+
 export default async function HomePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
 
@@ -205,15 +243,15 @@ export default async function HomePage() {
         statsConfirmedByStudent.get(c.student_id)!.add(c.homework_id)
       }
     }
-    let reiseActive = 0
-    for (const s of students) {
-      const st = computeStreak(
-        statsConfirmedByStudent.get(s.id) ?? new Set(),
-        allHwForStreaks, today,
-        statsFrozenByStudent.get(s.id), statsExtByStudent.get(s.id),
-      )
-      if (st >= 1) reiseActive++
-    }
+    // Die einzelnen Streaks behalten wir (statt nur zu zählen) — daraus fällt
+    // die anonyme Längenverteilung fürs Panel ohne weitere Abfrage ab.
+    const statsStreaks = students.map(s => computeStreak(
+      statsConfirmedByStudent.get(s.id) ?? new Set(),
+      allHwForStreaks, today,
+      statsFrozenByStudent.get(s.id), statsExtByStudent.get(s.id),
+    ))
+    const reiseActive = statsStreaks.filter(st => st >= 1).length
+    const reiseLongest = statsStreaks.length > 0 ? Math.max(...statsStreaks) : 0
 
     // Erinnerungen: von allen möglichen (Kinder × bevorstehende Erinnerungen)
     // wie viele wurden gesehen. Views von Kindern zählen, die evtl. nicht mehr
@@ -225,12 +263,39 @@ export default async function HomePage() {
     // Dienste: wer diese Woche seinen Dienst durchgehend erledigt hat
     const { keptUpStudents, assignedStudents } = buildDutyDone(duties, statsDutyCompletions ?? [])
 
+    // Verlauf: Abgabequote der letzten sechs bereits fälligen Hausübungen
+    // (ältest → neuest). Beantwortet "wird es besser oder schlechter?", was
+    // eine einzelne Momentaufnahme nicht kann. homeworkAll ist absteigend
+    // sortiert, deshalb slice-dann-reverse.
+    const pastHw = homeworkAll.filter(h => h.due_date <= today)
+    const hwHistory = pastHw.slice(0, 6).reverse()
+      .map(h => pctOfNum(completionCountByHw.get(h.id) ?? 0, studentCount ?? 0))
+    const hwTrend = hwHistory.length >= 2
+      ? hwHistory[hwHistory.length - 1] - hwHistory[hwHistory.length - 2]
+      : 0
+
+    // Offene Eltern-Bestätigungen zu bereits fälligen HÜ: abgegeben, aber die
+    // Reise wächst nicht weiter, bis ein Elternteil bestätigt.
+    const pastHwIds = new Set(pastHw.map(h => h.id))
+    const statsUnconfirmed = (allCompletions ?? []).filter(c =>
+      pastHwIds.has(c.homework_id)
+      && studentIdSet.has(c.student_id)
+      && !(c as { confirmed_by_parent_at?: string | null }).confirmed_by_parent_at
+    ).length
+
     const statsHwSlots = (studentCount ?? 0) * homework.length
     const teacherStats = {
-      reise: { active: reiseActive, total: studentCount ?? 0 },
-      homework: { submitted: submittedCount ?? 0, slots: statsHwSlots, active: homework.length },
+      reise: {
+        active: reiseActive, total: studentCount ?? 0,
+        buckets: streakBuckets(statsStreaks), longest: reiseLongest,
+      },
+      homework: {
+        submitted: submittedCount ?? 0, slots: statsHwSlots, active: homework.length,
+        history: hwHistory, trend: hwTrend,
+      },
+      unconfirmed: statsUnconfirmed,
       reminders: statsReminderIds.length > 0 ? { seen: reminderSeen, total: reminderTotal } : null,
-      termine: upcomingEvents.length,
+      termine: { count: upcomingEvents.length, nextLabel: nextEventLabel(upcomingEvents, today) },
       dienste: statsDutyIds.length > 0 ? { done: keptUpStudents.size, assigned: assignedStudents.size } : null,
       recap: weeklyRecap,
     }
@@ -242,9 +307,12 @@ export default async function HomePage() {
     const jsDay = new Date(`${today}T00:00:00`).getDay() // 0=So … 6=Sa
     const todayWeekday = jsDay === 0 ? 7 : jsDay // 1=Mo … 7=So
     const [{ data: timetableEntries }, { data: planningNotes }] = await Promise.all([
-      supabase.from('class_timetable_entries' as never)
-        .select('day,slot,subject').eq('class_id', activeClassId)
-        .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string }[] | null }>,
+      // Der EIGENE Plan der Lehrperson (quer über alle Klassen, mit Klassen-
+      // Label), nicht der Klassenplan — die häufigste Frage im Alltag ist
+      // "wann bin ich in welcher Klasse?". Siehe supabase/add-teacher-timetable.sql.
+      supabase.from('teacher_timetable_entries' as never)
+        .select('day,slot,subject,class_label').eq('teacher_id', user.id)
+        .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string; class_label: string }[] | null }>,
       supabase.from('planning_notes' as never)
         .select('day,subject,content').eq('class_id', activeClassId)
         .eq('week_start', agendaWeekStart) as unknown as Promise<{ data: { day: number; subject: string; content: string }[] | null }>,
@@ -252,8 +320,12 @@ export default async function HomePage() {
     const agenda = {
       title: 'Heutige Agenda',
       icon: 'today',
-      entries: timetableEntries ?? [],
+      entries: (timetableEntries ?? []).map(e => ({
+        day: e.day, slot: e.slot, subject: e.subject, classLabel: e.class_label ?? '',
+      })),
       notes: planningNotes ?? [],
+      notesClassName: klass?.name ?? null,
+      emptyMessage: 'Du hast noch keinen eigenen Stundenplan angelegt.',
       subjects,
       focusWeekday: todayWeekday,
       focusTabLabel: 'Heute',
@@ -668,7 +740,9 @@ export default async function HomePage() {
     const allHwIdsP = allHwForStreak.map(h => h.id)
     const [{ data: allCompletionsParent }, { data: pendingConfs }] = await Promise.all([
       allHwIdsP.length > 0
-        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at').in('homework_id', allHwIdsP)
+        // completed_at kommt für die Pünktlichkeits-Kennzahl mit (gleiche Abfrage,
+        // nur eine Spalte mehr).
+        ? supabase.from('homework_completions').select('homework_id,student_id,confirmed_by_parent_at,completed_at').in('homework_id', allHwIdsP)
         : Promise.resolve({ data: [] }),
       child
         ? supabase.from('homework_completions')
@@ -784,11 +858,25 @@ export default async function HomePage() {
       ? { hwConfirmed: childLastWeekConfirmed, riddlesSolved: childLastWeekRiddles }
       : null
 
+    // Pünktlichkeit: wie oft war die HÜ schon vor dem Abgabetag erledigt.
+    // Bewusst ein Vergleich des Kindes mit sich selbst, nicht mit der Klasse.
+    const dueDateByHw = new Map(allHwForStreak.map(h => [h.id, h.due_date]))
+    const childCompletions = (allCompletionsParent ?? []).filter(c => c.student_id === child?.id)
+    const childOnTime = childCompletions.filter(c => {
+      const due = dueDateByHw.get(c.homework_id)
+      const at = (c as { completed_at?: string | null }).completed_at
+      return due && at ? localDateOf(at) <= due : false
+    }).length
+
     const childStats = {
-      reise: { streak: childConfirmedStreak, nextMilestone },
+      reise: { streak: childConfirmedStreak, nextMilestone, milestones: [...MILESTONES] },
       homework: { done: childHwWithStatus.filter(h => h.done).length, total: childHwWithStatus.length },
+      pending: pendingConfirmations.length,
+      punctual: childCompletions.length > 0
+        ? { onTime: childOnTime, total: childCompletions.length }
+        : null,
       reminders: parentReminderIds.length > 0 ? { seen: (childReminderViews ?? []).length, total: parentReminderIds.length } : null,
-      termine: upcomingEvents.length,
+      termine: { count: upcomingEvents.length, nextLabel: nextEventLabel(upcomingEvents, today) },
       dienst: childHasDuty ? { keptUp: parentKeptUp.has(child!.id) } : null,
       recap: childRecap,
     }

@@ -1,9 +1,12 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
+import { getClass } from '@/lib/auth'
 import { getStundenplanMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from '@/lib/date'
 import TimetableGrid from './TimetableGrid'
 import ClassTimetableEditor from './ClassTimetableEditor'
+import TeacherTimetableEditor from './TeacherTimetableEditor'
 import PageHeader from '@/components/layout/PageHeader'
 import AnimateIn from '@/components/ui/AnimateIn'
 
@@ -17,7 +20,9 @@ function weekLabel(): string {
   return `KW ${kw} · ${fmt(monday)} – ${fmt(friday)}`
 }
 
-export default async function StundenplanPage() {
+export default async function StundenplanPage(
+  { searchParams }: { searchParams: Promise<{ ansicht?: string }> },
+) {
   const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user || !profile) redirect('/login')
 
@@ -31,10 +36,22 @@ export default async function StundenplanPage() {
     .order('sort_order') as unknown as Promise<{ data: { label: string; short: string; color: string }[] | null }>)
   const subjects = subjectRows ?? []
 
-  // ─── LEHRER: Standard-Stundenplan der Klasse erstellen + pushen ────────────
+  // ─── LEHRER: eigener Plan + Standard-Stundenplan der Klasse ────────────────
+  // Zwei verschiedene Achsen unter einem Umschalter (kein eigener Route):
+  //  • "Mein Plan"    → teacher_timetable_entries, die eigene Woche quer über
+  //                     alle Klassen, mit Klassen-Label pro Stunde. Standard,
+  //                     weil das die häufigste Frage ist ("wo muss ich hin?").
+  //  • "Klassenplan"  → class_timetable_entries, die Vorlage für die Kinder.
   if (profile.role === 'teacher') {
     if (!activeClassId) redirect('/')
-    const [{ data: templateEntries }, { data: pushRow }] = await Promise.all([
+    const view = (await searchParams).ansicht === 'klasse' ? 'klasse' : 'mein'
+
+    const [{ data: teacherEntries }, { data: templateEntries }, { data: pushRow }, klass] = await Promise.all([
+      (supabaseCommon
+        .from('teacher_timetable_entries' as never)
+        .select('day,slot,subject,class_label')
+        .eq('teacher_id', user.id)
+        .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string; class_label: string }[] | null }>),
       (supabaseCommon
         .from('class_timetable_entries' as never)
         .select('day,slot,subject')
@@ -45,18 +62,49 @@ export default async function StundenplanPage() {
         .select('pushed_at')
         .eq('class_id', activeClassId)
         .maybeSingle() as unknown as Promise<{ data: { pushed_at: string } | null }>),
+      getClass(activeClassId),
     ])
+
+    const tabs = [
+      { key: 'mein', label: 'Mein Plan', href: '/stundenplan' },
+      { key: 'klasse', label: 'Klassenplan', href: '/stundenplan?ansicht=klasse' },
+    ]
 
     return (
       <div>
         <PageHeader
           icon="calendar_view_week"
           title="Stundenplan"
-          subtitle="Standard-Stundenplan der Klasse erstellen und an alle Kinder senden"
+          subtitle={view === 'mein'
+            ? 'Deine eigene Woche — welches Fach in welcher Klasse'
+            : 'Standard-Stundenplan der Klasse erstellen und an alle Kinder senden'}
           gradient="from-[#2F86C5] to-[#56AEE6]"
         />
+        <div className="flex items-center gap-1 rounded-full bg-white p-1 border border-kh-border/60 w-fit mb-4 -mt-2">
+          {tabs.map(t => (
+            <Link
+              key={t.key}
+              href={t.href}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
+                view === t.key ? 'bg-[#3E8DB8] text-white shadow-sm' : 'text-kh-muted hover:text-kh-dark'
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </div>
         <AnimateIn delay={0} className="kh-card px-5 py-5">
-          <ClassTimetableEditor entries={templateEntries ?? []} subjects={subjects} lastPushedAt={pushRow?.pushed_at ?? null} />
+          {view === 'mein' ? (
+            <TeacherTimetableEditor
+              entries={(teacherEntries ?? []).map(e => ({
+                day: e.day, slot: e.slot, subject: e.subject, classLabel: e.class_label ?? '',
+              }))}
+              subjects={subjects}
+              activeClassName={klass?.name ?? null}
+            />
+          ) : (
+            <ClassTimetableEditor entries={templateEntries ?? []} subjects={subjects} lastPushedAt={pushRow?.pushed_at ?? null} />
+          )}
         </AnimateIn>
       </div>
     )
