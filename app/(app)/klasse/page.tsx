@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getClass } from '@/lib/auth'
+import { todayISO } from '@/lib/date'
 import StudentHomeworkPanel from '@/components/klasse/StudentHomeworkPanel'
 import KlasseManageBar from '@/components/klasse/KlasseManageBar'
 import Avatar from '@/components/ui/Avatar'
@@ -29,14 +30,16 @@ export default async function KlassePage() {
   const studentById = Object.fromEntries(studentList.map(s => [s.id, s]))
   const homeworkList = allHomework ?? []
 
+  // completed_at kommt mit derselben Abfrage mit (keine zweite Query) — die
+  // Statistik im Schüler-Panel braucht es für die Pünktlichkeits-Kennzahl.
   const hwIds = homeworkList.map(h => h.id)
-  const completionsByStudent: Record<string, string[]> = {}
+  const completionsByStudent: Record<string, { homeworkId: string; completedAt: string }[]> = {}
   if (hwIds.length > 0) {
     const { data: completions } = await supabase
-      .from('homework_completions').select('homework_id,student_id').in('homework_id', hwIds)
+      .from('homework_completions').select('homework_id,student_id,completed_at').in('homework_id', hwIds)
     for (const c of completions ?? []) {
       if (!completionsByStudent[c.student_id]) completionsByStudent[c.student_id] = []
-      completionsByStudent[c.student_id].push(c.homework_id)
+      completionsByStudent[c.student_id].push({ homeworkId: c.homework_id, completedAt: c.completed_at })
     }
   }
 
@@ -67,6 +70,7 @@ export default async function KlassePage() {
           students={studentList}
           homework={homeworkList}
           completionsByStudent={completionsByStudent}
+          today={todayISO()}
         />
       </AnimateIn>
 

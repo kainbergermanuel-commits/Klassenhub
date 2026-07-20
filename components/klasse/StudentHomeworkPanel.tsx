@@ -4,13 +4,15 @@ import { useState, useEffect, useMemo } from 'react'
 import Avatar from '@/components/ui/Avatar'
 import SpecialRolePicker from './SpecialRolePicker'
 import KlasseManageBar from './KlasseManageBar'
+import StudentHomeworkStats from './StudentHomeworkStats'
 import { gendered } from '@/lib/gender'
 import type { Homework, Profile } from '@/lib/types'
 
 interface Props {
   students: Profile[]
   homework: Homework[]
-  completionsByStudent: Record<string, string[]> // studentId → homeworkIds[]
+  completionsByStudent: Record<string, { homeworkId: string; completedAt: string }[]>
+  today: string
 }
 
 function getWeekNumber(dateStr: string): number {
@@ -19,12 +21,15 @@ function getWeekNumber(dateStr: string): number {
   return Math.ceil(((d.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7)
 }
 
-export default function StudentHomeworkPanel({ students, homework, completionsByStudent }: Props) {
+export default function StudentHomeworkPanel({ students, homework, completionsByStudent, today }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeSubject, setActiveSubject] = useState<string | null>(null)
 
   const selected = selectedId ? students.find(s => s.id === selectedId) ?? null : null
-  const doneIds = new Set(selectedId ? (completionsByStudent[selectedId] ?? []) : [])
+  const selectedCompletions = selectedId ? completionsByStudent[selectedId] ?? [] : []
+  const doneIds = new Set(selectedCompletions.map(c => c.homeworkId))
+  // Für die Pünktlichkeits-Kennzahl im Statistik-Block (StudentHomeworkStats).
+  const completedAtByHw = new Map(selectedCompletions.map(c => [c.homeworkId, c.completedAt]))
 
   // All subjects present in homework (stable order by first appearance, newest-first)
   const subjects = useMemo(() => {
@@ -154,6 +159,14 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-6">
+              <StudentHomeworkStats
+                homework={homework}
+                doneIds={doneIds}
+                completedAtByHw={completedAtByHw}
+                subjects={subjects}
+                activeSubject={activeSubject}
+                today={today}
+              />
               {grouped.length === 0 ? (
                 <div className="text-center text-kh-muted text-sm font-medium pt-12">Keine Hausübungen vorhanden.</div>
               ) : (
