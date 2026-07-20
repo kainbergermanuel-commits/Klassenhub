@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { addDaysISO, schoolYearStartISO } from '@/lib/date'
 import { setAttendanceStatus, clearAttendance, confirmReport, rejectReport } from '@/app/actions/attendance'
 import Avatar from '@/components/ui/Avatar'
+import BulkAbsenceModal from './BulkAbsenceModal'
 import type { Attendance, AttendanceStatus, Profile } from '@/lib/types'
 
 interface Props {
@@ -184,6 +185,7 @@ export default function TeacherView({ students, entries, today }: Props) {
   // Übersicht: aufgeklapptes Kind (Detail-Statistik)
   const [openStatsId, setOpenStatsId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showBulk, setShowBulk] = useState(false)
 
   const entryByKey = useMemo(() => {
     const map: Record<string, Attendance> = {}
@@ -315,8 +317,8 @@ export default function TeacherView({ students, entries, today }: Props) {
         </section>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-2">
+      {/* Tabs + Zeitraum-Eintrag */}
+      <div className="flex gap-2 items-center flex-wrap">
         {(['tag', 'uebersicht'] as Tab[]).map(t => (
           <button
             key={t}
@@ -330,7 +332,20 @@ export default function TeacherView({ students, entries, today }: Props) {
             {t === 'tag' ? 'Tages-Abgleich' : 'Übersicht'}
           </button>
         ))}
+        {/* Ergänzt den Tages-Abgleich um den Fall, den dieser nur mühsam
+            abbildet: mehrere Kinder und/oder mehrere Tage auf einmal. */}
+        <button
+          onClick={() => setShowBulk(true)}
+          className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold text-kh-teal bg-white shadow-[0_2px_8px_rgba(20,40,45,.06)] hover:text-white hover:bg-kh-teal transition-colors"
+        >
+          <span className="msym text-[17px]">event_busy</span>
+          Abwesenheit eintragen
+        </button>
       </div>
+
+      {showBulk && (
+        <BulkAbsenceModal students={students} today={today} onClose={() => setShowBulk(false)} />
+      )}
 
       {tab === 'tag' && (
         <section className="kh-card p-5">

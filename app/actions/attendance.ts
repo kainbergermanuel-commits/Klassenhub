@@ -79,6 +79,84 @@ export async function rejectReport(id: string) {
   if (error) throw new Error(error.message)
 }
 
+/** Lehrperson: mehrere Kinder für einen Zeitraum als entschuldigt eintragen
+ *  (Skikurs, Wettbewerb, längere Krankheit).
+ *
+ *  Zwei Schritte statt eines Upserts mit Overwrite: Erst die fehlenden Tage
+ *  einfügen, dann alle betroffenen Zeilen auf "entschuldigt + bestätigt"
+ *  setzen. Ein überschreibender Upsert würde die Eltern-Notiz einer bereits
+ *  vorhandenen Meldung mitlöschen — so bleibt sie erhalten, und offene
+ *  Elternmeldungen im Zeitraum gelten nebenbei als bestätigt.
+ *
+ *  Wochenenden werden übersprungen. Max. 30 Tage (großzügiger als bei Eltern,
+ *  weil hier auch längere Kuraufenthalte eingetragen werden). */
+export async function setBulkAbsence(
+  studentIds: string[],
+  startDate: string,
+  endDate: string,
+  note: string,
+): Promise<{ students: number; days: number }> {
+  const { userId, classId } = await getTeacherCtx()
+  if (studentIds.length === 0) throw new Error('Bitte mindestens ein Kind auswählen')
+  if (!ISO_DATE.test(startDate) || !ISO_DATE.test(endDate)) throw new Error('Ungültiges Datum')
+  if (endDate < startDate) throw new Error('Enddatum liegt vor dem Startdatum')
+
+  const start = new Date(`${startDate}T00:00:00`)
+  const end = new Date(`${endDate}T00:00:00`)
+  const spanDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+  if (spanDays > 30) throw new Error('Bitte maximal 30 Tage pro Eintrag')
+
+  const supabase = await createClient()
+
+  // Alle gewählten Kinder müssen zur aktiven Klasse gehören — sonst könnte über
+  // manipulierte IDs in fremde Klassen geschrieben werden.
+  const { data: valid } = await supabase
+    .from('profiles').select('id').eq('class_id', classId).eq('role', 'student').in('id', studentIds)
+  const validIds = (valid ?? []).map(s => s.id)
+  if (validIds.length !== studentIds.length) {
+    throw new Error('Mindestens ein Kind gehört nicht zur aktiven Klasse')
+  }
+
+  const dates: string[] = []
+  for (let i = 0; i < spanDays; i++) {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    const weekday = d.getDay()
+    if (weekday === 0 || weekday === 6) continue
+    dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+  }
+  if (dates.length === 0) throw new Error('Der Zeitraum enthält nur Wochenendtage')
+
+  const trimmedNote = note.trim().slice(0, 300)
+  const rows = validIds.flatMap(studentId =>
+    dates.map(date => ({
+      class_id: classId,
+      student_id: studentId,
+      date,
+      status: 'entschuldigt' as const,
+      note: trimmedNote,
+      source: 'teacher' as const,
+      reported_by: userId,
+      confirmed_by: userId,
+      confirmed_at: new Date().toISOString(),
+    }))
+  )
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any
+  const { error: insertError } = await sb
+    .from('attendance').upsert(rows, { onConflict: 'student_id,date', ignoreDuplicates: true })
+  if (insertError) throw new Error(insertError.message)
+
+  const { error: updateError } = await sb
+    .from('attendance')
+    .update({ status: 'entschuldigt', confirmed_by: userId, confirmed_at: new Date().toISOString() })
+    .eq('class_id', classId).in('student_id', validIds).in('date', dates)
+  if (updateError) throw new Error(updateError.message)
+
+  return { students: validIds.length, days: dates.length }
+}
+
 /** Elternteil: eigenes Kind für einen Tag oder Zeitraum abmelden.
  *  Wochenenden werden übersprungen; bereits vorhandene Einträge bleiben
  *  unangetastet (ON CONFLICT DO NOTHING). Max. 14 Tage pro Meldung. */

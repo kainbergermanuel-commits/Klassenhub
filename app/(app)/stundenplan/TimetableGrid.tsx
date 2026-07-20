@@ -229,8 +229,11 @@ export default function TimetableGrid({ entries, subjects, readonly = false, due
                 const openEntries = dueEntries?.filter(e => !e.done)
                 const doneEntries = dueEntries?.filter(e => e.done)
 
+                // Heute-Spalte nur dort tönen, wo eine Stunde steht — leere
+                // Zellen unter der letzten Stunde bekamen sonst als getönte
+                // Kästchen einen "Geister-Eintrag"-Look.
                 return (
-                  <td key={day} className={`p-0.5 ${day === todayCol ? 'bg-kh-teal/[0.05]' : ''}`}>
+                  <td key={day} className={`p-0.5 ${day === todayCol && value ? 'bg-kh-teal/[0.05]' : ''}`}>
                     <div className="relative">
                       <button
                         onClick={() => !readonly && setPopup({ day, slot })}

@@ -32,29 +32,39 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     ...(profile.is_admin ? [
       { href: '/admin', icon: 'admin_panel_settings', label: 'Admin' },
     ] : []),
-  ] : [
+  ] : profile.role === 'student' ? [
+    // Schüler-Nav: gleiche Gliederungs-Idee wie bei Lehrpersonen, aber aus
+    // Kind-Sicht benannt. "Start" und "Abenteuer" bleiben wie dort ungruppiert
+    // oben — das sind die beiden Einstiege, nicht Teil einer Kategorie.
     { href: '/', icon: 'home', label: 'Start' },
-    { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined },
-    { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
-    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
-    { href: '/termine', icon: 'calendar_month', label: 'Termine' },
-    { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit' },
-    ...(profile.role !== 'student' ? [
-      { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined },
-    ] : []),
     { href: '/streaks', icon: 'explore', label: 'Abenteuer' },
+    { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined, section: 'Unterricht' },
+    { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
+    { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
+    { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined, section: 'Aktuelles' },
+    { href: '/termine', icon: 'calendar_month', label: 'Termine' },
+    { href: '/meine-klasse', icon: 'groups', label: 'Meine Klasse', section: 'Klasse' },
     ...(profile.is_admin ? [
       { href: '/admin', icon: 'admin_panel_settings', label: 'Admin' },
     ] : []),
-    ...(profile.role === 'student' ? [
-      { href: '/meine-klasse', icon: 'groups', label: 'Meine Klasse' },
-      { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
-    ] : []),
-    ...(profile.role === 'parent' ? [
-      { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
-    ] : []),
     // Einstellungen wird bewusst NICHT hier gelistet, sondern unten neben
     // "Abmelden" gerendert (Sidebar/MobileHeader).
+  ] : [
+    // Eltern-Nav: "Mein Kind" bündelt alles, was den Schulalltag des Kindes
+    // betrifft; "Kommunikation" alles, was zwischen Schule und Eltern läuft.
+    { href: '/', icon: 'home', label: 'Start' },
+    { href: '/streaks', icon: 'explore', label: 'Abenteuer' },
+    { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined, section: 'Mein Kind' },
+    { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
+    { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit' },
+    { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
+    { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined, section: 'Kommunikation' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
+    { href: '/termine', icon: 'calendar_month', label: 'Termine' },
+    ...(profile.is_admin ? [
+      { href: '/admin', icon: 'admin_panel_settings', label: 'Admin', section: 'Verwaltung' },
+    ] : []),
   ]
 
   return { all }
