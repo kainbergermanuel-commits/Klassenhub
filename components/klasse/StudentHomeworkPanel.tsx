@@ -11,7 +11,7 @@ import type { Homework, Profile } from '@/lib/types'
 interface Props {
   students: Profile[]
   homework: Homework[]
-  completionsByStudent: Record<string, { homeworkId: string; completedAt: string }[]>
+  completionsByStudent: Record<string, { homeworkId: string; completedAt: string; confirmedAt: string | null }[]>
   today: string
 }
 
@@ -28,7 +28,10 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
   const selected = selectedId ? students.find(s => s.id === selectedId) ?? null : null
   const selectedCompletions = selectedId ? completionsByStudent[selectedId] ?? [] : []
   const doneIds = new Set(selectedCompletions.map(c => c.homeworkId))
-  // Für die Pünktlichkeits-Kennzahl im Statistik-Block (StudentHomeworkStats).
+  // Für den Abgegeben/Bestätigt-Umschalter + die Pünktlichkeits-Kennzahl im
+  // Statistik-Block (StudentHomeworkStats) — "bestätigt" ist eine echte, engere
+  // Teilmenge von "abgegeben" (dieselbe Unterscheidung wie beim Streak).
+  const confirmedIds = new Set(selectedCompletions.filter(c => c.confirmedAt).map(c => c.homeworkId))
   const completedAtByHw = new Map(selectedCompletions.map(c => [c.homeworkId, c.completedAt]))
 
   // All subjects present in homework (stable order by first appearance, newest-first)
@@ -162,6 +165,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
               <StudentHomeworkStats
                 homework={homework}
                 doneIds={doneIds}
+                confirmedIds={confirmedIds}
                 completedAtByHw={completedAtByHw}
                 subjects={subjects}
                 activeSubject={activeSubject}

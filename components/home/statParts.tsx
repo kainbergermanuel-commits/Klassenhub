@@ -363,12 +363,20 @@ export function RecapChip({ icon, value, label }: { icon: string; value: number;
   )
 }
 
-/** Abschnitts-Überschrift innerhalb des Panels. */
-export function SectionLabel({ icon, children }: { icon: string; children: React.ReactNode }) {
+/** Abschnitts-Überschrift innerhalb des Panels. `action` ist optional (z.B.
+ *  ein kleiner Umschalter am rechten Rand) — ohne sie unverändert zum
+ *  bisherigen Verhalten, da ein einzelnes Flex-Kind von `justify-between`
+ *  nicht beeinflusst wird. */
+export function SectionLabel({
+  icon, children, action,
+}: { icon: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5 mb-2.5 px-1">
-      <span className="msym text-[16px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
-      <h3 className="text-[11px] font-bold text-kh-muted uppercase tracking-wide">{children}</h3>
+    <div className="flex items-center justify-between gap-2 mb-2.5 px-1">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="msym text-[16px] text-kh-muted flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+        <h3 className="text-[11px] font-bold text-kh-muted uppercase tracking-wide truncate">{children}</h3>
+      </div>
+      {action}
     </div>
   )
 }

@@ -30,16 +30,20 @@ export default async function KlassePage() {
   const studentById = Object.fromEntries(studentList.map(s => [s.id, s]))
   const homeworkList = allHomework ?? []
 
-  // completed_at kommt mit derselben Abfrage mit (keine zweite Query) — die
-  // Statistik im Schüler-Panel braucht es für die Pünktlichkeits-Kennzahl.
+  // completed_at + confirmed_by_parent_at kommen mit derselben Abfrage mit
+  // (keine zweite Query) — die Statistik im Schüler-Panel braucht beides:
+  // Pünktlichkeit (completed_at vs. due_date) und den Abgegeben/Bestätigt-
+  // Umschalter (dieselbe Unterscheidung, die auch beim Streak zählt).
   const hwIds = homeworkList.map(h => h.id)
-  const completionsByStudent: Record<string, { homeworkId: string; completedAt: string }[]> = {}
+  const completionsByStudent: Record<string, { homeworkId: string; completedAt: string; confirmedAt: string | null }[]> = {}
   if (hwIds.length > 0) {
     const { data: completions } = await supabase
-      .from('homework_completions').select('homework_id,student_id,completed_at').in('homework_id', hwIds)
+      .from('homework_completions').select('homework_id,student_id,completed_at,confirmed_by_parent_at').in('homework_id', hwIds)
     for (const c of completions ?? []) {
       if (!completionsByStudent[c.student_id]) completionsByStudent[c.student_id] = []
-      completionsByStudent[c.student_id].push({ homeworkId: c.homework_id, completedAt: c.completed_at })
+      completionsByStudent[c.student_id].push({
+        homeworkId: c.homework_id, completedAt: c.completed_at, confirmedAt: c.confirmed_by_parent_at,
+      })
     }
   }
 
