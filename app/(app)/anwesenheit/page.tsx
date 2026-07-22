@@ -6,6 +6,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import TeacherView from './TeacherView'
 import ParentView from './ParentView'
 import StudentList from './StudentList'
+import PersonalAttendanceStats from './PersonalAttendanceStats'
 import AnimateIn from '@/components/ui/AnimateIn'
 import type { Attendance, Profile } from '@/lib/types'
 
@@ -91,7 +92,8 @@ export default async function AnwesenheitPage() {
         subtitle={`${entries.length === 0 ? 'Keine Fehltage' : `${entries.length} ${dayLabel}`} seit Schuljahresbeginn`}
         gradient="from-[#2E9C6E] to-[#5BC392]"
       />
-      <AnimateIn delay={0}>
+      <AnimateIn delay={0} className="space-y-5">
+        <PersonalAttendanceStats entries={entries} today={today} role="student" />
         <StudentList entries={entries} emptyText="Du warst bisher immer da — stark!" />
       </AnimateIn>
     </div>

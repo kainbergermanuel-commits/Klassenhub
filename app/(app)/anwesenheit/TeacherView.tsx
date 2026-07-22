@@ -6,6 +6,7 @@ import { addDaysISO, schoolYearStartISO } from '@/lib/date'
 import { setAttendanceStatus, clearAttendance, confirmReport, rejectReport } from '@/app/actions/attendance'
 import Avatar from '@/components/ui/Avatar'
 import BulkAbsenceModal from './BulkAbsenceModal'
+import StatsView from './StatsView'
 import type { Attendance, AttendanceStatus, Profile } from '@/lib/types'
 
 interface Props {
@@ -14,7 +15,7 @@ interface Props {
   today: string
 }
 
-type Tab = 'tag' | 'uebersicht'
+type Tab = 'tag' | 'uebersicht' | 'statistik'
 /** UI-Zustand einer Zeile: kein Eintrag = anwesend */
 type RowStatus = AttendanceStatus | 'anwesend'
 
@@ -319,7 +320,7 @@ export default function TeacherView({ students, entries, today }: Props) {
 
       {/* Tabs + Zeitraum-Eintrag */}
       <div className="flex gap-2 items-center flex-wrap">
-        {(['tag', 'uebersicht'] as Tab[]).map(t => (
+        {(['tag', 'uebersicht', 'statistik'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -329,7 +330,7 @@ export default function TeacherView({ students, entries, today }: Props) {
                 : 'bg-white text-kh-muted shadow-[0_2px_8px_rgba(20,40,45,.06)] hover:text-kh-dark'
             }`}
           >
-            {t === 'tag' ? 'Tages-Abgleich' : 'Übersicht'}
+            {t === 'tag' ? 'Tages-Abgleich' : t === 'uebersicht' ? 'Übersicht' : 'Statistik'}
           </button>
         ))}
         {/* Ergänzt den Tages-Abgleich um den Fall, den dieser nur mühsam
@@ -478,6 +479,10 @@ export default function TeacherView({ students, entries, today }: Props) {
           </div>
           <p className="text-[11.5px] text-kh-muted mt-3">E = entschuldigt · U = unentschuldigt. Kein Eintrag bedeutet anwesend.</p>
         </section>
+      )}
+
+      {tab === 'statistik' && (
+        <StatsView entries={entries} students={students} today={today} />
       )}
     </div>
   )

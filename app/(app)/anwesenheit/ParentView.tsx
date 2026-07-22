@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { reportAbsence, withdrawReport } from '@/app/actions/attendance'
 import DatePicker from '@/components/ui/DatePicker'
+import PersonalAttendanceStats from './PersonalAttendanceStats'
 import type { Attendance } from '@/lib/types'
 
 interface Props {
@@ -100,6 +101,9 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
           {error && <span className="text-[13px] font-semibold text-kh-red">{error}</span>}
         </div>
       </section>
+
+      {/* Persönliche Statistik */}
+      <PersonalAttendanceStats entries={entries} today={today} role="parent" />
 
       {/* Historie */}
       <section className="kh-card p-5">
