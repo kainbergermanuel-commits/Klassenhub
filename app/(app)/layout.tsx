@@ -41,7 +41,10 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined, section: 'Unterricht' },
     { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
-    { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit' },
+    // Anwesenheit bewusst NICHT in der Schüler-Nav: An-/Abwesenheit ist reine
+    // Eltern-/Lehrer-Sache; für ein Grundschulkind gibt es hier nichts zu tun,
+    // und eine eigene „Anwesenheitsquote" würde unverschuldete Krankheit zur
+    // Leistungszahl machen. Route zusätzlich serverseitig gesperrt (page.tsx).
     { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined, section: 'Aktuelles' },
     { href: '/termine', icon: 'calendar_month', label: 'Termine' },
     { href: '/meine-klasse', icon: 'groups', label: 'Meine Klasse', section: 'Klasse' },

@@ -5,8 +5,6 @@ import { todayISO, schoolYearStartISO } from '@/lib/date'
 import PageHeader from '@/components/layout/PageHeader'
 import TeacherView from './TeacherView'
 import ParentView from './ParentView'
-import StudentList from './StudentList'
-import PersonalAttendanceStats from './PersonalAttendanceStats'
 import AnimateIn from '@/components/ui/AnimateIn'
 import type { Attendance, Profile } from '@/lib/types'
 
@@ -47,8 +45,12 @@ export default async function AnwesenheitPage() {
     )
   }
 
-  // Elternteil: Einträge des Kindes · Schüler:in: eigene Einträge
-  const studentId = profile.role === 'parent' ? profile.child_id : user.id
+  // Anwesenheit ist reine Eltern-/Lehrer-Sache — Schüler:innen haben keinen
+  // Zugang (Nav-Link entfernt, Route hier serverseitig gesperrt). Damit bleibt
+  // unten nur noch die Elternansicht.
+  if (profile.role !== 'parent') redirect('/')
+
+  const studentId = profile.child_id
   let entries: Attendance[] = []
   let childName: string | null = null
 
@@ -57,45 +59,24 @@ export default async function AnwesenheitPage() {
       supabase.from('attendance' as never).select('*')
         .eq('student_id', studentId).gte('date', schoolYearStart)
         .order('date', { ascending: false }) as unknown as Promise<{ data: Attendance[] | null }>,
-      profile.role === 'parent'
-        ? supabase.from('profiles').select('full_name').eq('id', studentId).maybeSingle()
-        : Promise.resolve({ data: null }),
+      supabase.from('profiles').select('full_name').eq('id', studentId).maybeSingle(),
     ])
     entries = data ?? []
     if (childRes.data) childName = childRes.data.full_name
   }
 
-  if (profile.role === 'parent') {
-    const firstName = childName?.split(' ')[0]
-    return (
-      <div>
-        <PageHeader
-          icon="fact_check"
-          title="Anwesenheit"
-          subtitle={firstName ? `${firstName} abmelden & Abwesenheiten im Blick behalten` : 'Kein Kind verknüpft'}
-          gradient="from-[#2E9C6E] to-[#5BC392]"
-        />
-        {studentId && firstName
-          ? <AnimateIn delay={0}><ParentView entries={entries} childFirstName={firstName} today={today} /></AnimateIn>
-          : <div className="kh-card p-6 text-kh-muted text-[14px]">Deinem Profil ist noch kein Kind zugeordnet — bitte bei der Lehrperson melden.</div>}
-      </div>
-    )
-  }
-
-  // Schüler:in — eigene Abwesenheiten, read-only
-  const dayLabel = entries.length === 1 ? 'Fehltag' : 'Fehltage'
+  const firstName = childName?.split(' ')[0]
   return (
     <div>
       <PageHeader
         icon="fact_check"
         title="Anwesenheit"
-        subtitle={`${entries.length === 0 ? 'Keine Fehltage' : `${entries.length} ${dayLabel}`} seit Schuljahresbeginn`}
+        subtitle={firstName ? `${firstName} abmelden & Abwesenheiten im Blick behalten` : 'Kein Kind verknüpft'}
         gradient="from-[#2E9C6E] to-[#5BC392]"
       />
-      <AnimateIn delay={0} className="space-y-5">
-        <PersonalAttendanceStats entries={entries} today={today} role="student" />
-        <StudentList entries={entries} emptyText="Du warst bisher immer da — stark!" />
-      </AnimateIn>
+      {studentId && firstName
+        ? <AnimateIn delay={0}><ParentView entries={entries} childFirstName={firstName} today={today} /></AnimateIn>
+        : <div className="kh-card p-6 text-kh-muted text-[14px]">Deinem Profil ist noch kein Kind zugeordnet — bitte bei der Lehrperson melden.</div>}
     </div>
   )
 }
