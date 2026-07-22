@@ -1,16 +1,18 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO, localDateOf, todayLocal } from '@/lib/date'
+import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp } from '@/lib/streak'
 import { computeQuestProgress, defaultWeeklyTemplateKeys, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult, type GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
-import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
+import { collectAchievements, countAchievements, WEEKLY_SEAL_KEY, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
-import { getSeasonTheme, isArcUnlocked, splitterFound } from '@/lib/seasonTheme'
+import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, SPLITTER_SIGNS, SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
+import type { AdventureData } from '@/components/streaks/TeacherAdventurePanel'
+import type { ChildAdventureData } from '@/components/streaks/ChildAdventureStats'
 import { activeRiddles, type Riddle } from '@/lib/riddles'
 import { matchChild } from '@/lib/auth'
 import StreakOverview from '@/components/streaks/StreakOverview'
@@ -376,6 +378,7 @@ export default async function StreaksPage() {
     riddlesSolved: number
   }
   let allAdventureStats: StudentAdventureStat[] = []
+  let teacherAdventure: AdventureData | null = null
   if ((profile.role === 'teacher' || profile.role === 'parent') && studentIds.length > 0) {
     const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
     // Für hwConfirmed: nur HÜ DIESER Woche zählen — die Karte heißt "Diese
@@ -390,10 +393,11 @@ export default async function StreaksPage() {
     ])
     const weekDutyIds = (weekDuty ?? []).map(d => d.id)
     const weekReminderIds = (weekReminders ?? []).map(r => r.id)
-    const [{ data: dutyCompletionsRaw }, { data: allReminderViews }, { data: riddleSolvesAll }] = await Promise.all([
+    const [{ data: dutyCompletionsRaw }, { data: allReminderViews }, { data: riddleSolvesAll }, { data: classAchievements }] = await Promise.all([
       weekDutyIds.length > 0 ? supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', weekDutyIds) : Promise.resolve({ data: [] }),
       weekReminderIds.length > 0 ? supabase.from('reminder_views').select('reminder_id,student_id').in('reminder_id', weekReminderIds).in('student_id', studentIds) : Promise.resolve({ data: [] }),
-      supabase.from('quest_riddle_solutions').select('student_id').eq('class_id', activeClassId),
+      supabase.from('quest_riddle_solutions').select('student_id,solved_at').eq('class_id', activeClassId),
+      supabase.from('achievements').select('kind,key,period').in('student_id', studentIds),
     ])
     const { doneByDutyStudent } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
 
@@ -459,6 +463,107 @@ export default async function StreaksPage() {
         riddlesSolved: riddleCountByStudent.get(s.id) ?? 0,
       }
     })
+
+    // ─── AGGREGAT fürs Lehrer-Dashboard (TeacherAdventurePanel) ──────────────
+    // Alles aus bereits geladenen Daten + den zwei oben ergänzten Queries
+    // (Rätsel-solved_at, Klassen-Achievements). Anonyme Verteilungen + Wochen-
+    // Trend statt Rangliste (Prinzip 1/5).
+    if (profile.role === 'teacher') {
+      // 6-Wochen-Fenster (KW-Labels) für den Trend.
+      const weekWindow = [5, 4, 3, 2, 1, 0].map(k => addDaysISO(-7 * k, new Date(`${weekStart}T00:00:00`)))
+      const weekEndOf = (ws: string) => addDaysISO(6, new Date(`${ws}T00:00:00`))
+
+      // Quests protokolliert je Woche (achievements kind='quest', period=week_start;
+      // das Wochensiegel ausgeschlossen — es ist ein Meta-Erfolg, keine Einzel-Quest).
+      const questAchByPeriod = new Map<string, number>()
+      for (const a of (classAchievements ?? []) as { kind: string; key: string; period: string }[]) {
+        if (a.kind === 'quest' && a.key !== WEEKLY_SEAL_KEY) questAchByPeriod.set(a.period, (questAchByPeriod.get(a.period) ?? 0) + 1)
+      }
+      // Rätsel je Woche (solved_at) + bestätigte HÜ je Woche (completed_at).
+      const inWeek = (iso: string | null, ws: string) => !!iso && iso.slice(0, 10) >= ws && iso.slice(0, 10) <= weekEndOf(ws)
+      const trend = weekWindow.map(ws => ({
+        label: `KW${getWeekNumber(ws)}`,
+        quests: questAchByPeriod.get(ws) ?? 0,
+        riddles: ((riddleSolvesAll ?? []) as { solved_at: string | null }[]).filter(r => inWeek(r.solved_at, ws)).length,
+        hw: ((allCompletions ?? []) as { completed_at?: string | null; confirmed_by_parent_at?: string | null }[])
+          .filter(c => c.confirmed_by_parent_at && inWeek(c.completed_at ?? null, ws)).length,
+      }))
+
+      // Dominanter Wahlpfad dieser Woche (der von den meisten Kindern gewählte
+      // Wahlpfad-Quest) — echte Labels aus questVault, kein erfundenes Chronist/Bote.
+      const choiceTemplateCount = new Map<string, number>()
+      for (const c of (weekChoices ?? []) as { template_key: string }[]) choiceTemplateCount.set(c.template_key, (choiceTemplateCount.get(c.template_key) ?? 0) + 1)
+      let domTemplate: string | null = null
+      for (const [key, n] of choiceTemplateCount) if (domTemplate === null || n > (choiceTemplateCount.get(domTemplate) ?? 0)) domTemplate = key
+      const domTpl = domTemplate ? findQuestTemplate(domTemplate) : undefined
+      const domChoices = domTpl?.choices ?? []
+      const domChoiceByStudent = new Map<string, string>()
+      for (const c of (weekChoices ?? []) as { student_id: string; template_key: string; choice_key: string }[]) {
+        if (c.template_key === domTemplate) domChoiceByStudent.set(c.student_id, c.choice_key)
+      }
+      const wahlpfadOptions = domChoices.map(ch => ({ key: ch.key, label: ch.label, count: [...domChoiceByStudent.values()].filter(v => v === ch.key).length }))
+
+      const streakById = new Map(studentData.map(s => [s.id, s.streak]))
+      const bucket = (v: number, edges: number[]) => edges.findIndex(e => v <= e)
+
+      const childrenOut = allAdventureStats.map(st => {
+        const streak = streakById.get(st.id) ?? 0
+        const choiceKey = domChoiceByStudent.get(st.id)
+        const pathLabel = choiceKey ? (domChoices.find(c => c.key === choiceKey)?.label ?? null) : null
+        // Mini-Trend: bestätigte HÜ je Woche über die letzten 4 Wochen (aus allCompletions).
+        const childTrend = weekWindow.slice(2).map(ws =>
+          ((allCompletions ?? []) as { student_id: string; completed_at?: string | null; confirmed_by_parent_at?: string | null }[])
+            .filter(c => c.student_id === st.id && c.confirmed_by_parent_at && inWeek(c.completed_at ?? null, ws)).length)
+        const idle = st.questsDone === 0 && streak === 0 && !choiceKey && st.riddlesSolved === 0
+        return {
+          id: st.id, full_name: st.full_name,
+          avatar_color: st.avatar_color, avatar_seed: st.avatar_seed,
+          avatar_hair_color: st.avatar_hair_color, avatar_skin_color: st.avatar_skin_color,
+          questsDone: st.questsDone, questsTotal: st.questsTotal, riddlesSolved: st.riddlesSolved,
+          streak, pathLabel, trend: childTrend, idle,
+        }
+      })
+
+      // Anonyme Verteilungen.
+      const flameBuckets = ['0 Tage', '1–3', '4–7', '8–14', '15+'].map((label, i) => ({
+        label,
+        count: childrenOut.filter(c => bucket(c.streak, [0, 3, 7, 14, Infinity]) === i).length,
+      }))
+      const questBuckets = [
+        { label: '0', count: childrenOut.filter(c => c.questsTotal > 0 && c.questsDone === 0).length },
+        { label: '1–2', count: childrenOut.filter(c => c.questsDone >= 1 && c.questsDone < c.questsTotal).length },
+        { label: 'alle', count: childrenOut.filter(c => c.questsTotal > 0 && c.questsDone === c.questsTotal).length },
+      ]
+
+      const currentThemeName = getSeasonTheme(currentSeason).name
+      const awakened = awakenedSignCount(currentThemeName)
+      const arc = SCHOOL_YEAR_ARCS.find(a => a.name === currentThemeName)
+
+      teacherAdventure = {
+        worldName: currentThemeName,
+        guideName: arc?.guide ?? 'die Klasse',
+        kpis: {
+          activeCount: childrenOut.filter(c => !c.idle).length,
+          totalCount: childrenOut.length,
+          questsDone: childrenOut.reduce((s, c) => s + c.questsDone, 0),
+          questsTotal: childrenOut.reduce((s, c) => s + c.questsTotal, 0),
+          questsTrend: trend[5].quests - trend[4].quests,
+          riddlesSolved: ((riddleSolvesAll ?? []) as unknown[]).length,
+          riddlesKids: new Set(((riddleSolvesAll ?? []) as { student_id: string }[]).map(r => r.student_id)).size,
+          goalDone: classGoalConfirmedDone,
+          goalTarget: classGoal?.target ?? 0,
+        },
+        trend,
+        flameBuckets,
+        questBuckets,
+        wahlpfad: { title: domTpl?.title ?? null, options: wahlpfadOptions, notChosen: childrenOut.length - domChoiceByStudent.size },
+        splitter: {
+          awakened, total: SPLITTER_SIGNS.length, found: splitterFound(currentThemeName),
+          signs: SPLITTER_SIGNS.map((s, i) => ({ label: s.label, awake: i < awakened })),
+        },
+        children: childrenOut,
+      }
+    }
   }
 
   // Lehrer sehen die ganze Klasse, Eltern NUR das eigene Kind — die Berechnung
@@ -474,6 +579,61 @@ export default async function StreaksPage() {
 
   const noStreak = studentData.filter(s => s.streak === 0)
 
+  // ─── SCHÜLER/ELTERN: „Du & die Klasse" (dezenter, literaturgestützter
+  // Klassenbezug — anonyme Verteilung + dynamische Norm, KEIN Rang). Alles aus
+  // bereits geladenen Daten (studentData, allCompletions). Siehe
+  // components/streaks/ChildAdventureStats.tsx für die Begründung. ─────────────
+  let childAdventure: ChildAdventureData | null = null
+  if (profile.role === 'student' || profile.role === 'parent') {
+    const selfId = profile.role === 'student'
+      ? profile.id
+      : (matchChild(profile, students ?? []) ?? students?.[0])?.id ?? null
+    if (selfId) {
+      const flameBucketIndex = (v: number) => [0, 3, 7, 14, Infinity].findIndex(e => v <= e)
+      const flameBuckets = ['0 Tage', '1–3', '4–7', '8–14', '15+'].map((label, i) => ({
+        label, count: studentData.filter(s => flameBucketIndex(s.streak) === i).length,
+      }))
+      const selfStreak = studentData.find(s => s.id === selfId)?.streak ?? 0
+
+      // Beteiligung diese Woche = Kinder mit ≥1 eltern-bestätigter HÜ (completed_at
+      // in dieser Woche). Dynamische Norm statt statischer %-Norm.
+      const weekEndC = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
+      const inThisWeek = (c: { completed_at?: string | null; confirmed_by_parent_at?: string | null }) =>
+        !!c.confirmed_by_parent_at && !!c.completed_at && c.completed_at.slice(0, 10) >= weekStart && c.completed_at.slice(0, 10) <= weekEndC
+      const activeIds = new Set(((allCompletions ?? []) as { student_id: string; completed_at?: string | null; confirmed_by_parent_at?: string | null }[]).filter(inThisWeek).map(c => c.student_id))
+      const todayAdded = ((allCompletions ?? []) as { completed_at?: string | null; confirmed_by_parent_at?: string | null }[])
+        .filter(c => !!c.confirmed_by_parent_at && (c.completed_at ?? '').slice(0, 10) === today).length
+
+      // Eigene Woche.
+      const selfQuestsDone = profile.role === 'student' ? hbQuestsDone : (adventureStats[0]?.questsDone ?? 0)
+      const selfQuestsTotal = profile.role === 'student' ? hbQuestsTotal : (adventureStats[0]?.questsTotal ?? 3)
+      const selfRiddles = profile.role === 'student'
+        ? riddlesForMe.filter(r => r.solved).length
+        : (adventureStats[0]?.riddlesSolved ?? 0)
+
+      // Kollektiver Beitrag: eigene bestätigte HÜ im aktuellen Klassenziel-Zeitraum.
+      const selfContribution = ((allCompletions ?? []) as { student_id: string; homework_id: string; confirmed_by_parent_at?: string | null }[])
+        .filter(c => c.student_id === selfId && seasonHwIds.has(c.homework_id) && c.confirmed_by_parent_at).length
+
+      // Selbstvergleich: eigene bestätigte HÜ je Woche über die letzten 4 Wochen.
+      const selfTrend = [3, 2, 1, 0].map(kk => {
+        const ws = addDaysISO(-7 * kk, new Date(`${weekStart}T00:00:00`))
+        const we = addDaysISO(6, new Date(`${ws}T00:00:00`))
+        return ((allCompletions ?? []) as { student_id: string; completed_at?: string | null; confirmed_by_parent_at?: string | null }[])
+          .filter(c => c.student_id === selfId && !!c.confirmed_by_parent_at && (c.completed_at ?? '').slice(0, 10) >= ws && (c.completed_at ?? '').slice(0, 10) <= we).length
+      })
+
+      childAdventure = {
+        role: profile.role,
+        self: { questsDone: selfQuestsDone, questsTotal: selfQuestsTotal, flame: selfStreak, riddles: selfRiddles, activeThisWeek: activeIds.has(selfId) },
+        classFlame: { buckets: flameBuckets, selfIndex: flameBucketIndex(selfStreak) },
+        participation: { active: activeIds.size, total: studentData.length, todayAdded },
+        goal: classGoal ? { done: classGoalConfirmedDone, target: classGoal.target, selfContribution } : null,
+        selfTrend,
+      }
+    }
+  }
+
   return (
     <StreakOverview
       role={profile.role}
@@ -487,6 +647,8 @@ export default async function StreaksPage() {
       riddles={riddlesForMe}
       guildSection={guildSection}
       adventureStats={adventureStats}
+      teacherAdventure={teacherAdventure}
+      childAdventure={childAdventure}
     />
   )
 }

@@ -7,7 +7,8 @@ import HeldenbuchCard from '@/components/home/HeldenbuchCard'
 import RucksackCard from '@/components/streaks/RucksackCard'
 import WeeklyQuestCard from '@/components/home/WeeklyQuestCard'
 import RiddleList from '@/components/home/RiddleList'
-import AdventureStatsCard from '@/components/streaks/AdventureStatsCard'
+import TeacherAdventurePanel, { type AdventureData } from '@/components/streaks/TeacherAdventurePanel'
+import ChildAdventureStats, { type ChildAdventureData } from '@/components/streaks/ChildAdventureStats'
 import AnimateIn from '@/components/ui/AnimateIn'
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import type { Riddle } from '@/lib/riddles'
@@ -73,9 +74,15 @@ interface Props {
     hwConfirmed: number
     riddlesSolved: number
   }[]
+  /** Volles Lehrer-Dashboard (nur Lehrerrolle) — ersetzt für Lehrpersonen die
+   *  AdventureStatsCard + „Ohne aktive Streak". Für Schüler/Eltern null. */
+  teacherAdventure: AdventureData | null
+  /** „Du/Ihr Kind & die Klasse" (Schüler + Eltern) — dezenter Klassenbezug.
+   *  Für Lehrer null. */
+  childAdventure: ChildAdventureData | null
 }
 
-export default function StreakOverview({ role, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection, adventureStats }: Props) {
+export default function StreakOverview({ role, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection, adventureStats, teacherAdventure, childAdventure }: Props) {
   const currentThemeName = getSeasonTheme(currentSeason).name
   return (
     <>
@@ -88,9 +95,15 @@ export default function StreakOverview({ role, noStreak, classGoal, classGoalDon
         {/* Bedingungen bewusst AUSSEN am AnimateIn: die Karten returnen bei
             leeren Daten null, der Wrapper-div bliebe aber stehen und erzeugte
             im flex-col gap-6 eine doppelte Lücke. */}
-        {(role === 'teacher' || role === 'parent') && adventureStats.length > 0 && (
+        {role === 'teacher' && teacherAdventure && (
           <AnimateIn delay={0}>
-            <AdventureStatsCard students={adventureStats} title={role === 'parent' ? 'Dein Kind diese Woche' : undefined} />
+            <TeacherAdventurePanel data={teacherAdventure} />
+          </AnimateIn>
+        )}
+
+        {role === 'parent' && childAdventure && (
+          <AnimateIn delay={0}>
+            <ChildAdventureStats data={childAdventure} />
           </AnimateIn>
         )}
 
@@ -103,6 +116,12 @@ export default function StreakOverview({ role, noStreak, classGoal, classGoalDon
         {riddles.length > 0 && (
           <AnimateIn delay={60}>
             <RiddleList riddles={riddles} />
+          </AnimateIn>
+        )}
+
+        {role === 'student' && childAdventure && (
+          <AnimateIn delay={75}>
+            <ChildAdventureStats data={childAdventure} />
           </AnimateIn>
         )}
 
@@ -145,8 +164,9 @@ export default function StreakOverview({ role, noStreak, classGoal, classGoalDon
           </AnimateIn>
         )}
 
-        {/* Students without streak (teacher only) */}
-        {role === 'teacher' && noStreak.length > 0 && (
+        {/* Students without streak — nur als Fallback, wenn das volle Lehrer-
+            Dashboard fehlt (das Panel hat die „noch nicht gestartet"-Gruppe). */}
+        {role === 'teacher' && !teacherAdventure && noStreak.length > 0 && (
           <AnimateIn delay={120} className="kh-card p-5">
             <h2 className="font-extrabold text-base text-kh-dark mb-3">Ohne aktive Streak</h2>
             <div className="flex flex-wrap gap-2">
