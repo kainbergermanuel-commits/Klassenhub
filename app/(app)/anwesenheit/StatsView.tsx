@@ -19,6 +19,10 @@ export default function StatsView({ entries, students, today }: { entries: Atten
   const [status, setStatus] = useState<StatusFilter>('all')
   const [childId, setChildId] = useState<'all' | string>('all')
 
+  // Filter als Aufklapp-Bereich (inline, kein Dropdown/Popup): eingeklappt nur
+  // die Kopfzeile, aufgeklappt Zeitraum + alle Kinder auf einen Blick.
+  const [open, setOpen] = useState(false)
+
   // „Alle Kinder" oder ein einzelnes Kind — bei Einzelwahl rechnet die ganze
   // Seite auf dieses Kind um (studentCount=1); die anonyme Verteilung blendet
   // sich dann aus (studentCount > 1 false).
@@ -53,52 +57,70 @@ export default function StatsView({ entries, students, today }: { entries: Atten
 
   return (
     <div className="space-y-5">
-      {/* Filter: Zeitraum + Kind-Auswahl (Avatar-Leiste statt Dropdown) */}
-      <div className="space-y-2.5">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="msym text-[18px] text-kh-muted">tune</span>
-          {(['year', 'days30', 'month'] as Range[]).map(r => (
-            <button key={r} onClick={() => setRange(r)}
-              className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-bold transition-all ${
-                range === r ? 'bg-gradient-to-br from-kh-dark to-kh-green text-white shadow-[0_4px_12px_rgba(20,40,45,.16)]' : 'bg-white text-kh-muted shadow-[0_2px_8px_rgba(20,40,45,.06)] hover:text-kh-dark'
-              }`}>
-              {RANGE_LABEL[r]}
-            </button>
-          ))}
-        </div>
+      {/* Filter als Aufklapp-Bereich (inline, kein Dropdown/Popup) */}
+      <div className="kh-card overflow-hidden">
+        <button
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          className="w-full flex items-center gap-2 px-4 py-3 text-left"
+        >
+          <span className="msym text-[18px] text-kh-green">tune</span>
+          <span className="font-extrabold text-[13.5px] text-kh-dark">Filter</span>
+          <span className="text-[12.5px] text-kh-muted font-semibold">· {RANGE_LABEL[range]}</span>
+          {childName && <span className="inline-flex items-center gap-1 rounded-full bg-kh-green/12 text-kh-green px-2 py-0.5 text-[11px] font-bold"><span className="msym text-[13px]">person</span>{childName.split(' ')[0]}</span>}
+          <span className={`msym text-[20px] text-kh-muted ml-auto transition-transform ${open ? 'rotate-180' : ''}`}>expand_more</span>
+        </button>
 
-        {/* Horizontale, scrollbare Kind-Leiste — „Alle" zuerst, dann Avatare.
-            Direkter antippbar als ein Dropdown und passt zum Avatar-Look der App. */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-kh pb-1">
-          <button
-            onClick={() => setChildId('all')}
-            aria-pressed={childId === 'all'}
-            className={`flex items-center gap-1.5 flex-shrink-0 rounded-full pl-3 pr-3.5 py-1.5 text-[12.5px] font-bold transition-colors ${
-              childId === 'all' ? 'bg-kh-green text-white shadow-[0_4px_12px_rgba(46,156,110,.22)]' : 'bg-white text-kh-muted shadow-[0_2px_8px_rgba(20,40,45,.06)] hover:text-kh-dark'
-            }`}
-          >
-            <span className="msym text-[17px]">groups</span>Alle
-          </button>
-          {students.map(st => {
-            const active = childId === st.id
-            return (
-              <button
-                key={st.id}
-                onClick={() => setChildId(active ? 'all' : st.id)}
-                aria-pressed={active}
-                title={st.full_name}
-                className={`flex items-center gap-1.5 flex-shrink-0 rounded-full pl-1 pr-3 py-1 text-[12.5px] font-bold transition-colors ${
-                  active ? 'bg-kh-green text-white shadow-[0_4px_12px_rgba(46,156,110,.22)]' : 'bg-white text-kh-muted shadow-[0_2px_8px_rgba(20,40,45,.06)] hover:text-kh-dark'
-                }`}
-              >
-                <span className={`rounded-full flex-shrink-0 ${active ? 'ring-2 ring-white/70' : ''}`}>
-                  <Avatar name={st.full_name} color={st.avatar_color} seed={st.avatar_seed} hairColor={st.avatar_hair_color} skinColor={st.avatar_skin_color} size={24} />
-                </span>
-                {st.full_name.split(' ')[0]}
-              </button>
-            )
-          })}
-        </div>
+        {open && (
+          <div className="px-4 pb-4 pt-4 border-t border-kh-border/60 space-y-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted mb-2">Zeitraum</p>
+              <div className="flex gap-2 flex-wrap">
+                {(['year', 'days30', 'month'] as Range[]).map(r => (
+                  <button key={r} onClick={() => setRange(r)}
+                    className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-bold transition-all ${
+                      range === r ? 'bg-gradient-to-br from-kh-dark to-kh-green text-white shadow-[0_4px_12px_rgba(20,40,45,.16)]' : 'bg-kh-bg text-kh-muted hover:text-kh-dark'
+                    }`}>
+                    {RANGE_LABEL[r]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-kh-muted mb-2">Kind</p>
+              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1">
+                <button
+                  onClick={() => setChildId('all')}
+                  aria-pressed={childId === 'all'}
+                  className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2 transition-colors ${childId === 'all' ? 'bg-kh-green/12' : 'hover:bg-kh-bg'}`}
+                >
+                  <span className={`w-[38px] h-[38px] rounded-full flex items-center justify-center flex-shrink-0 ${childId === 'all' ? 'bg-kh-green ring-2 ring-kh-green ring-offset-2 ring-offset-white' : 'bg-kh-green/12'}`}>
+                    <span className={`msym text-[20px] ${childId === 'all' ? 'text-white' : 'text-kh-green'}`}>groups</span>
+                  </span>
+                  <span className={`text-[11px] font-bold leading-none ${childId === 'all' ? 'text-kh-green' : 'text-kh-muted'}`}>Alle</span>
+                </button>
+                {students.map(st => {
+                  const active = childId === st.id
+                  return (
+                    <button
+                      key={st.id}
+                      onClick={() => setChildId(active ? 'all' : st.id)}
+                      aria-pressed={active}
+                      title={st.full_name}
+                      className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2 min-w-0 transition-colors ${active ? 'bg-kh-green/12' : 'hover:bg-kh-bg'}`}
+                    >
+                      <span className={`rounded-full flex-shrink-0 ${active ? 'ring-2 ring-kh-green ring-offset-2 ring-offset-white' : ''}`}>
+                        <Avatar name={st.full_name} color={st.avatar_color} seed={st.avatar_seed} hairColor={st.avatar_hair_color} skinColor={st.avatar_skin_color} size={38} />
+                      </span>
+                      <span className={`w-full truncate text-center text-[11px] font-bold leading-none ${active ? 'text-kh-green' : 'text-kh-dark'}`}>{st.full_name.split(' ')[0]}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Insight-Chips */}
