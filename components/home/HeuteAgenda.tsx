@@ -149,7 +149,13 @@ function LessonCell({
  *  Verwaltungs-Raster im Stundenplan. */
 function SupervisionColumn({ breaks }: { breaks: SupervisionBreak[] }) {
   return (
-    <div className="rounded-xl bg-white/55 ring-1 ring-kh-border/40 p-3">
+    <div
+      className="rounded-xl ring-1 ring-kh-border/40 p-3"
+      style={{
+        background: 'linear-gradient(160deg, #FBF7EE 0%, #FFFFFF 65%)',
+        boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 6px 14px rgba(20,40,45,.08)',
+      }}
+    >
       <div className="flex items-center gap-1.5 mb-2.5">
         <span className="msym text-[16px] text-[#2F86C5]" style={{ fontVariationSettings: "'FILL' 1" }}>supervisor_account</span>
         <span className="text-[11px] font-extrabold uppercase tracking-wide text-kh-muted">Aufsichten</span>
