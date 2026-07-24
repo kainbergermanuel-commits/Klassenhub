@@ -306,7 +306,7 @@ export default async function HomePage() {
     const agendaWeekStart = getRelevantMondayOfWeek()
     const jsDay = new Date(`${today}T00:00:00`).getDay() // 0=So … 6=Sa
     const todayWeekday = jsDay === 0 ? 7 : jsDay // 1=Mo … 7=So
-    const [{ data: timetableEntries }, { data: planningNotes }] = await Promise.all([
+    const [{ data: timetableEntries }, { data: planningNotes }, { data: supervisionRows }] = await Promise.all([
       // Der EIGENE Plan der Lehrperson (quer über alle Klassen, mit Klassen-
       // Label), nicht der Klassenplan — die häufigste Frage im Alltag ist
       // "wann bin ich in welcher Klasse?". Siehe supabase/add-teacher-timetable.sql.
@@ -316,6 +316,10 @@ export default async function HomePage() {
       supabase.from('planning_notes' as never)
         .select('day,subject,content').eq('class_id', activeClassId)
         .eq('week_start', agendaWeekStart) as unknown as Promise<{ data: { day: number; subject: string; content: string }[] | null }>,
+      // Gangaufsichten der Lehrperson (siehe supabase/add-teacher-supervisions.sql).
+      // Fehlt die Tabelle noch, liefert Supabase data=null → keine Aufsichten.
+      supabase.from('teacher_supervisions' as never)
+        .select('day,break_slot').eq('teacher_id', user.id) as unknown as Promise<{ data: { day: number; break_slot: number }[] | null }>,
     ])
     const agenda = {
       title: 'Heutige Agenda',
@@ -333,6 +337,7 @@ export default async function HomePage() {
       weekStart: agendaWeekStart,
       weekLabel: `KW ${getWeekNumber(agendaWeekStart)}`,
       showPlanningLinks: true,
+      supervisions: (supervisionRows ?? []).map(s => ({ day: s.day, breakSlot: s.break_slot })),
     }
 
     return (

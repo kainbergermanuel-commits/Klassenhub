@@ -7,6 +7,7 @@ import { getStundenplanMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from 
 import TimetableGrid from './TimetableGrid'
 import ClassTimetableEditor from './ClassTimetableEditor'
 import TeacherTimetableEditor from './TeacherTimetableEditor'
+import SupervisionEditor from './SupervisionEditor'
 import PageHeader from '@/components/layout/PageHeader'
 import AnimateIn from '@/components/ui/AnimateIn'
 
@@ -46,7 +47,7 @@ export default async function StundenplanPage(
     if (!activeClassId) redirect('/')
     const view = (await searchParams).ansicht === 'klasse' ? 'klasse' : 'mein'
 
-    const [{ data: teacherEntries }, { data: templateEntries }, { data: pushRow }, klass] = await Promise.all([
+    const [{ data: teacherEntries }, { data: templateEntries }, { data: pushRow }, { data: supervisionRows }, klass] = await Promise.all([
       (supabaseCommon
         .from('teacher_timetable_entries' as never)
         .select('day,slot,subject,class_label')
@@ -62,6 +63,14 @@ export default async function StundenplanPage(
         .select('pushed_at')
         .eq('class_id', activeClassId)
         .maybeSingle() as unknown as Promise<{ data: { pushed_at: string } | null }>),
+      // Gangaufsichten der Lehrperson (siehe supabase/add-teacher-supervisions.sql).
+      // Fehlt die Tabelle noch (Migration nicht eingespielt), liefert Supabase
+      // data=null → leere Liste, die Seite bleibt funktionsfähig.
+      (supabaseCommon
+        .from('teacher_supervisions' as never)
+        .select('day,break_slot')
+        .eq('teacher_id', user.id)
+        .order('day').order('break_slot') as unknown as Promise<{ data: { day: number; break_slot: number }[] | null }>),
       getClass(activeClassId),
     ])
 
@@ -136,6 +145,16 @@ export default async function StundenplanPage(
             <ClassTimetableEditor entries={templateEntries ?? []} subjects={subjects} lastPushedAt={pushRow?.pushed_at ?? null} />
           )}
         </AnimateIn>
+
+        {/* Gangaufsichten — eigene Karte unter dem persönlichen Plan, nur im
+            "Mein Plan"-Tab (der Klassenplan hat keine persönlichen Aufsichten). */}
+        {view === 'mein' && (
+          <AnimateIn delay={80} className="kh-card px-5 py-5 mt-4">
+            <SupervisionEditor
+              initial={(supervisionRows ?? []).map(s => ({ day: s.day, breakSlot: s.break_slot }))}
+            />
+          </AnimateIn>
+        )}
       </div>
     )
   }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { buildClassColorMap, classColorFrom } from '@/lib/classLabelColor'
+import { supervisionBreak, type SupervisionBreak } from '@/lib/supervisionSlots'
 import IconButton from '@/components/ui/IconButton'
 
 // Slot→Zeit-Mapping identisch zum Stundenplan (TimetableGrid.tsx SLOT_TIMES).
@@ -52,6 +53,9 @@ export interface AgendaData {
   weekLabel: string
   /** Fußzeile mit Stundenplan-/Planung-Links (nur Lehrer). */
   showPlanningLinks: boolean
+  /** Gangaufsichten der Lehrperson (nur Lehrer; Eltern lassen es weg). day 1=Mo…5=Fr,
+   *  breakSlot 0=vor der 1. Stunde, N=Pause nach der N. Stunde. */
+  supervisions?: { day: number; breakSlot: number }[]
 }
 
 function fmtDayNum(weekStart: string, dayIdx0: number): string {
@@ -137,6 +141,36 @@ function LessonCell({
         </span>
       )}
     </span>
+  )
+}
+
+/** Zweite Spalte im Tag-View: die Gangaufsichten des Tages, nach Zeit sortiert.
+ *  Lange Aufsichten (7:45–8:00, 9:45–10:00) golden, kurze blau — konsistent zum
+ *  Verwaltungs-Raster im Stundenplan. */
+function SupervisionColumn({ breaks }: { breaks: SupervisionBreak[] }) {
+  return (
+    <div className="rounded-xl bg-white/55 ring-1 ring-kh-border/40 p-3">
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <span className="msym text-[16px] text-[#2F86C5]" style={{ fontVariationSettings: "'FILL' 1" }}>supervisor_account</span>
+        <span className="text-[11px] font-extrabold uppercase tracking-wide text-kh-muted">Aufsichten</span>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {breaks.map(b => {
+          const color = b.long ? '#C98A2B' : '#2F86C5'
+          return (
+            <div key={b.slot} className="flex items-stretch gap-2 rounded-lg bg-white/70 px-2.5 py-2">
+              <span className="w-1 rounded-full flex-shrink-0" style={{ background: color }} />
+              <div className="min-w-0">
+                <div className="text-[12.5px] font-extrabold text-kh-dark tabular-nums leading-none">{b.start}–{b.end}</div>
+                <div className="text-[10px] font-bold mt-1 leading-none" style={{ color: b.long ? '#8A5E14' : '#2E6C93' }}>
+                  {b.long ? 'Lange Aufsicht' : 'Kurze Aufsicht'}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -249,7 +283,7 @@ function PlanungPopup({
  * auf Kartenebene. Bewusst KEINE Doppelung des Statistik-Panels.
  */
 export default function HeuteAgenda({ data }: { data: AgendaData }) {
-  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage } = data
+  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage, supervisions } = data
   const focusIsSchoolday = focusWeekday >= 1 && focusWeekday <= 5
   const [view, setView] = useState<'tag' | 'woche'>(focusIsSchoolday ? 'tag' : 'woche')
   const [popupDay, setPopupDay] = useState<number | null>(null)
@@ -274,6 +308,12 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
   const weekNote = notes.find(n => n.day === 0 && n.subject === '')?.content.trim() || null
 
   const focusPlanCount = focusIsSchoolday ? dayPlanCount(focusWeekday) : 0
+
+  /** Gangaufsichten des Fokustags, nach Zeit (= break_slot) sortiert. */
+  const focusSupervisions: SupervisionBreak[] = (supervisions ?? [])
+    .filter(s => s.day === focusWeekday)
+    .map(s => supervisionBreak(s.breakSlot))
+    .sort((a, b) => a.slot - b.slot)
 
   return (
     <div className="rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ background: 'linear-gradient(135deg, #F4F8FA 0%, #FEFEFC 60%)' }}>
@@ -314,6 +354,7 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
           planCount={focusPlanCount}
           onOpenPlanning={() => setPopupDay(focusWeekday)}
           weekNote={showPlanningLinks ? weekNote : null}
+          supervisions={focusSupervisions}
         />
       ) : (
         <WocheView
@@ -348,7 +389,7 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
 }
 
 function TagView({
-  weekday, tabLabel, entries, subjOf, dateLabel, showPlanningLinks, emptyMessage, classColorOf, planCount, onOpenPlanning, weekNote,
+  weekday, tabLabel, entries, subjOf, dateLabel, showPlanningLinks, emptyMessage, classColorOf, planCount, onOpenPlanning, weekNote, supervisions,
 }: {
   weekday: number
   tabLabel: string
@@ -361,6 +402,7 @@ function TagView({
   planCount: number
   onOpenPlanning: () => void
   weekNote: string | null
+  supervisions: SupervisionBreak[]
 }) {
   if (weekday > 5) {
     return (
@@ -389,36 +431,45 @@ function TagView({
         )}
       </div>
 
-      {entries.length === 0 ? (
-        <div className="flex items-center gap-3 rounded-xl bg-white/60 px-4 py-4">
-          <span className="msym text-[22px] text-kh-muted flex-shrink-0">calendar_view_week</span>
-          <div className="text-[13px] text-kh-muted font-medium">
-            {emptyMessage ?? 'Kein Unterricht eingetragen.'}{' '}
-            <Link href="/stundenplan" className="font-bold text-[#3E8DB8] hover:underline">Stundenplan öffnen</Link>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          {entries.map(e => {
-            const s = subjOf(e.subject)
-            return (
-              <div key={`${e.day}-${e.slot}`} className="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5">
-                <div className="flex flex-col items-center w-11 flex-shrink-0">
-                  <span className="text-[13px] font-extrabold text-kh-dark leading-none">{e.slot}.</span>
-                  <span className="text-[10px] font-medium text-kh-muted mt-0.5">{SLOT_TIMES[e.slot - 1]}</span>
-                </div>
-                <SubjChip subj={s} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[14px] font-semibold text-kh-dark truncate">{s.label}</span>
-                    {e.classLabel && <ClassPill label={e.classLabel} color={classColorOf(e.classLabel)} />}
-                  </div>
-                </div>
+      {/* Stunden links, Gangaufsichten als zweite Spalte rechts (nur wenn es an
+          diesem Tag welche gibt — sonst nehmen die Stunden die volle Breite).
+          Auf Mobile stapelt das Grid, die Aufsichten rutschen unter die Stunden. */}
+      <div className={supervisions.length > 0 ? 'grid md:grid-cols-[1fr_168px] gap-3 items-start' : ''}>
+        <div className="min-w-0">
+          {entries.length === 0 ? (
+            <div className="flex items-center gap-3 rounded-xl bg-white/60 px-4 py-4">
+              <span className="msym text-[22px] text-kh-muted flex-shrink-0">calendar_view_week</span>
+              <div className="text-[13px] text-kh-muted font-medium">
+                {emptyMessage ?? 'Kein Unterricht eingetragen.'}{' '}
+                <Link href="/stundenplan" className="font-bold text-[#3E8DB8] hover:underline">Stundenplan öffnen</Link>
               </div>
-            )
-          })}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {entries.map(e => {
+                const s = subjOf(e.subject)
+                return (
+                  <div key={`${e.day}-${e.slot}`} className="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5">
+                    <div className="flex flex-col items-center w-11 flex-shrink-0">
+                      <span className="text-[13px] font-extrabold text-kh-dark leading-none">{e.slot}.</span>
+                      <span className="text-[10px] font-medium text-kh-muted mt-0.5">{SLOT_TIMES[e.slot - 1]}</span>
+                    </div>
+                    <SubjChip subj={s} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[14px] font-semibold text-kh-dark truncate">{s.label}</span>
+                        {e.classLabel && <ClassPill label={e.classLabel} color={classColorOf(e.classLabel)} />}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
-      )}
+
+        {supervisions.length > 0 && <SupervisionColumn breaks={supervisions} />}
+      </div>
 
       {weekNote && <WeekNoteLine text={weekNote} />}
 
