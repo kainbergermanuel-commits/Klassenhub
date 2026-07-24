@@ -138,10 +138,16 @@ export default function TeacherAdventurePanel({ data }: { data: AdventureData })
               Wie die Klasse {data.worldName} erlebt · anonym, ohne Vergleich
             </p>
           </div>
-          <div className="ml-auto inline-flex bg-kh-page border border-kh-border rounded-xl p-1 gap-1">
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-xl"
+            style={{
+              background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)',
+              boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)',
+            }}
+          >
             <Tab active={view === 'overview'} onClick={() => setView('overview')} icon="dashboard">Überblick</Tab>
             <Tab active={view === 'kids'} onClick={() => setView('kids')} icon="groups">
-              Kinder <span className="ml-1 rounded-full bg-white/70 px-1.5 text-[11px] tabular-nums">{data.children.length}</span>
+              Kinder <span className="ml-1 rounded-full bg-kh-page px-1.5 text-[11px] font-bold tabular-nums text-kh-dark">{data.children.length}</span>
             </Tab>
           </div>
         </div>
@@ -264,11 +270,26 @@ export default function TeacherAdventurePanel({ data }: { data: AdventureData })
 
 /* ─── Bausteine ──────────────────────────────────────────────────────────────── */
 
+/** Umschalter im selben schlanken Stil wie der Stundenplan-Tab (siehe
+ *  app/(app)/stundenplan/page.tsx): Verlaufs-Unterstrich statt gefüllter
+ *  Fläche für den aktiven Zustand — Icons und der Kinder-Zähler bleiben. */
 function Tab({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: string; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-extrabold transition-colors ${
-        active ? 'bg-white text-kh-dark shadow-[0_2px_8px_rgba(20,54,63,.09)]' : 'text-kh-muted hover:text-kh-dark'}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-5 py-2 text-[13px] font-semibold transition-colors ${
+        active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark'
+      }`}
+      style={active
+        ? {
+            backgroundImage: 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)',
+            backgroundSize: '100% 3px',
+            backgroundPosition: 'bottom',
+            backgroundRepeat: 'no-repeat',
+          }
+        : undefined}
+    >
       <span className="msym text-[16px]">{icon}</span>{children}
     </button>
   )
