@@ -157,13 +157,37 @@ export default function StatsView({ entries, students, today }: { entries: Atten
       <div>
         <div className="flex items-center gap-2 flex-wrap mb-3">
           <h2 className="font-extrabold text-[15px] text-kh-dark">Auswertung</h2>
-          <div className="ml-auto inline-flex bg-kh-page border border-kh-border rounded-full p-1 gap-1">
-            {(['all', 'entschuldigt', 'unentschuldigt'] as StatusFilter[]).map(st => (
-              <button key={st} onClick={() => setStatus(st)}
-                className={`px-3 py-1 rounded-full text-[11.5px] font-bold transition-colors ${status === st ? 'bg-white text-kh-dark shadow-[0_2px_6px_rgba(20,40,45,.08)]' : 'text-kh-muted hover:text-kh-dark'}`}>
-                {st === 'all' ? 'Alle' : st === 'entschuldigt' ? 'Entschuldigt' : 'Unentschuldigt'}
-              </button>
-            ))}
+          {/* Umschalter im Standard-Stil (Creme-Weiß-Verlaufskapsel +
+              Verlaufs-Unterstrich), in Grün statt Blau — siehe TeacherView. */}
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-xl"
+            style={{
+              background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)',
+              boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)',
+            }}
+          >
+            {(['all', 'entschuldigt', 'unentschuldigt'] as StatusFilter[]).map(st => {
+              const active = status === st
+              return (
+                <button
+                  key={st}
+                  onClick={() => setStatus(st)}
+                  className={`px-4 py-1.5 text-[11.5px] font-semibold transition-[color,transform] duration-150 ${
+                    active ? 'text-[#2E9C6E]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'
+                  }`}
+                  style={active
+                    ? {
+                        backgroundImage: 'linear-gradient(90deg, #2E9C6E 0%, #6FCB9F 100%)',
+                        backgroundSize: '100% 3px',
+                        backgroundPosition: 'bottom',
+                        backgroundRepeat: 'no-repeat',
+                      }
+                    : undefined}
+                >
+                  {st === 'all' ? 'Alle' : st === 'entschuldigt' ? 'Entschuldigt' : 'Unentschuldigt'}
+                </button>
+              )
+            })}
           </div>
         </div>
 

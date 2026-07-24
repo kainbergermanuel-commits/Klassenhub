@@ -318,21 +318,40 @@ export default function TeacherView({ students, entries, today }: Props) {
         </section>
       )}
 
-      {/* Tabs + Zeitraum-Eintrag */}
+      {/* Tabs + Zeitraum-Eintrag — Umschalter im Standard-Stil (Creme-Weiß-
+          Verlaufskapsel + Verlaufs-Unterstrich statt gefüllter Fläche), hier
+          in Grün statt Blau, passend zur Anwesenheits-Quote (#2E9C6E). */}
       <div className="flex gap-2 items-center flex-wrap">
-        {(['tag', 'uebersicht', 'statistik'] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
-              tab === t
-                ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white shadow-[0_4px_12px_rgba(20,40,45,.18)]'
-                : 'bg-white text-kh-muted shadow-[0_2px_8px_rgba(20,40,45,.06)] hover:text-kh-dark'
-            }`}
-          >
-            {t === 'tag' ? 'Tages-Abgleich' : t === 'uebersicht' ? 'Übersicht' : 'Statistik'}
-          </button>
-        ))}
+        <div
+          className="inline-flex overflow-hidden rounded-xl"
+          style={{
+            background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)',
+            boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)',
+          }}
+        >
+          {(['tag', 'uebersicht', 'statistik'] as Tab[]).map(t => {
+            const active = tab === t
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-5 py-2 text-[13px] font-semibold transition-[color,transform] duration-150 ${
+                  active ? 'text-[#2E9C6E]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'
+                }`}
+                style={active
+                  ? {
+                      backgroundImage: 'linear-gradient(90deg, #2E9C6E 0%, #6FCB9F 100%)',
+                      backgroundSize: '100% 3px',
+                      backgroundPosition: 'bottom',
+                      backgroundRepeat: 'no-repeat',
+                    }
+                  : undefined}
+              >
+                {t === 'tag' ? 'Tages-Abgleich' : t === 'uebersicht' ? 'Übersicht' : 'Statistik'}
+              </button>
+            )
+          })}
+        </div>
         {/* Ergänzt den Tages-Abgleich um den Fall, den dieser nur mühsam
             abbildet: mehrere Kinder und/oder mehrere Tage auf einmal. */}
         <button
