@@ -103,8 +103,8 @@ export default async function StundenplanPage(
               <Link
                 key={t.key}
                 href={t.href}
-                className={`px-5 py-2 text-center text-[13px] font-semibold transition-colors ${
-                  active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark'
+                className={`px-5 py-2 text-center text-[13px] font-semibold transition-[color,transform] duration-150 ${
+                  active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'
                 }`}
                 style={{
                   minWidth: '5rem',

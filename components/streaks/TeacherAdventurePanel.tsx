@@ -278,8 +278,8 @@ function Tab({ active, onClick, icon, children }: { active: boolean; onClick: ()
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-5 py-2 text-[13px] font-semibold transition-colors ${
-        active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark'
+      className={`flex items-center gap-1.5 px-5 py-2 text-[13px] font-semibold transition-[color,transform] duration-150 ${
+        active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'
       }`}
       style={active
         ? {
