@@ -54,8 +54,8 @@ export interface AgendaData {
   /** Fußzeile mit Stundenplan-/Planung-Links (nur Lehrer). */
   showPlanningLinks: boolean
   /** Gangaufsichten der Lehrperson (nur Lehrer; Eltern lassen es weg). day 1=Mo…5=Fr,
-   *  breakSlot 0=vor der 1. Stunde, N=Pause nach der N. Stunde. */
-  supervisions?: { day: number; breakSlot: number }[]
+   *  breakSlot 0=vor der 1. Stunde, N=Pause nach der N. Stunde, location Freitext. */
+  supervisions?: { day: number; breakSlot: number; location: string }[]
 }
 
 function fmtDayNum(weekStart: string, dayIdx0: number): string {
@@ -147,7 +147,7 @@ function LessonCell({
 /** Zweite Spalte im Tag-View: die Gangaufsichten des Tages, nach Zeit sortiert.
  *  Lange Aufsichten (7:45–8:00, 9:45–10:00) golden, kurze blau — konsistent zum
  *  Verwaltungs-Raster im Stundenplan. */
-function SupervisionColumn({ breaks }: { breaks: SupervisionBreak[] }) {
+function SupervisionColumn({ breaks }: { breaks: (SupervisionBreak & { location: string })[] }) {
   return (
     <div
       className="rounded-xl ring-1 ring-kh-border/40 p-3"
@@ -164,12 +164,12 @@ function SupervisionColumn({ breaks }: { breaks: SupervisionBreak[] }) {
         {breaks.map(b => {
           const color = b.long ? '#C98A2B' : '#2F86C5'
           return (
-            <div key={b.slot} className="flex items-stretch gap-2 rounded-lg bg-white/70 px-2.5 py-2">
+            <div key={b.slot} className="flex items-stretch gap-2 px-2.5 py-2">
               <span className="w-1 rounded-full flex-shrink-0" style={{ background: color }} />
               <div className="min-w-0">
                 <div className="text-[12.5px] font-extrabold text-kh-dark tabular-nums leading-none">{b.start}–{b.end}</div>
-                <div className="text-[10px] font-bold mt-1 leading-none" style={{ color: b.long ? '#8A5E14' : '#2E6C93' }}>
-                  {b.long ? 'Lange Aufsicht' : 'Kurze Aufsicht'}
+                <div className="text-[10px] font-bold mt-1 leading-none truncate" style={{ color: b.long ? '#8A5E14' : '#2E6C93' }}>
+                  {b.location || (b.long ? 'Lange Aufsicht' : 'Kurze Aufsicht')}
                 </div>
               </div>
             </div>
@@ -316,9 +316,9 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
   const focusPlanCount = focusIsSchoolday ? dayPlanCount(focusWeekday) : 0
 
   /** Gangaufsichten des Fokustags, nach Zeit (= break_slot) sortiert. */
-  const focusSupervisions: SupervisionBreak[] = (supervisions ?? [])
+  const focusSupervisions: (SupervisionBreak & { location: string })[] = (supervisions ?? [])
     .filter(s => s.day === focusWeekday)
-    .map(s => supervisionBreak(s.breakSlot))
+    .map(s => ({ ...supervisionBreak(s.breakSlot), location: s.location }))
     .sort((a, b) => a.slot - b.slot)
 
   return (
@@ -408,7 +408,7 @@ function TagView({
   planCount: number
   onOpenPlanning: () => void
   weekNote: string | null
-  supervisions: SupervisionBreak[]
+  supervisions: (SupervisionBreak & { location: string })[]
 }) {
   if (weekday > 5) {
     return (

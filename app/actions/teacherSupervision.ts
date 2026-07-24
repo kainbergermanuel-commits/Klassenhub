@@ -9,8 +9,9 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
  *  rein persönlich, kein Push an Kinder/Eltern.
  *
  *  break_slot 0 = vor der 1. Stunde, N = Pause nach der N. Stunde. Zeit/Länge
- *  ergeben sich clientseitig aus lib/supervisionSlots.ts, werden nicht gespeichert. */
-export async function setSupervision(day: number, breakSlot: number, on: boolean): Promise<void> {
+ *  ergeben sich clientseitig aus lib/supervisionSlots.ts, werden nicht gespeichert.
+ *  location ist reiner Freitext (z.B. "Garderobe", "1. Stock", "Große Pause"). */
+export async function setSupervision(day: number, breakSlot: number, on: boolean, location = ''): Promise<void> {
   const { user, profile } = await getEffectiveAuth()
   if (!user || !profile || profile.role !== 'teacher') throw new Error('Unauthorized')
 
@@ -20,7 +21,7 @@ export async function setSupervision(day: number, breakSlot: number, on: boolean
 
   if (on) {
     const { error } = await table.upsert(
-      { teacher_id: user.id, day, break_slot: breakSlot, updated_at: new Date().toISOString() },
+      { teacher_id: user.id, day, break_slot: breakSlot, location: location.trim().slice(0, 30), updated_at: new Date().toISOString() },
       { onConflict: 'teacher_id,day,break_slot' },
     )
     if (error) throw new Error(error.message)

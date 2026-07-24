@@ -319,7 +319,7 @@ export default async function HomePage() {
       // Gangaufsichten der Lehrperson (siehe supabase/add-teacher-supervisions.sql).
       // Fehlt die Tabelle noch, liefert Supabase data=null → keine Aufsichten.
       supabase.from('teacher_supervisions' as never)
-        .select('day,break_slot').eq('teacher_id', user.id) as unknown as Promise<{ data: { day: number; break_slot: number }[] | null }>,
+        .select('day,break_slot,location').eq('teacher_id', user.id) as unknown as Promise<{ data: { day: number; break_slot: number; location: string }[] | null }>,
     ])
     const agenda = {
       title: 'Heutige Agenda',
@@ -337,7 +337,7 @@ export default async function HomePage() {
       weekStart: agendaWeekStart,
       weekLabel: `KW ${getWeekNumber(agendaWeekStart)}`,
       showPlanningLinks: true,
-      supervisions: (supervisionRows ?? []).map(s => ({ day: s.day, breakSlot: s.break_slot })),
+      supervisions: (supervisionRows ?? []).map(s => ({ day: s.day, breakSlot: s.break_slot, location: s.location ?? '' })),
     }
 
     return (

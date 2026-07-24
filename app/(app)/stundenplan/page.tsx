@@ -68,9 +68,9 @@ export default async function StundenplanPage(
       // data=null → leere Liste, die Seite bleibt funktionsfähig.
       (supabaseCommon
         .from('teacher_supervisions' as never)
-        .select('day,break_slot')
+        .select('day,break_slot,location')
         .eq('teacher_id', user.id)
-        .order('day').order('break_slot') as unknown as Promise<{ data: { day: number; break_slot: number }[] | null }>),
+        .order('day').order('break_slot') as unknown as Promise<{ data: { day: number; break_slot: number; location: string }[] | null }>),
       getClass(activeClassId),
     ])
 
@@ -151,7 +151,7 @@ export default async function StundenplanPage(
         {view === 'mein' && (
           <AnimateIn delay={80} className="kh-card px-5 py-5 mt-4">
             <SupervisionEditor
-              initial={(supervisionRows ?? []).map(s => ({ day: s.day, breakSlot: s.break_slot }))}
+              initial={(supervisionRows ?? []).map(s => ({ day: s.day, breakSlot: s.break_slot, location: s.location ?? '' }))}
             />
           </AnimateIn>
         )}
