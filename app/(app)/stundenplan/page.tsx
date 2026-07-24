@@ -80,18 +80,48 @@ export default async function StundenplanPage(
             : 'Standard-Stundenplan der Klasse erstellen und an alle Kinder senden'}
           gradient="from-[#2F86C5] to-[#56AEE6]"
         />
-        <div className="flex items-center gap-1 rounded-full bg-white p-1 border border-kh-border/60 w-fit mb-4 -mt-2">
-          {tabs.map(t => (
-            <Link
-              key={t.key}
-              href={t.href}
-              className={`px-4 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
-                view === t.key ? 'bg-[#3E8DB8] text-white shadow-sm' : 'text-kh-muted hover:text-kh-dark'
-              }`}
-            >
-              {t.label}
-            </Link>
-          ))}
+        {/* Umschalter im "verschlankten" Stil aus dem Design-Vergleich: flache
+            Kapsel mit Verlaufs-Unterstrich unter dem aktiven Tab statt gefüllter
+            Pille. Bewusst WEISS (nicht kh-page): Auf dem beige Seitenhintergrund
+            würde eine gleichfarbige Kapsel grau wirken und der weiche
+            Neumorphismus-Schatten unsichtbar bleiben — die weiße Fläche hebt
+            sich klar ab und der Schlagschatten wird sichtbar. Der aktive Tab
+            trägt einen 3px starken Verlaufs-Unterstrich über die VOLLE
+            Tab-Breite (background-strip statt border, damit ein Farbverlauf
+            möglich ist), im selben Blau wie der Seitenkopf; overflow-hidden
+            hält den Strich an den Kapselrundungen sauber. */}
+        <div
+          className="inline-flex overflow-hidden rounded-xl mb-4 -mt-2"
+          style={{
+            background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)',
+            boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)',
+          }}
+        >
+          {tabs.map(t => {
+            const active = view === t.key
+            return (
+              <Link
+                key={t.key}
+                href={t.href}
+                className={`px-5 py-2 text-center text-[13px] font-semibold transition-colors ${
+                  active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark'
+                }`}
+                style={{
+                  minWidth: '5rem',
+                  ...(active
+                    ? {
+                        backgroundImage: 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)',
+                        backgroundSize: '100% 3px',
+                        backgroundPosition: 'bottom',
+                        backgroundRepeat: 'no-repeat',
+                      }
+                    : {}),
+                }}
+              >
+                {t.label}
+              </Link>
+            )
+          })}
         </div>
         <AnimateIn delay={0} className="kh-card px-5 py-5">
           {view === 'mein' ? (
