@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { createEvent, createOwnEvent } from '@/app/actions/events'
 import { EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
 import Avatar from '@/components/ui/Avatar'
+import IconButton from '@/components/ui/IconButton'
 
 interface Props {
   today: string
@@ -70,13 +71,9 @@ function DatePicker({ value, min, onChange }: { value: string; min: string; onCh
       {open && (
         <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
           <div className="flex items-center justify-between mb-3">
-            <button type="button" onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F6F3ED] text-kh-muted transition">
-              <span className="msym text-[20px]">chevron_left</span>
-            </button>
+            <IconButton type="button" onClick={prevMonth} icon="chevron_left" size="sm" aria-label="Vorheriger Monat" />
             <span className="font-extrabold text-[14px] text-kh-dark">{MONTHS[viewMonth]} {viewYear}</span>
-            <button type="button" onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F6F3ED] text-kh-muted transition">
-              <span className="msym text-[20px]">chevron_right</span>
-            </button>
+            <IconButton type="button" onClick={nextMonth} icon="chevron_right" size="sm" aria-label="Nächster Monat" />
           </div>
           <div className="grid grid-cols-7 mb-1">
             {WEEKDAYS.map(d => <div key={d} className="text-center text-[11px] font-bold text-kh-muted py-1">{d}</div>)}
@@ -177,7 +174,7 @@ export default function AddEventModal({ today, classId, mode = 'teacher', onClos
             <h2 className="text-lg font-extrabold text-kh-dark">{isStudent ? 'Neuer persönlicher Termin' : 'Neuer Termin'}</h2>
             {isStudent && <p className="text-xs text-kh-muted font-semibold mt-0.5">Nur für dich sichtbar</p>}
           </div>
-          <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
+          <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
 
         <div className="flex flex-col gap-3">

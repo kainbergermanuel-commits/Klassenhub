@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
+import IconButton from '@/components/ui/IconButton'
 import MessageThread, { type SenderAvatar } from './MessageThread'
 import PageHeader from '@/components/layout/PageHeader'
 import type { Message } from '@/lib/types'
@@ -273,9 +274,7 @@ function TeacherThread({
   return (
     <div className="flex flex-col h-[calc(100dvh-70px)] -mb-20 max-md:h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-20px)] max-md:-mb-6">
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={onBack} aria-label="Zurück" className="w-9 h-9 rounded-full flex items-center justify-center text-kh-muted hover:bg-[#EDEDEC] transition-colors flex-shrink-0">
-          <span className="msym text-[22px]">arrow_back</span>
-        </button>
+        <IconButton onClick={onBack} aria-label="Zurück" icon="arrow_back" />
         {child
           ? <Avatar name={child.full_name} color={child.avatar_color} seed={child.avatar_seed} hairColor={child.avatar_hair_color} skinColor={child.avatar_skin_color} size={44} />
           : <div className="w-11 h-11 rounded-full bg-kh-teal-light text-kh-teal font-bold flex items-center justify-center flex-shrink-0">{firstName(parent.full_name)[0]?.toUpperCase()}</div>}
@@ -329,9 +328,7 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
   return (
     <>
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={onBack} aria-label="Zurück" className="w-9 h-9 rounded-full flex items-center justify-center text-kh-muted hover:bg-[#EDEDEC] transition-colors flex-shrink-0">
-          <span className="msym text-[22px]">arrow_back</span>
-        </button>
+        <IconButton onClick={onBack} aria-label="Zurück" icon="arrow_back" />
         <div>
           <h1 className="text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Gesendete Sammelnachrichten</h1>
           <p className="text-[13px] text-kh-muted font-medium">Lesestatus je Mitteilung</p>
@@ -512,9 +509,7 @@ function ComposeModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[18px] font-extrabold text-kh-dark">Sammelnachricht</h2>
-          <button onClick={onClose} aria-label="Schließen" className="w-8 h-8 rounded-full flex items-center justify-center text-kh-muted hover:bg-[#EDEDEC]">
-            <span className="msym text-[20px]">close</span>
-          </button>
+          <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
 
         {/* Klassen-Picker (nur bei mehreren Klassen) */}

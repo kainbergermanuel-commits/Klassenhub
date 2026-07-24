@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { addDaysISO, schoolYearStartISO } from '@/lib/date'
 import { setAttendanceStatus, clearAttendance, confirmReport, rejectReport } from '@/app/actions/attendance'
 import Avatar from '@/components/ui/Avatar'
+import IconButton from '@/components/ui/IconButton'
 import BulkAbsenceModal from './BulkAbsenceModal'
 import StatsView from './StatsView'
 import type { Attendance, AttendanceStatus, Profile } from '@/lib/types'
@@ -372,12 +373,8 @@ export default function TeacherView({ students, entries, today }: Props) {
           {/* Tages-Navigation */}
           <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <button onClick={() => setDate(addDaysISO(-1, new Date(`${date}T00:00:00`)))} aria-label="Vortag" className="w-8 h-8 rounded-full bg-kh-bg flex items-center justify-center text-kh-dark hover:bg-kh-page transition-colors">
-                <span className="msym text-[18px]">chevron_left</span>
-              </button>
-              <button onClick={() => setDate(addDaysISO(1, new Date(`${date}T00:00:00`)))} aria-label="Nächster Tag" className="w-8 h-8 rounded-full bg-kh-bg flex items-center justify-center text-kh-dark hover:bg-kh-page transition-colors">
-                <span className="msym text-[18px]">chevron_right</span>
-              </button>
+              <IconButton onClick={() => setDate(addDaysISO(-1, new Date(`${date}T00:00:00`)))} aria-label="Vortag" icon="chevron_left" size="sm" />
+              <IconButton onClick={() => setDate(addDaysISO(1, new Date(`${date}T00:00:00`)))} aria-label="Nächster Tag" icon="chevron_right" size="sm" />
               <span className="font-extrabold text-[15px] text-kh-dark ml-1">{dayLabel}</span>
               {!isToday && (
                 <button onClick={() => setDate(today)} className="ml-1 px-2.5 py-1 rounded-full text-[11.5px] font-bold text-kh-teal bg-kh-teal-light hover:bg-kh-teal hover:text-white transition-colors">

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { savePlanningNote, copyPreviousWeek } from '@/app/actions/planning'
+import IconButton from '@/components/ui/IconButton'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 
 const DAY_LABELS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
@@ -177,18 +178,14 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
       {/* Linke Card: Woche + Tagesliste + Wochennotiz */}
       <div className="bg-gradient-to-br from-white via-white to-kh-teal-light rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)] p-4 md:sticky md:top-4">
         <div className="flex items-center justify-between mb-3">
-          <Link href={`/planung?w=${prevWeek}`} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Vorherige Woche">
-            <span className="material-symbols-rounded text-[20px]">chevron_left</span>
-          </Link>
+          <IconButton href={`/planung?w=${prevWeek}`} icon="chevron_left" size="sm" aria-label="Vorherige Woche" />
           <div className="text-center">
             <div className="text-[13px] font-extrabold text-kh-dark">{weekLabel}</div>
             {weekStart !== currentWeek && (
               <Link href="/planung" className="text-[11px] font-bold text-kh-teal hover:underline">Zur aktuellen Woche</Link>
             )}
           </div>
-          <Link href={`/planung?w=${nextWeek}`} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Nächste Woche">
-            <span className="material-symbols-rounded text-[20px]">chevron_right</span>
-          </Link>
+          <IconButton href={`/planung?w=${nextWeek}`} icon="chevron_right" size="sm" aria-label="Nächste Woche" />
         </div>
 
         {/* Tage: mobil als Chips nebeneinander, ab md untereinander */}

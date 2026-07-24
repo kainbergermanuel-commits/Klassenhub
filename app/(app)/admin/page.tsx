@@ -144,7 +144,7 @@ export default async function AdminPage() {
         <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px] mb-3">Stundenplan</div>
         <Link
           href="/admin/faecher"
-          className="bg-white rounded-2xl px-5 py-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow"
+          className="bg-white rounded-2xl px-5 py-4 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
         >
           <span className="msym text-[22px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>palette</span>
           <div className="flex-1 min-w-0">

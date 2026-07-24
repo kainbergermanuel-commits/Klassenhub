@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react'
 import { avatarUrl } from '@/components/ui/Avatar'
+import IconButton from '@/components/ui/IconButton'
 import { saveAvatarSeed } from '@/app/actions/saveAvatarSeed'
 import type { Gender } from '@/lib/types'
 
@@ -158,7 +159,7 @@ export default function AvatarPickerModal({ currentSeed, currentHairColor, curre
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-extrabold text-kh-dark">Profil bearbeiten</h2>
-          <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
+          <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
 
         {/* Preview + color pickers */}

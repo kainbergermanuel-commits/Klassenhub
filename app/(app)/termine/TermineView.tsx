@@ -6,6 +6,7 @@ import { monthLabel, addDaysISO, getMondayOfWeek } from '@/lib/date'
 import { eventCategoryMeta, EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
 import { deleteEvent } from '@/app/actions/events'
 import AddEventModal from './AddEventModal'
+import IconButton from '@/components/ui/IconButton'
 import type { CalendarEvent, Role } from '@/lib/types'
 
 const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
@@ -264,13 +265,9 @@ export default function TermineView({ events, role, today, classId, userId }: Pr
         {calMode === 'monat' ? (
           <>
             <div className="flex items-center justify-between mb-3">
-              <button onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Vorheriger Monat">
-                <span className="msym text-[20px]">chevron_left</span>
-              </button>
+              <IconButton onClick={prevMonth} icon="chevron_left" size="sm" aria-label="Vorheriger Monat" />
               <span className="text-[13px] font-extrabold text-kh-dark">{MONTHS[viewMonth]} {viewYear}</span>
-              <button onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Nächster Monat">
-                <span className="msym text-[20px]">chevron_right</span>
-              </button>
+              <IconButton onClick={nextMonth} icon="chevron_right" size="sm" aria-label="Nächster Monat" />
             </div>
             <div className="grid grid-cols-7 mb-1">
               {WEEKDAYS.map(d => <div key={d} className="text-center text-[10.5px] font-bold text-kh-muted py-1">{d}</div>)}
@@ -307,13 +304,9 @@ export default function TermineView({ events, role, today, classId, userId }: Pr
         ) : (
           <>
             <div className="flex items-center justify-between mb-3">
-              <button onClick={prevWeek} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Vorherige Woche">
-                <span className="msym text-[20px]">chevron_left</span>
-              </button>
+              <IconButton onClick={prevWeek} icon="chevron_left" size="sm" aria-label="Vorherige Woche" />
               <span className="text-[13px] font-extrabold text-kh-dark">{weekRangeLabel(weekMonday)}</span>
-              <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center text-kh-muted hover:bg-kh-page hover:text-kh-dark transition-colors" aria-label="Nächste Woche">
-                <span className="msym text-[20px]">chevron_right</span>
-              </button>
+              <IconButton onClick={nextWeek} icon="chevron_right" size="sm" aria-label="Nächste Woche" />
             </div>
             <div className="flex flex-col gap-1">
               {weekDays.map((iso, i) => {

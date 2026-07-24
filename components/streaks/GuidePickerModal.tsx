@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { saveGuidePreference } from '@/app/actions/saveGuidePreference'
+import IconButton from '@/components/ui/IconButton'
 import { SCHOOL_YEAR_ARCS, GUIDE_PORTRAIT, isArcUnlocked } from '@/lib/seasonTheme'
 
 interface Props {
@@ -55,7 +56,7 @@ export default function GuidePickerModal({ currentIcon, currentThemeName, onClos
       >
         <div className="flex items-center justify-between mb-1.5">
           <h2 className="text-lg font-extrabold text-kh-dark">Mein Guide</h2>
-          <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
+          <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
         <p className="text-[12.5px] text-kh-muted font-medium leading-snug mb-4">
           Dein Guide spricht privat mit dir im Heldenbuch — er bleibt bei dir, auch wenn die Klasse

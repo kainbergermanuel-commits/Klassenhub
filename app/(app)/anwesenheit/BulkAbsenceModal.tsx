@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { setBulkAbsence } from '@/app/actions/attendance'
 import Avatar from '@/components/ui/Avatar'
+import IconButton from '@/components/ui/IconButton'
 import DatePicker from '@/components/ui/DatePicker'
 import type { Profile } from '@/lib/types'
 
@@ -98,13 +99,7 @@ export default function BulkAbsenceModal({ students, today, onClose }: Props) {
               Mehrere Kinder, mehrere Tage — wird als <strong className="font-bold">entschuldigt</strong> gespeichert.
             </p>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Schließen"
-            className="w-8 h-8 rounded-full bg-kh-bg flex items-center justify-center text-kh-muted hover:text-kh-dark transition-colors flex-shrink-0"
-          >
-            <span className="msym text-[18px]">close</span>
-          </button>
+          <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
 
         {/* Zeitraum, Grund und die Kinder-Kopfzeile stehen bewusst AUSSERHALB

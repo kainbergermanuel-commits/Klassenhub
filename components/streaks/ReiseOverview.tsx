@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
+import IconButton from '@/components/ui/IconButton'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import ReiseYearOverview from '@/components/streaks/ReiseYearOverview'
 import AllArcsOverview from '@/components/streaks/AllArcsOverview'
@@ -35,13 +35,7 @@ export default function ReiseOverview({ season, pct, target, role, isAdmin }: Pr
   return (
     <>
       <header className="mb-6 flex items-center gap-3.5">
-        <Link
-          href="/streaks"
-          className="w-9 h-9 rounded-xl bg-white border border-kh-border/60 flex items-center justify-center flex-shrink-0 hover:border-kh-teal transition-colors"
-          aria-label="Zurück zum Abenteuer"
-        >
-          <span className="msym text-[18px] text-kh-muted">arrow_back</span>
-        </Link>
+        <IconButton href="/streaks" icon="arrow_back" aria-label="Zurück zum Abenteuer" />
         <div className="min-w-0">
           <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Die Reise</h1>
           <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">

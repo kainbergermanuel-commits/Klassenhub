@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { Profile } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
+import IconButton from '@/components/ui/IconButton'
 
 interface EditDuty {
   id: string
@@ -83,7 +84,7 @@ export default function AddDutyModal({ classId, userId, weekStart, students, ass
       <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-extrabold text-kh-dark">{isEdit ? 'Dienst bearbeiten' : 'Dienst zuweisen'}</h2>
-          <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
+          <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
 
         {/* Duty picker */}

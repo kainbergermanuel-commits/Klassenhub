@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { todayISO } from '@/lib/date'
+import IconButton from '@/components/ui/IconButton'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
@@ -90,15 +91,11 @@ function DatePicker({ value, min, onChange }: DatePickerProps) {
         <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
-            <button type="button" onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F6F3ED] text-kh-muted transition">
-              <span className="msym text-[20px]">chevron_left</span>
-            </button>
+            <IconButton type="button" onClick={prevMonth} icon="chevron_left" size="sm" aria-label="Vorheriger Monat" />
             <span className="font-extrabold text-[14px] text-kh-dark">
               {MONTHS[viewMonth]} {viewYear}
             </span>
-            <button type="button" onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F6F3ED] text-kh-muted transition">
-              <span className="msym text-[20px]">chevron_right</span>
-            </button>
+            <IconButton type="button" onClick={nextMonth} icon="chevron_right" size="sm" aria-label="Nächster Monat" />
           </div>
 
           {/* Weekday headers */}
@@ -201,7 +198,7 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
               <p className="text-xs text-kh-amber font-semibold mt-0.5">Wird zuerst von der Lehrperson bestätigt</p>
             )}
           </div>
-          <button onClick={onClose} className="msym text-2xl text-kh-muted hover:text-kh-red transition-colors">close</button>
+          <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -253,7 +250,7 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
           <button
             type="submit"
             disabled={isPending || saving || subjects.length === 0}
-            className="w-full bg-kh-teal text-white font-bold rounded-xl py-3.5 text-sm flex items-center justify-center gap-2 hover:bg-kh-dark transition disabled:opacity-60"
+            className="w-full gradient-teal text-white font-bold rounded-xl py-3.5 text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60"
           >
             {isPending || saving
               ? <span className="msym animate-spin text-lg">progress_activity</span>
