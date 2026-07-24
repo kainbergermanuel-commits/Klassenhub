@@ -363,22 +363,42 @@ export default function TermineView({ events, role, today, classId, userId }: Pr
       {/* Liste */}
       <div className="flex flex-col gap-4">
         {personalCount > 0 && (
-          <div className="flex gap-1.5 flex-wrap">
+          // Umschalter im Standard-Stil (Creme-Weiß-Verlaufskapsel +
+          // Verlaufs-Unterstrich statt gefüllter Pille), in Termine-Blau
+          // (#4C93C9 → #7EB8E5, dieselbe Farbe wie Seitenkopf/"Neuer Termin").
+          <div
+            className="inline-flex overflow-hidden rounded-xl w-fit"
+            style={{
+              background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)',
+              boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)',
+            }}
+          >
             {([
               { key: 'alle', label: 'Alle' },
               { key: 'klasse', label: 'Klasse' },
               { key: 'persoenlich', label: 'Persönlich' },
-            ] as const).map(f => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-bold transition-all ${
-                  filter === f.key ? 'bg-kh-dark text-white' : 'bg-kh-page text-kh-muted hover:text-kh-dark'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+            ] as const).map(f => {
+              const active = filter === f.key
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`px-4 py-1.5 text-[12.5px] font-semibold transition-[color,transform] duration-150 ${
+                    active ? 'text-[#3E7FAA]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'
+                  }`}
+                  style={active
+                    ? {
+                        backgroundImage: 'linear-gradient(90deg, #4C93C9 0%, #7EB8E5 100%)',
+                        backgroundSize: '100% 3px',
+                        backgroundPosition: 'bottom',
+                        backgroundRepeat: 'no-repeat',
+                      }
+                    : undefined}
+                >
+                  {f.label}
+                </button>
+              )
+            })}
           </div>
         )}
         {presentCategories.length > 1 && (
