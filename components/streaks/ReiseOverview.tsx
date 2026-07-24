@@ -50,23 +50,42 @@ export default function ReiseOverview({ season, pct, target, role, isAdmin }: Pr
         </div>
       </header>
 
-      <div className="mb-5 flex gap-1.5 rounded-xl bg-[#F3F0EA] p-1 w-fit">
+      {/* Umschalter im selben schlanken Stil wie Stundenplan/Abenteuer-Cockpit:
+          Verlaufs-Unterstrich statt gefüllter weißer Kachel. */}
+      <div
+        className="mb-5 inline-flex overflow-hidden rounded-xl w-fit"
+        style={{
+          background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)',
+          boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)',
+        }}
+      >
         {([
           ['aktuell', 'Aktuelle Welt'],
           ['jahr', 'Jahresübersicht'],
           ...(isAdmin ? [['alle', 'Alle Welten'] as const] : []),
-        ] as const).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={`px-3.5 py-1.5 rounded-lg text-[13px] font-bold transition-colors ${
-              tab === key ? 'bg-white text-kh-dark shadow-sm' : 'text-kh-muted hover:text-kh-dark'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+        ] as const).map(([key, label]) => {
+          const active = tab === key
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`px-5 py-2 text-[13px] font-semibold transition-colors ${
+                active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark'
+              }`}
+              style={active
+                ? {
+                    backgroundImage: 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)',
+                    backgroundSize: '100% 3px',
+                    backgroundPosition: 'bottom',
+                    backgroundRepeat: 'no-repeat',
+                  }
+                : undefined}
+            >
+              {label}
+            </button>
+          )
+        })}
       </div>
 
       {tab === 'jahr' ? (
