@@ -80,8 +80,6 @@ export default async function HomeworkPage() {
       ? `${homework.length} Aufgaben · ${homeworkWithStatus.reduce((s, h) => s + (h.completion_count ?? 0), 0)}/${(studentCount ?? 0) * homework.length} Abgaben`
       : `${openCount} offen · ${doneCount} erledigt · ${missedCount} versäumt`
 
-  const isStudentOrParent = profile.role === 'student' || profile.role === 'parent'
-
   return (
     <AnimateIn delay={0}>
       <HomeworkList
@@ -91,7 +89,8 @@ export default async function HomeworkPage() {
         userId={user.id}
         classId={activeClassId}
         subtitle={subtitle}
-        stats={isStudentOrParent ? { open: openCount, done: doneCount, missed: missedCount } : undefined}
+        stats={{ open: openCount, done: doneCount, missed: missedCount }}
+        studentCount={studentCount ?? 0}
         subjects={subjects}
       />
     </AnimateIn>

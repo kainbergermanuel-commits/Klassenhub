@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import HomeworkCard from './HomeworkCard'
+import HomeworkStatsCard from './HomeworkStatsCard'
 import AddHomeworkModal from './AddHomeworkModal'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { HomeworkWithStatus, Role, SpecialRole } from '@/lib/types'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
+
+type StatusFilter = 'all' | 'open' | 'done' | 'missed'
 
 interface Props {
   homework: HomeworkWithStatus[]
@@ -16,6 +19,7 @@ interface Props {
   classId: string
   subtitle: string
   stats?: { open: number; done: number; missed: number }
+  studentCount?: number
   subjects: SubjectOption[]
 }
 
@@ -28,9 +32,11 @@ function monthLabel(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('de-AT', { month: 'long', year: 'numeric' })
 }
 
-export default function HomeworkList({ homework, role, specialRole, userId, classId, subtitle, stats, subjects }: Props) {
+export default function HomeworkList({ homework, role, specialRole, userId, classId, subtitle, stats, studentCount, subjects }: Props) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [subjectFilter, setSubjectFilter] = useState<string>('all')
 
   const canCreate = role === 'teacher' || specialRole === 'hw_admin'
   const asPending = role !== 'teacher'
@@ -43,7 +49,28 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
 
   const today = todayLocalISO()
   const pending = homework.filter(h => h.status === 'pending')
-  const published = homework.filter(h => h.status === 'published')
+  const publishedAll = homework.filter(h => h.status === 'published')
+
+  const subjectOptions = useMemo(() => {
+    const byName = new Map<string, string>()
+    for (const h of publishedAll) byName.set(h.subject, h.subject_color)
+    return Array.from(byName, ([name, color]) => ({ name, color })).sort((a, b) => a.name.localeCompare(b.name))
+  }, [publishedAll])
+
+  const published = useMemo(() => {
+    return publishedAll.filter(h => {
+      if (subjectFilter !== 'all' && h.subject !== subjectFilter) return false
+      if (statusFilter === 'all') return true
+      if (role === 'teacher') {
+        // Lehrer haben kein persönliches "erledigt" — Status richtet sich rein nach Fälligkeit.
+        return statusFilter === 'missed' ? h.due_date <= today : h.due_date > today
+      }
+      if (statusFilter === 'done') return h.done
+      if (statusFilter === 'missed') return !h.done && h.due_date <= today
+      return !h.done && h.due_date > today // open
+    })
+  }, [publishedAll, subjectFilter, statusFilter, today, role])
+
   const open = published
     .filter(h => h.due_date > today)
     .sort((a, b) => {
@@ -64,6 +91,8 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
     }
   }
 
+  const hasFilters = subjectOptions.length > 1 || publishedAll.length > 3
+
   return (
     <>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
@@ -73,42 +102,7 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
           </div>
           <div>
           <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight">Hausübungen</h1>
-          {stats ? (
-            <div className="mt-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="flex items-center gap-1.5 bg-[#FFF8ED] text-[#C98A2B] px-3 py-1 rounded-full text-[12px] font-bold">
-                  <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>pending</span>
-                  {stats.open} offen
-                </span>
-                <span className="flex items-center gap-1.5 bg-[#EDFAF5] text-[#0F8A82] px-3 py-1 rounded-full text-[12px] font-bold">
-                  <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check_circle</span>
-                  {stats.done} erledigt
-                </span>
-                <span className="flex items-center gap-1.5 bg-[#FDECEA] text-[#C95040] px-3 py-1 rounded-full text-[12px] font-bold">
-                  <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>cancel</span>
-                  {stats.missed} versäumt
-                </span>
-              </div>
-              {(() => {
-                const total = stats.open + stats.done + stats.missed
-                const donePct = total > 0 ? Math.round((stats.done / total) * 100) : 0
-                const missedPct = total > 0 ? Math.round((stats.missed / total) * 100) : 0
-                const openPct = 100 - donePct - missedPct
-                return (
-                  <div className="mt-2.5 flex items-center gap-2">
-                    <div className="flex-1 h-[5px] rounded-full overflow-hidden bg-[#EDE9E0] flex">
-                      {donePct > 0 && <div style={{ width: `${donePct}%`, background: '#0F8A82' }} />}
-                      {missedPct > 0 && <div style={{ width: `${missedPct}%`, background: '#C95040' }} />}
-                      {openPct > 0 && <div style={{ width: `${openPct}%` }} />}
-                    </div>
-                    <span className="text-[11px] font-bold text-kh-muted flex-shrink-0">{donePct}% erledigt</span>
-                  </div>
-                )
-              })()}
-            </div>
-          ) : (
-            <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{subtitle}</p>
-          )}
+          <p className="text-[13.5px] text-kh-muted font-medium mt-0.5">{subtitle}</p>
           </div>
         </div>
         {canCreate && (
@@ -139,7 +133,18 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
           Keine Hausübungen vorhanden.
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className={stats ? 'lg:grid lg:grid-cols-[1fr_280px] lg:items-start lg:gap-5' : undefined}>
+        <div className="flex flex-col gap-6 min-w-0">
+          {hasFilters && (
+            <FilterBar
+              role={role}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+              subjectFilter={subjectFilter}
+              onSubjectChange={setSubjectFilter}
+              subjectOptions={subjectOptions}
+            />
+          )}
           {/* Pending — nur für Lehrer */}
           {role === 'teacher' && pending.length > 0 && (
             <div>
@@ -185,6 +190,20 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
               </div>
             </div>
           ))}
+
+          {(role !== 'teacher' || pending.length === 0) && open.length === 0 && pastGroups.length === 0 && (
+            <div className="text-center text-kh-muted py-12 font-medium text-sm">
+              <span className="msym text-4xl block mb-2 text-kh-teal-light">filter_alt_off</span>
+              Keine Hausübungen für diese Filter.
+            </div>
+          )}
+        </div>
+
+        {stats && (
+          <div className="max-lg:hidden">
+            <HomeworkStatsCard homework={homework} stats={stats} role={role} studentCount={studentCount ?? 0} />
+          </div>
+        )}
         </div>
       )}
 
@@ -198,6 +217,137 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
         />
       )}
     </>
+  )
+}
+
+const STATUS_TABS: { key: StatusFilter; label: string }[] = [
+  { key: 'all', label: 'Alle' },
+  { key: 'open', label: 'Offen' },
+  { key: 'done', label: 'Erledigt' },
+  { key: 'missed', label: 'Versäumt' },
+]
+
+const TEACHER_STATUS_TABS: { key: StatusFilter; label: string }[] = [
+  { key: 'all', label: 'Alle' },
+  { key: 'open', label: 'Anstehend' },
+  { key: 'missed', label: 'Vergangen' },
+]
+
+function FilterBar({
+  role, statusFilter, onStatusChange, subjectFilter, onSubjectChange, subjectOptions,
+}: {
+  role: Role
+  statusFilter: StatusFilter
+  onStatusChange: (v: StatusFilter) => void
+  subjectFilter: string
+  onSubjectChange: (v: string) => void
+  subjectOptions: { name: string; color: string }[]
+}) {
+  const tabs = role === 'teacher' ? TEACHER_STATUS_TABS : STATUS_TABS
+  const hasSubjectTab = subjectOptions.length > 1
+  return (
+    <div
+      className="inline-flex items-stretch rounded-xl w-fit"
+      style={{ background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)', boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)' }}
+    >
+      {tabs.map((tab, i) => {
+        const active = statusFilter === tab.key
+        const isFirst = i === 0
+        const isLast = i === tabs.length - 1 && !hasSubjectTab
+        return (
+          <button
+            key={tab.key}
+            onClick={() => onStatusChange(tab.key)}
+            className={`px-4 py-2 text-[13px] font-semibold transition-colors ${isFirst ? 'rounded-l-xl' : ''} ${isLast ? 'rounded-r-xl' : ''}`}
+            style={{
+              color: active ? '#2F86C5' : undefined,
+              backgroundImage: active ? 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)' : undefined,
+              backgroundSize: '100% 3px',
+              backgroundPosition: 'bottom',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            <span className={active ? '' : 'text-kh-muted hover:text-kh-dark'}>{tab.label}</span>
+          </button>
+        )
+      })}
+
+      {hasSubjectTab && (
+        <>
+          <div className="w-px my-2 bg-kh-border/60" />
+          <SubjectDropdown value={subjectFilter} onChange={onSubjectChange} options={subjectOptions} />
+        </>
+      )}
+    </div>
+  )
+}
+
+function SubjectDropdown({
+  value, onChange, options,
+}: { value: string; onChange: (v: string) => void; options: { name: string; color: string }[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const active = value !== 'all'
+  const selected = options.find(o => o.name === value)
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 pl-4 pr-3 py-2 text-[13px] font-semibold transition-colors rounded-r-xl"
+        style={{
+          color: active ? '#2F86C5' : undefined,
+          backgroundImage: active ? 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)' : undefined,
+          backgroundSize: '100% 3px',
+          backgroundPosition: 'bottom',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {selected && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: selected.color }} />}
+        <span className={active ? '' : 'text-kh-muted hover:text-kh-dark'}>{selected ? selected.name : 'Alle Fächer'}</span>
+        <span className={`msym text-[16px] ${active ? '' : 'text-kh-muted'}`}>expand_more</span>
+      </button>
+
+      {open && (
+        <div className="absolute z-50 left-0 top-full mt-1.5 bg-white rounded-2xl shadow-xl border border-kh-border py-1.5 w-[190px]">
+          <DropdownRow label="Alle Fächer" active={value === 'all'} onClick={() => { onChange('all'); setOpen(false) }} />
+          {options.map(o => (
+            <DropdownRow
+              key={o.name}
+              label={o.name}
+              color={o.color}
+              active={value === o.name}
+              onClick={() => { onChange(o.name); setOpen(false) }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DropdownRow({
+  label, color, active, onClick,
+}: { label: string; color?: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-2 px-3.5 py-2 text-[13px] font-semibold text-left transition-colors ${active ? 'text-[#2F86C5] bg-[#EAF4FB]' : 'text-kh-dark hover:bg-[#F6F3ED]'}`}
+    >
+      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color ?? '#D8D2C4' }} />
+      <span className="flex-1 truncate">{label}</span>
+      {active && <span className="msym text-[16px] text-[#2F86C5]">check</span>}
+    </button>
   )
 }
 
