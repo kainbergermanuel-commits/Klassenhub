@@ -258,16 +258,15 @@ function FilterBar({
           <button
             key={tab.key}
             onClick={() => onStatusChange(tab.key)}
-            className={`px-4 py-2 text-[13px] font-semibold transition-colors ${isFirst ? 'rounded-l-xl' : ''} ${isLast ? 'rounded-r-xl' : ''}`}
+            className={`px-4 py-2 text-[13px] font-semibold transition-[color,transform] duration-150 ${isFirst ? 'rounded-l-xl' : ''} ${isLast ? 'rounded-r-xl' : ''} ${active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'}`}
             style={{
-              color: active ? '#2F86C5' : undefined,
               backgroundImage: active ? 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)' : undefined,
               backgroundSize: '100% 3px',
               backgroundPosition: 'bottom',
               backgroundRepeat: 'no-repeat',
             }}
           >
-            <span className={active ? '' : 'text-kh-muted hover:text-kh-dark'}>{tab.label}</span>
+            {tab.label}
           </button>
         )
       })}
@@ -303,9 +302,8 @@ function SubjectDropdown({
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 pl-4 pr-3 py-2 text-[13px] font-semibold transition-colors rounded-r-xl"
+        className={`flex items-center gap-1.5 pl-4 pr-3 py-2 text-[13px] font-semibold transition-[color,transform] duration-150 rounded-r-xl ${active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'}`}
         style={{
-          color: active ? '#2F86C5' : undefined,
           backgroundImage: active ? 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)' : undefined,
           backgroundSize: '100% 3px',
           backgroundPosition: 'bottom',
@@ -313,8 +311,8 @@ function SubjectDropdown({
         }}
       >
         {selected && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: selected.color }} />}
-        <span className={active ? '' : 'text-kh-muted hover:text-kh-dark'}>{selected ? selected.name : 'Alle Fächer'}</span>
-        <span className={`msym text-[16px] ${active ? '' : 'text-kh-muted'}`}>expand_more</span>
+        <span>{selected ? selected.name : 'Alle Fächer'}</span>
+        <span className="msym text-[16px]">expand_more</span>
       </button>
 
       {open && (
