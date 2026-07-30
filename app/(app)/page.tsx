@@ -629,6 +629,14 @@ export default async function HomePage() {
     // Berechnung statt zwei.
     const currentThemeName = getSeasonTheme(currentSeason).name
 
+    // Schon gezeigte Erwerbs-Momente (siehe NewItemAnnounce) — eigene kleine
+    // Query auf den Primärschlüssel, gleiches Muster wie quest_riddle_solutions
+    // oben statt den großen Batch-Destructure fragiler zu machen.
+    const { data: seenItems, error: seenItemsError } = await supabase
+      .from('rucksack_item_seen')
+      .select('item_key')
+      .eq('student_id', user.id)
+
     const rucksack = {
       broken,
       jokerAvailable,
@@ -643,8 +651,13 @@ export default async function HomePage() {
       guildName: guildSection?.guild.name ?? null,
       parentConfirmStreak: confirmedStreak,
       nextStepHint: quests.find(q => !q.done)?.template.title ?? null,
+      classGoalTarget: classGoal?.target ?? null,
+      classGoalDone: classGoalDoneValue,
       splitterFound: splitterFound(currentThemeName),
       awakenedSignCount: awakenedSignCount(currentThemeName),
+      // as-Cast, weil die neue Tabelle noch nicht in den generierten Supabase-
+      // Typen steht (gleiches Muster wie andere frische Tabellen im Projekt).
+      seenItemKeys: seenItemsError ? null : (seenItems ?? []).map(r => (r as { item_key: string }).item_key),
     }
 
     // ─── HELDENBUCH: stille Anerkennung + Chronik (siehe lib/heldenbuch.ts) ───

@@ -53,6 +53,7 @@ interface Props {
     noteGuideIcon: string
     preferredGuideIcon: string | null
     chronicle: ChronicleEntry[]
+    seenItemKeys: string[] | null
   } | null
   quests: QuestResult[]
   questWeekStart: string
@@ -157,8 +158,11 @@ export default function StreakOverview({ role, noStreak, classGoal, classGoalDon
                 guildName: guildSection?.guild.name ?? null,
                 parentConfirmStreak: myHeldenbuch.confirmedStreak,
                 nextStepHint: quests.find(q => !q.done)?.template.title ?? null,
+                classGoalTarget: classGoal?.target ?? null,
+                classGoalDone,
                 splitterFound: splitterFound(currentThemeName),
                 awakenedSignCount: awakenedSignCount(currentThemeName),
+                seenItemKeys: myHeldenbuch.seenItemKeys,
               }}
             />
           </AnimateIn>

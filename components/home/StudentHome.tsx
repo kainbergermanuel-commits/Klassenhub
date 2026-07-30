@@ -5,13 +5,14 @@ import WeeklyQuestCard from './WeeklyQuestCard'
 import RiddleList from './RiddleList'
 import WeekPulse from './WeekPulse'
 import HeldenbuchCard from './HeldenbuchCard'
+import NewItemAnnounce from '@/components/streaks/NewItemAnnounce'
 import DutyModule from './DutyModule'
 import AnimateIn from '@/components/ui/AnimateIn'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { QuestResult } from '@/lib/quests'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { AchievementCounts } from '@/lib/achievements'
-import type { RucksackState } from '@/components/streaks/RucksackItems'
+import type { RucksackState } from '@/lib/rucksack'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
 import type { Riddle } from '@/lib/riddles'
 import { greeting } from '@/lib/date'
@@ -69,6 +70,11 @@ export default function StudentHome({
 
   return (
     <>
+      {/* Erwerbs-Moment für neu gefundene Rucksack-Zeichen — bewusst nur hier
+          auf der Startseite (nicht zusätzlich auf /streaks), damit die Übergabe
+          nicht doppelt auftaucht. */}
+      <NewItemAnnounce state={rucksack} />
+
       <header className="mb-6">
         <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
           <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">

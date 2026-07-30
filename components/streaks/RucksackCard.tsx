@@ -1,4 +1,5 @@
-import RucksackItems, { type RucksackState } from './RucksackItems'
+import RucksackItems from './RucksackItems'
+import type { RucksackState } from '@/lib/rucksack'
 
 /** Der Rucksack als eigene Card (auf `/streaks`): private Sammlung an
  *  Ausrüstungs-Items, die reale App-Mechaniken im Abenteuer-Skin abbilden.

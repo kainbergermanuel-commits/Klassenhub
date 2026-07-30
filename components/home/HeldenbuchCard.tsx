@@ -7,7 +7,7 @@ import RucksackButton from '@/components/streaks/RucksackButton'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import GuidePickerModal from '@/components/streaks/GuidePickerModal'
 import WappenMosaic from './WappenMosaic'
-import type { RucksackState } from '@/components/streaks/RucksackItems'
+import type { RucksackState } from '@/lib/rucksack'
 import type { AchievementCounts } from '@/lib/achievements'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
 

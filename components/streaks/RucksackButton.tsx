@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import RucksackItems, { type RucksackState } from './RucksackItems'
+import RucksackItems from './RucksackItems'
+import type { RucksackState } from '@/lib/rucksack'
 
 /** Kompakter Zugang zum Rucksack als Icon-Button mit Popover — für Kontexte
  *  ohne Platz für die volle Card (z.B. das Heldenbuch auf der Startseite).

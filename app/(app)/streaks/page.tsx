@@ -286,6 +286,7 @@ export default async function StreaksPage() {
     noteGuideIcon: string
     preferredGuideIcon: string | null
     chronicle: ChronicleEntry[]
+    seenItemKeys: string[] | null
   } | null = null
   if (profile.role === 'student' && myStreak) {
     // ─── MEIN GUIDE: persönliche Wahl (falls freigeschaltet) statt Guide der
@@ -296,12 +297,15 @@ export default async function StreaksPage() {
       ? preferredGuideIcon
       : getSeasonTheme(currentSeason).icon
 
-    const [{ data: myMilestones }, { data: myAchievements }, { data: recentNudges }] = await Promise.all([
+    const [{ data: myMilestones }, { data: myAchievements }, { data: recentNudges }, { data: seenItems }] = await Promise.all([
       supabase.from('streak_confirmations').select('milestone,confirmed_at').eq('student_id', profile.id).order('confirmed_at', { ascending: false }),
       supabase.from('achievements').select('kind,key,period,achieved_at').eq('student_id', profile.id),
       // Lokales Datum per String-Slice vergleichen statt DB-seitigem gte-
       // Zeitbereich (created_at ist UTC) — siehe sendParentNudge.ts.
       supabase.from('parent_nudges').select('created_at').eq('student_id', profile.id).order('created_at', { ascending: false }).limit(5),
+      // Schon gezeigte Erwerbs-Momente (siehe NewItemAnnounce) — hier nur
+      // durchgereicht, das Overlay selbst lebt allein auf der Startseite.
+      supabase.from('rucksack_item_seen').select('item_key').eq('student_id', profile.id),
     ])
     const myOwnDoneIdsForNudge = doneByStudent.get(profile.id) ?? new Set<string>()
     const myConfirmedIdsForNudge = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
@@ -341,6 +345,9 @@ export default async function StreaksPage() {
       noteGuideIcon: effectiveGuideIcon,
       preferredGuideIcon,
       chronicle,
+      // as-Cast, weil die neue Tabelle noch nicht in den generierten Supabase-
+      // Typen steht (gleiches Muster wie andere frische Tabellen im Projekt).
+      seenItemKeys: (seenItems ?? []).map(r => (r as { item_key: string }).item_key),
     }
   }
 
