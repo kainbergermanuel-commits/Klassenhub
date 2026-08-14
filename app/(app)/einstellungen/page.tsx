@@ -4,6 +4,7 @@ import { getAuth } from '@/lib/auth'
 import { getTeacherClasses } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import ChangePasswordForm from '@/components/settings/ChangePasswordForm'
+import DatenschutzCard from '@/components/settings/DatenschutzCard'
 import TeacherSubjectsEditor from '@/components/settings/TeacherSubjectsEditor'
 import PageHeader from '@/components/layout/PageHeader'
 import AnimateIn from '@/components/ui/AnimateIn'
@@ -55,6 +56,11 @@ export default async function SettingsPage() {
         <AnimateIn delay={60}>
           <ChangePasswordForm />
         </AnimateIn>
+        {effectiveProfile && (
+          <AnimateIn delay={120}>
+            <DatenschutzCard role={effectiveProfile.role} />
+          </AnimateIn>
+        )}
       </div>
     </>
   )
