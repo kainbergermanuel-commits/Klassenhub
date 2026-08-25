@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO } from '@/lib/date'
+import { localDateOf, todayLocal } from '@/lib/date'
 
 /** Setzt die Botenfeder ein (max. 1× pro Tag) — schickt einen kanonischen,
  *  vordefinierten Hinweis an die Eltern ("Dein Kind bittet um Bestätigung
@@ -14,20 +14,20 @@ export async function sendParentNudge(): Promise<{ homeworkTitle: string }> {
   if (!user?.id || !profile || profile.role !== 'student') throw new Error('Unauthorized')
 
   const supabase = await createClient()
-  const today = todayISO()
 
-  // Lokales Kalenderdatum per String-Slice vergleichen statt DB-seitigem
-  // gte-Zeitbereich — created_at ist UTC (timestamptz), ein naiver
-  // "heute 00:00"-String würde nahe Mitternacht (Europe/Vienna) falsch
-  // ausgewertet. Gleiche Konvention wie überall sonst im Projekt (z.B.
-  // streak_freezes-Season-Check via created_at.slice(0,7)).
+  // BEIDE Seiten des Vergleichs über dieselbe Zeitzone führen. Vorher stand
+  // hier todayISO() (lokales Wiener Datum) gegen created_at.slice(0,10)
+  // (UTC-Datum): zwischen 00:00 und 02:00 Wiener Zeit liegt der UTC-Tag noch
+  // im Vortag, das Tageslimit griff dann nicht — und die Anzeige widersprach
+  // der Aktion, weil streaks/page.tsx bereits korrekt localDateOf/todayLocal
+  // benutzt. Siehe lib/date.ts: „IMMER beide Seiten über diesen Helper".
   const { data: recentNudges } = await supabase
     .from('parent_nudges')
     .select('id,created_at')
     .eq('student_id', profile.id)
     .order('created_at', { ascending: false })
     .limit(5)
-  if ((recentNudges ?? []).some(n => n.created_at.slice(0, 10) === today)) {
+  if ((recentNudges ?? []).some(n => localDateOf(n.created_at) === todayLocal())) {
     throw new Error('Heute schon eine Erinnerung geschickt')
   }
 

@@ -435,7 +435,7 @@ export default async function HomePage() {
     const myDuty = duties.find(d => d.assignee_ids.includes(user.id)) ?? null
 
     // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
-    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents } = buildDutyDone(duties, dutyCompletionsRaw ?? [])
+    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents, dutyDayCounts } = buildDutyDone(duties, dutyCompletionsRaw ?? [])
     const myDutyDoneWeekdays = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, user.id) : []
     const dutyDoneCount = myDutyDoneWeekdays.length
 
@@ -570,14 +570,18 @@ export default async function HomePage() {
           confirmedByStudentAll.get(c.student_id)!.add(c.homework_id)
         }
       }
-      const guildFeasibility = { hasWeekHomework: weekHw.length > 0, hasWeekDuty: duties.length > 0 }
+      // Machbarkeit JE GILDE (siehe streaks/page.tsx).
+      const guildFeasibility = {
+        hasWeekHomework: weekHw.length > 0,
+        hasWeekDuty: myGuild.memberIds.some(id => dutyAssignedStudents.has(id)),
+      }
       const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart, guildFeasibility))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
           weekHomeworkIds: weekHw.map(h => h.id),
           doneByStudent: doneByStudentAll,
           confirmedByStudent: confirmedByStudentAll,
-          dutyDoneByStudent: keptUpStudents,
+          dutyDayCountByStudent: dutyDayCounts,
           dutyAssignedStudents,
         })
         const members: GuildMember[] = (allStudents ?? [])

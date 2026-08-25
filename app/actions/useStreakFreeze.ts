@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO, schoolYearStartISO } from '@/lib/date'
+import { todayISO, schoolYearStartISO, localDateOf } from '@/lib/date'
 import { computeStreak, findBreakingHomework } from '@/lib/streak'
 
 /** Setzt einen Streak-Joker ein (1× pro Season) für die HÜ, an der die
@@ -20,6 +20,9 @@ export async function useStreakFreeze(): Promise<{ newStreak: number }> {
 
   const supabase = await createClient()
   const today = todayISO()
+  // Season aus dem lokalen Datum; der Vergleich unten führt created_at
+  // (UTC) über localDateOf in dieselbe Zeitzone. Sonst zählte am 1. eines
+  // Monats zwischen 00:00 und 02:00 Wiener Zeit noch der Vormonat.
   const currentSeason = today.slice(0, 7)
   const schoolYearStart = schoolYearStartISO()
 
@@ -39,7 +42,7 @@ export async function useStreakFreeze(): Promise<{ newStreak: number }> {
   // die Verlängerung noch in der Vergangenheit liegt.
   const extensionMap = new Map((extensions ?? []).map(e => [e.homework_id, e.extra_days]))
 
-  const usedThisSeason = (freezes ?? []).some(f => f.created_at.slice(0, 7) === currentSeason)
+  const usedThisSeason = (freezes ?? []).some(f => localDateOf(f.created_at).slice(0, 7) === currentSeason)
   if (usedThisSeason) throw new Error('Joker diese Season bereits verbraucht')
 
   const breakingHwId = findBreakingHomework(doneIds, hw, today, frozenIds, extensionMap)

@@ -35,7 +35,7 @@ export function buildDutyDone(
   duties: { id: string; assignee_ids: string[] }[],
   completions: { duty_id: string; student_id: string; weekday: number }[],
   from: Date = new Date(),
-): { doneByDutyStudent: Map<string, Set<number>>; keptUpStudents: Set<string>; assignedStudents: Set<string> } {
+): { doneByDutyStudent: Map<string, Set<number>>; keptUpStudents: Set<string>; assignedStudents: Set<string>; dutyDayCounts: Map<string, number> } {
   const doneByDutyStudent = new Map<string, Set<number>>()
   for (const c of completions) {
     const k = dutyStudentKey(c.duty_id, c.student_id)
@@ -57,7 +57,16 @@ export function buildDutyDone(
   // Gilden-Dienst-Quest nur gegen die dienst-tragenden Mitglieder zu messen
   // (nicht die ganze Gilde), siehe computeGuildQuestProgress.
   const assignedStudents = new Set(assignments.keys())
-  return { doneByDutyStudent, keptUpStudents, assignedStudents }
+  // Bestätigte Diensttage je Kind (Maximum über die zugeteilten Dienste) —
+  // Grundlage für die Gilden-Dienstquest, die dadurch dieselbe Schwelle nutzt
+  // wie die Solo-Variante (3 von 5 Tagen, nachholbar) statt der strengeren
+  // "lückenlos ab Montag"-Regel von keptUpStudents.
+  const dutyDayCounts = new Map<string, number>()
+  for (const [sid, dutyIds] of assignments) {
+    const best = Math.max(...dutyIds.map(did => (doneByDutyStudent.get(dutyStudentKey(did, sid)) ?? new Set()).size))
+    dutyDayCounts.set(sid, best)
+  }
+  return { doneByDutyStudent, keptUpStudents, assignedStudents, dutyDayCounts }
 }
 
 /** Bestätigte Wochentage eines Kindes für einen konkreten Dienst (sortiert). */

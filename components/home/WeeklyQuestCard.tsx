@@ -189,8 +189,17 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
                 {guildSection.quest.done ? 'task_alt' : 'radio_button_unchecked'}
               </span>
               <span className="font-semibold text-[14px] text-kh-dark flex-1 truncate">{guildSection.quest.template.title}</span>
+              {/* Bewusst OHNE „X von Y Mitgliedern": in einer Dreier-Gilde mit
+                  Avataren daneben ist aus „1/2" erschließbar, wer nicht mitzieht.
+                  Das ist die einzige Stelle im System, an der ein Vergleich
+                  beschämen kann, und sie sitzt ausgerechnet im kooperativen Teil.
+                  Der Balken darunter zeigt den Fortschritt weiterhin, nur ohne
+                  Personenbezug (Groves et al. 2018: Gruppenkontingenz gegen ein
+                  Kriterium wirkt prosozial, sichtbare Einzelzuordnung kippt es). */}
               <span className="text-[11px] font-bold text-kh-muted flex-shrink-0">
-                {guildSection.quest.membersMet}/{guildSection.quest.required ?? guildSection.quest.total}
+                {guildSection.quest.done
+                  ? 'geschafft'
+                  : `noch ${Math.max(1, (guildSection.quest.required ?? guildSection.quest.total) - guildSection.quest.membersMet)}`}
               </span>
             </div>
             <p className="text-[12px] text-kh-muted mt-1 pl-[26px]">{guildNarrative}</p>

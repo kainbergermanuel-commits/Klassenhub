@@ -188,7 +188,7 @@ export default async function StreaksPage() {
     const { data: dutyCompletionsRaw } = weekDutyIds.length > 0
       ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', weekDutyIds)
       : { data: [] }
-    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
+    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents, dutyDayCounts } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
     // Genau EIN Dienst pro Kind (wie auf der Startseite, siehe page.tsx
     // myDuty) — vorher zählte hier das Maximum über ALLE zugeteilten Dienste,
     // während die Guide-Notiz weiter unten (hbDutyName) den ERSTEN nannte:
@@ -239,14 +239,20 @@ export default async function StreaksPage() {
     const guilds = assignGuilds(activeClassId, currentSeason, allStudentIds)
     const myGuild = findMyGuild(guilds, profile.id)
     if (myGuild) {
-      const guildFeasibility = { hasWeekHomework: weekHw.length > 0, hasWeekDuty: (weekDuty ?? []).length > 0 }
+      // Machbarkeit JE GILDE: hasWeekDuty fragt, ob in DIESER Gilde jemand
+      // einen Dienst hat. Klassenweit geprüft konnte sonst eine Dienst-Quest
+      // gezogen werden, die für diese Gilde nie erfüllbar war (0/0, leerer Balken).
+      const guildFeasibility = {
+        hasWeekHomework: weekHw.length > 0,
+        hasWeekDuty: myGuild.memberIds.some(id => dutyAssignedStudents.has(id)),
+      }
       const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart, guildFeasibility))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
           weekHomeworkIds: weekHw.map(h => h.id),
           doneByStudent,
           confirmedByStudent: confirmedDoneByStudent,
-          dutyDoneByStudent: keptUpStudents,
+          dutyDayCountByStudent: dutyDayCounts,
           dutyAssignedStudents,
         })
         const members: GuildMember[] = (students ?? [])

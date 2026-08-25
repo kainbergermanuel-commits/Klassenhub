@@ -3,13 +3,15 @@
 import { useState } from 'react'
 import IconButton from '@/components/ui/IconButton'
 import type { Role } from '@/lib/types'
+import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 
 /** Volle Figur (keine runde Portrait-Kachel) — eigenes Bild für diese Seite,
  *  nicht das GUIDE_PORTRAIT-Rundbild aus lib/seasonTheme.ts. Quelldatei ist
  *  ca. 335×665px, daher bewusst nicht über ~180px Breite hinaus vergrößern. */
 const VALA_FULL_FIGURE = '/images/characters/vala-first-steps.webp'
 
-/** Eine Anleitung: welt-neutral, in Vala-Stimme. `roles` steuert, wem der
+/** Eine Anleitung: welt-neutral formuliert, gesprochen von der Figur der
+ *  gerade laufenden Welt (siehe `speaker` unten). `roles` steuert, wem der
  *  Eintrag angezeigt wird — der Hub ist für alle drei Rollen erreichbar, aber
  *  jede sieht nur, was für sie gilt. Neue How-tos kommen hier als weitere
  *  Einträge dazu (das ist der „wächst mit"-Teil). */
@@ -43,6 +45,38 @@ const GUIDES: Guide[] = [
     roles: ['student'],
     body: (
       <>Jede Woche warten ein paar <b>Quests</b> auf dich, kleine Ziele wie zum Beispiel „an drei verschiedenen Tagen eine Hausübung erledigen" oder „deinen Dienst zuverlässig übernehmen". Manche Quests lassen dich zwischen zwei Wegen wählen, etwa zwischen dem Pfad des Chronisten und dem Pfad des Boten. Dazu gibt es <b>Rätsel</b>: Sie verlangen, dass du in der Geschichte unserer Welten noch einmal nachliest, denn die Antworten verstecken sich in den Erzähltexten von „Die Reise". Neugier lohnt sich also wortwörtlich.</>
+    ),
+  },
+  {
+    icon: 'groups',
+    title: 'Das Klassenziel & die Reise',
+    roles: ['student', 'parent'],
+    body: (
+      <>Jede von den Eltern bestätigte Hausübung zählt nicht nur für die eigene Flamme, sondern auch auf ein gemeinsames <b>Klassenziel</b>. Je mehr zusammenkommt, desto weiter kommt die ganze Klasse auf ihrer <b>Reise</b>. Jeden Monat führt euch eine andere Figur durch eine andere Welt, im September zum Beispiel Bergführerin Vala auf einen Gipfel, im Oktober der Bordcomputer ARI ins All. Unter „Die Reise" kannst du jedes Kapitel in Ruhe nachlesen, auch die aus den Monaten davor. Wichtig ist nur: Hier gewinnt niemand gegen jemanden, ihr kommt gemeinsam weiter oder gar nicht.</>
+    ),
+  },
+  {
+    icon: 'diversity_3',
+    title: 'Deine Gilde',
+    roles: ['student'],
+    body: (
+      <>Jeden Monat wirst du zusammen mit drei oder vier anderen Kindern einer <b>Gilde</b> zugelost, zum Beispiel den „Sternensuchern". Die Gilde bekommt eine eigene Aufgabe, die ihr nur gemeinsam schafft, etwa zusammen fünf Hausübungen zu sammeln. Die Einteilung wechselt jeden Monat, du bist also nie dauerhaft in derselben Gruppe. Und es gibt keine Rangliste zwischen den Gilden: Jede Gilde arbeitet auf ihr eigenes Ziel hin, nicht gegen die anderen.</>
+    ),
+  },
+  {
+    icon: 'diamond',
+    title: 'Der Splitter',
+    roles: ['student'],
+    body: (
+      <>Im November findet ihr in einer Schatzkammer einen kleinen, warm leuchtenden Stein voller Zeichen, die niemand lesen kann. Dieser <b>Splitter</b> begleitet euch danach durch das ganze Schuljahr, und in jeder Welt erwacht eines seiner sieben Zeichen. Du findest ihn ganz unten in deinem Rucksack. Was er wirklich ist, verrät sich erst am Ende der Reise, und es ist etwas anderes, als alle denken.</>
+    ),
+  },
+  {
+    icon: 'auto_stories',
+    title: 'Heldenbuch & Logbuch',
+    roles: ['student'],
+    body: (
+      <>Dein <b>Heldenbuch</b> ist deine ganz private Rückschau, niemand sonst sieht es. Oben stehen deine Flamme und eine kurze Notiz deiner Guide-Figur, unten das <b>Logbuch</b>: eine Liste mit allem, was du geschafft hast, mit Datum. Geschaffte Quests, gelöste Rätsel, eingesetzte Werkzeuge, erwachte Zeichen. Daneben wächst dein persönliches <b>Wappen</b>, das sich mit jedem Erfolg um ein Stück füllt.</>
     ),
   },
   {
@@ -105,15 +139,22 @@ const GUIDES: Guide[] = [
 
 /** "Erste Schritte" — der durchblätterbare Anleitungs-Hub. Akkordeon-Karten,
  *  die erste ist offen. Rollen-gefiltert (siehe GUIDES.roles). */
-export default function AnleitungOverview({ role }: { role: Role }) {
+export default function AnleitungOverview({ role, season }: { role: Role; season: string }) {
   const guides = GUIDES.filter(g => g.roles.includes(role))
   const [open, setOpen] = useState<number>(0)
 
+  // Die Seite wird von der Figur der LAUFENDEN Welt gesprochen, nicht mehr
+  // fest von Vala — sonst begrüßt im Mai noch immer eine Bergführerin, die
+  // die Klasse seit acht Monaten nicht mehr begleitet.
+  const theme = getSeasonTheme(season)
+  const speaker = theme.guide
+  const shortName = speaker.split(' ').pop()
+
   const intro = role === 'parent'
-    ? 'Schön, dass Sie da sind. Ich bin Vala und begleite die Klasse durch ihre Abenteuer. Hier erkläre ich in Ruhe, wie alles funktioniert, jederzeit zum Nachlesen und ganz ohne Eile.'
+    ? `Schön, dass Sie da sind. Ich bin ${shortName} und begleite die Klasse diesen Monat durch ihr Abenteuer. Hier erkläre ich in Ruhe, wie alles funktioniert, jederzeit zum Nachlesen und ganz ohne Eile.`
     : role === 'teacher'
-      ? 'Willkommen. Ich bin Vala, die Bergführerin der Klasse. Diese Seite ist das Nachschlagewerk für Ihre Schüler:innen und deren Eltern, hier steht, wie sich die App anfühlt, wenn man Kind ist.'
-      : 'Hallo! Ich bin Vala, deine Bergführerin. Bevor wir losgehen, zeige ich dir in Ruhe, wie alles funktioniert. Du kannst jederzeit hierher zurückkommen und nachblättern, nichts musst du auswendig können.'
+      ? `Willkommen. Ich bin ${shortName} und führe die Klasse gerade durch „${theme.name}". Diese Seite ist das Nachschlagewerk für Ihre Schüler:innen und deren Eltern, hier steht, wie sich die App anfühlt, wenn man Kind ist.`
+      : `Hallo! Ich bin ${shortName} und begleite euch gerade durch „${theme.name}". Bevor es weitergeht, zeige ich dir in Ruhe, wie alles funktioniert. Du kannst jederzeit hierher zurückkommen und nachblättern, nichts musst du auswendig können.`
 
   return (
     <>
@@ -175,7 +216,7 @@ export default function AnleitungOverview({ role }: { role: Role }) {
                 dieselbe Idee wie StudentCard.tsx, nur größenmäßig für Fließtext
                 statt einem kurzen Reaktions-Wort. */}
             <div className="relative flex-1 min-w-0 lg:flex-none bg-white border border-kh-border shadow-[0_8px_20px_rgba(20,40,45,.10)] rounded-2xl px-4 py-3.5 order-2 lg:order-1 lg:mb-3">
-              <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide mb-1">Bergführerin Vala</p>
+              <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide mb-1">{speaker}</p>
               <p className="text-[12.5px] text-kh-dark/90 leading-relaxed">{intro}</p>
               {/* Pfeil Desktop: unten Mitte, zeigt zur Figur darunter */}
               <span className="hidden lg:block absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-t-[10px] border-l-transparent border-r-transparent border-t-kh-border" />
@@ -185,10 +226,13 @@ export default function AnleitungOverview({ role }: { role: Role }) {
               <span className="lg:hidden absolute top-1/2 -translate-y-1/2 -left-[7px] w-0 h-0 border-t-[7px] border-b-[7px] border-r-[9px] border-t-transparent border-b-transparent border-r-white" />
             </div>
 
+            {/* Vollfigur gibt es nur von Vala; für alle anderen Welten das
+                runde Portrait aus GUIDE_PORTRAIT, damit immer die Figur zu
+                sehen ist, die gerade spricht. */}
             <img
-              src={VALA_FULL_FIGURE}
-              alt="Bergführerin Vala"
-              className="order-1 lg:order-2 w-[110px] lg:w-[180px] h-auto flex-shrink-0"
+              src={theme.icon === 'landscape' ? VALA_FULL_FIGURE : (GUIDE_PORTRAIT[theme.icon] ?? VALA_FULL_FIGURE)}
+              alt={speaker}
+              className={`order-1 lg:order-2 flex-shrink-0 h-auto ${theme.icon === 'landscape' ? 'w-[110px] lg:w-[180px]' : 'w-[96px] lg:w-[150px] rounded-full object-cover object-top ring-4 ring-white shadow-md'}`}
             />
           </div>
         </div>

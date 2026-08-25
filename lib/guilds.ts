@@ -85,7 +85,11 @@ export function findMyGuild(guilds: Guild[], studentId: string): Guild | undefin
 
 export type GuildQuestSignal =
   | { type: 'homework'; targetCount: number }
-  /** Dienst der Woche selbst bestätigt (nicht bloß zugeteilt), siehe duty_completions. */
+  /** Diensttage selbst bestätigt (nicht bloß zugeteilt), siehe duty_completions.
+   *  `targetCount` = Anzahl Tage, gleiche Schwelle wie die Solo-Dienst-Quest.
+   *  Vorher zählte hier `keptUpStudents` (lückenlos ab Montag, nicht nachholbar),
+   *  während die Solo-Quest 3 von 5 Tagen verlangte und nachholbar war: die
+   *  Gilden-Variante war heimlich strenger, ohne dass das irgendwo stand. */
   | { type: 'duty_done'; targetCount: number }
   | { type: 'parent_confirm'; targetCount: number }
   /** Verteilter Kern: `totalCount` HÜ insgesamt, von mind. `minContributors`
@@ -115,8 +119,8 @@ export const GUILD_QUEST_VAULT: GuildQuestTemplate[] = [
   {
     key: 'guild_duty',
     title: 'Gemeinsam verantwortlich',
-    narrative: '{guide}: die meisten Gildenmitglieder mit Dienst diese Woche erfüllen ihn.',
-    signal: { type: 'duty_done', targetCount: 1 },
+    narrative: '{guide}: die meisten Gildenmitglieder mit Dienst bestätigen ihn an 3 Tagen.',
+    signal: { type: 'duty_done', targetCount: 3 },
   },
   {
     key: 'guild_parent',
@@ -143,6 +147,12 @@ export function findGuildQuestTemplate(key: string): GuildQuestTemplate | undefi
  *  nur für ein einzelnes Kind wie beim Solo-Fall). */
 export interface GuildQuestFeasibility {
   hasWeekHomework: boolean
+  /** ⚠️ Muss sich auf DIESE Gilde beziehen, nicht auf die Klasse. Vorher wurde
+   *  hier klassenweit geprüft, während computeGuildQuestProgress gegen die
+   *  dienst-tragenden Mitglieder der Gilde auswertet: Hatte eine Gilde niemanden
+   *  mit Dienst, war poolSize 0, `done` blieb für immer false und die Karte
+   *  zeigte „0/0" mit leerem Balken. Bei einer 20er-Klasse traf das 22 % der
+   *  Gilden-Monate, bei 24 Kindern 40 %. */
   hasWeekDuty: boolean
 }
 
@@ -177,7 +187,9 @@ export interface GuildQuestContext {
   weekHomeworkIds: string[]
   doneByStudent: Map<string, Set<string>>
   confirmedByStudent: Map<string, Set<string>>
-  dutyDoneByStudent: Set<string>
+  /** Bestätigte Diensttage je Kind (nicht mehr „lückenlos durchgehalten?"),
+   *  damit die Gilden-Dienstquest dieselbe Schwelle nutzt wie die Solo-Quest. */
+  dutyDayCountByStudent: Map<string, number>
   /** Wer diese Woche überhaupt einen Dienst hat (siehe buildDutyDone). Für die
    *  Dienst-Quest zählt nur dieser Kreis, nicht die ganze Gilde — sonst wäre
    *  „die meisten Mitglieder mit Dienst" für Gilden mit wenigen Dienst-Kindern
@@ -236,7 +248,7 @@ export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: G
         return ctx.weekHomeworkIds.filter(id => done.has(id)).length >= template.signal.targetCount
       }
       case 'duty_done':
-        return ctx.dutyDoneByStudent.has(studentId)
+        return (ctx.dutyDayCountByStudent.get(studentId) ?? 0) >= template.signal.targetCount
       case 'parent_confirm': {
         const confirmed = ctx.confirmedByStudent.get(studentId) ?? new Set<string>()
         return ctx.weekHomeworkIds.filter(id => confirmed.has(id)).length >= template.signal.targetCount

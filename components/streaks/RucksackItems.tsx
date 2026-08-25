@@ -328,9 +328,14 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
                 <TipHead>Verbündeten-Amulett</TipHead>
                 <TipBody>Leuchtet auf, sobald deine Verbündeten zuhause eine Hausübung bestätigen — ein Dankeschön an sie, keine Aufgabe für dich.</TipBody>
                 <TipOrigin item="amulett" />
+                {/* Bewusst OHNE Zahl: parentConfirmStreak trug denselben Wert wie
+                    die Flamme daneben, es gab also nie einen eigenen Eltern-
+                    Bestätigungs-Streak, nur dieselbe Zahl unter zwei Namen. Und
+                    eine Zahl passt hier ohnehin nicht: ob zuhause bestätigt wird,
+                    kann ein Kind nicht steuern (siehe Kommentar oben). */}
                 <span className="block text-[11.5px] font-semibold mt-1.5 text-kh-muted">
                   {parentConfirmStreak > 0
-                    ? `Zuletzt ${parentConfirmStreak}× hintereinander bestätigt.`
+                    ? 'Deine Verbündeten sind gerade an deiner Seite.'
                     : 'Es ruht gerade — das ist völlig in Ordnung.'}
                 </span>
               </>
