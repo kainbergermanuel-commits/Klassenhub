@@ -1,6 +1,6 @@
 'use client'
 
-import { SCHOOL_YEAR_ARCS, GUIDE_PORTRAIT, LOCATION_ART, findBuiltTheme, ARC_STORY_DRAFTS } from '@/lib/seasonTheme'
+import { SCHOOL_YEAR_ARCS, GUIDE_PORTRAIT, LOCATION_ART, findBuiltTheme } from '@/lib/seasonTheme'
 import { SEASON_ART_SRC, SEASON_ART_POS } from '@/components/streaks/seasonArt'
 
 /** Admin-only Vorschau: ALLE geplanten Welten des Schuljahres-Fahrplans auf
@@ -23,11 +23,11 @@ export default function AllArcsOverview() {
         const seasonPos = SEASON_ART_POS[arc.icon] ?? 'center'
         const portrait = GUIDE_PORTRAIT[arc.icon]
         const locationArt = LOCATION_ART[arc.icon]
-        const builtTheme = findBuiltTheme(arc.icon)
-        // Gebaute Welt (aus THEMES) ODER fertig geschriebener Entwurf (ARC_STORY_DRAFTS).
-        // Beide liefern goalTitle/stepNoun/stages; der Draft hat nur keine nudge-Funktion.
-        const draft = ARC_STORY_DRAFTS[arc.icon]
-        const story = builtTheme ?? draft ?? null
+        // Seit alle elf Welten in THEMES stehen, gibt es keine Entwurfs-Fassung
+        // mehr (ARC_STORY_DRAFTS ist aufgelöst) — die Vorschau liest direkt aus
+        // der Live-Quelle, zeigt also genau das, was die Klasse zu sehen bekommt.
+        const story = findBuiltTheme(arc.icon)
+        const builtTheme = story
 
         return (
           <div key={arc.name} className="flex flex-col gap-3">
@@ -148,7 +148,7 @@ export default function AllArcsOverview() {
                   {story ? (
                     <div className="flex flex-col gap-2.5">
                       <p className="text-[11px] font-bold uppercase tracking-wide text-kh-dark/70 bg-white/35 rounded-md px-2 py-1 inline-block w-fit">
-                        {builtTheme ? 'Etappen-Story' : 'Etappen-Story (Entwurf, noch nicht live)'} ({story.stages.length}) · Ziel: „{story.goalTitle}“ · Einheit: {story.stepNoun}
+                        Etappen-Story ({story.stages.length}) · Ziel: „{story.goalTitle}“ · Einheit: {story.stepNoun}
                       </p>
                       {story.stages.map((stage, i) => (
                         <div key={stage.label} className="rounded-xl bg-white/55 backdrop-blur-sm p-3 shadow-sm">

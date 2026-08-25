@@ -10,7 +10,7 @@ import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate,
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, WEEKLY_SEAL_KEY, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
-import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, SPLITTER_SIGNS, SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
+import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex, SPLITTER_SIGNS, SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
 import type { AdventureData } from '@/components/streaks/TeacherAdventurePanel'
 import type { ChildAdventureData } from '@/components/streaks/ChildAdventureStats'
 import { activeRiddles, type Riddle } from '@/lib/riddles'
@@ -557,7 +557,8 @@ export default async function StreaksPage() {
       ]
 
       const currentThemeName = getSeasonTheme(currentSeason).name
-      const awakened = awakenedSignCount(currentThemeName)
+      const goalPct = effectiveGoal ? Math.min(100, Math.round((classGoalConfirmedDone / effectiveGoal.target) * 100)) : 0
+      const awakened = awakenedSignCount(currentThemeName, effectiveGoal ? currentStageIndex(goalPct, getSeasonTheme(currentSeason).stages.length) : -1)
       const arc = SCHOOL_YEAR_ARCS.find(a => a.name === currentThemeName)
 
       teacherAdventure = {

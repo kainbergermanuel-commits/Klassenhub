@@ -13,7 +13,7 @@ import type { GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
-import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
+import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex } from '@/lib/seasonTheme'
 import { activeRiddles } from '@/lib/riddles'
 import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 import TeacherHome from '@/components/home/TeacherHome'
@@ -639,6 +639,11 @@ export default async function HomePage() {
     // Rucksack) und weiter unten nochmal fürs Heldenbuch/Mein Guide — eine
     // Berechnung statt zwei.
     const currentThemeName = getSeasonTheme(currentSeason).name
+    // Etappen-Index der laufenden Welt — bestimmt, ob das Splitter-Zeichen
+    // dieser Welt schon erwacht ist (siehe awakenedSignCount).
+    const currentStage = effectiveGoal
+      ? currentStageIndex(Math.min(100, Math.round((classGoalDoneValue / effectiveGoal.target) * 100)), getSeasonTheme(currentSeason).stages.length)
+      : -1
 
     // Schon gezeigte Erwerbs-Momente (siehe NewItemAnnounce) — eigene kleine
     // Query auf den Primärschlüssel, gleiches Muster wie quest_riddle_solutions
@@ -665,7 +670,7 @@ export default async function HomePage() {
       classGoalTarget: effectiveGoal?.target ?? null,
       classGoalDone: classGoalDoneValue,
       splitterFound: splitterFound(currentThemeName),
-      awakenedSignCount: awakenedSignCount(currentThemeName),
+      awakenedSignCount: awakenedSignCount(currentThemeName, currentStage),
       // as-Cast, weil die neue Tabelle noch nicht in den generierten Supabase-
       // Typen steht (gleiches Muster wie andere frische Tabellen im Projekt).
       seenItemKeys: seenItemsError ? null : (seenItems ?? []).map(r => (r as { item_key: string }).item_key),

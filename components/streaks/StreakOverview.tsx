@@ -12,7 +12,7 @@ import ChildAdventureStats, { type ChildAdventureData } from '@/components/strea
 import AnimateIn from '@/components/ui/AnimateIn'
 import { VETERAN_MILESTONE } from '@/lib/streak'
 import type { Riddle } from '@/lib/riddles'
-import { getSeasonTheme, splitterFound, awakenedSignCount } from '@/lib/seasonTheme'
+import { getSeasonTheme, splitterFound, awakenedSignCount, currentStageIndex } from '@/lib/seasonTheme'
 import type { Guild, GuildQuestResult, GuildMember } from '@/lib/guilds'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
 
@@ -87,7 +87,13 @@ interface Props {
 }
 
 export default function StreakOverview({ role, noStreak, classGoal, classGoalDone, currentSeason, myHeldenbuch, quests, questWeekStart, riddles, guildSection, adventureStats, teacherAdventure, childAdventure }: Props) {
-  const currentThemeName = getSeasonTheme(currentSeason).name
+  const theme = getSeasonTheme(currentSeason)
+  const currentThemeName = theme.name
+  // Etappen-Index der laufenden Welt — bestimmt, ob das Splitter-Zeichen
+  // dieser Welt schon erwacht ist (siehe awakenedSignCount).
+  const currentStage = classGoal
+    ? currentStageIndex(Math.min(100, Math.round((classGoalDone / classGoal.target) * 100)), theme.stages.length)
+    : -1
   return (
     <>
       {/* Welt-Einstieg — Titel, Guide UND Klassenreise in einer Card (vorher
@@ -164,7 +170,7 @@ export default function StreakOverview({ role, noStreak, classGoal, classGoalDon
                 classGoalTarget: classGoal?.target ?? null,
                 classGoalDone,
                 splitterFound: splitterFound(currentThemeName),
-                awakenedSignCount: awakenedSignCount(currentThemeName),
+                awakenedSignCount: awakenedSignCount(currentThemeName, currentStage),
                 seenItemKeys: myHeldenbuch.seenItemKeys,
               }}
             />
