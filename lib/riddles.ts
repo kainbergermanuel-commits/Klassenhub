@@ -267,12 +267,16 @@ export const SPLITTER_TEIL1: Riddle = {
   itemIcon: 'travel_explore',
   intro: 'Drei Spuren ziehen sich leuchtend durch eure Reise. In welcher Reihenfolge seid ihr ihnen begegnet?',
   prompt: 'Bringt die drei Spuren in die Reihenfolge, in der die Klasse sie erlebt hat — zuerst, zweitens, zuletzt.',
+  // ⚠️ Diese drei Sätze müssen WÖRTLICH in den Kapiteln stehen. Vorher waren
+  // sie paraphrasiert und als Zitat ausgezeichnet: Wer sie in der „Reise"
+  // nachschlug, fand sie nirgends — und genau das Nachschlagen ist der Zweck
+  // des Rätsels. Bei Textänderungen an diesen drei Kapiteln mit anpassen.
   fragments: [
-    { key: 'berg', label: '„…ein warmes Licht, das zu keiner meiner Karten passt." (Vala, Gipfel)' },
-    { key: 'all', label: '„…ein Summen, das aus keinem System an Bord kommt." (ARI, Mondvorbeiflug)' },
-    { key: 'dschungel', label: '„…ein warm leuchtender Splitter, über und über bedeckt mit feinen Zeichen." (Isla, Schatzkammer)' },
+    { key: 'berg', label: '„Kein Stern, keine Stadt, keine Sonne." (Bergexpedition, Kapitel „Gipfel")' },
+    { key: 'all', label: '„Ich zeichne selten Dinge auf, für die ich keine Kategorie habe." (Weltraummission, Kapitel „Mondvorbeiflug")' },
+    { key: 'dschungel', label: '„Und ich schwöre euch, das hier ist eine Karte." (Schatzsuche, Kapitel „Schatzkammer")' },
   ],
-  reward: 'Richtig! Erst das Licht am Gipfel, dann das Summen im All, zuletzt der leuchtende Stein in der Schatzkammer. Drei Spuren, ein Ding. Was es wirklich ist, weiß bisher niemand, nicht einmal Isla. Am Ende der Reise wird es dir jemand sagen.',
+  reward: 'Richtig! Erst das Licht am Gipfel, das keiner Karte gehorcht, dann ARIs Aufzeichnung ohne Kategorie, zuletzt Islas Stein, den sie nicht lesen kann. Drei Fachleute, drei Mal dieselbe Ratlosigkeit, ein Ding. Was es wirklich ist, weiß bisher niemand. Am Ende der Reise wird es dir jemand sagen.',
 }
 
 export const SPLITTER_TEIL2: Riddle = {

@@ -15,7 +15,7 @@ import { findQuestTemplate } from '@/lib/questVault'
  *  das echte (Lehrer-)Profil und die Aktion würde in der Vorschau immer mit
  *  "Unauthorized" fehlschlagen. */
 export async function chooseQuestPath(weekStart: string, templateKey: string, choiceKey: string): Promise<void> {
-  const { user, profile, activeClassId } = await getEffectiveAuth()
+  const { user, profile, activeClassId, isPreview } = await getEffectiveAuth()
   if (!user || !profile || profile.role !== 'student') throw new Error('Unauthorized')
   if (!activeClassId) throw new Error('Keine Klasse')
 
@@ -31,7 +31,9 @@ export async function chooseQuestPath(weekStart: string, templateKey: string, ch
     student_id: profile.id,
     choice_key: choiceKey,
   } as never)
-  if (error) throw new Error(error.message)
+  // Gleiche Ausnahme wie in solveQuestRiddle: in der Lehrer-Vorschau schlägt
+  // der Schreibvorgang an der RLS fehl, das darf den Testlauf nicht abbrechen.
+  if (error && !isPreview) throw new Error(error.message)
 
   revalidatePath('/')
   revalidatePath('/streaks')

@@ -21,7 +21,7 @@ export async function solveQuestRiddle(
   submitted: string,
   scope = ''
 ): Promise<{ ok: boolean }> {
-  const { user, profile, activeClassId } = await getEffectiveAuth()
+  const { user, profile, activeClassId, isPreview } = await getEffectiveAuth()
   if (!user || !profile || profile.role !== 'student') throw new Error('Unauthorized')
   if (!activeClassId) throw new Error('Keine Klasse')
 
@@ -51,7 +51,12 @@ export async function solveQuestRiddle(
     riddle_key: riddleKey,
     scope,
   } as never, { onConflict: 'class_id,student_id,riddle_key,scope', ignoreDuplicates: true })
-  if (error) throw new Error(error.message)
+  // In der Lehrer-Vorschau-als-Schüler prüft die RLS gegen den ECHTEN auth.uid()
+  // (die Lehrperson), während student_id das vorgeschaute Kind ist — der Upsert
+  // scheitert dort immer. Ohne diese Ausnahme bekam die Lehrperson beim Testen
+  // eine Fehlermeldung statt der Auflösung. Gespeichert wird in der Vorschau
+  // bewusst nichts: nach dem Neuladen steht das Rätsel wieder offen.
+  if (error && !isPreview) throw new Error(error.message)
 
   // Erfolg fürs Logbuch protokollieren (kind='riddle', period='' = dauerhaft) —
   // fehlertolerant wie die übrigen achievements-Inserts: schlägt z.B. in der
