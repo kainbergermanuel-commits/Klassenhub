@@ -191,7 +191,11 @@ export default function ChapterReader({ arcIcon, currentTheme, activeStage, onAr
                 )
               ) : (
                 <>
-                  <p className="text-[15px] text-kh-dark/90 leading-[1.7] border-l-2 border-[#E8A020]/50 pl-3">
+                  {/* Aufrecht statt kursiv: Kursive trägt kurze Kostproben (Startseite,
+                      Abenteuer-Hero), aber über ein ganzes Kapitel liest sie sich
+                      schwer, besonders bei Leseschwäche. 14px/1.6 hält den Rhythmus
+                      der übrigen Karten und bleibt trotzdem Lesegröße. */}
+                  <p className="text-[14px] text-kh-dark/90 leading-[1.6] border-l-2 border-[#E8A020]/50 pl-3">
                     {stage!.chapter ?? stage!.story}
                   </p>
 
