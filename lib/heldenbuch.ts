@@ -32,6 +32,15 @@ export interface GuideNoteSignals {
 
 type GuideNoteVoice = (s: GuideNoteSignals) => GuideNote
 
+/** Einheit der Flamme. computeStreak() zählt HAUSÜBUNGEN in Folge, nicht
+ *  Kalendertage (zwei am selben Tag fällige HÜ zählen doppelt, siehe
+ *  lib/streak.ts). Die Guide-Stimmen sagten früher „Tage in Folge" und führten
+ *  Kinder damit in die Irre: wer drei HÜ an einem Nachmittag erledigt, las
+ *  „3 Tage in Folge". Gleiche Formulierung wie in HeldenbuchCard. */
+function huLabel(streak: number): string {
+  return streak === 1 ? 'Hausübung' : 'Hausübungen'
+}
+
 /** Neutrale Standard-Stimme — greift für jeden Guide, der noch keine eigenen
  *  Formulierungen hat (Mein Guide: Prinzip 4, kein Vorab-Content-Berg). */
 const GENERIC_VOICE: GuideNoteVoice = s => {
@@ -46,7 +55,7 @@ const GENERIC_VOICE: GuideNoteVoice = s => {
     return { icon: 'visibility', text: `Ich sehe, du hast noch ${s.openHomeworkCount} ${hw} offen — du schaffst das, Schritt für Schritt.` }
   }
   if (s.confirmedStreak >= 5) {
-    return { icon: 'local_fire_department', text: `Ich habe gesehen, wie beständig du dranbleibst — ${s.confirmedStreak} Tage in Folge. Beeindruckend.` }
+    return { icon: 'local_fire_department', text: `Ich habe gesehen, wie beständig du dranbleibst: ${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge. Beeindruckend.` }
   }
   if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
     return { icon: 'military_tech', text: 'Alle deine Quests diese Woche geschafft — stark!' }
@@ -72,7 +81,7 @@ const VALA_VOICE: GuideNoteVoice = s => {
     return { icon: 'visibility', text: `Ich seh von hier oben noch ${s.openHomeworkCount} ${hw} vor dir liegen — ein Schritt nach dem anderen, du schaffst das.` }
   }
   if (s.confirmedStreak >= 5) {
-    return { icon: 'local_fire_department', text: `${s.confirmedStreak} Tage in Folge dabeigeblieben — das ist echte Ausdauer, wie bei einer guten Bergtour. Ich hab's gesehen.` }
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge dabeigeblieben, das ist echte Ausdauer, wie bei einer guten Bergtour. Ich hab's gesehen.` }
   }
   if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
     return { icon: 'military_tech', text: 'Alle Etappen dieser Woche gemeistert — stark erklommen!' }
@@ -97,7 +106,7 @@ const ARI_VOICE: GuideNoteVoice = s => {
     return { icon: 'visibility', text: `Scanner zeigt noch ${s.openHomeworkCount} offene ${hw} an. Checkliste Punkt für Punkt — ich berechne bereits den Kurs danach.` }
   }
   if (s.confirmedStreak >= 5) {
-    return { icon: 'local_fire_department', text: `${s.confirmedStreak} Tage in Folge ohne Systemausfall protokolliert. Diese Werte, Crew-Mitglied, sind außergewöhnlich stabil.` }
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge ohne Systemausfall protokolliert. Diese Werte, Crew-Mitglied, sind außergewöhnlich stabil.` }
   }
   if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
     return { icon: 'military_tech', text: 'Alle Missionsziele dieser Woche erfüllt. Log-Eintrag: einwandfreie Ausführung.' }
@@ -122,7 +131,7 @@ const ISLA_VOICE: GuideNoteVoice = s => {
     return { icon: 'visibility', text: `Auf meiner Karte sehe ich noch ${s.openHomeworkCount} unentdeckte ${hw} — folg ihnen einfach der Reihe nach, du bist näher dran, als du denkst.` }
   }
   if (s.confirmedStreak >= 5) {
-    return { icon: 'local_fire_department', text: `${s.confirmedStreak} Tage in Folge der Spur gefolgt, ohne abzubrechen — das ist echtes Entdeckerinnen-Talent. Ich hab's notiert.` }
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge der Spur gefolgt, ohne abzubrechen, das ist echtes Entdeckerinnen-Talent. Ich hab's notiert.` }
   }
   if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
     return { icon: 'military_tech', text: 'Alle Spuren dieser Woche gefunden — die Schatzkammer steht euch offen!' }

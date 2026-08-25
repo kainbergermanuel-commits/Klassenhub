@@ -33,7 +33,10 @@ interface Props {
    *  withStreak-Rangliste wurde 2026-07-13 bewusst entfernt (Leaderboard-
    *  Evidenz), der Prop dazu ist inzwischen ebenfalls weg. */
   noStreak: StudentStreak[]
-  classGoal: { target: number; reward: string | null } | null
+  /** `isSuggested` = kein echtes Ziel gesetzt, der Wert ist ein berechneter
+   *  Vorschlag (siehe lib/classGoal.ts suggestGoalTarget). Die UI kennzeichnet
+   *  ihn, damit niemand ihn für eine Lehrer-Entscheidung hält. */
+  classGoal: { target: number; reward: string | null; isSuggested?: boolean } | null
   classGoalDone: number
   currentSeason: string
   myHeldenbuch: {

@@ -6,8 +6,20 @@ export interface JourneyStage {
   label: string
   icon: string
   /** Kurzer Erzähltext (1–2 Sätze), der aufklappt, sobald die Klasse diese
-   *  Etappe gemeinsam erreicht hat. Stimme des jeweiligen Guides. */
+   *  Etappe gemeinsam erreicht hat. Stimme des jeweiligen Guides. Bleibt die
+   *  Fassung für die kompakten Karten (StoryHeroCard, AdventureHero). */
   story: string
+  /** Voller Kapiteltext (~220 Wörter) für die Lese-Ansicht auf /streaks/reise:
+   *  dieselbe Szene ausgespielt statt zusammengefasst. Fehlt das Feld, fällt
+   *  die Lese-Ansicht auf `story` zurück. */
+  chapter?: string
+  /** Ein-Satz-Ausblick, der auf der NÄCHSTEN, noch gesperrten Etappe als
+   *  Vorschau erscheint (statt „der Guide verrät noch nichts"). Macht
+   *  neugierig, ohne zu verraten, was die Klasse noch nicht erreicht hat. */
+  cliffhanger?: string
+  /** Nur an der letzten Etappe einer Welt: Übergabe an die nächste Guide-
+   *  Figur. Macht den Weltenwechsel als Moment spürbar. */
+  handover?: string
 }
 
 export interface JourneyTheme {
@@ -26,6 +38,16 @@ export interface JourneyTheme {
   /** Kurzer Nudge-Satz in der Guide-Stimme (z. B. Streak-Banner). `remaining`
    *  = Aufgaben bis zum nächsten Meilenstein. Bittet, befiehlt nicht. */
   nudge: (remaining: number) => string
+  /** 0-basierter Etappen-Index, an dem das Splitter-Zeichen dieser Welt
+   *  erwacht (siehe SPLITTER_SIGNS + docs/story-welten.html, Abschnitt 00).
+   *  Muss zu der Etappe passen, deren Text das Erwachen erzählt. Fehlt das
+   *  Feld, erwacht das Zeichen erst an der letzten Etappe. */
+  signStage?: number
+  /** Epilog-Welt ohne Aufgaben (Sonnenhafen, Juli/August): eine einzige
+   *  Etappe, kein Klassenziel, keine Fortschrittsleiste. Die Story-Bibel sieht
+   *  hier bewusst einen Ort zum Ankommen vor statt eines weiteren Monats mit
+   *  Zielwert. Aufrufer müssen die Etappen-Leiste dafür überspringen. */
+  isEpilogue?: boolean
 }
 
 const THEMES: JourneyTheme[] = [

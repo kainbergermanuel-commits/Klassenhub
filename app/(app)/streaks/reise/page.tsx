@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO } from '@/lib/date'
-import { countClassGoalDone } from '@/lib/classGoal'
+import { countClassGoalDone, suggestGoalTarget } from '@/lib/classGoal'
 import ReiseOverview from '@/components/streaks/ReiseOverview'
 import AnimateIn from '@/components/ui/AnimateIn'
 
@@ -17,13 +17,15 @@ export default async function ReisePage() {
 
   const supabase = await createClient()
   const today = todayISO()
-  // ⚠️ TEST-HACK: identisch zu streaks/page.tsx & lib/classGoal.ts.
-  const monthEnd = lastDayOfMonthISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1))
+  // Eine Season = ein Kalendermonat (identisch zu streaks/page.tsx & lib/classGoal.ts).
+  const monthEnd = lastDayOfMonthISO()
   const currentSeason = today.slice(0, 7)
 
-  const [{ data: classGoal }, { data: allHw }] = await Promise.all([
+  const [{ data: classGoal }, { data: allHw }, { count: studentCount }] = await Promise.all([
     supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
     supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).lte('due_date', monthEnd).order('due_date', { ascending: false }),
+    // Nur die Anzahl, kein Datensatz — Grundlage für das Vorschlagsziel.
+    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
   ])
 
   const hwIds = (allHw ?? []).map(h => h.id)
@@ -32,11 +34,14 @@ export default async function ReisePage() {
     : { data: [] }
 
   const done = countClassGoalDone(allHw ?? [], completions ?? [])
-  const pct = classGoal ? Math.min(100, Math.round((done / classGoal.target) * 100)) : 0
+  // Ohne gesetztes Ziel greift derselbe Vorschlag wie auf /streaks — sonst
+  // stünden hier ALLE Etappen auf „gesperrt" und die Reise wäre leer.
+  const effectiveTarget = classGoal?.target ?? suggestGoalTarget(allHw ?? [], studentCount ?? 0, currentSeason)
+  const pct = effectiveTarget ? Math.min(100, Math.round((done / effectiveTarget) * 100)) : 0
 
   return (
     <AnimateIn delay={0}>
-      <ReiseOverview season={currentSeason} pct={pct} target={classGoal?.target ?? null} role={profile.role} isAdmin={!!profile.is_admin} />
+      <ReiseOverview season={currentSeason} pct={pct} target={effectiveTarget} role={profile.role} isAdmin={!!profile.is_admin} />
     </AnimateIn>
   )
 }

@@ -4,7 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, getMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE, MILESTONES } from '@/lib/streak'
-import { countClassGoalDone } from '@/lib/classGoal'
+import { countClassGoalDone, suggestGoalTarget } from '@/lib/classGoal'
 import { defaultWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
@@ -596,6 +596,17 @@ export default async function HomePage() {
 
     // ─── ERFOLGE (Heldenbuch-Statistik) ───────────────────────────────────────
     const classGoalDoneValue = countClassGoalDone(allHwForStreak, allCompletionsStudent ?? [])
+    // Ohne gesetztes Monatsziel greift ein berechneter Vorschlag, damit die
+    // Erzählebene nie ausfällt (siehe lib/classGoal.ts suggestGoalTarget).
+    const suggestedTarget = classGoal ? null : suggestGoalTarget(allHwForStreak, (allStudents ?? []).length, currentSeason)
+    const effectiveGoal: { target: number; reward: string | null; isSuggested: boolean } | null =
+      classGoal
+        ? { target: classGoal.target, reward: classGoal.reward, isSuggested: false }
+        : suggestedTarget !== null
+          ? { target: suggestedTarget, reward: null, isSuggested: true }
+          : null
+    // Bewusst gegen das ECHTE Ziel, nicht gegen den Vorschlag: ein Erfolg, den
+    // niemand gesetzt hat, wäre kein Erfolg.
     const classGoalReached = !!classGoal && classGoalDoneValue >= classGoal.target
     const newAchievements = collectAchievements({
       studentId: user.id,
@@ -651,7 +662,7 @@ export default async function HomePage() {
       guildName: guildSection?.guild.name ?? null,
       parentConfirmStreak: confirmedStreak,
       nextStepHint: quests.find(q => !q.done)?.template.title ?? null,
-      classGoalTarget: classGoal?.target ?? null,
+      classGoalTarget: effectiveGoal?.target ?? null,
       classGoalDone: classGoalDoneValue,
       splitterFound: splitterFound(currentThemeName),
       awakenedSignCount: awakenedSignCount(currentThemeName),
@@ -699,7 +710,7 @@ export default async function HomePage() {
         confirmedStreak={confirmedStreak}
         broken={broken}
         pendingMilestone={pendingMilestone}
-        classGoal={classGoal}
+        classGoal={effectiveGoal}
         classGoalDone={classGoalDoneValue}
         season={currentSeason}
         quests={quests}

@@ -14,6 +14,7 @@ import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, SPLITT
 import type { AdventureData } from '@/components/streaks/TeacherAdventurePanel'
 import type { ChildAdventureData } from '@/components/streaks/ChildAdventureStats'
 import { activeRiddles, type Riddle } from '@/lib/riddles'
+import { suggestGoalTarget } from '@/lib/classGoal'
 import { matchChild } from '@/lib/auth'
 import StreakOverview from '@/components/streaks/StreakOverview'
 
@@ -24,12 +25,11 @@ export default async function StreaksPage() {
 
   const supabase = await createClient()
   const today = todayISO()
-  // ⚠️ TEST-HACK: Season bis Ende des NÄCHSTEN Monats verlängert, damit Testdaten
-  // länger erhalten bleiben. TODO(live): vor Go-Live wieder auf lastDayOfMonthISO()
-  // (= aktueller Monat) zurücksetzen.
-  const monthEnd = lastDayOfMonthISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1))
+  // Eine Season = ein Kalendermonat (identisch zu lib/classGoal.ts und
+  // streaks/reise/page.tsx — dasselbe Fenster an allen drei Stellen).
+  const monthEnd = lastDayOfMonthISO()
 
-  const currentSeason = today.slice(0, 7) // 'YYYY-MM', unabhängig vom Test-Hack
+  const currentSeason = today.slice(0, 7) // 'YYYY-MM'
 
   const [
     { data: students },
@@ -42,6 +42,18 @@ export default async function StreaksPage() {
   ])
 
   const studentIds = (students ?? []).map(s => s.id)
+
+  // Ohne gesetztes Monatsziel greift ein berechneter Vorschlag, damit die
+  // Erzählebene nie ausfällt (siehe lib/classGoal.ts suggestGoalTarget).
+  // `isSuggested` trägt die UI als Chip, ein echtes Ziel überschreibt ihn.
+  const suggested = classGoal ? null : suggestGoalTarget(allHwDesc ?? [], studentIds.length, currentSeason)
+  const effectiveGoal: { target: number; reward: string | null; isSuggested: boolean } | null =
+    classGoal
+      ? { target: classGoal.target, reward: classGoal.reward, isSuggested: false }
+      : suggested !== null
+        ? { target: suggested, reward: null, isSuggested: true }
+        : null
+
   const [{ data: allFreezes }, { data: allExtensions }] = studentIds.length > 0
     ? await Promise.all([
         supabase.from('streak_freezes').select('student_id,homework_id,created_at').in('student_id', studentIds),
@@ -254,6 +266,8 @@ export default async function StreaksPage() {
     // ─── ERFOLGE (Heldenbuch-Statistik) ────────────────────────────────────────
     // Gleiche Protokollierung wie auf der Startseite — ein Schüler könnte auch
     // direkt hier eine Quest abschließen, ohne vorher die Startseite zu laden.
+    // Bewusst gegen das ECHTE Ziel, nicht gegen den Vorschlag: ein Erfolg,
+    // den niemand gesetzt hat, wäre kein Erfolg.
     const classGoalReached = !!classGoal && classGoalConfirmedDone >= classGoal.target
     const newAchievements = collectAchievements({
       studentId: profile.id,
@@ -532,7 +546,7 @@ export default async function StreaksPage() {
       })
 
       // Anonyme Verteilungen.
-      const flameBuckets = ['0 Tage', '1–3', '4–7', '8–14', '15+'].map((label, i) => ({
+      const flameBuckets = ['0 HÜ', '1–3', '4–7', '8–14', '15+'].map((label, i) => ({
         label,
         count: childrenOut.filter(c => bucket(c.streak, [0, 3, 7, 14, Infinity]) === i).length,
       }))
@@ -558,7 +572,7 @@ export default async function StreaksPage() {
           riddlesSolved: ((riddleSolvesAll ?? []) as unknown[]).length,
           riddlesKids: new Set(((riddleSolvesAll ?? []) as { student_id: string }[]).map(r => r.student_id)).size,
           goalDone: classGoalConfirmedDone,
-          goalTarget: classGoal?.target ?? 0,
+          goalTarget: effectiveGoal?.target ?? 0,
         },
         trend,
         flameBuckets,
@@ -597,7 +611,7 @@ export default async function StreaksPage() {
       : (matchChild(profile, students ?? []) ?? students?.[0])?.id ?? null
     if (selfId) {
       const flameBucketIndex = (v: number) => [0, 3, 7, 14, Infinity].findIndex(e => v <= e)
-      const flameBuckets = ['0 Tage', '1–3', '4–7', '8–14', '15+'].map((label, i) => ({
+      const flameBuckets = ['0 HÜ', '1–3', '4–7', '8–14', '15+'].map((label, i) => ({
         label, count: studentData.filter(s => flameBucketIndex(s.streak) === i).length,
       }))
       const selfStreak = studentData.find(s => s.id === selfId)?.streak ?? 0
@@ -635,7 +649,7 @@ export default async function StreaksPage() {
         self: { questsDone: selfQuestsDone, questsTotal: selfQuestsTotal, flame: selfStreak, riddles: selfRiddles, activeThisWeek: activeIds.has(selfId) },
         classFlame: { buckets: flameBuckets, selfIndex: flameBucketIndex(selfStreak) },
         participation: { active: activeIds.size, total: studentData.length, todayAdded },
-        goal: classGoal ? { done: classGoalConfirmedDone, target: classGoal.target, selfContribution } : null,
+        goal: effectiveGoal ? { done: classGoalConfirmedDone, target: effectiveGoal.target, selfContribution } : null,
         selfTrend,
       }
     }
@@ -645,7 +659,7 @@ export default async function StreaksPage() {
     <StreakOverview
       role={profile.role}
       noStreak={noStreak}
-      classGoal={classGoal ? { target: classGoal.target, reward: classGoal.reward } : null}
+      classGoal={effectiveGoal}
       classGoalDone={classGoalConfirmedDone}
       currentSeason={currentSeason}
       myHeldenbuch={myHeldenbuch}

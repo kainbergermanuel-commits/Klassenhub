@@ -8,7 +8,7 @@ import type { AgendaEvent } from '@/lib/types'
 
 interface Props {
   season: string
-  classGoal: { target: number; reward: string | null } | null
+  classGoal: { target: number; reward: string | null; isSuggested?: boolean } | null
   classGoalDone: number
   quests: QuestResult[]
   upcomingEvents: AgendaEvent[]

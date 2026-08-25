@@ -28,11 +28,23 @@ export async function solveQuestRiddle(
   const riddle = findRiddle(riddleKey)
   if (!riddle) throw new Error('Unbekanntes Rätsel')
 
-  if (!checkRiddleAnswer(riddleKey, submitted)) {
+  const supabase = await createClient()
+  const correct = checkRiddleAnswer(riddleKey, submitted)
+
+  // Jeden Versuch protokollieren, richtig wie falsch (siehe
+  // supabase/feature-riddle-attempts.sql). Ohne das bliebe unsichtbar, ob ein
+  // Rätsel zum Nachlesen einlädt oder ob man die Antwort raten kann.
+  // Fehlertolerant wie der achievements-Upsert unten: reine Analytik, sie darf
+  // das Lösen nie scheitern lassen (z.B. in der Lehrer-Vorschau-als-Schüler,
+  // wo die RLS gegen den echten auth.uid() prüft).
+  await supabase.from('quest_riddle_attempts').insert(
+    { class_id: activeClassId, student_id: profile.id, riddle_key: riddleKey, correct } as never,
+  )
+
+  if (!correct) {
     return { ok: false }
   }
 
-  const supabase = await createClient()
   const { error } = await supabase.from('quest_riddle_solutions').upsert({
     class_id: activeClassId,
     student_id: profile.id,

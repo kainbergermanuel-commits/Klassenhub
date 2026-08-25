@@ -38,7 +38,9 @@ interface StudentHomeProps {
   confirmedStreak: number
   broken: boolean
   pendingMilestone: number | null
-  classGoal: { target: number; reward: string | null } | null
+  /** `isSuggested` = berechneter Vorschlag statt gesetztem Ziel (siehe
+   *  lib/classGoal.ts suggestGoalTarget). */
+  classGoal: { target: number; reward: string | null; isSuggested?: boolean } | null
   classGoalDone: number
   season: string
   quests: QuestResult[]

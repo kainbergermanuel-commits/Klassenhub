@@ -12,7 +12,10 @@ import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 interface Props {
   season: string
   role: 'teacher' | 'student' | 'parent'
-  goal: { target: number; reward: string | null } | null
+  /** `isSuggested` = berechneter Vorschlag statt gesetztem Ziel (siehe
+   *  lib/classGoal.ts). Wird als Chip gekennzeichnet; speichert die Lehrperson
+   *  ein echtes Ziel, verschwindet der Chip ohne weiteren Sonderfall. */
+  goal: { target: number; reward: string | null; isSuggested?: boolean } | null
   done: number
 }
 
@@ -43,6 +46,13 @@ export default function AdventureHero({ season, role, goal, done }: Props) {
   const pct = goal ? Math.min(100, Math.round((done / goal.target) * 100)) : 0
   const reached = goal ? done >= goal.target : false
   const activeStage = goal ? currentStageIndex(pct, theme.stages.length) : 0
+  // Epilog-Welt (Sonnenhafen): ein Ort zum Ankommen, kein Monat mit Zielwert.
+  // Kein Fortschrittsbalken, keine Etappen-Leiste, nur der Text.
+  const isEpilogue = !!theme.isEpilogue
+  // Etappen-Tooltip „X von Y": bei einer Ein-Etappen-Welt wäre der Nenner 0
+  // und der Wert NaN. Der Guard hält den Fall auch dann sauber, wenn eine
+  // künftige Welt mit weniger als zwei Etappen scharfgeschaltet wird.
+  const stageDenominator = Math.max(1, theme.stages.length - 1)
 
   function save() {
     const parsed = Number(target)
@@ -109,28 +119,36 @@ export default function AdventureHero({ season, role, goal, done }: Props) {
             </button>
           </div>
 
-          {/* Glas-Panel: die Reise der Klasse (Etappen + Story + Ziel). Für
-              Schüler:innen/Eltern ohne gesetztes Ziel entfällt das Panel. */}
-          {(goal || isTeacher) && (
+          {/* Glas-Panel: die Reise der Klasse (Etappen + Story + Ziel). Ohne
+              gesetztes Ziel greift ein berechneter Vorschlag, damit die
+              Erzählebene nie ausfällt; die Epilog-Welt zeigt nur den Text. */}
+          {(goal || isTeacher || isEpilogue) && (
             <div className="rounded-2xl bg-white/55 backdrop-blur-[3px] px-4 pt-3.5 pb-4">
               <div className="flex items-baseline justify-between gap-2 mb-1">
                 <h2 className="font-extrabold text-[15px] text-kh-dark flex items-center gap-1.5 min-w-0">
                   <span className="msym text-[17px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
                   <span className="min-w-0 md:truncate">{theme.goalTitle}</span>
-                  <button
-                    onClick={() => setGoalInfoOpen(true)}
-                    aria-label="Wie funktioniert das Klassenziel?"
-                    className="msym text-[15px] text-kh-muted/60 hover:text-kh-teal transition-colors flex-shrink-0"
-                  >
-                    info
-                  </button>
+                  {!isEpilogue && (
+                    <button
+                      onClick={() => setGoalInfoOpen(true)}
+                      aria-label="Wie funktioniert das Klassenziel?"
+                      className="msym text-[15px] text-kh-muted/60 hover:text-kh-teal transition-colors flex-shrink-0"
+                    >
+                      info
+                    </button>
+                  )}
                 </h2>
                 <span className="text-[11.5px] font-semibold text-kh-muted flex-shrink-0 whitespace-nowrap">
-                  <span className="max-md:hidden">Klassenziel · </span>{monthLabel(season + '-01')}
+                  {!isEpilogue && <span className="max-md:hidden">Klassenziel · </span>}{monthLabel(season + '-01')}
                 </span>
               </div>
 
-              {!goal || editing ? (
+              {isEpilogue ? (
+                // Sommerferien: kein Ziel, keine Etappen, nur ankommen.
+                <p className="mt-2 text-[12.5px] text-kh-dark/80 italic leading-snug border-l-2 border-[#E8A020]/50 pl-3">
+                  {theme.stages[0].story}
+                </p>
+              ) : !goal || editing ? (
                 editing ? (
                   <GoalForm target={target} setTarget={setTarget} reward={reward} setReward={setReward} error={error} pending={pending} onSave={save} onCancel={() => setEditing(false)} />
                 ) : (
@@ -148,6 +166,16 @@ export default function AdventureHero({ season, role, goal, done }: Props) {
                       {done} von {goal.target} {theme.stepNoun}
                       <span className="text-kh-muted font-medium"> · bestätigte HÜ</span>
                       {reached && <span className="ml-1.5">🎉</span>}
+                      {goal.isSuggested && (
+                        <span
+                          title={isTeacher
+                            ? 'Für diesen Monat ist noch kein Ziel gesetzt. Bis dahin schlägt KlassenHub eines vor, damit die Reise weiterläuft. Tippe auf den Stift, um ein eigenes zu setzen.'
+                            : 'Für diesen Monat steht noch kein festes Ziel. So lange gilt ein Vorschlag.'}
+                          className="ml-2 align-middle text-[9.5px] font-extrabold text-kh-muted bg-kh-muted/12 px-1.5 py-0.5 rounded-full cursor-default"
+                        >
+                          Vorschlag
+                        </span>
+                      )}
                     </p>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       {isTeacher && (
@@ -172,7 +200,7 @@ export default function AdventureHero({ season, role, goal, done }: Props) {
                     {theme.stages.map((stage, i) => {
                       const stageReached = i <= activeStage
                       const isCurrent = i === activeStage
-                      const stageHw = Math.round((i / (theme.stages.length - 1)) * goal.target)
+                      const stageHw = Math.round((i / stageDenominator) * goal.target)
                       return (
                         <div key={stage.label} className="relative flex-1 min-w-0 flex flex-col items-center gap-1.5 px-0.5">
                           <div className="group relative">
