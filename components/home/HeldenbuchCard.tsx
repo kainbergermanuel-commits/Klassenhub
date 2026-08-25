@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { MILESTONES, flameCount } from '@/lib/streak'
-import { getSeasonTheme, GUIDE_PORTRAIT, SCHOOL_YEAR_ARCS, SPLITTER_SIGNS } from '@/lib/seasonTheme'
+import { getSeasonTheme, guideShortName, isCollectiveGuide, GUIDE_PORTRAIT, SCHOOL_YEAR_ARCS, SPLITTER_SIGNS } from '@/lib/seasonTheme'
 import RucksackButton from '@/components/streaks/RucksackButton'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import GuidePickerModal from '@/components/streaks/GuidePickerModal'
@@ -69,7 +69,9 @@ export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendin
   const noteArc = SCHOOL_YEAR_ARCS.find(a => a.icon === noteGuideIcon)
   const noteGuideName = noteArc?.guide ?? theme.guide
   const notePortrait = GUIDE_PORTRAIT[noteGuideIcon]
-  const guideFirst = noteGuideName.split(' ').pop()
+  const guideFirst = guideShortName(noteGuideName)
+  // Plural-Subjekt beim Kollektiv-Guide: „Die Guides bemerken" statt „bemerkt".
+  const guideNoteLabel = isCollectiveGuide(noteGuideName) ? 'Die Guides bemerken' : `${guideFirst} bemerkt`
   const nextMilestone = MILESTONES.find(m => m > confirmedStreak)
   const flames = flameCount(confirmedStreak)
   const pending = Math.max(0, streak - confirmedStreak)
@@ -161,7 +163,7 @@ export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendin
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide">{guideFirst} bemerkt</p>
+            <p className="text-[10.5px] font-bold text-kh-muted uppercase tracking-wide">{guideNoteLabel}</p>
             <button
               type="button"
               onClick={() => setGuidePickerOpen(true)}

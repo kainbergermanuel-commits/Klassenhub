@@ -1,6 +1,6 @@
 'use client'
 
-import { SCHOOL_YEAR_ARCS, findBuiltTheme } from '@/lib/seasonTheme'
+import { SCHOOL_YEAR_ARCS, findBuiltTheme, guideDative } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 
 interface Props {
@@ -102,7 +102,7 @@ export default function ReiseYearOverview({ currentThemeName, onOpenWorld }: Pro
                     <>
                       <h3 className="font-extrabold text-[15.5px] text-kh-dark mb-0.5 max-w-[50%]">{arc.name}</h3>
                       <p className="text-[12.5px] text-kh-dark/70 font-medium leading-snug max-w-[50%]">
-                        {arc.tagline} · Begleitet von {arc.guide}
+                        {arc.tagline} · Begleitet von {guideDative(arc.guide)}
                       </p>
 
                       {/* Bereits durchlaufene Welten bleiben lesbar: ohne das käme

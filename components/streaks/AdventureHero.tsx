@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { setClassGoal } from '@/app/actions/setClassGoal'
 import { monthLabel } from '@/lib/date'
-import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
+import { getSeasonTheme, currentStageIndex, guideDative, guideShortName, isCollectiveGuide, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 
@@ -32,7 +32,9 @@ export default function AdventureHero({ season, role, goal, done }: Props) {
   const portrait = GUIDE_PORTRAIT[theme.icon]
   // Kurzname für Chips ("Vala?") — letztes Wort, nicht der Titel davor
   // ("Bergführerin?" wäre die Rolle, nicht die Figur).
-  const guideShort = theme.guide.split(' ').pop()
+  // Beim Kollektiv-Guide gibt es keinen Figurennamen — dann trägt der Chip
+  // „Die Guides?" statt des sinnlosen letzten Worts „gemeinsam?".
+  const guideShort = isCollectiveGuide(theme.guide) ? 'Die Guides' : guideShortName(theme.guide)
 
   const [guideInfoOpen, setGuideInfoOpen] = useState(false)
   const [goalInfoOpen, setGoalInfoOpen] = useState(false)
@@ -106,7 +108,7 @@ export default function AdventureHero({ season, role, goal, done }: Props) {
             <div className="min-w-0">
               <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Abenteuer</h1>
               <p className="text-[13px] text-kh-dark/70 font-semibold leading-tight mt-0.5">
-                {theme.name} · Begleitet von {theme.guide}
+                {theme.name} · Begleitet von {guideDative(theme.guide)}
               </p>
             </div>
             <button

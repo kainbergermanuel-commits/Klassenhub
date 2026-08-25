@@ -233,6 +233,33 @@ const THEMES: JourneyTheme[] = [
 /** Guide-Portraits je Theme-Icon. Themen ohne Eintrag haben noch keine
  *  Illustration — Aufrufer fallen dann auf einen Platzhalter zurück.
  *  Illustrationen werden nach und nach ergänzt. */
+/** Die Epilog-Welt „Sonnenhafen" wird nicht von einer Figur gesprochen,
+ *  sondern von allen gemeinsam. Dieser Name ist deshalb ein Plural-Subjekt und
+ *  hat keinen Vornamen — Texte, die sonst „Vala" einsetzen oder ein Verb im
+ *  Singular anhängen, müssen ihn über die Helfer unten behandeln, sonst steht
+ *  in der App „gemeinsam nickt dir zu" oder „Begleitet von Alle Guides". */
+export const COLLECTIVE_GUIDE = 'Alle Guides gemeinsam'
+
+export function isCollectiveGuide(guide: string): boolean {
+  return guide === COLLECTIVE_GUIDE
+}
+
+/** Kurzform für Fließtext: sonst der Figurenname ohne Rollen-Titel
+ *  („Bergführerin Vala" → „Vala"), beim Kollektiv „die Guides". */
+export function guideShortName(guide: string): string {
+  return isCollectiveGuide(guide) ? 'die Guides' : (guide.split(' ').pop() ?? guide)
+}
+
+/** Dativ nach Präpositionen („Begleitet von …", „von …"). */
+export function guideDative(guide: string): string {
+  return isCollectiveGuide(guide) ? 'allen Guides gemeinsam' : guide
+}
+
+/** Akkusativ nach Präpositionen („Übergabe an …"). */
+export function guideAccusative(guide: string): string {
+  return isCollectiveGuide(guide) ? 'alle Guides gemeinsam' : guide
+}
+
 export const GUIDE_PORTRAIT: Partial<Record<string, string>> = {
   landscape: '/images/characters/vala.webp', // Bergführerin Vala, Bergexpedition
   rocket_launch: '/images/characters/ari.webp', // Bordcomputer ARI, Weltraummission

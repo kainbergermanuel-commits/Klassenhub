@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
+import { getSeasonTheme, isCollectiveGuide, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { chooseQuestPath } from '@/app/actions/chooseQuestPath'
 import { weeklyFocusTag } from '@/lib/quests'
 import { QUEST_FOCUS_LABELS, resolveQuestNarrative } from '@/lib/questVault'
@@ -60,9 +60,12 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
   const focus = weeklyFocusTag(weekStart)
   const portrait = showGuidePortrait ? GUIDE_PORTRAIT[theme.icon] : undefined
   const guildNarrative = guildSection ? guildSection.quest.template.narrative.replace('{guide}', theme.guide) : ''
+  // Beim Kollektiv-Guide („Alle Guides gemeinsam") gibt es weder Vornamen noch
+  // Rollen-Titel — dann trägt die Kachel den vollen Namen und die Frage im Plural.
+  const team = isCollectiveGuide(theme.guide)
   const guideParts = theme.guide.split(' ')
-  const guideTitle = guideParts.slice(0, -1).join(' ')
-  const guideName = guideParts[guideParts.length - 1]
+  const guideTitle = team ? 'Wer sind sie' : guideParts.slice(0, -1).join(' ')
+  const guideName = team ? 'Die Guides' : guideParts[guideParts.length - 1]
   const [guideInfoOpen, setGuideInfoOpen] = useState(false)
 
   return (

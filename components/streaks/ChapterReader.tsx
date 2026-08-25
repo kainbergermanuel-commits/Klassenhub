@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { findBuiltTheme, GUIDE_PORTRAIT, schoolYearIndex, SCHOOL_YEAR_ARCS, type JourneyTheme } from '@/lib/seasonTheme'
+import { findBuiltTheme, guideAccusative, guideDative, GUIDE_PORTRAIT, schoolYearIndex, SCHOOL_YEAR_ARCS, type JourneyTheme } from '@/lib/seasonTheme'
 import { SEASON_ART, SEASON_ART_SRC, SEASON_ART_POS } from '@/components/streaks/seasonArt'
 
 interface Props {
@@ -126,7 +126,7 @@ export default function ChapterReader({ arcIcon, currentTheme, activeStage, onAr
                   {theme.name}
                 </h3>
                 <p className="text-[13px] md:text-[14px] font-semibold text-white/90 mt-1 drop-shadow">
-                  Begleitet von {theme.guide}
+                  Begleitet von {guideDative(theme.guide)}
                 </p>
                 {arc && (
                   <p className="text-[12.5px] md:text-[13.5px] text-white/80 italic mt-1.5 max-w-[52ch] drop-shadow">
@@ -212,7 +212,7 @@ export default function ChapterReader({ arcIcon, currentTheme, activeStage, onAr
                       )}
                       <span className="min-w-0">
                         <span className="block text-[10.5px] font-bold uppercase tracking-wide text-kh-muted mb-1">
-                          {nextArc ? `Übergabe an ${nextArc.guide}` : 'Übergabe'}
+                          {nextArc ? `Übergabe an ${guideAccusative(nextArc.guide)}` : 'Übergabe'}
                         </span>
                         <span className="block text-[13.5px] text-kh-dark/85 leading-relaxed italic">{stage!.handover}</span>
                       </span>

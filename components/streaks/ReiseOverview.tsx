@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getSeasonTheme, currentStageIndex } from '@/lib/seasonTheme'
+import { getSeasonTheme, currentStageIndex, guideDative, guideShortName, isCollectiveGuide } from '@/lib/seasonTheme'
 import IconButton from '@/components/ui/IconButton'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import ReiseYearOverview from '@/components/streaks/ReiseYearOverview'
@@ -44,7 +44,7 @@ export default function ReiseOverview({ season, pct, target, role, isAdmin }: Pr
         <div className="min-w-0">
           <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Die Reise</h1>
           <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">
-            {theme.name} · Begleitet von {theme.guide}
+            {theme.name} · Begleitet von {guideDative(theme.guide)}
           </p>
         </div>
       </header>
@@ -115,8 +115,9 @@ export default function ReiseOverview({ season, pct, target, role, isAdmin }: Pr
         className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/70 pl-2 pr-3 py-1 text-[11.5px] font-bold text-kh-muted shadow-sm hover:bg-white transition-colors"
       >
         <span className="msym text-[15px] text-kh-teal" aria-hidden="true">info</span>
-        {/* Letztes Wort = Figurenname ("Vala?"), nicht der Rollen-Titel davor. */}
-        Wer ist {theme.guide.split(' ').pop()}?
+        {/* Letztes Wort = Figurenname ("Vala?"), nicht der Rollen-Titel davor;
+            beim Kollektiv-Guide stattdessen die Plural-Frage. */}
+        {isCollectiveGuide(theme.guide) ? 'Wer sind die Guides?' : `Wer ist ${guideShortName(theme.guide)}?`}
       </button>
 
       {guideInfoOpen && (

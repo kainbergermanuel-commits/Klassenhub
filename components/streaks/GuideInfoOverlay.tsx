@@ -1,7 +1,7 @@
 'use client'
 
 import { createPortal } from 'react-dom'
-import type { JourneyTheme } from '@/lib/seasonTheme'
+import { isCollectiveGuide, type JourneyTheme } from '@/lib/seasonTheme'
 
 /** Kindgerechtes Info-Overlay zum Guide: kurze Vorstellung + Kurzanleitung,
  *  wie die Reise funktioniert. Rein informativ, kein neuer Mechanismus.
@@ -44,7 +44,7 @@ export default function GuideInfoOverlay({ theme, onClose }: { theme: JourneyThe
         <h2 className="text-[20px] font-extrabold text-kh-dark tracking-tight mb-3">{theme.guide}</h2>
 
         <p className="text-[13.5px] text-kh-dark/85 leading-snug mb-4">
-          {theme.guide} begleitet die Klasse diesen Monat auf der Reise durch „{theme.name}“ — Etappe für Etappe,
+          {theme.guide} {isCollectiveGuide(theme.guide) ? 'begleiten' : 'begleitet'} die Klasse diesen Monat auf der Reise durch „{theme.name}“ — Etappe für Etappe,
           immer dann, wenn genug Hausübungen eltern-bestätigt erledigt sind.
         </p>
 

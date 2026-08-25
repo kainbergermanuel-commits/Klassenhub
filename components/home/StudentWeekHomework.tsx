@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { todayISO, addDaysISO } from '@/lib/date'
 import type { HomeworkWithStatus } from '@/lib/types'
 import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
-import { getSeasonTheme } from '@/lib/seasonTheme'
+import { getSeasonTheme, guideShortName, isCollectiveGuide } from '@/lib/seasonTheme'
 
 const TODAY = todayISO()
 const TOMORROW = addDaysISO(1)
@@ -86,7 +86,12 @@ export default function StudentOpenHomework({ homework, userId, season }: Props)
   // Show only open, sorted by due_date ascending (most urgent first)
   const open = homework.filter(h => !h.done).sort((a, b) => a.due_date.localeCompare(b.due_date))
   // Guide-Vorname für den Leer-Zustand (z.B. "Bergführerin Vala" → "Vala").
-  const guideName = season ? getSeasonTheme(season).guide.split(' ').at(-1) : null
+  const guide = season ? getSeasonTheme(season).guide : null
+  const guideName = guide ? guideShortName(guide) : null
+  // Kollektiv-Guide („Alle Guides gemeinsam") braucht das Verb im Plural.
+  const guideNod = guide && guideName
+    ? (isCollectiveGuide(guide) ? 'Die Guides nicken dir zu' : `${guideName} nickt dir zu`)
+    : null
 
   return (
     <div className="relative overflow-hidden rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
@@ -118,7 +123,7 @@ export default function StudentOpenHomework({ homework, userId, season }: Props)
             className="text-sm font-bold text-kh-dark/70"
             style={{ textShadow: '0 1px 3px rgba(255,255,255,.9), 0 0 10px rgba(255,255,255,.8)' }}
           >
-            {guideName ? `${guideName} nickt dir zu: „Alles erledigt — genieß die Pause."` : 'Keine offenen Hausübungen'}
+            {guideNod ? `${guideNod}: „Alles erledigt — genieß die Pause."` : 'Keine offenen Hausübungen'}
           </p>
         </div>
       ) : (

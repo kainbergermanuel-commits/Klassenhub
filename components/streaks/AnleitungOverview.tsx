@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import IconButton from '@/components/ui/IconButton'
 import type { Role } from '@/lib/types'
-import { getSeasonTheme, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
+import { getSeasonTheme, guideShortName, isCollectiveGuide, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 
 /** Volle Figur (keine runde Portrait-Kachel) — eigenes Bild für diese Seite,
  *  nicht das GUIDE_PORTRAIT-Rundbild aus lib/seasonTheme.ts. Quelldatei ist
@@ -148,13 +148,20 @@ export default function AnleitungOverview({ role, season }: { role: Role; season
   // die Klasse seit acht Monaten nicht mehr begleitet.
   const theme = getSeasonTheme(season)
   const speaker = theme.guide
-  const shortName = speaker.split(' ').pop()
+  const shortName = guideShortName(speaker)
+  // Der Sonnenhafen wird von allen Guides gemeinsam gesprochen — ein Plural.
+  // Ohne diese Unterscheidung stünde hier „Ich bin gemeinsam und begleite …".
+  const team = isCollectiveGuide(speaker)
+  const selfIntro = team ? 'Wir sind alle Guides gemeinsam' : `Ich bin ${shortName}`
+  // Rundes Guide-Portrait der laufenden Welt, falls es eines gibt; bei
+  // 'landscape' (Vala) bewusst keines, dort steht die Vollfigur.
+  const portrait = theme.icon === 'landscape' ? undefined : GUIDE_PORTRAIT[theme.icon]
 
   const intro = role === 'parent'
-    ? `Schön, dass Sie da sind. Ich bin ${shortName} und begleite die Klasse diesen Monat durch ihr Abenteuer. Hier erkläre ich in Ruhe, wie alles funktioniert, jederzeit zum Nachlesen und ganz ohne Eile.`
+    ? `Schön, dass Sie da sind. ${selfIntro} und ${team ? 'begleiten' : 'begleite'} die Klasse diesen Monat durch ihr Abenteuer. Hier ${team ? 'erklären wir' : 'erkläre ich'} in Ruhe, wie alles funktioniert, jederzeit zum Nachlesen und ganz ohne Eile.`
     : role === 'teacher'
-      ? `Willkommen. Ich bin ${shortName} und führe die Klasse gerade durch „${theme.name}". Diese Seite ist das Nachschlagewerk für Ihre Schüler:innen und deren Eltern, hier steht, wie sich die App anfühlt, wenn man Kind ist.`
-      : `Hallo! Ich bin ${shortName} und begleite euch gerade durch „${theme.name}". Bevor es weitergeht, zeige ich dir in Ruhe, wie alles funktioniert. Du kannst jederzeit hierher zurückkommen und nachblättern, nichts musst du auswendig können.`
+      ? `Willkommen. ${selfIntro} und ${team ? 'führen' : 'führe'} die Klasse gerade durch „${theme.name}". Diese Seite ist das Nachschlagewerk für Ihre Schüler:innen und deren Eltern, hier steht, wie sich die App anfühlt, wenn man Kind ist.`
+      : `Hallo! ${selfIntro} und ${team ? 'begleiten' : 'begleite'} euch gerade durch „${theme.name}". Bevor es weitergeht, ${team ? 'zeigen wir dir' : 'zeige ich dir'} in Ruhe, wie alles funktioniert. Du kannst jederzeit hierher zurückkommen und nachblättern, nichts musst du auswendig können.`
 
   return (
     <>
@@ -228,11 +235,15 @@ export default function AnleitungOverview({ role, season }: { role: Role; season
 
             {/* Vollfigur gibt es nur von Vala; für alle anderen Welten das
                 runde Portrait aus GUIDE_PORTRAIT, damit immer die Figur zu
-                sehen ist, die gerade spricht. */}
+                sehen ist, die gerade spricht. Wichtig: Welten ohne eigenes
+                Portrait (z.B. Sonnenhafen, wo alle Guides gemeinsam sprechen)
+                fallen auf Valas Vollfigur zurueck - die darf dann NICHT rund
+                beschnitten werden, sonst schneidet die Ellipse ihre winkende
+                Hand oben links ab. */}
             <img
-              src={theme.icon === 'landscape' ? VALA_FULL_FIGURE : (GUIDE_PORTRAIT[theme.icon] ?? VALA_FULL_FIGURE)}
+              src={portrait ?? VALA_FULL_FIGURE}
               alt={speaker}
-              className={`order-1 lg:order-2 flex-shrink-0 h-auto ${theme.icon === 'landscape' ? 'w-[110px] lg:w-[180px]' : 'w-[96px] lg:w-[150px] rounded-full object-cover object-top ring-4 ring-white shadow-md'}`}
+              className={`order-1 lg:order-2 flex-shrink-0 h-auto ${portrait ? 'w-[96px] lg:w-[150px] rounded-full object-cover object-top ring-4 ring-white shadow-md' : 'w-[110px] lg:w-[180px]'}`}
             />
           </div>
         </div>
