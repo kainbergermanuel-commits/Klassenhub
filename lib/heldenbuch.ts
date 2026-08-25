@@ -144,10 +144,208 @@ const ISLA_VOICE: GuideNoteVoice = s => {
 
 /** Guide-Stimmen nach Theme-Icon — derselbe Schlüssel wie GUIDE_PORTRAIT/
  *  SEASON_ART. Fehlt ein Eintrag, greift GENERIC_VOICE. */
+/** Sprout-Stimme (Ranger-Drohne, Terra Nova) — kurz, aufgeregt, summend, alles
+ *  in Wachstums-Bildern. Die jüngste Figur im Ensemble, redet schnell. */
+const SPROUT_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `„${s.dutyName}“, jeden Tag, ohne dass dich jemand erinnern muss! So wächst Vertrauen, genau so.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus. Auch im Ödland hat es lange gedauert, bis das erste Grün kam. Es kommt wieder.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    // „Samen" ist im Singular wie im Plural gleich, deshalb kein Ternär.
+    return { icon: 'visibility', text: `Ich zähle noch ${s.openHomeworkCount} Samen in deiner Tasche, die noch nicht in der Erde sind. Einen nach dem anderen, dann wird das was.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge! Weißt du, was daraus wird, wenn man so beständig gießt? Ein ganzes Tal.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Alle Aufträge dieser Woche erledigt. Der Boden unter dir wird gerade richtig grün, ich sehe es!' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `Schon ${s.questsDone} von ${s.questsTotal} Aufträgen. Da sprießt was, ganz eindeutig.` }
+  }
+  return { icon: 'waving_hand', text: 'Schön, dass du da bist! Ich merke mir jeden einzelnen Trieb, auch den kleinsten.' }
+}
+
+/** Coralie-Stimme (Tiefsee-Expedition) — ruhig, aufmerksam, forscherisch warm.
+ *  Nauto blinkt dazwischen, sie selbst bleibt sachlich und zugewandt. */
+const CORALIE_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `„${s.dutyName}“ hast du diese Woche zuverlässig übernommen. In der Tiefe hängt alles davon ab, dass jeder seinen Handgriff macht. Danke dafür.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus. Auch das beste Tauchboot muss zwischendurch auftauchen. Nimm Luft, dann geht es wieder hinunter.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Aufgabe' : 'Aufgaben'
+    return { icon: 'visibility', text: `Auf meinem Sonar sind noch ${s.openHomeworkCount} offene ${hw}. Kein Grund zur Eile, Schicht für Schicht kommt man am tiefsten.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge. Nauto blinkt gerade in einem Muster, das er sonst nur für seltene Funde reserviert.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Alle Ziele dieser Woche erreicht. Sauber getaucht, ohne einen einzigen Umweg.' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `${s.questsDone} von ${s.questsTotal} Zielen erreicht. Die Leuchtspur wird deutlicher.` }
+  }
+  return { icon: 'waving_hand', text: 'Willkommen an Bord. Hier unten zählt jede Bewegung, auch die ganz leise.' }
+}
+
+/** Chronist-Stimme (Chroniken der Zeit) — bedächtig, altmodisch höflich, alles
+ *  in Seiten, Zeilen und Zeitaltern. Er notiert, statt zu loben. */
+const CHRONIST_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `Ich habe „${s.dutyName}“ in die Chronik eingetragen, an jedem einzelnen Tag dieser Woche. Solche Einträge halten sich lange.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus. In jeder Chronik, die ich kenne, gibt es leere Seiten. Sie machen die vollen erst lesbar.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Seite' : 'Seiten'
+    return { icon: 'visibility', text: `${s.openHomeworkCount} ${hw} in deinem Kapitel sind noch unbeschrieben. Eine nach der anderen, so entsteht jedes Buch.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge, ohne Unterbrechung. Ich habe es mir angestrichen, das kommt seltener vor, als du denkst.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Diese Woche ist vollständig verzeichnet. Kein Eintrag fehlt.' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `${s.questsDone} von ${s.questsTotal} Einträgen stehen bereits. Das Kapitel füllt sich.` }
+  }
+  return { icon: 'waving_hand', text: 'Schön, dass du hereinschaust. Ich schreibe alles auf, was du tust, auch das Kleine.' }
+}
+
+/** Finn-Stimme (Inselreich) — herzlich, handfest, laut. Redet in Tauen,
+ *  Stegen und Wetter, packt lieber mit an, als lange zu erklären. */
+const FINN_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `„${s.dutyName}“ die ganze Woche durchgezogen! Auf so jemanden baue ich einen Hafen, ohne zweimal nachzufragen.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus. Stürme reißen mal einen Steg weg, das gehört dazu. Morgen legen wir die Bretter neu.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Stein' : 'Steine'
+    return { icon: 'visibility', text: `Da liegen noch ${s.openHomeworkCount} ${hw} für dich bereit. Einer nach dem anderen, und plötzlich steht die Mauer.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge. Das ist Bauen, wie ich es mag: nicht schnell, sondern verlässlich.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Alles fertig diese Woche. Das Tau sitzt, der Steg hält, gute Arbeit.' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `${s.questsDone} von ${s.questsTotal} geschafft. Das wird was, ich seh es schon.` }
+  }
+  return { icon: 'waving_hand', text: 'Da bist du ja. Jede Hand zählt hier, deine ganz besonders.' }
+}
+
+/** Nox-Stimme (Sternenkarte) — leise, staunend, fast flüsternd. Beobachtet
+ *  lieber lange, als schnell zu urteilen. */
+const NOX_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `„${s.dutyName}“, jeden Tag zur selben Zeit. Genau so bewegen sich die Dinge, auf die am Himmel Verlass ist.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus. Auch ein Stern verschwindet manchmal hinter einer Wolke. Er ist deshalb nicht weg.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Stelle' : 'Stellen'
+    return { icon: 'visibility', text: `An ${s.openHomeworkCount} ${hw} deines Himmels ist es noch dunkel. Zünde sie an, wann du magst, ich schaue solange weiter.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge. Wenn Lichter so regelmäßig aufgehen, ergeben sie irgendwann ein Bild.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Alle Punkte dieser Woche leuchten. Von hier oben sieht das wunderschön aus.' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `${s.questsDone} von ${s.questsTotal} Lichtern brennen schon. Das Muster wird erkennbar.` }
+  }
+  return { icon: 'waving_hand', text: 'Schön, dass du da bist. Ich sehe auch die schwachen Lichter, keine Sorge.' }
+}
+
+/** Tüftel-Stimme (Werkstatt der Erfinder) — schwungvoll, praktisch, immer
+ *  mitten in einer Reparatur. Denkt in Bauteilen und Handgriffen. */
+const TUEFTEL_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `„${s.dutyName}“, jeden Tag geölt und nachgezogen. So läuft eine Werkstatt, und so läuft eine Klasse.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus. Kein Drama, an meiner Werkbank stottert ständig was. Man setzt sich hin und macht weiter.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Bauteil' : 'Bauteile'
+    return { icon: 'visibility', text: `Auf deiner Werkbank liegen noch ${s.openHomeworkCount} ${hw}. Nimm dir das nächste, der Rest ergibt sich.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge, ohne dass etwas hakt. Diese Laufruhe kriegt man nicht geschenkt.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Alles zusammengebaut diese Woche. Sie läuft, hörst du das?' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `${s.questsDone} von ${s.questsTotal} Teilen sitzen. Da dreht sich schon was.` }
+  }
+  return { icon: 'waving_hand', text: 'Komm rein. Jeder Handgriff zählt hier, auch der, den keiner sieht.' }
+}
+
+/** Wächterin-Stimme (Der Weltenbaum) — sanft, langsam, ohne Eile. Sie
+ *  bewertet nichts, sie bemerkt nur. Die wärmste Stimme im Ensemble. */
+const WAECHTERIN_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `„${s.dutyName}“, jeden Tag dieser Woche. Wurzeln wachsen genau so: unsichtbar und ohne Aufhebens.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus. Jeder Baum, den ich kenne, hat Jahre, in denen er ruht. Danach treibt er umso kräftiger.' }
+  }
+  if (s.openHomeworkCount > 0) {
+    const hw = s.openHomeworkCount === 1 ? 'Knospe' : 'Knospen'
+    return { icon: 'visibility', text: `An deinem Ast warten noch ${s.openHomeworkCount} ${hw}. Sie öffnen sich, wenn du bereit bist, nicht früher.` }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge. Ich habe viele Jahresringe gesehen, und ich erkenne einen guten, wenn er entsteht.` }
+  }
+  if (s.questsTotal > 0 && s.questsDone === s.questsTotal) {
+    return { icon: 'military_tech', text: 'Diese Woche ist vollständig aufgeblüht. Jedes einzelne Blatt.' }
+  }
+  if (s.questsDone > 0) {
+    return { icon: 'trending_up', text: `${s.questsDone} von ${s.questsTotal} Blättern sind schon da. Der Ast trägt.` }
+  }
+  return { icon: 'waving_hand', text: 'Schön, dich zu sehen. Ich habe Zeit, und ich sehe alles, was wächst.' }
+}
+
+/** Sonnenhafen-Stimme (alle Guides gemeinsam, Juli und August) — der Chor am
+ *  Ende der Reise. Fordert nichts mehr, weil im Epilog nichts mehr ansteht. */
+const SONNENHAFEN_VOICE: GuideNoteVoice = s => {
+  if (s.dutyKeptUp && s.dutyName) {
+    return { icon: 'volunteer_activism', text: `„${s.dutyName}“ hast du übernommen, sogar jetzt noch. Typisch, sagt Finn, und alle nicken.` }
+  }
+  if (s.broken) {
+    return { icon: 'self_improvement', text: 'Deine Flamme ist gerade aus, und das ist im Sonnenhafen völlig in Ordnung. Hier wird geruht, nicht gerechnet.' }
+  }
+  if (s.confirmedStreak >= 5) {
+    return { icon: 'local_fire_department', text: `${s.confirmedStreak} ${huLabel(s.confirmedStreak)} in Folge, bis hierher. Vala hebt den Becher, ARI blinkt zustimmend.` }
+  }
+  return { icon: 'waving_hand', text: 'Ihr seid angekommen. Setz dich zu uns, die Sonne steht gut und die nächste Reise wartet noch eine Weile.' }
+}
+
 const GUIDE_VOICES: Partial<Record<string, GuideNoteVoice>> = {
   landscape: VALA_VOICE,
   rocket_launch: ARI_VOICE,
   map: ISLA_VOICE,
+  eco: SPROUT_VOICE,
+  water: CORALIE_VOICE,
+  history_edu: CHRONIST_VOICE,
+  anchor: FINN_VOICE,
+  auto_awesome: NOX_VOICE,
+  precision_manufacturing: TUEFTEL_VOICE,
+  park: WAECHTERIN_VOICE,
+  wb_sunny: SONNENHAFEN_VOICE,
 }
 
 /** `guideIcon` bestimmt, wessen Stimme spricht — bei "Mein Guide" der
