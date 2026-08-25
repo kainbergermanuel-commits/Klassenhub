@@ -10,7 +10,7 @@ import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate,
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, WEEKLY_SEAL_KEY, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle, type GuideNote, type ChronicleEntry } from '@/lib/heldenbuch'
-import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex, SPLITTER_SIGNS, SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
+import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex, worldStoryMoments, SPLITTER_SIGNS, SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
 import type { AdventureData } from '@/components/streaks/TeacherAdventurePanel'
 import type { ChildAdventureData } from '@/components/streaks/ChildAdventureStats'
 import { activeRiddles, type Riddle } from '@/lib/riddles'
@@ -289,12 +289,7 @@ export default async function StreaksPage() {
       quests: questsForMe,
       guildQuest: guildSection?.quest ?? null,
       classGoalReached,
-      world: {
-        icon: themeNow.icon,
-        signAwakened: stageNow >= (themeNow.signStage ?? themeNow.stages.length - 1)
-          && SPLITTER_SIGNS.some(sg => sg.worldIcon === themeNow.icon),
-        completed: stageNow >= themeNow.stages.length - 1 && !themeNow.isEpilogue,
-      },
+      world: worldStoryMoments(themeNow, stageNow),
     })
     if (newAchievements.length > 0) {
       await supabase.from('achievements').upsert(newAchievements as never, { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true })

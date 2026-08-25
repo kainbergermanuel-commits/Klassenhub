@@ -13,7 +13,7 @@ import type { GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
-import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex, SPLITTER_SIGNS } from '@/lib/seasonTheme'
+import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex, worldStoryMoments } from '@/lib/seasonTheme'
 import { activeRiddles } from '@/lib/riddles'
 import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 import TeacherHome from '@/components/home/TeacherHome'
@@ -623,13 +623,7 @@ export default async function HomePage() {
       quests,
       guildQuest: guildSection?.quest ?? null,
       classGoalReached,
-      // Story-Momente fürs Logbuch, identisch zu /streaks berechnet.
-      world: {
-        icon: themeNow.icon,
-        signAwakened: stageNow >= (themeNow.signStage ?? themeNow.stages.length - 1)
-          && SPLITTER_SIGNS.some(sg => sg.worldIcon === themeNow.icon),
-        completed: stageNow >= themeNow.stages.length - 1 && !themeNow.isEpilogue,
-      },
+      world: worldStoryMoments(themeNow, stageNow),
     })
     if (newAchievements.length > 0) {
       // Fehlertolerant: schlägt z.B. in der Lehrer-Vorschau-als-Schüler-Funktion
