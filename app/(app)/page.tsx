@@ -496,7 +496,7 @@ export default async function HomePage() {
     // Splitter-Rätsel (welten-übergreifend, zweistufig) erst zeigen, wenn der
     // Splitter in der Story aufgetaucht ist (ab Schatzsuche); Stufe 2 erst nach
     // Stufe 1 (siehe activeRiddles/requires in lib/riddles.ts).
-    const riddleProp = activeRiddles(getSeasonTheme(currentSeason).icon, splitterFound(getSeasonTheme(currentSeason).name), solvedRiddleKeys)
+    const riddleProp = activeRiddles(getSeasonTheme(currentSeason).icon, splitterFound(getSeasonTheme(currentSeason).name), solvedRiddleKeys, getSeasonTheme(currentSeason).name)
       .map(r => ({ riddle: r, solved: solvedRiddleKeys.has(r.key) }))
 
     // ─── QUESTS (Wochen-Vorrat, siehe lib/quests.ts) ─────────────────────────

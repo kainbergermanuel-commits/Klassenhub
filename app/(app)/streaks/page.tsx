@@ -387,7 +387,7 @@ export default async function StreaksPage() {
       .select('riddle_key')
       .eq('student_id', profile.id)
     const solvedRiddleKeys = new Set((riddleSolves ?? []).map(r => (r as { riddle_key: string }).riddle_key))
-    riddlesForMe = activeRiddles(getSeasonTheme(currentSeason).icon, splitterFound(getSeasonTheme(currentSeason).name), solvedRiddleKeys)
+    riddlesForMe = activeRiddles(getSeasonTheme(currentSeason).icon, splitterFound(getSeasonTheme(currentSeason).name), solvedRiddleKeys, getSeasonTheme(currentSeason).name)
       .map(r => ({ riddle: r, solved: solvedRiddleKeys.has(r.key) }))
   }
 

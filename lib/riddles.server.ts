@@ -13,7 +13,18 @@ const CORRECT_ANSWER: Record<string, string | string[]> = {
   arc_landscape_gipfel: 'licht',
   arc_rocket_launch_summen: 'summen',
   arc_map_splitter: 'splitter',
-  splitter_teil2: ['splitter', 'der splitter', 'ein splitter', 'splitterstein'],
+  arc_eco_erstes_zeichen: 'halm',
+  arc_water_saeule: 'haelfte',
+  arc_history_edu_wanderer: 'pflanzen',
+  arc_anchor_tor: 'sterne',
+  arc_auto_awesome_sternbild: 'baum',
+  arc_precision_manufacturing_wappen: 'wappen',
+  arc_park_hoechster_ast: 'letzte',
+  arc_wb_sunny_ankunft: 'alle',
+  // Gesucht ist, wie die Wächterin das leuchtende Ding nennt: ein Same.
+  // Bis August 2026 war hier „splitter" die Lösung, das Wort stand aber im
+  // Titel des Rätsels und wörtlich in einem Fragment aus Teil 1.
+  splitter_teil2: ['same', 'samen', 'ein same', 'der same', 'saatkorn', 'samenkorn'],
 }
 
 /** riddle_key → korrekte Reihenfolge der Fragment-Keys (kind='fragment_order').
