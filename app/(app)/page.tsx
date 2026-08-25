@@ -13,7 +13,7 @@ import type { GuildMember } from '@/lib/guilds'
 import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
-import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex } from '@/lib/seasonTheme'
+import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex, SPLITTER_SIGNS } from '@/lib/seasonTheme'
 import { activeRiddles } from '@/lib/riddles'
 import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 import TeacherHome from '@/components/home/TeacherHome'
@@ -608,6 +608,10 @@ export default async function HomePage() {
     // Bewusst gegen das ECHTE Ziel, nicht gegen den Vorschlag: ein Erfolg, den
     // niemand gesetzt hat, wäre kein Erfolg.
     const classGoalReached = !!classGoal && classGoalDoneValue >= classGoal.target
+    const themeNow = getSeasonTheme(currentSeason)
+    const stageNow = effectiveGoal
+      ? currentStageIndex(Math.min(100, Math.round((classGoalDoneValue / effectiveGoal.target) * 100)), themeNow.stages.length)
+      : -1
     const newAchievements = collectAchievements({
       studentId: user.id,
       weekStart,
@@ -615,6 +619,13 @@ export default async function HomePage() {
       quests,
       guildQuest: guildSection?.quest ?? null,
       classGoalReached,
+      // Story-Momente fürs Logbuch, identisch zu /streaks berechnet.
+      world: {
+        icon: themeNow.icon,
+        signAwakened: stageNow >= (themeNow.signStage ?? themeNow.stages.length - 1)
+          && SPLITTER_SIGNS.some(sg => sg.worldIcon === themeNow.icon),
+        completed: stageNow >= themeNow.stages.length - 1 && !themeNow.isEpilogue,
+      },
     })
     if (newAchievements.length > 0) {
       // Fehlertolerant: schlägt z.B. in der Lehrer-Vorschau-als-Schüler-Funktion
@@ -654,6 +665,7 @@ export default async function HomePage() {
       .eq('student_id', user.id)
 
     const rucksack = {
+      currentThemeName,
       broken,
       jokerAvailable,
       jokerUsedThisSeason,

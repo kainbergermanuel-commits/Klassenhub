@@ -2,8 +2,9 @@ import { VETERAN_MILESTONE } from '@/lib/streak'
 import { findQuestTemplate } from '@/lib/questVault'
 import { findGuildQuestTemplate } from '@/lib/guilds'
 import { findRiddle } from '@/lib/riddles'
-import { WEEKLY_SEAL_KEY } from '@/lib/achievements'
+import { WEEKLY_SEAL_KEY, SIGN_AWAKENED_KEY, WORLD_DONE_KEY } from '@/lib/achievements'
 import { addDaysISO } from '@/lib/date'
+import { SCHOOL_YEAR_ARCS, SPLITTER_SIGNS } from '@/lib/seasonTheme'
 import type { AchievementKind } from '@/lib/types'
 
 /** Datenbausteine für das Heldenbuch, die aus Roh-Signalen abgeleitet werden —
@@ -361,7 +362,7 @@ export function buildGuideNote(s: GuideNoteSignals, guideIcon?: string): GuideNo
 // (Schutzschild/Zeitkristall) + abgeschlossene Quests/Gilden-Quests/Klassenziele
 // (= das Quest-Logbuch, Cluster A) + aktuell erloschene Flamme. Absteigend.
 
-export type ChronicleKind = 'milestone' | 'shield' | 'crystal' | 'break' | 'weekly_seal' | AchievementKind
+export type ChronicleKind = 'milestone' | 'shield' | 'crystal' | 'break' | 'weekly_seal' | 'sign_awakened' | 'world_done' | AchievementKind
 
 export interface ChronicleEntry {
   kind: ChronicleKind
@@ -418,6 +419,23 @@ export function buildChronicle(input: {
         kind: 'weekly_seal',
         label: 'Wochensiegel — alle Quests geschafft',
         note: streak >= 2 ? `${streak}. Woche in Folge` : undefined,
+        date: a.achieved_at,
+      })
+    } else if (a.kind === 'quest' && a.key === SIGN_AWAKENED_KEY) {
+      // `period` trägt hier den Welt-Icon-Schlüssel (siehe collectAchievements).
+      const sign = SPLITTER_SIGNS.find(x => x.worldIcon === a.period)
+      out.push({
+        kind: 'sign_awakened',
+        label: sign ? `${sign.label} ist erwacht` : 'Ein Zeichen ist erwacht',
+        note: sign?.worldName,
+        date: a.achieved_at,
+      })
+    } else if (a.kind === 'quest' && a.key === WORLD_DONE_KEY) {
+      const arc = SCHOOL_YEAR_ARCS.find(x => x.icon === a.period)
+      out.push({
+        kind: 'world_done',
+        label: arc ? `${arc.name} abgeschlossen` : 'Eine Welt abgeschlossen',
+        note: arc?.guide,
         date: a.achieved_at,
       })
     } else if (a.kind === 'quest') {

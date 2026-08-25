@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { MILESTONES, flameCount } from '@/lib/streak'
-import { getSeasonTheme, GUIDE_PORTRAIT, SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
+import { getSeasonTheme, GUIDE_PORTRAIT, SCHOOL_YEAR_ARCS, SPLITTER_SIGNS } from '@/lib/seasonTheme'
 import RucksackButton from '@/components/streaks/RucksackButton'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import GuidePickerModal from '@/components/streaks/GuidePickerModal'
@@ -30,6 +30,9 @@ interface Props {
   preferredGuideIcon: string | null
   /** Datierte Rückschau: Meilensteine, eingesetzte Items, erloschene Flamme. */
   chronicle: ChronicleEntry[]
+  /** Erwachte Splitter-Zeichen — erscheinen als Kranz am Wappenrand (kollektiv,
+   *  bei allen Kindern der Klasse gleich). */
+  awakenedSigns?: number
   /** Rucksack-Zugang als Icon+Overlay im Header. Nur setzen, wo keine volle
    *  Rucksack-Card daneben steht (Startseite) — auf `/streaks` = null. */
   rucksack?: RucksackState | null
@@ -48,6 +51,8 @@ const CHRONICLE_META: Record<ChronicleEntry['kind'], { icon: string; color: stri
   class_goal:  { icon: 'flag',          color: '#B8721E', fill: 1 },
   weekly_seal: { icon: 'workspace_premium', color: '#C98A2B', fill: 1 },
   riddle:      { icon: 'extension',     color: '#B8721E', fill: 1 },
+  sign_awakened: { icon: 'auto_awesome', color: '#C98A2B', fill: 1 },
+  world_done:  { icon: 'flag_circle',   color: '#0F8A82', fill: 1 },
 }
 
 /** Private Rückschau auf die eigene Reise — bewusst kein Vergleich mit
@@ -55,7 +60,7 @@ const CHRONICLE_META: Record<ChronicleEntry['kind'], { icon: string; color: stri
  *  dem ELTERN-BESTÄTIGTEN Streak (`confirmedStreak`) — das ist der verdiente,
  *  flammen-tragende Wert; der (höhere) unbestätigte Streak wird nur als
  *  "warten auf Bestätigung" ausgewiesen. */
-export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendingMilestone, season, achievementCounts, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, rucksack = null, showArcChip = true }: Props) {
+export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendingMilestone, season, achievementCounts, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, awakenedSigns = 0, rucksack = null, showArcChip = true }: Props) {
   const theme = getSeasonTheme(season)
   // Der Guide, dessen Stimme gerade spricht (Mein Guide, falls gewählt +
   // freigeschaltet — sonst der Guide der aktuellen Klassenwelt). Fällt auf
@@ -224,7 +229,7 @@ export default function HeldenbuchCard({ streak, confirmedStreak, broken, pendin
         </div>
 
         <div className="flex-shrink-0 pt-0.5">
-          <WappenMosaic counts={achievementCounts} />
+          <WappenMosaic counts={achievementCounts} awakenedSigns={awakenedSigns} totalSigns={SPLITTER_SIGNS.length} />
         </div>
       </div>
     </div>

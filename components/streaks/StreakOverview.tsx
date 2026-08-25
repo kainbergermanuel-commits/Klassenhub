@@ -151,9 +151,11 @@ export default function StreakOverview({ role, noStreak, classGoal, classGoalDon
               noteGuideIcon={myHeldenbuch.noteGuideIcon}
               preferredGuideIcon={myHeldenbuch.preferredGuideIcon}
               chronicle={myHeldenbuch.chronicle}
+              awakenedSigns={awakenedSignCount(currentThemeName, currentStage)}
             />
             <RucksackCard
               state={{
+                currentThemeName,
                 broken: myHeldenbuch.broken,
                 jokerAvailable: myHeldenbuch.jokerAvailable,
                 jokerUsedThisSeason: myHeldenbuch.jokerUsedThisSeason,

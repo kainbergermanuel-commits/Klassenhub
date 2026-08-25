@@ -269,6 +269,13 @@ export default async function StreaksPage() {
     // Bewusst gegen das ECHTE Ziel, nicht gegen den Vorschlag: ein Erfolg,
     // den niemand gesetzt hat, wäre kein Erfolg.
     const classGoalReached = !!classGoal && classGoalConfirmedDone >= classGoal.target
+    // Story-Momente der laufenden Welt fürs Logbuch (Zeichen erwacht / Welt
+    // abgeschlossen). Bewusst gegen effectiveGoal gerechnet, damit die Reise
+    // auch ohne gesetztes Ziel weiterläuft.
+    const themeNow = getSeasonTheme(currentSeason)
+    const stageNow = effectiveGoal
+      ? currentStageIndex(Math.min(100, Math.round((classGoalConfirmedDone / effectiveGoal.target) * 100)), themeNow.stages.length)
+      : -1
     const newAchievements = collectAchievements({
       studentId: profile.id,
       weekStart,
@@ -276,6 +283,12 @@ export default async function StreaksPage() {
       quests: questsForMe,
       guildQuest: guildSection?.quest ?? null,
       classGoalReached,
+      world: {
+        icon: themeNow.icon,
+        signAwakened: stageNow >= (themeNow.signStage ?? themeNow.stages.length - 1)
+          && SPLITTER_SIGNS.some(sg => sg.worldIcon === themeNow.icon),
+        completed: stageNow >= themeNow.stages.length - 1 && !themeNow.isEpilogue,
+      },
     })
     if (newAchievements.length > 0) {
       await supabase.from('achievements').upsert(newAchievements as never, { onConflict: 'student_id,kind,key,period', ignoreDuplicates: true })

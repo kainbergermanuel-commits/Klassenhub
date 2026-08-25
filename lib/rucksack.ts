@@ -1,8 +1,15 @@
+import { isArcUnlocked } from '@/lib/seasonTheme'
+
 /** Alle Signale, aus denen sich der Rucksack-Zustand ergibt — bewusst rein
  *  primitiv/serialisierbar, damit die Items sowohl in der Rucksack-Card
  *  (/streaks) als auch im Heldenbuch-Overlay (Startseite) gerendert werden
  *  können, ohne die Berechnung zu duplizieren. */
 export interface RucksackState {
+  /** Name der aktuell laufenden Welt (getSeasonTheme(...).name) — entscheidet,
+   *  welche Items die Reise überhaupt schon hergegeben hat. Ohne das bekam ein
+   *  Kind im September feierlich ein Zeichen überreicht, dessen Herkunftszeile
+   *  eine Figur nennt, die es erst Monate später trifft. */
+  currentThemeName: string
   broken: boolean
   jokerAvailable: boolean
   jokerUsedThisSeason: boolean
@@ -113,24 +120,24 @@ export const RUCKSACK_LORE: Record<RucksackItemKey, RucksackLore> = {
     icon: 'favorite',
     gradient: 'linear-gradient(135deg, #E285A0, #C15B76)',
     title: 'Verbündeten-Amulett',
-    guide: 'Dr. Coralie',
-    origin: 'Coralie fand es an einer Stelle, an der zwei Strömungen zusammenlaufen: „Allein wärmt es nicht."',
+    guide: 'Bergführerin Vala',
+    origin: 'Vala gab es dir am Abend vor dem Aufbruch: „Wer oben steht, hat immer jemanden, der unten wartet. Das hier erinnert dich daran."',
   },
   gildenbanner: {
     key: 'gildenbanner',
     icon: 'diversity_3',
     gradient: 'linear-gradient(135deg, #7FD3A6, #2E9C6E)',
     title: 'Gildenbanner',
-    guide: 'Hafenmeister Finn',
-    origin: 'Finn näht jeden Monat neue Banner — „damit niemand vergisst, dass Mannschaften wechseln, das Meer aber bleibt."',
+    guide: 'Bergführerin Vala',
+    origin: 'Vala teilt die Seilschaften jeden Monat neu ein: „Am Berg hängt man aneinander. Wer, das wechselt. Dass man hängt, nicht."',
   },
   laterne: {
     key: 'laterne',
     icon: 'wb_incandescent',
     gradient: 'linear-gradient(135deg, #FFD98A, #E8A33D)',
     title: 'Laterne der Klasse',
-    guide: 'Ranger-Drohne „Sprout"',
-    origin: 'Sprout hat sie mitten ins Ödland gestellt: „Eine Laterne, ein Docht, viele Hände. Sie brennt für euch alle gleich."',
+    guide: 'Die ganze Klasse',
+    origin: 'Diese Laterne hat euch niemand gegeben. Ihr habt sie am ersten Morgen im Basislager gemeinsam angezündet, und seitdem trägt sie abwechselnd jemand anderes.',
   },
   splitter: {
     key: 'splitter',
@@ -149,7 +156,12 @@ export const RUCKSACK_LORE: Record<RucksackItemKey, RucksackLore> = {
 export function earnedItemKeys(state: RucksackState): RucksackItemKey[] {
   const keys: RucksackItemKey[] = []
   if (state.veteranEarned) keys.push('meistersiegel')
-  if (state.totalAchievements >= WAPPEN_TARGET) keys.push('wappen')
+  // Das Wappen-Fragment stammt von Isla und kann daher frühestens ab ihrer
+  // Welt (Schatzsuche/November) übergeben werden. Schutzschild, Kompass,
+  // Amulett, Gildenbanner und Laterne brauchen kein solches Tor: ihre
+  // Mechaniken laufen ab September, deshalb wurde stattdessen ihre
+  // Herkunftszeile auf den Reisebeginn umgeschrieben.
+  if (state.totalAchievements >= WAPPEN_TARGET && isArcUnlocked('map', state.currentThemeName)) keys.push('wappen')
   if (state.parentConfirmStreak >= 1) keys.push('amulett')
   if (state.guildName) keys.push('gildenbanner')
   if (state.classGoalTarget !== null && state.classGoalDone >= state.classGoalTarget) keys.push('laterne')
@@ -166,7 +178,11 @@ export function unseenItemKeys(state: RucksackState): RucksackItemKey[] {
   return earnedItemKeys(state).filter(k => !seen.has(k))
 }
 
-export const WAPPEN_TARGET = 3
+/** Ab wie vielen Erfolgen das Wappen-Fragment als verdient gilt. Muss zu
+ *  TOTAL_CELLS in components/home/WappenMosaic.tsx passen: dort füllen 14
+ *  Splitter das Schild. Vorher stand hier 3, wodurch der Rucksack „Verdient"
+ *  meldete, während das Mosaik daneben „3 von 14 Splittern" zeigte. */
+export const WAPPEN_TARGET = 14
 
 /** Fortschritts- statt Defizit-Sprache: zeigt, wie weit jemand gekommen ist,
  *  nie, wie weit er zurückliegt. Unterhalb von QUIET_THRESHOLD wird die Zahl

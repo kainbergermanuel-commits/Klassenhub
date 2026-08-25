@@ -136,7 +136,7 @@ export default function StudentHome({
               </AnimateIn>
             )}
             <AnimateIn delay={180} className="relative z-10">
-              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} pendingMilestone={pendingMilestone} season={season} achievementCounts={achievementCounts} guideNote={guideNote} noteGuideIcon={noteGuideIcon} preferredGuideIcon={preferredGuideIcon} chronicle={chronicle} rucksack={rucksack} />
+              <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} pendingMilestone={pendingMilestone} season={season} achievementCounts={achievementCounts} guideNote={guideNote} noteGuideIcon={noteGuideIcon} preferredGuideIcon={preferredGuideIcon} chronicle={chronicle} awakenedSigns={rucksack.awakenedSignCount} rucksack={rucksack} />
             </AnimateIn>
           </div>
         </div>

@@ -29,7 +29,29 @@ const LEGEND_GRADIENT: Record<FragKind, string> = {
   class_goal: 'linear-gradient(135deg, #E0A94B, #B8721E)',
 }
 
-export default function WappenMosaic({ counts }: { counts: AchievementCounts }) {
+/** Der Zeichenkranz am Schildrand: die sieben Splitter-Zeichen des Schuljahres,
+ *  gleichmäßig über den oberen Schildbogen verteilt. Bewusst AUSSEN, während die
+ *  14 Innenzellen weiter die persönlichen Erfolge tragen — innen das eigene
+ *  Wachstum, außen der gemeinsame Jahresbogen, der bei allen Kindern der Klasse
+ *  identisch aussieht (Prinzip 2: kollektiv statt Einzel-Loot). */
+function signPositions(total: number): { x: number; y: number }[] {
+  // Punkte auf einem Bogen über der Schildoberkante, von links nach rechts.
+  const out: { x: number; y: number }[] = []
+  for (let i = 0; i < total; i++) {
+    const t = total === 1 ? 0.5 : i / (total - 1)
+    const angle = Math.PI * (1 - t) // 180° links → 0° rechts
+    out.push({ x: 50 - Math.cos(angle) * 46, y: 26 - Math.sin(angle) * 24 })
+  }
+  return out
+}
+
+export default function WappenMosaic({ counts, awakenedSigns = 0, totalSigns = 0 }: {
+  counts: AchievementCounts
+  /** Wie viele Splitter-Zeichen dieses Schuljahr schon erwacht sind. */
+  awakenedSigns?: number
+  /** Gesamtzahl der Zeichen (SPLITTER_SIGNS.length). 0 = Kranz ausblenden. */
+  totalSigns?: number
+}) {
   // Splitter in fester Reihenfolge (gleiche Art clustert zusammen).
   const fragments: FragKind[] = [
     ...Array<FragKind>(counts.quest).fill('quest'),
@@ -47,7 +69,9 @@ export default function WappenMosaic({ counts }: { counts: AchievementCounts }) 
   const cells: { x: number; y: number; w: number; h: number }[] = []
   ROWS.forEach((count, r) => {
     const y = Y0 + r * (rowH + GAP)
-    // Zeilenbreite schrumpft mit dem Schild nach unten, Zellen bleiben zentriert.
+    // Alle Zeilen nutzen die volle Schildbreite; die Verjüngung nach unten
+    // entsteht allein durch den Clip an der Schildform, nicht durch schmalere
+    // Zellen. (Der Kommentar behauptete früher das Gegenteil.)
     const rowW = X1 - X0
     const cellW = (rowW - GAP * (count - 1)) / count
     for (let c = 0; c < count; c++) {
@@ -58,7 +82,7 @@ export default function WappenMosaic({ counts }: { counts: AchievementCounts }) 
   return (
     <div className="flex flex-col items-center">
       <svg
-        viewBox="0 0 100 118"
+        viewBox="0 -6 100 124"
         className={`w-[84px] h-auto ${full ? 'drop-shadow-[0_2px_8px_rgba(184,114,30,.4)]' : ''}`}
         role="img"
         aria-label={`Dein Wappen: ${total} von ${TOTAL_CELLS} Splittern`}
@@ -105,6 +129,20 @@ export default function WappenMosaic({ counts }: { counts: AchievementCounts }) 
           })}
         </g>
 
+        {/* Zeichenkranz: die Splitter-Zeichen des Jahres über dem Schildbogen.
+            Erwachte leuchten gold, ruhende bleiben blasse Umrisse. */}
+        {totalSigns > 0 && signPositions(totalSigns).map((pos, i) => (
+          <circle
+            key={i}
+            cx={pos.x}
+            cy={pos.y}
+            r={i < awakenedSigns ? 3.4 : 2.6}
+            fill={i < awakenedSigns ? 'url(#wappen-rim)' : 'none'}
+            stroke={i < awakenedSigns ? 'none' : '#D8D2C4'}
+            strokeWidth="1.1"
+          />
+        ))}
+
         {/* Schild-Rahmen — gold, sobald das Wappen komplett ist */}
         <path
           d={SHIELD_PATH}
@@ -123,6 +161,14 @@ export default function WappenMosaic({ counts }: { counts: AchievementCounts }) 
           ? `${total} Splitter · komplett!`
           : `${total} von ${TOTAL_CELLS} Splittern`}
       </p>
+
+      {totalSigns > 0 && (
+        <p className="text-[9.5px] text-kh-muted font-medium mt-0.5">
+          {awakenedSigns === 0
+            ? `Zeichen der Reise: noch keines erwacht`
+            : `Zeichen der Reise: ${awakenedSigns} von ${totalSigns}`}
+        </p>
+      )}
 
       {/* Kompakte Legende — welche Farbe steht für was */}
       <div className="flex items-center gap-2 mt-1.5">
