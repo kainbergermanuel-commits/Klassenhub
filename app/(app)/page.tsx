@@ -5,7 +5,7 @@ import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, getMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE, MILESTONES } from '@/lib/streak'
 import { countClassGoalDone, suggestGoalTarget } from '@/lib/classGoal'
-import { defaultWeeklyTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
+import { defaultWeeklyTemplateKeys, recentTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
@@ -518,7 +518,7 @@ export default async function HomePage() {
       currentStreakLength: streak,
     })
     const feasibility = buildFeasibility(questCtx, !!myDuty)
-    const activeQuestKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility)
+    const activeQuestKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility, recentTemplateKeys(activeClassId, weekStart, 3, feasibility))
     const quests: QuestResult[] = activeQuestKeys
       .map(key => findQuestTemplate(key))
       .filter((t): t is NonNullable<typeof t> => !!t)

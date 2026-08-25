@@ -65,11 +65,15 @@ export interface QuestTemplate {
    *  landen im selben Vorrat/Rotation — kein separates Freischalt-System. */
   tier?: 'standard' | 'meister'
   /** `false` = darf nicht als alleinstehende automatische Wochen-Quest
-   *  gezogen werden (siehe defaultWeeklyTemplateKeys) — für Vorlagen, die in
-   *  einer einzigen Handlung erledigt sind (z.B. eine Erinnerung ansehen)
-   *  und dadurch die Schwierigkeit×Zeit-Balance brechen würden (Balance-
-   *  Fahrplan Phase 1). Fehlt das Feld, gilt `true`. Der Lehrer-Override
-   *  (Regie) ist davon NICHT betroffen — nur die automatische Auswahl. */
+   *  gezogen werden (siehe defaultWeeklyTemplateKeys).
+   *
+   *  ⚠️ Aktuell nutzt KEINE Vorlage dieses Feld, und das ist Absicht: Es gibt
+   *  keinen Lehrer-Override, der gesperrte Vorlagen doch noch einsetzen könnte
+   *  (die Tabelle `quests` aus feature-quests.sql wird von keiner Zeile Code
+   *  gelesen). `soloEligible: false` bedeutet hier deshalb schlicht „nie
+   *  gezogen". Wer eine Vorlage zu dünn findet, hebt ihren targetCount an,
+   *  statt sie zu sperren. Das Feld bleibt für den Tag, an dem es eine echte
+   *  Lehrer-Regie gibt. */
   soloEligible?: boolean
 }
 
@@ -98,8 +102,12 @@ export const QUEST_VAULT: QuestTemplate[] = [
       wb_sunny: 'Auch im Hafen läuft ein Schiff manchmal früher ein: reich eine Hausübung ab, bevor sie fällig ist.',
     },
     focusTag: 'puenktlichkeit',
-    signals: [{ type: 'homework_early', targetCount: 1 }],
-    soloEligible: false, // einzelne Handlung — nicht als alleinstehende Wochen-Quest
+    // Ziel 2 statt 1: als Einzelhandlung war die Vorlage zu dünn und deshalb
+    // mit soloEligible:false gesperrt. Gesperrt hieß in der Praxis aber tot,
+    // weil es den im alten Kommentar erwähnten Lehrer-Override nie gab — und
+    // da dies die EINZIGE Pünktlichkeits-Vorlage war, stand in jeder fünften
+    // Woche der Fokus-Chip „Pünktlichkeit" über drei Quests ohne diesen Fokus.
+    signals: [{ type: 'homework_early', targetCount: 2 }],
   },
   {
     key: 'hw_x3',
@@ -139,8 +147,9 @@ export const QUEST_VAULT: QuestTemplate[] = [
       wb_sunny: 'Am Kai liegt eine Nachricht für dich: schau in deinen Erinnerungen nach.',
     },
     focusTag: 'aufmerksamkeit',
-    signals: [{ type: 'reminder', targetCount: 1 }],
-    soloEligible: false, // 10-Sekunden-Handlung — nicht als alleinstehende Wochen-Quest
+    // Ziel 2 statt 1, gleiche Begründung wie bei hw_early: gesperrt war die
+    // Vorlage unerreichbar statt nur selten.
+    signals: [{ type: 'reminder', targetCount: 2 }],
   },
   {
     key: 'duty_done',
@@ -246,6 +255,93 @@ export const QUEST_VAULT: QuestTemplate[] = [
     focusTag: 'ausdauer',
     tier: 'meister',
     signals: [{ type: 'streak_hold', targetCount: 5 }],
+  },
+  {
+    key: 'frueh_und_stetig',
+    title: 'Früh und stetig',
+    narrative: '{guide}: eine Hausübung vor der Frist, dazu an 3 Tagen etwas geschafft.',
+    narrativeByGuide: {
+      landscape: 'Früh aufbrechen und dann gleichmäßig gehen: eine Hausübung vor der Frist, dazu an 3 verschiedenen Tagen etwas geschafft.',
+      rocket_launch: 'Vorlauf plus verteilte Last: eine Hausübung vor der Frist, dazu an 3 verschiedenen Tagen etwas erledigt.',
+      map: 'Früh los und dann Spur für Spur: eine Hausübung vor der Frist, dazu an 3 verschiedenen Tagen etwas geschafft.',
+      eco: 'Früh säen und dann täglich gießen: eine Hausübung vor der Frist, dazu an 3 verschiedenen Tagen etwas geschafft.',
+      water: 'Früh abtauchen und den Rhythmus halten: eine Hausübung vor der Frist, dazu an 3 verschiedenen Tagen etwas geschafft.',
+      history_edu: 'Eine Seite im Voraus, dann drei an drei Tagen: so füllt sich eine Chronik ohne Hast.',
+      anchor: 'Früh anfangen, solange die See ruhig ist, und dann an 3 Tagen weiterbauen.',
+      auto_awesome: 'Ein Licht vor der Zeit und dann drei Nächte in Folge: eine Hausübung vor der Frist, dazu 3 verschiedene Tage.',
+      precision_manufacturing: 'Vorarbeit plus drei Werktage: eine Hausübung vor der Frist, dazu an 3 verschiedenen Tagen etwas erledigt.',
+      park: 'Eine frühe Knospe und dann drei ruhige Tage: eine Hausübung vor der Frist, dazu 3 verschiedene Tage.',
+      wb_sunny: 'Früh einlaufen, dann in Ruhe weiter: eine Hausübung vor der Frist, dazu an 3 verschiedenen Tagen etwas geschafft.',
+    },
+    focusTag: 'puenktlichkeit',
+    signals: [
+      { type: 'homework_early', targetCount: 1 },
+      { type: 'homework_days', targetCount: 3 },
+    ],
+  },
+  {
+    key: 'termin_und_funk',
+    title: 'Nichts übersehen',
+    narrative: '{guide}: behalte deinen nächsten Termin im Blick und sieh dir eine Erinnerung an.',
+    narrativeByGuide: {
+      landscape: 'Zwei Dinge im Blick behalten wie beim Wetter am Berg: dein nächster Termin und eine Erinnerung.',
+      rocket_launch: 'Zwei Kanäle überwachen: dein nächster Termin und eine eingegangene Erinnerung.',
+      map: 'Zwei Markierungen am Kartenrand: dein nächster Termin und eine Erinnerung.',
+      eco: 'Zwei Dinge im Auge behalten: dein nächster Termin und eine Erinnerung.',
+      water: 'Zwei Signale mitverfolgen: dein nächster Termin und eine Erinnerung.',
+      history_edu: 'Zwei Randnotizen beachten: dein nächster Termin und eine Erinnerung.',
+      anchor: 'Zwei Zeichen am Horizont: dein nächster Termin und eine Erinnerung.',
+      auto_awesome: 'Zwei Punkte am Himmel beobachten: dein nächster Termin und eine Erinnerung.',
+      precision_manufacturing: 'Zwei Anzeigen im Blick: dein nächster Termin und eine Erinnerung.',
+      park: 'Zwei Geräusche im Blätterdach: dein nächster Termin und eine Erinnerung.',
+      wb_sunny: 'Zwei Kleinigkeiten im Blick: dein nächster Termin und eine Erinnerung.',
+    },
+    focusTag: 'aufmerksamkeit',
+    signals: [
+      { type: 'event_ready', targetCount: 1 },
+      { type: 'reminder', targetCount: 1 },
+    ],
+  },
+  {
+    key: 'familien_woche',
+    title: 'Rückenwind von zuhause',
+    narrative: '{guide}: 3 Bestätigungen deiner Verbündeten diese Woche.',
+    narrativeByGuide: {
+      landscape: 'Drei Mal hat jemand im Basislager für dich mitgezählt: hol dir 3 Bestätigungen diese Woche.',
+      rocket_launch: 'Dreimal Rückmeldung von der Bodenkontrolle: 3 Bestätigungen deiner Verbündeten diese Woche.',
+      map: 'Dreimal hat jemand deine Spur gegengezeichnet: 3 Bestätigungen deiner Verbündeten diese Woche.',
+      eco: 'Dreimal hat jemand mitgegossen: hol dir 3 Bestätigungen deiner Verbündeten diese Woche.',
+      water: 'Dreimal jemand an der Oberfläche, der mitzählt: 3 Bestätigungen deiner Verbündeten diese Woche.',
+      history_edu: 'Dreimal ein zweiter Zeuge im Buch: 3 Bestätigungen deiner Verbündeten diese Woche.',
+      anchor: 'Dreimal hat jemand mit am Tau gezogen: 3 Bestätigungen deiner Verbündeten diese Woche.',
+      auto_awesome: 'Dreimal hat jemand mit nach oben geschaut: 3 Bestätigungen deiner Verbündeten diese Woche.',
+      precision_manufacturing: 'Dreimal vier Hände statt zwei: 3 Bestätigungen deiner Verbündeten diese Woche.',
+      park: 'Dreimal hat der Boden mitgetragen: 3 Bestätigungen deiner Verbündeten diese Woche.',
+      wb_sunny: 'Dreimal jemand am Kai, der winkt: 3 Bestätigungen deiner Verbündeten diese Woche.',
+    },
+    focusTag: 'zusammenhalt',
+    signals: [{ type: 'parent_confirm', targetCount: 3 }],
+  },
+  {
+    key: 'dienst_meister',
+    title: 'Meisterhafte Verlässlichkeit',
+    narrative: '{guide} ist beeindruckt: Dienst an 4 Tagen dieser Woche bestätigt.',
+    narrativeByGuide: {
+      landscape: 'Vier Tage Dienst, ohne dass jemand nachfragen musste. So jemanden nimmt man überallhin mit.',
+      rocket_launch: 'Vier Tage Wartung, lückenlos protokolliert. Diese Zuverlässigkeit ist statistisch bemerkenswert.',
+      map: 'Vier Tage Dienst ohne Lücke. Auf so eine Kundschafterin verlässt sich die ganze Expedition.',
+      eco: 'Vier Tage hintereinander! Weißt du, wie viel in vier Tagen wachsen kann, wenn jemand dranbleibt?',
+      water: 'Vier Tage Dienst ohne Aussetzer. An Bord ist das die Sorte Verlässlichkeit, die zählt.',
+      history_edu: 'Vier Tage Dienst, jeder einzeln eingetragen. Das ist eine schöne Zeile in der Chronik.',
+      anchor: 'Vier Tage durchgezogen! Auf so jemanden baue ich einen ganzen Hafen.',
+      auto_awesome: 'Vier Tage zur selben Zeit am selben Platz. Genau so bewegen sich die verlässlichen Dinge.',
+      precision_manufacturing: 'Vier Tage geölt und nachgezogen. Diese Laufruhe kriegt man nicht geschenkt.',
+      park: 'Vier Tage stille Arbeit. Wurzeln machen das genauso, und darauf steht am Ende ein Baum.',
+      wb_sunny: 'Vier Tage Dienst, sogar jetzt noch. Finn hebt anerkennend den Kopf.',
+    },
+    focusTag: 'verantwortung',
+    tier: 'meister',
+    signals: [{ type: 'duty_done', targetCount: 4 }],
   },
   {
     key: 'vorbereitung_wahlpfad',

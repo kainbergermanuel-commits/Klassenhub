@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp } from '@/lib/streak'
-import { computeQuestProgress, defaultWeeklyTemplateKeys, type QuestResult } from '@/lib/quests'
+import { computeQuestProgress, defaultWeeklyTemplateKeys, recentTemplateKeys, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult, type GuildMember } from '@/lib/guilds'
@@ -220,7 +220,7 @@ export default async function StreaksPage() {
       currentStreakLength: myActualStreak,
     })
     const feasibility = buildFeasibility(questCtx, myDuties.length > 0)
-    const activeQuestKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility)
+    const activeQuestKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility, recentTemplateKeys(activeClassId, weekStart, 3, feasibility))
 
     questsForMe = activeQuestKeys
       .map(key => findQuestTemplate(key))
@@ -477,7 +477,7 @@ export default async function StreaksPage() {
         currentStreakLength: actualStreak,
       })
       const feasibility = buildFeasibility(questCtx, !!myDuty)
-      const activeKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility)
+      const activeKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility, recentTemplateKeys(activeClassId, weekStart, 3, feasibility))
       const choiceByTemplate = choicesByStudent.get(s.id)
       const results = activeKeys
         .map(key => findQuestTemplate(key))

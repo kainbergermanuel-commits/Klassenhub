@@ -186,7 +186,7 @@ function templateFeasible(template: QuestTemplate, f: QuestFeasibility): boolean
  *  auf den ungefilterten (nur soloEligible-gefilterten) Vorrat zurück, falls
  *  sonst weniger als `count` Vorlagen übrig blieben — Determinismus/
  *  Mindestanzahl haben Vorrang vor perfekter Machbarkeit. */
-export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, count = 3, feasibility?: QuestFeasibility): string[] {
+export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, count = 3, feasibility?: QuestFeasibility, recent: string[] = []): string[] {
   const seed = `${classId}-${weekStart}`
   let hash = 0
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
@@ -204,18 +204,64 @@ export function defaultWeeklyTemplateKeys(classId: string, weekStart: string, co
   const feasibleVault = feasibility ? soloEligibleVault.filter(t => templateFeasible(t, feasibility)) : soloEligibleVault
   const vault = feasibleVault.length >= count ? feasibleVault : soloEligibleVault
 
+  // Wiederholungsschutz: was in den letzten RECENT_WEEKS Wochen schon dran war,
+  // rutscht ans Ende der Auswahl. Die Historie ist deterministisch nachrechenbar
+  // (dieselbe Funktion mit früherem weekStart), es braucht also keinen
+  // gespeicherten Zustand. `recent` wird von außen übergeben, damit die
+  // Rekursion an genau einer Stelle sitzt und nicht unbegrenzt tief läuft.
+  const tired = new Set(recent)
+  const fresh = vault.filter(t => !tired.has(t.key))
+
   const focus = weeklyFocusTag(weekStart)
-  const focusedKeys = vault.filter(t => t.focusTag === focus).map(t => t.key)
-  const pool = vault.map(t => t.key)
+  // Fokus-Garantie bevorzugt eine noch nicht kürzlich gezogene Vorlage, nimmt
+  // aber notfalls auch eine „müde" — der angezeigte Fokus-Chip muss stimmen.
+  const focusedFresh = fresh.filter(t => t.focusTag === focus).map(t => t.key)
+  const focusedAll = vault.filter(t => t.focusTag === focus).map(t => t.key)
+  const focusedKeys = focusedFresh.length > 0 ? focusedFresh : focusedAll
+
+  // Erst aus dem frischen Vorrat auffüllen, dann erst aus dem vollen.
+  const pool = [...fresh.map(t => t.key), ...vault.map(t => t.key)]
 
   const picked: string[] = []
+  // Höchstens EINE Meister-Quest pro Woche: das Tier verspricht Seltenheit,
+  // und mit mehreren gleichzeitig wäre die Woche zusätzlich unangemessen hart.
+  const isMeister = (key: string) => QUEST_VAULT.find(t => t.key === key)?.tier === 'meister'
+  const canTake = (key: string) => !picked.includes(key) && !(isMeister(key) && picked.some(isMeister))
+
   if (focusedKeys.length > 0) picked.push(focusedKeys[nextIndex(focusedKeys.length)])
 
   let guard = 0
-  while (picked.length < Math.min(count, pool.length) && guard < 100) {
+  while (picked.length < Math.min(count, vault.length) && guard < 200) {
     const key = pool[nextIndex(pool.length)]
-    if (!picked.includes(key)) picked.push(key)
+    if (canTake(key)) picked.push(key)
     guard++
   }
+  // Sicherheitsnetz: falls der Meister-Deckel die Auswahl zu klein gehalten hat,
+  // mit beliebigen noch fehlenden Vorlagen auffüllen (Mindestanzahl hat Vorrang).
+  if (picked.length < Math.min(count, vault.length)) {
+    for (const t of vault) {
+      if (picked.length >= Math.min(count, vault.length)) break
+      if (!picked.includes(t.key)) picked.push(t.key)
+    }
+  }
   return picked
+}
+
+/** Wie viele zurückliegende Wochen der Wiederholungsschutz berücksichtigt. */
+export const RECENT_WEEKS = 3
+
+/** Die Quest-Keys der letzten `RECENT_WEEKS` Wochen — Grundlage für den
+ *  Wiederholungsschutz. Ruft `defaultWeeklyTemplateKeys` OHNE `recent` auf,
+ *  damit die Rekursion genau eine Ebene tief bleibt: die Historie ist die
+ *  ungeschützte Auswahl, der Schutz greift nur für die laufende Woche. */
+export function recentTemplateKeys(classId: string, weekStart: string, count = 3, feasibility?: QuestFeasibility): string[] {
+  const out: string[] = []
+  const base = new Date(`${weekStart}T00:00:00`)
+  for (let k = 1; k <= RECENT_WEEKS; k++) {
+    const d = new Date(base)
+    d.setDate(d.getDate() - 7 * k)
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    out.push(...defaultWeeklyTemplateKeys(classId, iso, count, feasibility))
+  }
+  return out
 }
