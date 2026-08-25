@@ -1,6 +1,7 @@
 'use client'
 
-import { SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
+import { useState } from 'react'
+import { SCHOOL_YEAR_ARCS, findBuiltTheme } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 
 interface Props {
@@ -16,6 +17,12 @@ interface Props {
  *  Rein lesend, keine neue Mechanik (Prinzip 4: Story lädt ein, sie zwingt nicht). */
 export default function ReiseYearOverview({ currentThemeName }: Props) {
   const currentIndex = SCHOOL_YEAR_ARCS.findIndex(arc => arc.name === currentThemeName)
+  // Welche bereits durchlaufene Welt gerade aufgeklappt ist. Bis August 2026
+  // waren die Kapitel vergangener Welten für Kinder gar nicht mehr erreichbar
+  // (nur Admins sahen sie unter „Alle Welten"), obwohl der Fehler-Hinweis im
+  // Splitter-Rätsel ausdrücklich dorthin verweist. Damit war das welten-
+  // übergreifende Rätsel eine Sackgasse.
+  const [openArc, setOpenArc] = useState<string | null>(null)
 
   return (
     <div className="relative flex flex-col">
@@ -25,6 +32,8 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
         const isFuture = !isPast && !isCurrent
         const isLast = i === SCHOOL_YEAR_ARCS.length - 1
         const Art = SEASON_ART[arc.icon]
+        const theme = findBuiltTheme(arc.icon)
+        const isOpen = openArc === arc.icon
 
         return (
           <div key={arc.name} className="relative flex gap-4">
@@ -99,7 +108,45 @@ export default function ReiseYearOverview({ currentThemeName }: Props) {
                       <p className="text-[12.5px] text-kh-dark/70 font-medium leading-snug max-w-[50%]">
                         {arc.tagline} · Begleitet von {arc.guide}
                       </p>
+
+                      {/* Bereits durchlaufene Welten bleiben lesbar: ohne das
+                          käme ein Kind nie wieder an die Kapitel heran, die es
+                          für welten-übergreifende Rätsel braucht. */}
+                      {isPast && theme && (
+                        <button
+                          type="button"
+                          onClick={() => setOpenArc(o => (o === arc.icon ? null : arc.icon))}
+                          aria-expanded={isOpen}
+                          className="group mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-kh-teal hover:opacity-70 transition-opacity"
+                        >
+                          {isOpen ? 'Kapitel schließen' : `Alle ${theme.stages.length} Kapitel nachlesen`}
+                          <span className={`msym text-[15px] transition-transform duration-200 ${isOpen ? 'rotate-180' : 'group-hover:translate-y-0.5'}`}>
+                            expand_more
+                          </span>
+                        </button>
+                      )}
                     </>
+                  )}
+
+                  {isOpen && theme && (
+                    <div className="mt-3.5 flex flex-col gap-3.5 border-t border-kh-border/50 pt-3.5">
+                      {theme.stages.map((stage, si) => (
+                        <div key={stage.label}>
+                          <p className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wide text-kh-muted mb-1">
+                            <span className="msym text-[13px] text-kh-amber" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">{stage.icon}</span>
+                            Kapitel {si + 1} · {stage.label}
+                          </p>
+                          <p className="max-w-[62ch] text-[13.5px] text-kh-dark/85 leading-[1.65]">
+                            {stage.chapter ?? stage.story}
+                          </p>
+                          {stage.handover && (
+                            <p className="max-w-[58ch] mt-1.5 text-[13px] text-kh-dark/70 leading-relaxed italic border-l-2 border-kh-amber/40 pl-3">
+                              {stage.handover}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

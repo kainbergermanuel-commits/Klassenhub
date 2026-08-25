@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
+import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT, schoolYearIndex, SCHOOL_YEAR_ARCS } from '@/lib/seasonTheme'
 import { SEASON_ART } from '@/components/streaks/seasonArt'
 import IconButton from '@/components/ui/IconButton'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
@@ -26,11 +26,21 @@ interface Props {
 export default function ReiseOverview({ season, pct, target, role, isAdmin }: Props) {
   const theme = getSeasonTheme(season)
   const clampedPct = Math.min(100, Math.max(0, pct))
-  const activeStage = target ? currentStageIndex(clampedPct, theme.stages.length) : -1
+  // Epilog-Welt (Sonnenhafen): kein Klassenziel, aber das eine Kapitel soll
+  // trotzdem lesbar sein — sonst stünde in den Ferien eine gesperrte Seite.
+  const activeStage = theme.isEpilogue
+    ? theme.stages.length - 1
+    : target ? currentStageIndex(clampedPct, theme.stages.length) : -1
   const Art = SEASON_ART[theme.icon]
   const portrait = GUIDE_PORTRAIT[theme.icon]
   const [guideInfoOpen, setGuideInfoOpen] = useState(false)
   const [tab, setTab] = useState<'aktuell' | 'jahr' | 'alle'>('aktuell')
+
+  // Nächste Welt im Fahrplan — trägt Portrait und Name für den Übergabe-Block
+  // an der letzten Etappe. `undefined` beim Sonnenhafen (dort endet die Reise).
+  const arcIndex = schoolYearIndex(theme.icon)
+  const nextArc = arcIndex >= 0 ? SCHOOL_YEAR_ARCS[arcIndex + 1] : undefined
+  const nextPortrait = nextArc ? GUIDE_PORTRAIT[nextArc.icon] : undefined
 
   return (
     <>
@@ -161,6 +171,10 @@ export default function ReiseOverview({ season, pct, target, role, isAdmin }: Pr
           const reached = i <= activeStage
           const isCurrent = i === activeStage
           const locked = !reached
+          // Nur die ERSTE gesperrte Etappe bekommt eine Cliffhanger-Vorschau.
+          // Alle weiteren bleiben stumm, sonst verrät man den halben Bogen.
+          const isNextUp = locked && i === activeStage + 1
+          const teaser = isNextUp ? theme.stages[i - 1]?.cliffhanger : undefined
 
           return (
             <div
@@ -180,18 +194,54 @@ export default function ReiseOverview({ season, pct, target, role, isAdmin }: Pr
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted">Etappe {i + 1} von {theme.stages.length}</span>
+                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted">Kapitel {i + 1} von {theme.stages.length}</span>
                   {isCurrent && (
                     <span className="text-[9.5px] font-extrabold text-kh-amber bg-kh-amber/15 px-2 py-0.5 rounded-full">Aktuell</span>
                   )}
                 </div>
-                <h3 className="font-extrabold text-[16px] text-kh-dark mb-1.5">{stage.label}</h3>
+                <h3 className="font-extrabold text-[17px] text-kh-dark mb-2">{stage.label}</h3>
+
                 {locked ? (
-                  <p className="text-[13px] text-kh-muted font-medium italic">
-                    {theme.guide} verrät noch nichts — diese Etappe wartet, bis die Klasse dort ankommt.
-                  </p>
+                  teaser ? (
+                    // Der letzte Satz der vorigen Etappe als angerissene Vorschau:
+                    // baut Vorfreude, ohne etwas zu verraten (Prinzip 4).
+                    <p className="text-[13.5px] text-kh-muted font-medium italic leading-relaxed border-l-2 border-kh-amber/40 pl-3">
+                      {teaser}
+                    </p>
+                  ) : (
+                    <p className="text-[13px] text-kh-muted font-medium italic">
+                      {theme.guide} verrät noch nichts. Dieses Kapitel wartet, bis die Klasse dort ankommt.
+                    </p>
+                  )
                 ) : (
-                  <p className="text-[13.5px] text-kh-dark/85 leading-snug italic">{stage.story}</p>
+                  <>
+                    {/* Lese-Ansicht: der volle Kapiteltext in ruhiger Typografie,
+                        Zeilenlänge begrenzt. Fällt auf die Kurzfassung zurück,
+                        solange für eine Etappe noch kein `chapter` geschrieben ist. */}
+                    <p className="max-w-[62ch] text-[15px] text-kh-dark/90 leading-[1.7] whitespace-pre-line">
+                      {stage.chapter ?? stage.story}
+                    </p>
+
+                    {stage.handover && (
+                      <div className="mt-4 flex items-start gap-3 rounded-xl bg-[#FAF8F3] p-3.5">
+                        {nextPortrait ? (
+                          <img
+                            src={nextPortrait}
+                            alt={nextArc?.guide ?? ''}
+                            className="w-12 h-12 rounded-full object-cover object-top ring-2 ring-white shadow-sm flex-shrink-0 bg-[#EFEAE0]"
+                          />
+                        ) : (
+                          <span className="msym text-[22px] text-kh-amber flex-shrink-0 mt-0.5" aria-hidden="true">forward_to_inbox</span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[10.5px] font-bold uppercase tracking-wide text-kh-muted mb-1">
+                            {nextArc ? `Übergabe an ${nextArc.guide}` : 'Übergabe'}
+                          </p>
+                          <p className="max-w-[58ch] text-[13.5px] text-kh-dark/85 leading-relaxed italic">{stage.handover}</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
