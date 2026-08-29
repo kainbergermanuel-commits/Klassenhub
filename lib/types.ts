@@ -87,6 +87,10 @@ export type Homework = {
   created_by: string | null
   created_at: string
   attachment_name: string | null
+  /** Optionaler Freitext: was genau zu tun ist, was mitzubringen ist.
+   *  Der Titel bleibt die kurze Listenzeile, die Details tragen den Rest.
+   *  Zeilenumbrüche bleiben erhalten (whitespace-pre-line in der Anzeige). */
+  details: string | null
   status: 'published' | 'pending'
 }
 
@@ -141,6 +145,7 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           attachment_name?: string | null
+          details?: string | null
           status?: 'published' | 'pending'
         }
         Update: Partial<Homework>

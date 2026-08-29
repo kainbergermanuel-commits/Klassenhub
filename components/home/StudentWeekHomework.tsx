@@ -7,6 +7,7 @@ import { todayISO, dueInfo, isActionable } from '@/lib/date'
 import { dueDateFor } from '@/lib/homework'
 import type { HomeworkWithStatus } from '@/lib/types'
 import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
+import HomeworkDetails from '@/components/homework/HomeworkDetails'
 import { getSeasonTheme, guideShortName, isCollectiveGuide } from '@/lib/seasonTheme'
 
 const TODAY = todayISO()
@@ -77,6 +78,9 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
           <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 0" }}>event</span>
           {statusText} · {hw.subject}
         </div>
+        {/* Eine Zeile Vorschau, aufklappbar — die Startseiten-Zeile ist
+            dichter als die große Karte auf /hausaufgaben. */}
+        {hw.details && <HomeworkDetails text={hw.details} clamp={1} className="mt-1" />}
       </div>
       {!done && due.warn && (
         <span className="msym text-[23px] flex-shrink-0" title={due.tooltip} style={{ fontVariationSettings: "'FILL' 1", background: 'linear-gradient(135deg, #FF6B6B 0%, #E03030 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>warning</span>

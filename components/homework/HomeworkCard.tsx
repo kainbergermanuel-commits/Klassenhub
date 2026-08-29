@@ -10,6 +10,7 @@ import { dueDateFor, extensionDays } from '@/lib/homework'
 import { confirmHomeworkCompletion } from '@/app/actions/confirmHomeworkCompletion'
 import Avatar from '@/components/ui/Avatar'
 import DatePicker from '@/components/ui/DatePicker'
+import HomeworkDetails from './HomeworkDetails'
 import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 
@@ -41,6 +42,7 @@ interface Props {
 
 const TODAY = todayISO()
 const TOMORROW = addDaysISO(1)
+const DETAILS_MAX = 500
 
 function getStatus(hw: HomeworkWithStatus, done: boolean, role: Role) {
   // Maßgeblich ist die für DIESES Kind geltende Frist — bei eingesetztem
@@ -89,6 +91,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
   const [editTitle, setEditTitle] = useState(hw.title)
   const [editDate, setEditDate] = useState(hw.due_date)
   const [editSubject, setEditSubject] = useState(hw.subject)
+  const [editDetails, setEditDetails] = useState(hw.details ?? '')
   const [saving, setSaving] = useState(false)
   const [deleted, setDeleted] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -192,6 +195,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
     const { error } = await supabase.from('homework').update({
       title: editTitle.trim(),
       due_date: editDate,
+      details: editDetails.trim() || null,
       ...(picked && picked.label !== hw.subject
         ? { subject: picked.label, subject_short: picked.short, subject_color: picked.color }
         : {}),
@@ -271,12 +275,11 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
             </div>
           )}
 
-          {hw.attachment_name && (
-            <span className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-[#46565A] bg-[#F6F3ED] border border-[#EEDED9] px-2.5 py-1 rounded-lg">
-              <span className="msym text-[15px] text-[#8A9896]">attach_file</span>
-              {hw.attachment_name}
-            </span>
-          )}
+          {/* attachment_name war ein toter Zweig: die Spalte existiert, wurde
+              aber nie beschrieben und hatte keine Datei zum Öffnen. Entfernt
+              am 2026-08-29; die Spalte bleibt in der Datenbank bestehen. */}
+
+          {hw.details && <HomeworkDetails text={hw.details} clamp={2} className="mt-2" />}
         </div>
 
         {/* Student: toggle */}
@@ -436,6 +439,20 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
                   </div>
                 </div>
               )}
+              <div>
+                <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5" htmlFor={`hw-details-${hw.id}`}>
+                  Details (optional)
+                </label>
+                <textarea
+                  id={`hw-details-${hw.id}`}
+                  rows={3}
+                  maxLength={DETAILS_MAX}
+                  value={editDetails}
+                  onChange={e => setEditDetails(e.target.value)}
+                  placeholder="Was genau ist zu tun? Was mitbringen?"
+                  className="w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark placeholder:text-kh-muted outline-none focus:border-kh-teal transition-colors resize-y"
+                />
+              </div>
               <div>
                 <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Fällig am</label>
                 <DatePicker value={editDate} min={TOMORROW} onChange={setEditDate} />

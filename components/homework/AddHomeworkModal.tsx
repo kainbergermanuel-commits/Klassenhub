@@ -13,6 +13,10 @@ import type { SubjectOption } from '@/lib/subjectsCatalog'
  *  isOver in lib/date.ts), die darf man gar nicht erst auswählen können. */
 const EARLIEST_DUE = () => addDaysISO(1)
 
+/** Obergrenze für die Details. Bewusst nur hier und nicht als CHECK in der
+ *  Datenbank — eine spätere Lockerung soll keine Migration brauchen. */
+const DETAILS_MAX = 500
+
 interface Props {
   classId: string
   userId: string
@@ -30,6 +34,7 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
   const [subjectIdx, setSubjectIdx] = useState(0)
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState(EARLIEST_DUE())
+  const [details, setDetails] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -51,6 +56,7 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
       subject_color: subject.color,
       title: title.trim(),
       due_date: dueDate,
+      details: details.trim() || null,
       created_by: userId,
       status: asPending ? 'pending' : 'published',
     })
@@ -111,6 +117,26 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
               placeholder="z.B. Übungsblatt S. 42, Nr. 1–6"
               className="w-full rounded-xl border border-kh-border px-4 py-3 text-base font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-kh-dark mb-1.5 block" htmlFor="hw-details">
+              Details <span className="font-semibold text-kh-muted">(optional)</span>
+            </label>
+            <textarea
+              id="hw-details"
+              rows={3}
+              maxLength={DETAILS_MAX}
+              value={details}
+              onChange={e => setDetails(e.target.value)}
+              placeholder="Was genau ist zu tun? Was mitbringen?"
+              className="w-full rounded-xl border border-kh-border px-4 py-3 text-base font-medium text-kh-dark placeholder:text-kh-muted focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition resize-y"
+            />
+            {details.length > DETAILS_MAX - 80 && (
+              <p className="text-[11px] text-kh-muted font-semibold mt-1 text-right">
+                noch {DETAILS_MAX - details.length} Zeichen
+              </p>
+            )}
           </div>
 
           <div>

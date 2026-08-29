@@ -9,6 +9,7 @@ import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { flameCount } from '@/lib/streak'
 import { greeting, dueInfo } from '@/lib/date'
 import { dueDateFor } from '@/lib/homework'
+import HomeworkDetails from '@/components/homework/HomeworkDetails'
 import AnimateIn from '@/components/ui/AnimateIn'
 
 interface ParentHomeProps {
@@ -196,6 +197,7 @@ export default function ParentHome({
                         <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 0" }}>event</span>
                         {hw.done ? 'Erledigt' : due.label}
                       </div>
+                      {hw.details && <HomeworkDetails text={hw.details} clamp={1} className="mt-1" />}
                     </div>
                     {!hw.done && due.warn && (
                       <span
