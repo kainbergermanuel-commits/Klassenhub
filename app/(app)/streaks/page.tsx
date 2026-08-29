@@ -37,7 +37,7 @@ export default async function StreaksPage() {
     { data: classGoal },
   ] = await Promise.all([
     supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
-    supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).order('due_date', { ascending: false }),
+    supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).eq('status', 'published').order('due_date', { ascending: false }),
     supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
   ])
 

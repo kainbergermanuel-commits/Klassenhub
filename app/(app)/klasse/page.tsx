@@ -22,7 +22,7 @@ export default async function KlassePage() {
   const [{ data: students }, { data: parents }, { data: allHomework }] = await Promise.all([
     supabase.from('profiles').select('*').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
     supabase.from('profiles').select('*').eq('class_id', activeClassId).eq('role', 'parent').order('full_name'),
-    supabase.from('homework').select('*').eq('class_id', activeClassId).order('due_date', { ascending: false }),
+    supabase.from('homework').select('*').eq('class_id', activeClassId).eq('status', 'published').order('due_date', { ascending: false }),
   ])
 
   const studentList = (students ?? []) as Profile[]

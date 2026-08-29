@@ -27,7 +27,7 @@ export async function useStreakFreeze(): Promise<{ newStreak: number }> {
   const schoolYearStart = schoolYearStartISO()
 
   const [{ data: allHw }, { data: completions }, { data: freezes }, { data: extensions }] = await Promise.all([
-    supabase.from('homework').select('id,due_date').eq('class_id', profile.class_id).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
+    supabase.from('homework').select('id,due_date').eq('class_id', profile.class_id).eq('status', 'published').gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
     supabase.from('homework_completions').select('homework_id').eq('student_id', profile.id).not('confirmed_by_parent_at', 'is', null),
     supabase.from('streak_freezes').select('id,homework_id,created_at').eq('student_id', profile.id),
     supabase.from('homework_extensions').select('homework_id,extra_days').eq('student_id', profile.id),

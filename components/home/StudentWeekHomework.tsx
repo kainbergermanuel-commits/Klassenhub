@@ -3,13 +3,13 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { todayISO, addDaysISO } from '@/lib/date'
+import { todayISO, dueInfo, isActionable } from '@/lib/date'
+import { dueDateFor } from '@/lib/homework'
 import type { HomeworkWithStatus } from '@/lib/types'
 import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
 import { getSeasonTheme, guideShortName, isCollectiveGuide } from '@/lib/seasonTheme'
 
 const TODAY = todayISO()
-const TOMORROW = addDaysISO(1)
 
 interface Props {
   homework: HomeworkWithStatus[]
@@ -22,8 +22,7 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [done, setDone] = useState(hw.done)
-  const canToggle = hw.due_date >= TOMORROW
-  const isToday = hw.due_date === TODAY
+  const canToggle = isActionable(dueDateFor(hw), TODAY)
 
   async function toggle() {
     if (!canToggle) return
@@ -33,13 +32,9 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
     startTransition(() => router.refresh())
   }
 
-  const isTomorrow = hw.due_date === TOMORROW
-  const dueLabel = isToday
-    ? 'Heute fällig'
-    : `Fällig: ${isTomorrow ? 'Morgen, ' : ''}${new Date(hw.due_date).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })}`
-
-  const statusColor = done ? 'text-kh-green' : isToday ? 'text-[#C95040]' : 'text-kh-amber'
-  const statusText = done ? 'Erledigt' : dueLabel
+  const due = dueInfo(dueDateFor(hw))
+  const statusColor = done ? '#2E9C6E' : due.color
+  const statusText = done ? 'Erledigt' : due.label
 
   return (
     <div className="flex items-center gap-3 rounded-xl bg-[#FAF8F3] px-3 py-2.5 overflow-hidden">
@@ -56,13 +51,17 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
         >
           {hw.title}
         </div>
-        <div className={`flex items-center gap-1 text-xs font-semibold mt-0.5 ${statusColor}`}>
+        <div
+          className="flex items-center gap-1 text-xs font-semibold mt-0.5"
+          style={{ color: statusColor }}
+          title={due.tooltip}
+        >
           <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 0" }}>event</span>
           {statusText} · {hw.subject}
         </div>
       </div>
-      {!done && hw.due_date === TOMORROW && (
-        <span className="msym text-[23px] flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1", background: 'linear-gradient(135deg, #FF6B6B 0%, #E03030 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>warning</span>
+      {!done && due.warn && (
+        <span className="msym text-[23px] flex-shrink-0" title={due.tooltip} style={{ fontVariationSettings: "'FILL' 1", background: 'linear-gradient(135deg, #FF6B6B 0%, #E03030 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>warning</span>
       )}
       <button
         onClick={toggle}
@@ -123,7 +122,7 @@ export default function StudentOpenHomework({ homework, userId, season }: Props)
             className="text-sm font-bold text-kh-dark/70"
             style={{ textShadow: '0 1px 3px rgba(255,255,255,.9), 0 0 10px rgba(255,255,255,.8)' }}
           >
-            {guideNod ? `${guideNod}: „Alles erledigt — genieß die Pause."` : 'Keine offenen Hausübungen'}
+            {guideNod ? `${guideNod}: „Alles erledigt, genieß die Pause."` : 'Keine offenen Hausübungen'}
           </p>
         </div>
       ) : (

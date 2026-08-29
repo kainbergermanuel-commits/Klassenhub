@@ -28,7 +28,15 @@ const GUIDES: Guide[] = [
     title: 'Hausübungen',
     roles: ['student', 'parent'],
     body: (
-      <>Unter <b>Hausübungen</b> siehst du alles, was gerade ansteht. Tippe eine Aufgabe an, sobald du sie erledigt hast, zum Beispiel „Übungsblatt Seite 12, Nummer 1 bis 6", und sie wird als erledigt markiert. Ist etwas bald fällig, wandert die Hausübungs-Karte auf der Startseite automatisch ganz nach oben, damit du nichts übersiehst. Deine Eltern bestätigen die Erledigung anschließend noch kurz mit einem Tippen, das hält eure gemeinsame Flamme am Leben.</>
+      <>Unter <b>Hausübungen</b> siehst du alles, was gerade ansteht. Tippe eine Aufgabe an, sobald du sie erledigt hast, zum Beispiel „Übungsblatt Seite 12, Nummer 1 bis 6", und sie wird als erledigt markiert. Ist etwas bald fällig, wandert die Hausübungs-Karte auf der Startseite automatisch ganz nach oben, damit du nichts übersiehst. Wichtig ist nur der richtige Zeitpunkt: Wann genau eine Hausübung fertig sein muss, steht gleich im nächsten Abschnitt. Deine Eltern bestätigen die Erledigung anschließend noch kurz mit einem Tippen, das hält eure gemeinsame Flamme am Leben.</>
+    ),
+  },
+  {
+    icon: 'event_available',
+    title: 'Wann muss eine Hausübung fertig sein?',
+    roles: ['student', 'parent'],
+    body: (
+      <>Bei jeder Hausübung steht ein <b>Fälligkeitstag</b>. Gemeint ist damit der Tag, an dem sie in der Schule gebraucht wird, also der Tag, an dem sie <b>schon fertig sein muss</b>. Steht bei einer Hausübung „Fällig: Mittwoch", dann machst du sie am <b>Dienstag</b> und hakst sie am Dienstagabend ab. Am Mittwoch selbst lässt sich das Häkchen nicht mehr setzen, dann ist die Hausübung vorbei.<br /><br />Damit du das nicht im Kopf mitrechnen musst, sagt es die App direkt: „Morgen fällig" heißt „heute erledigen", und dann erscheint zusätzlich ein kleines Warnzeichen. Steht ein Datum weiter weg, siehst du „In 3 Tagen" und musst noch nichts tun. Wenn du mit der Maus über das Datum fährst, wird dir der genaue Tag angezeigt.<br /><br />Eine Sache ist entspannter, als sie klingt: Nur dein <b>Häkchen</b> muss am Vorabend gesetzt sein. Die <b>Bestätigung deiner Eltern</b> darf ruhig später kommen, auch am nächsten Tag oder übermorgen. Sie zählt dann trotzdem noch, und deine Flamme bleibt am Leben.</>
     ),
   },
   {
@@ -36,7 +44,7 @@ const GUIDES: Guide[] = [
     title: 'Deine Flamme & der Rucksack',
     roles: ['student'],
     body: (
-      <>Jede von deinen Eltern bestätigte Hausübung hält deine <b>Flamme</b> am Brennen, ganz privat und ohne Rangliste. Reißt sie doch einmal ab, zum Beispiel weil eine Hausübung vergessen wurde, hilft dir vielleicht der <b>Rucksack</b> weiter. Dort sammeln sich nützliche Werkzeuge: Der <b>Schutzschild</b> fängt einmal pro Monat eine vergessene Hausübung ab, ohne dass die Flamme erlischt, und der <b>Zeitkristall</b> verlängert die Frist einer Hausübung um ein paar Tage. Beide laden sich am Monatsanfang wieder auf. Tippe im Rucksack einfach auf ein Werkzeug, dann erkläre ich dir genau, was es kann und ob es gerade einsatzbereit ist.</>
+      <>Jede von deinen Eltern bestätigte Hausübung hält deine <b>Flamme</b> am Brennen, ganz privat und ohne Rangliste. Reißt sie doch einmal ab, zum Beispiel weil eine Hausübung vergessen wurde, hilft dir vielleicht der <b>Rucksack</b> weiter. Dort sammeln sich nützliche Werkzeuge: Der <b>Schutzschild</b> fängt einmal pro Monat eine vergessene Hausübung ab, ohne dass die Flamme erlischt, und der <b>Zeitkristall</b> verlängert die Frist einer Hausübung um ein paar Tage. Setzt du den Zeitkristall ein, taucht die Hausübung unter „Hausübungen" wieder bei den anstehenden auf und lässt sich ganz normal abhaken, mit einem kleinen Hinweis auf die verlängerte Frist. Deine Lehrperson sieht diesen Hinweis auch, das ist kein Geheimnis, sondern dein gutes Recht. Beide laden sich am Monatsanfang wieder auf. Tippe im Rucksack einfach auf ein Werkzeug, dann erkläre ich dir genau, was es kann und ob es gerade einsatzbereit ist.</>
     ),
   },
   {
@@ -124,7 +132,7 @@ const GUIDES: Guide[] = [
     title: 'Hausübungen bestätigen',
     roles: ['parent'],
     body: (
-      <>Sobald Ihr Kind eine Hausübung als erledigt markiert hat, taucht sie bei Ihnen zur <b>Bestätigung</b> auf. Ein kurzes Tippen genügt, zum Beispiel direkt nach dem gemeinsamen Kontrollieren der Aufgabe. Das hält die Flamme Ihres Kindes am Leben und gibt der Lehrperson gleichzeitig ein verlässliches Bild davon, wie zuverlässig zu Hause gearbeitet wird.</>
+      <>Sobald Ihr Kind eine Hausübung als erledigt markiert hat, taucht sie bei Ihnen zur <b>Bestätigung</b> auf: gesammelt auf der Startseite und zusätzlich direkt bei der jeweiligen Aufgabe unter <b>Hausübungen</b>. Ein kurzes Tippen genügt, zum Beispiel direkt nach dem gemeinsamen Kontrollieren der Aufgabe. Das hält die Flamme Ihres Kindes am Leben und gibt der Lehrperson gleichzeitig ein verlässliches Bild davon, wie zuverlässig zu Hause gearbeitet wird.<br /><br /><b>Sie stehen dabei nicht unter Zeitdruck.</b> Nur das Häkchen Ihres Kindes ist an den Abend vor dem Fälligkeitstag gebunden. Ihre Bestätigung darf jederzeit später nachkommen, auch Tage danach, und wird rückwirkend mitgezählt. Solange eine Bestätigung noch aussteht, zeigt die App bei der Hausübung „Wartet auf Bestätigung" an, damit nichts untergeht.</>
     ),
   },
   {
@@ -165,8 +173,7 @@ export default function AnleitungOverview({ role, season }: { role: Role; season
 
   return (
     <>
-      <header className="mb-6 flex items-center gap-3.5">
-        <IconButton href="/streaks" icon="arrow_back" aria-label="Zurück zum Abenteuer" />
+      <header className="mb-6">
         <div className="min-w-0">
           <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Erste Schritte</h1>
           <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">So funktioniert KlassenHub, jederzeit zum Nachblättern</p>

@@ -21,8 +21,12 @@ export async function isHomeworkVeteran(studentId: string): Promise<boolean> {
 
 /** Markiert eine HÜ als erledigt/offen für den eingeloggten Schüler.
  *  Veteranen (≥15 HÜ in Folge je erreicht) werden dabei automatisch
- *  mitbestätigt statt auf die Eltern-Bestätigung zu warten. */
-export async function toggleHomeworkCompletion(homeworkId: string, done: boolean): Promise<void> {
+ *  mitbestätigt statt auf die Eltern-Bestätigung zu warten.
+ *
+ *  Gibt zurück, ob die Erledigung sofort mitbestätigt wurde. Die Karte zeigt
+ *  sonst kurz „Wartet auf Bestätigung" an, bis der Refresh durch ist —
+ *  ausgerechnet bei den Kindern, die sich das Gegenteil verdient haben. */
+export async function toggleHomeworkCompletion(homeworkId: string, done: boolean): Promise<{ autoConfirmed: boolean }> {
   const { profile } = await getAuth()
   if (!profile || profile.role !== 'student') throw new Error('Unauthorized')
 
@@ -36,14 +40,21 @@ export async function toggleHomeworkCompletion(homeworkId: string, done: boolean
     if (error) throw new Error(error.message)
     revalidatePath('/')
     revalidatePath('/hausaufgaben')
-    return
+    return { autoConfirmed: false }
   }
 
   const veteran = await isHomeworkVeteran(profile.id)
 
+  // ignoreDuplicates ist hier PFLICHT, nicht Geschmackssache: der Standard-
+  // Upsert erzeugt `ON CONFLICT DO UPDATE` und braucht damit UPDATE-Rechte auf
+  // homework_completions. Genau die haben Schüler:innen seit
+  // supabase/fix-completions-no-self-confirm.sql nicht mehr, damit sie
+  // confirmed_by_parent_at nicht selbst setzen können. Mit ignoreDuplicates
+  // wird daraus `ON CONFLICT DO NOTHING` — INSERT genügt, und existiert die
+  // Zeile schon, ist ohnehin nichts zu tun.
   const { error } = await supabase
     .from('homework_completions')
-    .upsert({ homework_id: homeworkId, student_id: profile.id } as never)
+    .upsert({ homework_id: homeworkId, student_id: profile.id } as never, { ignoreDuplicates: true })
   if (error) throw new Error(error.message)
 
   // Auto-Bestätigung für Veteranen braucht erhöhte Rechte (RLS verbietet
@@ -59,4 +70,5 @@ export async function toggleHomeworkCompletion(homeworkId: string, done: boolean
 
   revalidatePath('/')
   revalidatePath('/hausaufgaben')
+  return { autoConfirmed: veteran }
 }

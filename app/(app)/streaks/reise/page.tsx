@@ -23,7 +23,7 @@ export default async function ReisePage() {
 
   const [{ data: classGoal }, { data: allHw }, { count: studentCount }] = await Promise.all([
     supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
-    supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).lte('due_date', monthEnd).order('due_date', { ascending: false }),
+    supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).eq('status', 'published').lte('due_date', monthEnd).order('due_date', { ascending: false }),
     // Nur die Anzahl, kein Datensatz — Grundlage für das Vorschlagsziel.
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
   ])

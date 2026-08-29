@@ -6,6 +6,8 @@ import SpecialRolePicker from './SpecialRolePicker'
 import KlasseManageBar from './KlasseManageBar'
 import StudentHomeworkStats from './StudentHomeworkStats'
 import { gendered } from '@/lib/gender'
+import { dueInfo } from '@/lib/date'
+import { dueDateFor } from '@/lib/homework'
 import type { Homework, Profile } from '@/lib/types'
 
 interface Props {
@@ -182,6 +184,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
                     <div className="flex flex-col gap-2">
                       {items.map(hw => {
                         const done = doneIds.has(hw.id)
+                        const due = dueInfo(dueDateFor(hw))
                         return (
                           <div
                             key={hw.id}
@@ -197,10 +200,21 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
                               <div className={`font-semibold text-[14px] truncate ${done ? 'text-kh-muted line-through' : 'text-kh-dark'}`}>
                                 {hw.title}
                               </div>
-                              <div className="text-xs text-kh-muted font-medium mt-0.5">
-                                Fällig: {new Date(`${hw.due_date}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                              <div
+                                className="text-xs font-medium mt-0.5"
+                                style={{ color: done ? '#6E7E80' : due.color }}
+                                title={due.tooltip}
+                              >
+                                {done ? due.dateOnlyLabel : due.label}
                               </div>
                             </div>
+                            {!done && due.warn && (
+                              <span
+                                className="msym text-[20px] flex-shrink-0"
+                                title={due.tooltip}
+                                style={{ fontVariationSettings: "'FILL' 1", color: due.color }}
+                              >warning</span>
+                            )}
                             {done
                               ? <span className="msym text-kh-green text-xl flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                               : <span className="text-[11px] font-bold text-[#C95040] bg-[#FDECEA] px-2 py-1 rounded-full flex-shrink-0">Offen</span>

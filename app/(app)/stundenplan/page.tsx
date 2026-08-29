@@ -200,6 +200,9 @@ export default async function StundenplanPage(
       .from('homework')
       .select('id,subject,title,due_date')
       .eq('class_id', classId)
+      // Nur freigegebene HÜ — eine noch nicht bestätigte Einreichung darf
+      // keine Stunde markieren (siehe Kommentar in app/(app)/page.tsx).
+      .eq('status', 'published')
       .gte('due_date', monday <= today ? today : monday)
       .lte('due_date', friday)
 

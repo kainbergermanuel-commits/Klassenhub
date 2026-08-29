@@ -9,5 +9,7 @@ export interface StreaksSubLink {
 
 export const STREAKS_SUBLINKS: StreaksSubLink[] = [
   { href: '/streaks/reise', icon: 'map', label: 'Die Reise' },
-  { href: '/streaks/anleitung', icon: 'auto_stories', label: 'Erste Schritte' },
+  // "Erste Schritte" ist seit 2026-08 ein eigener Menüpunkt (/anleitung,
+  // Abschnitt "Hilfe") — als Unterseite war die Anleitung nur sichtbar,
+  // wenn man ohnehin schon im Abenteuer war.
 ]

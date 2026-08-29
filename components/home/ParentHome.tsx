@@ -7,7 +7,8 @@ import AttendanceParentCard, { type ChildAbsenceEntry } from './AttendanceParent
 import Avatar from '@/components/ui/Avatar'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import { flameCount } from '@/lib/streak'
-import { greeting } from '@/lib/date'
+import { greeting, dueInfo } from '@/lib/date'
+import { dueDateFor } from '@/lib/homework'
 import AnimateIn from '@/components/ui/AnimateIn'
 
 interface ParentHomeProps {
@@ -175,7 +176,9 @@ export default function ParentHome({
               </div>
             ) : (
               <div className="flex flex-col gap-2.5">
-                {childHomework.slice(0, 5).map(hw => (
+                {childHomework.slice(0, 5).map(hw => {
+                  const due = dueInfo(dueDateFor(hw))
+                  return (
                   <div key={hw.id} className="flex items-center gap-3 rounded-xl bg-[#FAF8F3] px-3 py-2.5 overflow-hidden">
                     <div
                       className="w-9 h-9 rounded-[10px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
@@ -185,17 +188,29 @@ export default function ParentHome({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-[14px] text-kh-dark truncate">{hw.title}</div>
-                      <div className={`flex items-center gap-1 text-xs font-semibold mt-0.5 ${hw.done ? 'text-kh-green' : 'text-kh-amber'}`}>
+                      <div
+                        className="flex items-center gap-1 text-xs font-semibold mt-0.5"
+                        style={{ color: hw.done ? '#2E9C6E' : due.color }}
+                        title={due.tooltip}
+                      >
                         <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 0" }}>event</span>
-                        {hw.done ? 'Erledigt' : `Fällig: ${new Date(hw.due_date).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })}`}
+                        {hw.done ? 'Erledigt' : due.label}
                       </div>
                     </div>
+                    {!hw.done && due.warn && (
+                      <span
+                        className="msym text-[20px] flex-shrink-0"
+                        title={due.tooltip}
+                        style={{ fontVariationSettings: "'FILL' 1", color: due.color }}
+                      >warning</span>
+                    )}
                     {hw.done
                       ? <span className="msym text-kh-green text-xl flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                       : <span className="text-[11px] font-bold text-[#C95040] bg-[#FDECEA] px-2 py-1 rounded-full flex-shrink-0">Offen</span>
                     }
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </AnimateIn>

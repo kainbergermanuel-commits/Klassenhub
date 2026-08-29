@@ -32,6 +32,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     ...(profile.is_admin ? [
       { href: '/admin', icon: 'admin_panel_settings', label: 'Admin' },
     ] : []),
+    { href: '/anleitung', icon: 'auto_stories', label: 'Erste Schritte', section: 'Hilfe' },
   ] : profile.role === 'student' ? [
     // Schüler-Nav: gleiche Gliederungs-Idee wie bei Lehrpersonen, aber aus
     // Kind-Sicht benannt. "Start" und "Abenteuer" bleiben wie dort ungruppiert
@@ -51,6 +52,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     ...(profile.is_admin ? [
       { href: '/admin', icon: 'admin_panel_settings', label: 'Admin' },
     ] : []),
+    { href: '/anleitung', icon: 'auto_stories', label: 'Erste Schritte', section: 'Hilfe' },
     // Einstellungen wird bewusst NICHT hier gelistet, sondern unten neben
     // "Abmelden" gerendert (Sidebar/MobileHeader).
   ] : [
@@ -68,6 +70,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     ...(profile.is_admin ? [
       { href: '/admin', icon: 'admin_panel_settings', label: 'Admin', section: 'Verwaltung' },
     ] : []),
+    { href: '/anleitung', icon: 'auto_stories', label: 'Erste Schritte', section: 'Hilfe' },
   ]
 
   return { all }
@@ -137,9 +140,12 @@ async function computeHwBadge(profile: Profile, classId: string | null): Promise
   const supabase = await createClient()
   const today = todayISO()
 
-  // Bevorstehende (aktive) HÜ der Klasse
+  // Bevorstehende (aktive) HÜ der Klasse. `gt`, nicht `gte`: eine heute
+  // fällige HÜ ist nach der Fälligkeitsregel bereits vorbei (siehe isOver in
+  // lib/date.ts). Mit `gte` zählte das Badge sie als offen, während die Seite
+  // darunter sie als versäumt führt.
   const { data: upcoming } = await supabase
-    .from('homework').select('id').eq('class_id', classId).gte('due_date', today)
+    .from('homework').select('id').eq('class_id', classId).eq('status', 'published').gt('due_date', today)
   const upcomingIds = (upcoming ?? []).map(h => h.id)
 
   // Lehrer: Anzahl aktiver HÜ

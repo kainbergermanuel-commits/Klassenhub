@@ -67,7 +67,7 @@ async function recordReachedMilestones(
   const schoolYearStart = schoolYearStartISO()
 
   const [{ data: allHw }, { data: confirmedCompletions }, { data: existing }, { data: freezes }, { data: extensions }] = await Promise.all([
-    supabase.from('homework').select('id,due_date').eq('class_id', classId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
+    supabase.from('homework').select('id,due_date').eq('class_id', classId).eq('status', 'published').gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
     supabase.from('homework_completions').select('homework_id').eq('student_id', studentId).not('confirmed_by_parent_at', 'is', null),
     supabase.from('streak_confirmations').select('milestone').eq('student_id', studentId),
     supabase.from('streak_freezes').select('homework_id').eq('student_id', studentId),

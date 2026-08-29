@@ -1,142 +1,17 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { todayISO } from '@/lib/date'
+import { addDaysISO } from '@/lib/date'
 import IconButton from '@/components/ui/IconButton'
+import DatePicker from '@/components/ui/DatePicker'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 
-const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-const MONTHS = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
-
-function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr)
-  d.setDate(d.getDate() + n)
-  return d.toISOString().slice(0, 10)
-}
-
-function tomorrowISO() {
-  return addDays(todayISO(), 1)
-}
-
-function formatDisplay(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'long' })
-}
-
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate()
-}
-
-function getFirstWeekday(year: number, month: number) {
-  // 0=Su,1=Mo…6=Sa → convert to Mo=0
-  return (new Date(year, month, 1).getDay() + 6) % 7
-}
-
-interface DatePickerProps {
-  value: string
-  min: string
-  onChange: (v: string) => void
-}
-
-function DatePicker({ value, min, onChange }: DatePickerProps) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  const sel = new Date(value)
-  const [viewYear, setViewYear] = useState(sel.getFullYear())
-  const [viewMonth, setViewMonth] = useState(sel.getMonth())
-
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [])
-
-  const today = todayISO()
-  const daysInMonth = getDaysInMonth(viewYear, viewMonth)
-  const firstWeekday = getFirstWeekday(viewYear, viewMonth)
-
-  function prevMonth() {
-    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
-    else setViewMonth(m => m - 1)
-  }
-  function nextMonth() {
-    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
-    else setViewMonth(m => m + 1)
-  }
-
-  function selectDay(day: number) {
-    const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    if (iso < min) return
-    onChange(iso)
-    setOpen(false)
-  }
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition hover:border-kh-teal/50"
-      >
-        <span>{formatDisplay(value)}</span>
-        <span className="msym text-[18px] text-kh-muted">calendar_month</span>
-      </button>
-
-      {open && (
-        <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <IconButton type="button" onClick={prevMonth} icon="chevron_left" size="sm" aria-label="Vorheriger Monat" />
-            <span className="font-extrabold text-[14px] text-kh-dark">
-              {MONTHS[viewMonth]} {viewYear}
-            </span>
-            <IconButton type="button" onClick={nextMonth} icon="chevron_right" size="sm" aria-label="Nächster Monat" />
-          </div>
-
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 mb-1">
-            {WEEKDAYS.map(d => (
-              <div key={d} className="text-center text-[11px] font-bold text-kh-muted py-1">{d}</div>
-            ))}
-          </div>
-
-          {/* Days */}
-          <div className="grid grid-cols-7 gap-y-1">
-            {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1
-              const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-              const isSelected = iso === value
-              const isToday = iso === today
-              const isPast = iso < min
-              return (
-                <button
-                  key={day}
-                  type="button"
-                  onClick={() => selectDay(day)}
-                  disabled={isPast}
-                  className={`h-8 w-full rounded-lg text-[13px] font-semibold transition-all
-                    ${isSelected ? 'bg-kh-teal text-white font-extrabold' : ''}
-                    ${!isSelected && isToday ? 'border border-kh-teal text-kh-teal' : ''}
-                    ${!isSelected && !isPast ? 'hover:bg-[#F0FAF8] text-kh-dark' : ''}
-                    ${isPast ? 'text-kh-muted/40 cursor-not-allowed' : ''}
-                  `}
-                >
-                  {day}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+/** Frühestes wählbares Fälligkeitsdatum: morgen. Eine heute fällige HÜ wäre
+ *  nach der Fälligkeitsregel im Moment des Anlegens bereits versäumt (siehe
+ *  isOver in lib/date.ts), die darf man gar nicht erst auswählen können. */
+const EARLIEST_DUE = () => addDaysISO(1)
 
 interface Props {
   classId: string
@@ -154,7 +29,7 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
   const [isPending, startTransition] = useTransition()
   const [subjectIdx, setSubjectIdx] = useState(0)
   const [title, setTitle] = useState('')
-  const [dueDate, setDueDate] = useState(tomorrowISO())
+  const [dueDate, setDueDate] = useState(EARLIEST_DUE())
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -205,7 +80,7 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
           <div>
             <label className="text-xs font-bold text-kh-dark mb-1.5 block">Fach</label>
             {subjects.length === 0 ? (
-              <p className="text-[12.5px] text-kh-muted font-medium">Noch keine Fächer angelegt — die Administration verwaltet den Fächer-Katalog unter „Fächer-Katalog".</p>
+              <p className="text-[12.5px] text-kh-muted font-medium">Noch keine Fächer angelegt. Die Administration verwaltet den Fächer-Katalog unter „Fächer-Katalog".</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {subjects.map((s, i) => (
@@ -240,7 +115,7 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
 
           <div>
             <label className="text-xs font-bold text-kh-dark mb-1.5 block">Fällig am</label>
-            <DatePicker value={dueDate} min={todayISO()} onChange={setDueDate} />
+            <DatePicker value={dueDate} min={EARLIEST_DUE()} onChange={setDueDate} />
           </div>
 
           {error && (

@@ -2,6 +2,7 @@
 
 import { useId } from 'react'
 import { Ring } from '@/components/home/statParts'
+import { todayISO, monthLabel } from '@/lib/date'
 import type { HomeworkWithStatus, Role } from '@/lib/types'
 
 interface Props {
@@ -21,11 +22,19 @@ interface Props {
 export default function HomeworkStatsCard({ homework, stats, role, studentCount }: Props) {
   const gradId = useId()
   const published = homework.filter(h => h.status === 'published')
+  // Der Ring rechnet über den LAUFENDEN MONAT, nicht über das ganze
+  // Schuljahr. Über zehn Monate gemittelt bewegt sich eine Quote kaum noch
+  // und sagt nichts mehr darüber, wie es gerade läuft. Die Chips daneben
+  // zeigen weiterhin die Gesamtzahlen des Schuljahres.
+  const thisMonth = todayISO().slice(0, 7)
+  const inMonth = published.filter(h => h.due_date.slice(0, 7) === thisMonth)
+  const monthName = monthLabel(`${thisMonth}-01`).split(' ')[0]
 
   if (role === 'teacher') {
-    const totalPossible = studentCount * published.length
     const totalDone = published.reduce((s, h) => s + (h.completion_count ?? 0), 0)
-    const pct = totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0
+    const monthPossible = studentCount * inMonth.length
+    const monthDone = inMonth.reduce((s, h) => s + (h.completion_count ?? 0), 0)
+    const pct = monthPossible > 0 ? Math.round((monthDone / monthPossible) * 100) : 0
 
     const bySubject = new Map<string, { name: string; color: string; done: number; possible: number }>()
     for (const hw of published) {
@@ -41,12 +50,12 @@ export default function HomeworkStatsCard({ homework, stats, role, studentCount 
         <GradientDefs id={gradId} />
         <div className="flex items-center gap-1.5 mb-4">
           <span className="msym text-[16px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
-          <h3 className="text-[11px] font-bold text-kh-muted uppercase tracking-wide">Klassen-Statistik</h3>
+          <h3 className="text-[11px] font-bold text-kh-muted uppercase tracking-wide">Klassen-Statistik · {monthName}</h3>
         </div>
 
         <div className="flex items-center gap-4">
           <Ring pct={pct} color={`url(#${gradId}-teal)`}>
-            <span className="text-[17px] font-extrabold text-kh-dark tabular-nums leading-none">{pct}%</span>
+            <span className="text-[17px] font-extrabold text-kh-dark tabular-nums leading-none">{monthPossible > 0 ? `${pct}%` : '–'}</span>
             <span className="text-[9px] font-bold text-kh-muted mt-0.5">Abgaben</span>
           </Ring>
           <div className="flex-1 min-w-0 flex flex-col gap-1.5">
@@ -55,6 +64,10 @@ export default function HomeworkStatsCard({ homework, stats, role, studentCount 
             <GradientChip gradient="gradient-slate" icon="event_busy" fill={0} label="vergangen" value={stats.missed} />
           </div>
         </div>
+
+        <p className="text-[10px] text-kh-muted/80 font-medium mt-2.5 leading-snug">
+          Ring: laufender Monat · Zahlen rechts: ganzes Schuljahr
+        </p>
 
         {subjectRows.length > 0 && (
           <div className="mt-4 pt-4 border-t border-kh-border/50 flex flex-col gap-2.5">
@@ -84,8 +97,8 @@ export default function HomeworkStatsCard({ homework, stats, role, studentCount 
     )
   }
 
-  const total = stats.open + stats.done + stats.missed
-  const donePct = total > 0 ? Math.round((stats.done / total) * 100) : 0
+  const monthTotal = inMonth.length
+  const donePct = monthTotal > 0 ? Math.round((inMonth.filter(h => h.done).length / monthTotal) * 100) : 0
 
   const bySubject = new Map<string, { name: string; color: string; done: number; total: number }>()
   for (const hw of published) {
@@ -101,12 +114,12 @@ export default function HomeworkStatsCard({ homework, stats, role, studentCount 
       <GradientDefs id={gradId} />
       <div className="flex items-center gap-1.5 mb-4">
         <span className="msym text-[16px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
-        <h3 className="text-[11px] font-bold text-kh-muted uppercase tracking-wide">Deine Statistik</h3>
+        <h3 className="text-[11px] font-bold text-kh-muted uppercase tracking-wide">Deine Statistik · {monthName}</h3>
       </div>
 
       <div className="flex items-center gap-4">
         <Ring pct={donePct} color={`url(#${gradId}-teal)`}>
-          <span className="text-[17px] font-extrabold text-kh-dark tabular-nums leading-none">{donePct}%</span>
+          <span className="text-[17px] font-extrabold text-kh-dark tabular-nums leading-none">{monthTotal > 0 ? `${donePct}%` : '–'}</span>
           <span className="text-[9px] font-bold text-kh-muted mt-0.5">erledigt</span>
         </Ring>
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
@@ -115,6 +128,10 @@ export default function HomeworkStatsCard({ homework, stats, role, studentCount 
           <GradientChip gradient="gradient-red" icon="cancel" fill={0} label="versäumt" value={stats.missed} />
         </div>
       </div>
+
+      <p className="text-[10px] text-kh-muted/80 font-medium mt-2.5 leading-snug">
+        Ring: laufender Monat · Zahlen rechts: ganzes Schuljahr
+      </p>
 
       {subjectRows.length > 0 && (
         <div className="mt-4 pt-4 border-t border-kh-border/50 flex flex-col gap-2.5">

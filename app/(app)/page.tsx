@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
-import { todayISO, getRelevantMondayOfWeek, getMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
-import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, VETERAN_MILESTONE, MILESTONES } from '@/lib/streak'
+import { todayISO, getRelevantMondayOfWeek, getMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber, isOver, isActionable } from '@/lib/date'
+import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, effectiveDueDate, VETERAN_MILESTONE, MILESTONES } from '@/lib/streak'
 import { countClassGoalDone, suggestGoalTarget } from '@/lib/classGoal'
 import { defaultWeeklyTemplateKeys, recentTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
@@ -93,7 +93,12 @@ export default async function HomePage() {
     // "zuletzt erledigt" (unten) bei einem Datums-Gleichstand anders sortiert
     // sein als die früheren separaten Abfragen (die selbst auch keinen
     // Tiebreaker hatten, also ohnehin nicht garantiert stabil waren).
-    supabase.from('homework').select('*').eq('class_id', activeClassId).gte('due_date', schoolYearStart).order('due_date', { ascending: false }).order('id', { ascending: false }),
+      // Nur freigegebene HÜ: `pending`-Einreichungen (hw_admin) sind noch
+      // keine echte Aufgabe und dürfen weder in Streaks noch in Zähler oder
+      // Listen einfließen. Bis 2026-08 hat das allein die RLS erledigt; seit
+      // fix-homework-read-own-pending.sql sehen Einreichende ihre eigene
+      // pending-HÜ, also muss hier explizit gefiltert werden.
+    supabase.from('homework').select('*').eq('class_id', activeClassId).eq('status', 'published').gte('due_date', schoolYearStart).order('due_date', { ascending: false }).order('id', { ascending: false }),
     supabase.from('reminders').select('*').eq('class_id', activeClassId).gte('event_date', today).order('event_date').limit(8),
     supabase.from('duties').select('*').eq('class_id', activeClassId).eq('week_start', dutyWeekStart).order('id'),
     supabase.from('events')
@@ -375,7 +380,6 @@ export default async function HomePage() {
     const allHwForStreak = homeworkAll
 
     const doneIds = new Set((completions ?? []).map(c => c.homework_id))
-    const homeworkWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: doneIds.has(h.id) }))
 
     const studentIdsS = (allStudents ?? []).map(s => s.id)
     const dutyIds = duties.map(d => d.id)
@@ -430,6 +434,24 @@ export default async function HomePage() {
       extensionsByStudentS.get(e.student_id)!.set(e.homework_id, e.extra_days)
       if (e.created_at.slice(0, 7) === currentSeason) crystalUsedThisSeasonS.add(e.student_id)
     }
+
+    // Wochenliste der Startseite: normalerweise nur bevorstehende HÜ. Eine per
+    // Zeitkristall verlängerte HÜ ist aber noch nicht vorbei und muss abhakbar
+    // bleiben — sonst wäre das Werkzeug wirkungslos. Sie kommt deshalb zurück
+    // in die Liste, obwohl ihr rohes Fälligkeitsdatum schon vergangen ist.
+    const myExtensions = extensionsByStudentS.get(user.id)
+    const extendedStillOpen = myExtensions
+      ? homeworkAll.filter(h =>
+          isOver(h.due_date, today) &&
+          isActionable(effectiveDueDate(h.due_date, h.id, myExtensions), today))
+      : []
+    const homeworkWithStatus: HomeworkWithStatus[] = [...homework, ...extendedStillOpen].map(h => ({
+      ...h,
+      done: doneIds.has(h.id),
+      ...(myExtensions?.has(h.id)
+        ? { extended_due_date: effectiveDueDate(h.due_date, h.id, myExtensions) }
+        : {}),
+    }))
 
     const myViewedIds: string[] = (myViews ?? []).map(v => v.reminder_id)
     const myDuty = duties.find(d => d.assignee_ids.includes(user.id)) ?? null

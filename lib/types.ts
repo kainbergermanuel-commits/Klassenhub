@@ -306,6 +306,17 @@ export type Database = {
 export type HomeworkWithStatus = Homework & {
   done: boolean
   completion_count?: number // only visible to teacher
+  /** Erledigung wurde von den Eltern bestätigt. Nur die bestätigte
+   *  Erledigung zählt für Flamme und Klassenziel (siehe lib/streak.ts).
+   *  Optional, weil nicht jede Seite den Status lädt. */
+  confirmed?: boolean
+  /** Wie viele Erledigungen bereits bestätigt sind (nur für Lehrer). */
+  confirmed_count?: number
+  /** Persönlich per Zeitkristall verlängerte Frist dieses Kindes
+   *  (siehe supabase/feature-hw-extension.sql). Nur gesetzt, wenn eine
+   *  Verlängerung existiert — sonst gilt due_date. Immer über
+   *  dueDateFor() aus lib/homework.ts lesen, nie direkt. */
+  extended_due_date?: string
 }
 
 export type Reminder = {

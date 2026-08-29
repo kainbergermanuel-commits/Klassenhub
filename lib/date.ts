@@ -142,3 +142,135 @@ export function greeting(from: Date = new Date()): string {
   if (h < 18) return 'Guten Tag'
   return 'Guten Abend'
 }
+
+/* ── Fälligkeitsregel ────────────────────────────────────────────────────
+ *  Eine Hausübung, die am Tag D fällig ist, muss am ABEND DES VORTAGS
+ *  erledigt sein. Am Tag D selbst ist sie vorbei und lässt sich nicht mehr
+ *  abhaken. Das ist die einzige Quelle für diese Regel: nie wieder
+ *  `due_date <= today` frei hinschreiben, sondern isOver()/isActionable().
+ *
+ *  lib/streak.ts rechnet identisch (effectiveDueDate(...) <= today), nutzt
+ *  diese Helfer aber bewusst NICHT — die Streak-Logik bleibt unangetastet.
+ *
+ *  NICHT betroffen ist die Eltern-Bestätigung: die darf jederzeit später
+ *  nachkommen und repariert die Flamme rückwirkend, weil computeStreak nur
+ *  prüft OB bestätigt wurde, nicht WANN (siehe confirmHomeworkCompletion.ts).
+ */
+
+/** Fällig am Tag D heißt: am Tag D ist es vorbei. */
+export function isOver(dueDate: string, today: string): boolean {
+  return dueDate <= today
+}
+
+/** Noch machbar — die HÜ lässt sich heute Abend erledigen. */
+export function isActionable(dueDate: string, today: string): boolean {
+  return dueDate > today
+}
+
+/* ── Fälligkeits-Anzeige ─────────────────────────────────────────────────
+ *  Eine einzige Quelle für Text, Farbe und Achtung-Icon bei Hausübungen,
+ *  damit Lehrer-, Schüler- und Eltern-Ansicht nicht auseinanderlaufen.
+ *  Bezugspunkt ist IMMER die Fälligkeit ("Morgen fällig", "In 3 Tagen"),
+ *  nie die Handlung — der Vortag-Hinweis steht im Tooltip und in der
+ *  Anleitung, damit die Zeile kurz bleibt und nicht zwei Zeitrechnungen
+ *  mischt. Relativ, wenn nah; absolut, wenn fern: ab einer Woche ist
+ *  "In 9 Tagen" schwerer zu greifen als das Datum selbst.
+ *
+ *  Es heißt "versäumt", nie "überfällig" — so steht es auch im Filter-Tab.
+ */
+
+export type DueTone = 'missed' | 'soon' | 'later'
+
+export interface DueInfo {
+  /** Kurzlabel für die Meta-Zeile einer OFFENEN HÜ, z.B. "In 3 Tagen". */
+  label: string
+  /** Neutrales Datumslabel ohne Dringlichkeit — für bereits erledigte HÜ,
+   *  bei denen ein Countdown keinen Sinn mehr ergibt. */
+  dateOnlyLabel: string
+  /** Volles Datum ausgeschrieben, z.B. "Freitag, 11. September 2026". */
+  fullDate: string
+  /** Tooltip-Text: volles Datum plus die Vortag-Regel. */
+  tooltip: string
+  tone: DueTone
+  /** Textfarbe passend zum tone (Dringlichkeit trägt die Farbe, nicht das Wort). */
+  color: string
+  /** Kalendertage bis zur Fälligkeit (negativ = vorbei, 0 = heute fällig
+   *  und damit nach der Regel bereits vorbei). */
+  days: number
+  /** Nach der Regel vorbei — identisch zu isOver(dueDate, heute). */
+  over: boolean
+  /** Achtung-Icon zeigen: genau am letzten machbaren Tag (morgen fällig).
+   *  Bei versäumten HÜ bewusst NICHT, dort sagt die rote Pille schon alles.
+   *  Nur für offene HÜ sinnvoll (mit !done kombinieren). */
+  warn: boolean
+}
+
+const DUE_COLORS: Record<DueTone, string> = {
+  missed: '#C95040',
+  soon: '#C98A2B',
+  later: '#6E7E80',
+}
+
+/** Volles Datum ausgeschrieben — für Tooltips. */
+export function fullDateLabel(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString('de-AT', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
+}
+
+/** Kurzes Datum, z.B. "Fr., 11. Sep." */
+export function shortDateLabel(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString('de-AT', {
+    weekday: 'short', day: 'numeric', month: 'short',
+  })
+}
+
+/** Wochentag des Vortags ("Donnerstag") — für den Regel-Hinweis im Tooltip. */
+function weekdayBefore(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`)
+  d.setDate(d.getDate() - 1)
+  return d.toLocaleDateString('de-AT', { weekday: 'long' })
+}
+
+export function dueInfo(dateStr: string): DueInfo {
+  const days = daysUntil(dateStr)
+  const over = days <= 0
+  const fullDate = fullDateLabel(dateStr)
+  const short = shortDateLabel(dateStr)
+
+  let label: string
+  let tone: DueTone
+
+  if (over) {
+    tone = 'missed'
+    label = 'Versäumt'
+  } else if (days === 1) {
+    tone = 'soon'
+    label = 'Morgen fällig'
+  } else if (days <= 3) {
+    tone = 'soon'
+    label = `In ${days} Tagen`
+  } else if (days <= 6) {
+    tone = 'later'
+    label = `In ${days} Tagen`
+  } else {
+    tone = 'later'
+    label = `Fällig: ${short}`
+  }
+
+  const tooltip = over
+    ? `Fällig war am ${fullDate}.`
+    : `Fällig am ${fullDate}. Bis ${weekdayBefore(dateStr)} Abend erledigen.`
+
+  return {
+    label,
+    dateOnlyLabel: over ? `Fällig war: ${short}` : `Fällig: ${short}`,
+    fullDate,
+    tooltip,
+    tone,
+    color: DUE_COLORS[tone],
+    days,
+    over,
+    warn: days === 1,
+  }
+}

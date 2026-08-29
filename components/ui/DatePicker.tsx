@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import IconButton from '@/components/ui/IconButton'
+import { todayISO } from '@/lib/date'
 
 const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
@@ -24,10 +25,13 @@ function formatDisplay(iso: string) {
  *
  * `min` ist optional: Eltern dürfen Abwesenheiten auch rückwirkend melden,
  * während Hausübungen/Termine nicht in der Vergangenheit liegen sollen.
+ *
+ * Der heutige Tag bekommt einen dezenten Rahmen — als Orientierungspunkt im
+ * Raster, auch wenn er (z.B. bei Hausübungen) gar nicht wählbar ist.
  */
 export default function DatePicker({
-  value, min, onChange,
-}: { value: string; min?: string; onChange: (v: string) => void }) {
+  value, min, onChange, placeholder = 'Datum wählen',
+}: { value: string; min?: string; onChange: (v: string) => void; placeholder?: string }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const sel = new Date(`${value}T00:00:00`)
@@ -50,6 +54,7 @@ export default function DatePicker({
     setViewMonth(d.getMonth())
   }, [value])
 
+  const today = todayISO()
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
   const firstWeekday = getFirstWeekday(viewYear, viewMonth)
 
@@ -68,7 +73,7 @@ export default function DatePicker({
         onClick={() => setOpen(o => !o)}
         className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark text-left flex items-center justify-between gap-2 focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition hover:border-kh-teal/50"
       >
-        <span>{formatDisplay(value)}</span>
+        <span>{value ? formatDisplay(value) : placeholder}</span>
         <span className="msym text-[18px] text-kh-muted">calendar_month</span>
       </button>
       {open && (
@@ -88,10 +93,12 @@ export default function DatePicker({
               const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               const isSelected = iso === value
               const isPast = !!min && iso < min
+              const isToday = iso === today
               return (
                 <button key={day} type="button" onClick={() => selectDay(day)} disabled={isPast}
                   className={`h-8 w-full rounded-lg text-[13px] font-semibold transition-all
                     ${isSelected ? 'bg-kh-teal text-white font-extrabold' : ''}
+                    ${!isSelected && isToday ? 'border border-kh-teal text-kh-teal' : ''}
                     ${!isSelected && !isPast ? 'hover:bg-[#F0FAF8] text-kh-dark' : ''}
                     ${isPast ? 'text-kh-muted/40 cursor-not-allowed' : ''}`}
                 >
