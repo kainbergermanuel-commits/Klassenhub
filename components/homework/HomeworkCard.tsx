@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { todayISO, addDaysISO, dueInfo, isOver, isActionable } from '@/lib/date'
@@ -94,9 +94,19 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
   const [actionError, setActionError] = useState<string | null>(null)
   const [optimisticConfirmed, setOptimisticConfirmed] = useState(hw.confirmed === true)
   const [confirming, setConfirming] = useState(false)
+  // Feier-Mikromoment beim Abhaken (siehe .animate-hw-* in app/globals.css).
+  // Nur beim Erledigen, nie beim Zurücknehmen; der Timer erlaubt das
+  // erneute Abspielen nach einem Zurücknehmen.
+  const [celebrate, setCelebrate] = useState(false)
   const { confirm, dialog } = useConfirm()
   const [showStudents, setShowStudents] = useState(false)
   const [students, setStudents] = useState<StudentRow[] | null>(null)
+
+  useEffect(() => {
+    if (!celebrate) return
+    const t = setTimeout(() => setCelebrate(false), 900)
+    return () => clearTimeout(t)
+  }, [celebrate])
 
   const status = getStatus({ ...hw, confirmed: hw.confirmed === undefined ? undefined : optimisticConfirmed }, optimisticDone, role)
 
@@ -106,6 +116,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
     if (role !== 'student' || !status.canToggle) return
     const next = !optimisticDone
     setOptimisticDone(next)
+    setCelebrate(next)
     // Häkchen entfernt = Erledigung gelöscht, damit ist auch eine frühere
     // Bestätigung weg. Veteranen werden serverseitig sofort mitbestätigt.
     setOptimisticConfirmed(false)
@@ -202,7 +213,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
     <>
       {dialog}
       <div
-        className="rounded-2xl p-4 flex gap-3 items-start shadow-[0_8px_16px_rgba(20,40,45,.10)]"
+        className={`rounded-2xl p-4 flex gap-3 items-start shadow-[0_8px_16px_rgba(20,40,45,.10)] ${celebrate ? 'animate-hw-card' : ''}`}
         style={{
           background: `linear-gradient(to bottom right, #ffffff 0%, #ffffff 55%, ${hw.subject_color}29 100%)`,
           border: status.cardBorder,
@@ -225,11 +236,15 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
             {status.pillLabel}
           </span>
 
-          <div
-            className="font-bold text-[15.5px] mt-2"
-            style={{ color: optimisticDone ? '#7C8A89' : '#15363F', textDecoration: optimisticDone ? 'line-through' : 'none' }}
-          >
-            {hw.title}
+          <div className="font-bold text-[15.5px] mt-2" style={{ color: optimisticDone ? '#7C8A89' : '#15363F' }}>
+            {/* Strich auf einem inline-Element, damit er über den Text läuft
+                und nicht über die volle Breite (siehe globals.css). */}
+            <span
+              className={celebrate ? 'animate-hw-strike' : undefined}
+              style={{ textDecoration: optimisticDone && !celebrate ? 'line-through' : 'none' }}
+            >
+              {hw.title}
+            </span>
           </div>
           <div
             className="flex items-center gap-1 text-[12.5px] font-semibold mt-0.5"
@@ -270,7 +285,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
             onClick={toggleDone}
             disabled={!status.canToggle && !optimisticDone}
             aria-label={optimisticDone ? 'Als offen markieren' : 'Als erledigt markieren'}
-            className="flex-shrink-0 w-[30px] h-[30px] rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className={`flex-shrink-0 w-[30px] h-[30px] rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed ${celebrate ? 'animate-hw-check' : ''}`}
             style={optimisticDone
               ? { background: '#2E9C6E' }
               : status.canToggle
@@ -279,7 +294,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
             }
           >
             {optimisticDone && (
-              <span className="msym text-white text-[19px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>check</span>
+              <span className={`msym text-white text-[19px] ${celebrate ? 'animate-hw-check-icon' : ''}`} style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>check</span>
             )}
           </button>
         )}

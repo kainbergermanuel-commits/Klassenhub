@@ -57,6 +57,70 @@
     100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(15,138,130,0); }
   }
   .animate-riddle-solve { animation: riddle-solve 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* Feier-Mikromoment beim Abhaken einer Hausübung (Prinzip 2: Belohnung
+     feiert). Gleiche Sprache wie riddle-solve: einmalig, sanft, kein
+     dauerhaftes Zappeln. Feuert NUR beim Erledigen, nie beim Zurücknehmen.
+     Vier Teile, die zusammen 0,85s dauern: der Kreis poppt und wirft einen
+     grünen Halo, das Häkchen skaliert ein, die Zeile bekommt einen kurzen
+     grünen Hauch und hebt sich, der Titel streicht sich durch.
+     Der Halo bleibt bei 10px Spread — die Zeile auf der Startseite hat
+     overflow-hidden und nur 12px Innenabstand, mehr würde rechts abgeschnitten. */
+  @keyframes hw-pop {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.22); }
+    65%  { transform: scale(0.96); }
+    100% { transform: scale(1); }
+  }
+  @keyframes hw-halo {
+    0%   { box-shadow: 0 0 0 0 rgba(46,156,110,.45); }
+    100% { box-shadow: 0 0 0 10px rgba(46,156,110,0); }
+  }
+  @keyframes hw-check-in {
+    0%   { transform: scale(.3); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes hw-wash {
+    0%   { background-color: #FAF8F3; }
+    30%  { background-color: #E4F3EC; }
+    100% { background-color: #FAF8F3; }
+  }
+  @keyframes hw-glow {
+    0%   { box-shadow: 0 8px 16px rgba(20,40,45,.10), 0 0 0 0 rgba(46,156,110,0); }
+    30%  { box-shadow: 0 8px 16px rgba(20,40,45,.10), 0 0 0 4px rgba(46,156,110,.20); }
+    100% { box-shadow: 0 8px 16px rgba(20,40,45,.10), 0 0 0 0 rgba(46,156,110,0); }
+  }
+  @keyframes hw-lift {
+    0%   { transform: translateY(0); }
+    40%  { transform: translateY(-3px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes hw-strike { from { background-size: 0% 1.6px; } to { background-size: 100% 1.6px; } }
+
+  .animate-hw-check { animation: hw-pop .5s cubic-bezier(.22,1,.36,1), hw-halo .6s ease-out; }
+  .animate-hw-check-icon { animation: hw-check-in .4s cubic-bezier(.22,1,.36,1) .08s both; }
+  /* Zeilen-Variante (Startseite): Hauch über der Flächenfarbe. */
+  .animate-hw-row { animation: hw-wash .85s ease-out, hw-lift .5s cubic-bezier(.22,1,.36,1); }
+  /* Karten-Variante (/hausaufgaben): dort liegt ein Verlauf als
+     background-image, ein background-color-Hauch wäre unsichtbar — deshalb
+     ein grüner Schein statt einer Waschung. */
+  .animate-hw-card { animation: hw-glow .85s ease-out, hw-lift .5s cubic-bezier(.22,1,.36,1); }
+  /* Durchstreichen als Hintergrundlinie statt text-decoration, weil nur die
+     animierbar ist. Gehört auf ein INLINE-Element, sonst zieht der Strich
+     über die volle Blockbreite statt über den Text. */
+  .animate-hw-strike {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 55%;
+    background-size: 0% 1.6px;
+    animation: hw-strike .45s cubic-bezier(.22,1,.36,1) .12s both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-hw-check, .animate-hw-check-icon, .animate-hw-row,
+    .animate-hw-card, .animate-hw-strike { animation: none; }
+  }
 }
 
 @layer components {

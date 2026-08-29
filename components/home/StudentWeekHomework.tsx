@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { todayISO, dueInfo, isActionable } from '@/lib/date'
@@ -22,12 +22,24 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [done, setDone] = useState(hw.done)
+  // Feier-Mikromoment: läuft NUR beim Erledigen, nie beim Zurücknehmen.
+  // Der Timer setzt das Flag zurück, damit die Animation nach einem
+  // Zurücknehmen erneut abspielen kann (eine Klasse, die stehen bleibt,
+  // würde beim zweiten Mal nichts mehr auslösen).
+  const [celebrate, setCelebrate] = useState(false)
   const canToggle = isActionable(dueDateFor(hw), TODAY)
+
+  useEffect(() => {
+    if (!celebrate) return
+    const t = setTimeout(() => setCelebrate(false), 900)
+    return () => clearTimeout(t)
+  }, [celebrate])
 
   async function toggle() {
     if (!canToggle) return
     const next = !done
     setDone(next)
+    setCelebrate(next)
     await toggleHomeworkCompletion(hw.id, next)
     startTransition(() => router.refresh())
   }
@@ -37,7 +49,7 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
   const statusText = done ? 'Erledigt' : due.label
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-[#FAF8F3] px-3 py-2.5 overflow-hidden">
+    <div className={`flex items-center gap-3 rounded-xl bg-[#FAF8F3] px-3 py-2.5 overflow-hidden ${celebrate ? 'animate-hw-row' : ''}`}>
       <div
         className="w-9 h-9 rounded-[10px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
         style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}
@@ -45,11 +57,17 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
         {hw.subject_short}
       </div>
       <div className="flex-1 min-w-0">
-        <div
-          className="font-semibold text-[14px] truncate"
-          style={{ color: done ? '#7C8A89' : '#15363F', textDecoration: done ? 'line-through' : 'none' }}
-        >
-          {hw.title}
+        <div className="font-semibold text-[14px] truncate" style={{ color: done ? '#7C8A89' : '#15363F' }}>
+          {/* Der Strich sitzt auf einem inline-Element, damit er über den Text
+              läuft und nicht über die volle Spaltenbreite. Während der
+              Animation zeichnet ihn die CSS-Klasse, danach übernimmt das
+              normale line-through. */}
+          <span
+            className={celebrate ? 'animate-hw-strike' : undefined}
+            style={{ textDecoration: done && !celebrate ? 'line-through' : 'none' }}
+          >
+            {hw.title}
+          </span>
         </div>
         <div
           className="flex items-center gap-1 text-xs font-semibold mt-0.5"
@@ -67,7 +85,7 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
         onClick={toggle}
         disabled={!canToggle}
         aria-label={done ? 'Als offen markieren' : 'Als erledigt markieren'}
-        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all disabled:cursor-not-allowed"
+        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all disabled:cursor-not-allowed ${celebrate ? 'animate-hw-check' : ''}`}
         style={done
           ? { background: '#2E9C6E' }
           : canToggle
@@ -75,7 +93,7 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
             : { border: '2.5px solid #F5D5D0' }
         }
       >
-        {done && <span className="msym text-white text-[17px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>check</span>}
+        {done && <span className={`msym text-white text-[17px] ${celebrate ? 'animate-hw-check-icon' : ''}`} style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>check</span>}
       </button>
     </div>
   )
