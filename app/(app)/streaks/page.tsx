@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO, localDateOf, todayLocal, getWeekNumber } from '@/lib/date'
+import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO, localDateOf, todayLocal, getWeekNumber, isActionable } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp } from '@/lib/streak'
 import { computeQuestProgress, defaultWeeklyTemplateKeys, recentTemplateKeys, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
@@ -228,7 +228,7 @@ export default async function StreaksPage() {
       .map(t => computeQuestProgress(t, questCtx, choiceByTemplate.get(t.key)))
 
     // Heldenbuch-Guide-Notiz-Signale festhalten (Scope siehe oben)
-    hbOpenHomework = (allHwDesc ?? []).filter(h => h.due_date > today && !(doneByStudent.get(profile.id)?.has(h.id))).length
+    hbOpenHomework = (allHwDesc ?? []).filter(h => isActionable(h.due_date, today) && !(doneByStudent.get(profile.id)?.has(h.id))).length
     hbDutyName = myDuties[0]?.duty_name ?? null
     hbDutyKeptUp = keptUpStudents.has(profile.id)
     hbQuestsDone = questsForMe.filter(q => q.done).length

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { pctOf, Ring, Sparkline, SectionLabel } from '@/components/home/statParts'
-import { localDateOf } from '@/lib/date'
+import { localDateOf, isOver } from '@/lib/date'
 import type { Homework } from '@/lib/types'
 
 interface SubjectInfo { label: string; short: string; color: string }
@@ -78,7 +78,7 @@ export default function StudentHomeworkStats({
   // Verlauf nur über bereits fällige HÜ — nicht fällige als "0" zu zeigen
   // sähe wie ein verpasster Termin aus, ist aber nur "noch nicht dran".
   const sparkValues = [...filtered]
-    .filter(h => h.due_date <= today)
+    .filter(h => isOver(h.due_date, today))
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
     .slice(-6)
     .map(h => (isDone(h) ? 100 : 0))

@@ -117,7 +117,7 @@ export default async function HomePage() {
   // abgefragt — Fenster 2 (Schuljahr) enthält Fenster 1 (bevorstehend) ohnehin
   // komplett, da der Schuljahresbeginn immer vor heute liegt.
   const homeworkAll = homeworkRaw ?? []
-  const homework = homeworkAll.filter(h => h.due_date > today).reverse() // aufsteigend für die Anzeige-Liste
+  const homework = homeworkAll.filter(h => isActionable(h.due_date, today)).reverse() // aufsteigend für die Anzeige-Liste
   const upcomingReminders: Reminder[] = remindersArr ?? []
   const duties: Duty[] = weekDuties ?? []
 
@@ -170,7 +170,7 @@ export default async function HomePage() {
     // Fensters, das oben (homeworkAll) schon geladen ist — hier nur noch
     // gefiltert/geschnitten statt neu abgefragt.
     const allHwForStreaks = homeworkAll
-    const recentHw = homeworkAll.filter(h => h.due_date <= today).slice(0, 3)
+    const recentHw = homeworkAll.filter(h => isOver(h.due_date, today)).slice(0, 3)
 
     const allHwIds = allHwForStreaks.map(h => h.id)
     const { data: allCompletions } = allHwIds.length > 0
@@ -272,7 +272,7 @@ export default async function HomePage() {
     // (ältest → neuest). Beantwortet "wird es besser oder schlechter?", was
     // eine einzelne Momentaufnahme nicht kann. homeworkAll ist absteigend
     // sortiert, deshalb slice-dann-reverse.
-    const pastHw = homeworkAll.filter(h => h.due_date <= today)
+    const pastHw = homeworkAll.filter(h => isOver(h.due_date, today))
     const hwHistory = pastHw.slice(0, 6).reverse()
       .map(h => pctOfNum(completionCountByHw.get(h.id) ?? 0, studentCount ?? 0))
     const hwTrend = hwHistory.length >= 2
