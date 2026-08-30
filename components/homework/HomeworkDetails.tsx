@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 /**
  * Die Details einer Hausübung, inline unter der Aufgabe.
@@ -23,11 +23,34 @@ export default function HomeworkDetails({
   // Nur im zugeklappten Zustand messen: offen sind scrollHeight und
   // clientHeight zwangsläufig gleich, die Messung würde „mehr" fälschlich
   // verschwinden lassen und damit auch den Weg zurück.
-  useLayoutEffect(() => {
+  //
+  // useEffect statt useLayoutEffect: die Komponente wird server-gerendert,
+  // und useLayoutEffect warnt dort. Der Knopf erscheint dadurch einen Frame
+  // später, was niemand sieht.
+  useEffect(() => {
     if (open) return
     const el = ref.current
     if (!el) return
-    setIsTruncated(el.scrollHeight > el.clientHeight + 1)
+    const measure = () => setIsTruncated(el.scrollHeight > el.clientHeight + 1)
+    measure()
+
+    // Einmal messen reicht nicht. Ändert sich die Breite (Drehen, Fenster,
+    // Sidebar) oder lädt die Schrift nach, verschiebt sich der Zeilenumbruch.
+    // Ohne Nachmessen fehlte „mehr", obwohl der Text abgeschnitten ist — das
+    // Kind käme dann gar nicht mehr an den Rest der Aufgabe.
+    let cancelled = false
+    // ResizeObserver deckt Drehen, Fenstergröße und Sidebar ab. Wo es ihn
+    // nicht gibt, bleibt window.resize als gröberer Rückfall — besser als
+    // eine Messung, die für immer von der ersten Sekunde stammt.
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    if (ro) ro.observe(el)
+    else window.addEventListener('resize', measure)
+    document.fonts?.ready.then(() => { if (!cancelled) measure() })
+    return () => {
+      cancelled = true
+      if (ro) ro.disconnect()
+      else window.removeEventListener('resize', measure)
+    }
   }, [text, clamp, open])
 
   if (!text.trim()) return null

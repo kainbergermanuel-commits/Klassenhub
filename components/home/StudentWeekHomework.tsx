@@ -28,6 +28,7 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
   // Zurücknehmen erneut abspielen kann (eine Klasse, die stehen bleibt,
   // würde beim zweiten Mal nichts mehr auslösen).
   const [celebrate, setCelebrate] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const canToggle = isActionable(dueDateFor(hw), TODAY)
 
   useEffect(() => {
@@ -41,13 +42,22 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
     const next = !done
     setDone(next)
     setCelebrate(next)
-    await toggleHomeworkCompletion(hw.id, next)
-    startTransition(() => router.refresh())
+    setError(null)
+    try {
+      await toggleHomeworkCompletion(hw.id, next)
+      startTransition(() => router.refresh())
+    } catch {
+      // Zurückrollen statt still zu lügen: sonst steht der Haken, obwohl
+      // in der Datenbank nichts angekommen ist.
+      setDone(!next)
+      setCelebrate(false)
+      setError('Nicht gespeichert. Nochmal tippen.')
+    }
   }
 
   const due = dueInfo(dueDateFor(hw))
-  const statusColor = done ? '#2E9C6E' : due.color
-  const statusText = done ? 'Erledigt' : due.label
+  const statusColor = error ? '#C95040' : done ? '#2E9C6E' : due.color
+  const statusText = error ?? (done ? 'Erledigt' : due.label)
 
   return (
     <div className={`flex items-center gap-3 rounded-xl bg-[#FAF8F3] px-3 py-2.5 overflow-hidden ${celebrate ? 'animate-hw-row' : ''}`}>
@@ -75,8 +85,8 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
           style={{ color: statusColor }}
           title={due.tooltip}
         >
-          <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 0" }}>event</span>
-          {statusText} · {hw.subject}
+          <span className="msym text-[12px]" style={{ fontVariationSettings: "'FILL' 0" }}>{error ? 'error' : 'event'}</span>
+          {statusText}{error ? '' : ` · ${hw.subject}`}
         </div>
         {/* Eine Zeile Vorschau, aufklappbar — die Startseiten-Zeile ist
             dichter als die große Karte auf /hausaufgaben. */}

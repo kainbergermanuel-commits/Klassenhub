@@ -118,14 +118,26 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
   async function toggleDone() {
     if (role !== 'student' || !status.canToggle) return
     const next = !optimisticDone
+    const prevConfirmed = optimisticConfirmed
     setOptimisticDone(next)
     setCelebrate(next)
     // Häkchen entfernt = Erledigung gelöscht, damit ist auch eine frühere
     // Bestätigung weg. Veteranen werden serverseitig sofort mitbestätigt.
     setOptimisticConfirmed(false)
-    const { autoConfirmed } = await toggleHomeworkCompletion(hw.id, next)
-    if (next && autoConfirmed) setOptimisticConfirmed(true)
-    startTransition(() => router.refresh())
+    setActionError(null)
+    try {
+      const { autoConfirmed } = await toggleHomeworkCompletion(hw.id, next)
+      if (next && autoConfirmed) setOptimisticConfirmed(true)
+      startTransition(() => router.refresh())
+    } catch {
+      // Zurückrollen. Ohne das zeigte die Karte weiter „erledigt", während
+      // die Datenbank nichts davon weiß — der schlimmste stille Fehler im
+      // Feature, weil das Kind sich darauf verlässt.
+      setOptimisticDone(!next)
+      setOptimisticConfirmed(prevConfirmed)
+      setCelebrate(false)
+      setActionError('Konnte nicht gespeichert werden. Bitte erneut versuchen.')
+    }
   }
 
   async function deleteHw() {
@@ -164,7 +176,10 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
 
   async function openStudents() {
     setShowStudents(true)
-    if (students !== null) return
+    // Bei jedem Öffnen neu laden. Hakt ein Kind zwischendurch ab, wäre eine
+    // einmal gecachte Liste dauerhaft falsch — die Karte wird durch
+    // router.refresh() nicht neu erzeugt. Die alte Liste bleibt so lange
+    // stehen, bis die neue da ist, deshalb kein Flackern.
     const supabase = createClient()
     const [{ data: allStudents }, { data: completions }, { data: extensions }] = await Promise.all([
       supabase.from('profiles').select('id, full_name, avatar_color, avatar_seed, avatar_hair_color, avatar_skin_color').eq('class_id', hw.class_id).eq('role', 'student').order('full_name'),
