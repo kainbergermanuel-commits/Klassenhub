@@ -140,6 +140,18 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
     }
   }
 
+  /** Felder beim ÖFFNEN aus den aktuellen Daten setzen, nicht nur einmal beim
+   *  Mounten. Sonst taucht ein abgebrochener Entwurf beim nächsten Öffnen
+   *  wieder auf, und Änderungen einer anderen Lehrperson wären nicht zu sehen. */
+  function openEdit() {
+    setEditTitle(hw.title)
+    setEditDate(hw.due_date)
+    setEditSubject(hw.subject)
+    setEditDetails(hw.details ?? '')
+    setActionError(null)
+    setEditing(true)
+  }
+
   async function deleteHw() {
     const ok = await confirm({
       title: 'Hausübung löschen?',
@@ -352,7 +364,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
               )}
             </div>
             <div className="flex gap-1.5 text-[#B6C0BE]">
-              <button onClick={() => setEditing(true)} aria-label="Hausübung bearbeiten" className="msym text-[19px] hover:text-kh-teal transition-colors">edit</button>
+              <button onClick={openEdit} aria-label="Hausübung bearbeiten" className="msym text-[19px] hover:text-kh-teal transition-colors">edit</button>
               <button onClick={deleteHw} aria-label="Hausübung löschen" className="msym text-[19px] hover:text-kh-red transition-colors">delete</button>
             </div>
           </div>

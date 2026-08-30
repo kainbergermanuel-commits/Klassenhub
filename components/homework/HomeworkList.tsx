@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import HomeworkCard from './HomeworkCard'
+import HomeworkDetails from './HomeworkDetails'
 import HomeworkStatsCard from './HomeworkStatsCard'
 import AddHomeworkModal from './AddHomeworkModal'
 import { useRouter } from 'next/navigation'
@@ -425,6 +426,9 @@ function OwnPendingCard({ hw }: { hw: HomeworkWithStatus }) {
         <div className="text-xs text-kh-muted font-medium mt-0.5" title={due.tooltip}>
           {hw.subject} · {due.dateOnlyLabel}
         </div>
+        {/* Damit die einreichende Person nachlesen kann, was sie geschrieben
+            hat — die HÜ ist bis zur Freigabe sonst nirgends einsehbar. */}
+        {hw.details && <HomeworkDetails text={hw.details} clamp={2} className="mt-1" />}
       </div>
       <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#F8ECD6] text-kh-amber flex-shrink-0">
         Wartet
@@ -448,6 +452,9 @@ function PendingHomeworkCard({ hw, onConfirm, onReject }: { hw: HomeworkWithStat
         <div className="text-xs font-medium mt-0.5" style={{ color: due.color }} title={due.tooltip}>
           {hw.subject} · {due.label}
         </div>
+        {/* Ohne die Details gäbe die Lehrperson Text für die ganze Klasse
+            frei, den sie nie gesehen hat. */}
+        {hw.details && <HomeworkDetails text={hw.details} clamp={2} className="mt-1" />}
       </div>
       <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#F8ECD6] text-kh-amber flex-shrink-0 max-sm:hidden">Ausstehend</span>
       <button
