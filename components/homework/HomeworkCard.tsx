@@ -11,6 +11,7 @@ import { confirmHomeworkCompletion } from '@/app/actions/confirmHomeworkCompleti
 import Avatar from '@/components/ui/Avatar'
 import DatePicker from '@/components/ui/DatePicker'
 import HomeworkDetails from './HomeworkDetails'
+import SubjectPicker from './SubjectPicker'
 import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 
@@ -446,25 +447,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
                 className="w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
               />
               {subjects.length > 0 && (
-                <div>
-                  <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Fach</label>
-                  <div className="flex flex-wrap gap-2">
-                    {subjects.map(sub => (
-                      <button
-                        key={sub.label}
-                        type="button"
-                        onClick={() => setEditSubject(sub.label)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold transition-all"
-                        style={sub.label === editSubject
-                          ? { background: sub.color, color: '#fff' }
-                          : { background: '#F6F3ED', color: '#46565A' }
-                        }
-                      >
-                        {sub.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <SubjectPicker subjects={subjects} value={editSubject} onChange={setEditSubject} />
               )}
               <div>
                 <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5" htmlFor={`hw-details-${hw.id}`}>

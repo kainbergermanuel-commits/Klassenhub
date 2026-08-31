@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { addDaysISO } from '@/lib/date'
 import IconButton from '@/components/ui/IconButton'
 import DatePicker from '@/components/ui/DatePicker'
+import SubjectPicker from './SubjectPicker'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 
 /** Frühestes wählbares Fälligkeitsdatum: morgen. Eine heute fällige HÜ wäre
@@ -83,29 +84,11 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="text-xs font-bold text-kh-dark mb-1.5 block">Fach</label>
-            {subjects.length === 0 ? (
-              <p className="text-[12.5px] text-kh-muted font-medium">Noch keine Fächer angelegt. Die Administration verwaltet den Fächer-Katalog unter „Fächer-Katalog".</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {subjects.map((s, i) => (
-                  <button
-                    key={s.label}
-                    type="button"
-                    onClick={() => setSubjectIdx(i)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold transition-all"
-                    style={i === subjectIdx
-                      ? { background: s.color, color: '#fff' }
-                      : { background: '#F6F3ED', color: '#46565A' }
-                    }
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <SubjectPicker
+            subjects={subjects}
+            value={subject?.label ?? ''}
+            onChange={label => setSubjectIdx(subjects.findIndex(x => x.label === label))}
+          />
 
           <div>
             <label className="text-xs font-bold text-kh-dark mb-1.5 block" htmlFor="hw-title">Aufgabe</label>
