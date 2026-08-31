@@ -28,12 +28,24 @@ function formatDisplay(iso: string) {
  *
  * Der heutige Tag bekommt einen dezenten Rahmen — als Orientierungspunkt im
  * Raster, auch wenn er (z.B. bei Hausübungen) gar nicht wählbar ist.
+ *
+ * Der Kalender klappt nach unten auf, sofern darunter Platz ist, sonst nach
+ * oben. Bewusst gemessen statt fest verdrahtet: im HÜ-Dialog sitzt das Feld
+ * ganz unten (nach unten wäre es abgeschnitten), in der Anwesenheit dagegen
+ * weit oben (nach oben wäre es abgeschnitten).
  */
+
+/** Geschätzte Höhe des aufgeklappten Kalenders: Kopfzeile, Wochentage und bis
+ *  zu sechs Wochenzeilen. Eine Schätzung genügt, weil nur die Richtung davon
+ *  abhängt und die Panelhöhe kaum schwankt. */
+const PANEL_HEIGHT = 330
 export default function DatePicker({
   value, min, onChange, placeholder = 'Datum wählen',
 }: { value: string; min?: string; onChange: (v: string) => void; placeholder?: string }) {
   const [open, setOpen] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const sel = new Date(`${value}T00:00:00`)
   const [viewYear, setViewYear] = useState(sel.getFullYear())
   const [viewMonth, setViewMonth] = useState(sel.getMonth())
@@ -60,6 +72,26 @@ export default function DatePicker({
 
   function prevMonth() { if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) } else setViewMonth(m => m - 1) }
   function nextMonth() { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) } else setViewMonth(m => m + 1) }
+  /** Richtung beim Öffnen festlegen: nach oben nur, wenn unten zu wenig Platz
+   *  ist UND oben mehr. Sonst bleibt es beim gewohnten Aufklappen nach unten. */
+  function toggleOpen() {
+    if (!open) {
+      const r = triggerRef.current?.getBoundingClientRect()
+      const vh = window.innerHeight
+      // vh > 0 absichern: liefert die Umgebung keine sinnvolle Fensterhöhe,
+      // ergäbe die Rechnung durchweg "nach oben". Dann lieber beim
+      // gewohnten Verhalten bleiben.
+      if (r && vh > 0) {
+        const below = vh - r.bottom
+        const above = r.top
+        setDropUp(below < PANEL_HEIGHT && above > below)
+      } else {
+        setDropUp(false)
+      }
+    }
+    setOpen(o => !o)
+  }
+
   function selectDay(day: number) {
     const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     if (min && iso < min) return
@@ -69,15 +101,16 @@ export default function DatePicker({
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={toggleOpen}
         className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark text-left flex items-center justify-between gap-2 focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition hover:border-kh-teal/50"
       >
         <span>{value ? formatDisplay(value) : placeholder}</span>
         <span className="msym text-[18px] text-kh-muted">calendar_month</span>
       </button>
       {open && (
-        <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
+        <div className={`absolute z-50 left-0 ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'} bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]`}>
           <div className="flex items-center justify-between mb-3">
             <IconButton type="button" onClick={prevMonth} icon="chevron_left" size="sm" aria-label="Vorheriger Monat" />
             <span className="font-extrabold text-[14px] text-kh-dark">{MONTHS[viewMonth]} {viewYear}</span>
