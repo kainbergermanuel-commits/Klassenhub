@@ -159,7 +159,12 @@ function Pill({ icon, iconColor, label, children }: { icon: string; iconColor: s
         <span className="msym text-[14px]" style={{ color: iconColor, fontVariationSettings: "'FILL' 1" }}>{icon}</span>
         {label}
       </span>
-      <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-20 hidden group-hover/pill:block w-max max-w-[220px] bg-white rounded-xl shadow-[0_8px_20px_rgba(20,40,45,.22)] p-2.5 text-left">
+      {/* Nach OBEN und rechtsbündig. Die Pillen sitzen in der letzten Zeile der
+          Karte und sind rechts ausgerichtet: nach unten lief der Tooltip aus
+          der Karte heraus (im Zweig ohne Guide-Portrait schneidet das
+          overflow-hidden der Karte ihn dann ganz ab), und mittig zentriert
+          ragte er bei der rechten Pille über den rechten Kartenrand. */}
+      <span className="pointer-events-none absolute bottom-full right-0 mb-1.5 z-30 hidden group-hover/pill:block w-max max-w-[220px] bg-white rounded-xl shadow-[0_8px_20px_rgba(20,40,45,.22)] p-2.5 text-left">
         {children}
       </span>
     </span>
