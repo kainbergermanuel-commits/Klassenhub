@@ -23,9 +23,7 @@ interface ParentHomeProps {
   childHomework: HomeworkWithStatus[]
   reminders: Reminder[]
   upcomingEvents: AgendaEvent[]
-  /** Eigener Streak des Kindes – sofort sichtbar (auch unbestätigt). Bestimmt die Zahl. */
-  childStreak: number
-  /** Eltern-bestätigter Streak des Kindes – verdient die Flammen (Live-Spiegel). */
+  /** Eltern-bestätigter Streak des Kindes – bestimmt die Flammen in der Kopfzeile. */
   childConfirmedStreak: number
   pendingConfirmations: PendingConfirmation[]
   /** Botenfeder (Balance-Fahrplan Phase 3): HÜ-IDs, bei denen das Kind aktiv
@@ -41,110 +39,43 @@ interface ParentHomeProps {
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childStreak, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, agenda, childStats,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, agenda, childStats,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
-  const childNameSize = childName.length > 16 ? 'text-[13px]' : childName.length > 11 ? 'text-[15px]' : 'text-[17px]'
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
   const hwTotal = childHomework.length
   const hwOpen = childHomework.filter(h => !h.done).length
 
   return (
     <>
+      {/* Kopfzeile mit dem Avatar des Kindes. Lehrer- und Schüler-Startseite
+          tragen an dieser Stelle ein generisches Schul-Symbol, und zwar nur
+          auf Mobile — dort handelt die Seite von der betrachtenden Person
+          selbst, deren Avatar ohnehin in der Seitenleiste steht. Die
+          Eltern-Seite handelt von jemand anderem, dessen Gesicht sonst
+          nirgends im Rahmen vorkommt. Deshalb hier auf allen Größen, und auf
+          Mobile anstelle des Symbols statt zusätzlich. */}
       <header className="mb-5">
         <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
-          <div className="md:hidden w-10 h-10 rounded-2xl gradient-teal shadow-[0_6px_16px_rgba(20,40,45,.15)] flex items-center justify-center flex-shrink-0">
-            <span className="msym text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
+          <div className="rounded-full flex-shrink-0" style={{ boxShadow: '0 0 0 2px rgba(15,138,130,.18)' }}>
+            <Avatar name={childName} color={childColor} seed={childSeed} hairColor={childHairColor} skinColor={childSkinColor} size={42} />
           </div>
           <h1 className="text-[26px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight min-w-0">{greeting()}, Familie {fullName.split(' ').slice(-1)[0]}!</h1>
         </div>
-        <p className="text-sm text-kh-muted font-medium mt-1">{today} · {childFirst}, {className}</p>
-      </header>
-
-      {/* Child banner — helles Glas über weichen Farbflächen.
-          Bewusst umgekehrt zur früheren dunklen Fläche: der Banner liegt auf
-          weißem Seitengrund, und dort kann eine DUNKLE Fläche nicht wirklich
-          durchscheinend werden, ohne dass weißer Text darauf unlesbar wird
-          (bei 70 % Deckkraft schon unter 4,5:1). Helles Glas mit dunkler
-          Schrift löst beides zugleich: luftiger UND deutlich besser lesbar.
-
-          KEINE dekorativen Formen im Banner: Auf der Startseite liegt bereits
-          das Bergpanorama aus ClassGoalWatermark (Layout-Ebene, oben rechts,
-          nur Desktop) dahinter. Eigene Formen hatten es schlicht zugedeckt —
-          durchscheinen soll das echte Motiv, nicht ein nachgebautes.
-
-          Zwei Schichten machen das Milchglas: ein gleichmäßiger weißer
-          Schleier (14 %) für die Trübung und darüber ein waagrecht
-          gestaffelter Mintton — links 34 %, wo nichts dahinter liegt und die
-          Fläche sonst weiß auf weiß verschwände, rechts 14 %, wo der Berg
-          sitzt. Ganz auf null geht der Tint nicht: auf dem Handy gibt es das
-          Wasserzeichen nicht, dort wäre der Banner sonst unsichtbar.
-
-          Gesamtdeckung damit 43 % links, 26 % rechts. Möglich wird das durch
-          den starken Weichzeichner: er mittelt das Bild, sodass der dunkelste
-          Punkt der überlappten Zone von L=0,26 auf L=0,31 steigt.
-
-          Gemessen an drei Stellen (links ohne Bild / rechts über der
-          dunkelsten Stelle / rechts auf dem Handy): Name 12,9 – 6,3 – 13,5:1,
-          Zahlen 8,3 – 5,6 – 8,6:1, Beschriftung 7,8 – 5,2 – 8,0:1. */}
-      <div className="relative overflow-hidden rounded-[22px] p-[18px] mb-6 flex items-center gap-3.5 text-[#17302C] backdrop-blur-[30px] shadow-[0_10px_28px_rgba(20,40,45,.12)]">
-        {/* Trübung (gleichmäßig) und Tönung (gestaffelt) getrennt: der weiße
-            Schleier macht das Milchige, der Mintton gibt der Fläche Körper,
-            wo nichts dahinter liegt. */}
-        <div className="absolute inset-0 z-[1]" style={{ background: 'rgba(255,255,255,.14)' }} />
-        <div
-          className="absolute inset-0 z-[1]"
-          style={{ background: 'linear-gradient(100deg, rgba(200,232,223,.34) 0%, rgba(200,232,223,.24) 50%, rgba(200,232,223,.14) 100%)' }}
-        />
-        {/* Zweifarbige Kante: der helle Rand allein verschwindet dort, wo
-            heller Himmel durchscheint. Die feine dunkle Kontur außen hält die
-            Fläche auf jedem Grund als Panel erkennbar. */}
-        <div
-          className="absolute inset-0 z-[3] rounded-[22px] pointer-events-none"
-          style={{
-            border: '1px solid rgba(255,255,255,.70)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.85), 0 0 0 1px rgba(24,54,50,.10)',
-          }}
-        />
-
-        <div className="relative z-[2] flex items-center gap-3.5 w-full min-w-0">
-          <div className="rounded-full flex-shrink-0" style={{ boxShadow: '0 0 0 2px rgba(255,255,255,.85), 0 3px 10px rgba(20,40,45,.14)' }}>
-            <Avatar name={childName} color={childColor} seed={childSeed} hairColor={childHairColor} skinColor={childSkinColor} size={52} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className={`font-extrabold ${childNameSize} truncate`} title={childName}>{childName}</div>
-            {flameCount(childConfirmedStreak) > 0 && (
-              <div className="flex items-center gap-0.5 mt-1">
-                {Array.from({ length: flameCount(childConfirmedStreak) }).map((_, i) => (
-                  <img key={i} src="/flame.svg" alt="" className="w-[18px] h-[18px]" style={{ marginLeft: i === 0 ? 0 : '-4px' }} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            {childStreak > 0 && (
-              <div
-                className="rounded-[15px] px-[15px] py-2 text-right backdrop-blur-[16px]"
-                style={{ background: 'rgba(255,255,255,.40)', border: '1px solid rgba(255,255,255,.72)' }}
-              >
-                <div className="text-[22px] font-extrabold leading-[1.15] text-[#0F544E]">{childStreak}</div>
-                <div className="text-[11px] font-semibold text-[#3A5450] whitespace-nowrap mt-px">in Folge</div>
-              </div>
-            )}
-            <div
-              className="rounded-[15px] px-[15px] py-2 text-right backdrop-blur-[16px]"
-              style={{ background: 'rgba(255,255,255,.40)', border: '1px solid rgba(255,255,255,.72)' }}
+        <div className="flex items-center gap-2 mt-1 min-w-0">
+          <p className="text-sm text-kh-muted font-medium truncate">{today} · {childFirst}, {className}</p>
+          {flameCount(childConfirmedStreak) > 0 && (
+            <span
+              className="flex items-center flex-shrink-0"
+              title={`${childConfirmedStreak} Hausübungen in Folge, von euch bestätigt`}
             >
-              <div className="flex items-center justify-end gap-1 text-[22px] font-extrabold leading-[1.15] text-[#0F544E]">
-                <span className="msym text-[18px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>edit</span>
-                {hwOpen}
-              </div>
-              <div className="text-[11px] font-semibold text-[#3A5450] whitespace-nowrap mt-px">Aufgaben offen</div>
-            </div>
-          </div>
+              {Array.from({ length: flameCount(childConfirmedStreak) }).map((_, i) => (
+                <img key={i} src="/flame.svg" alt="" className="w-[15px] h-[15px]" style={{ marginLeft: i === 0 ? 0 : '-3px' }} />
+              ))}
+            </span>
+          )}
         </div>
-      </div>
+      </header>
 
       {/* HÜ-Bestätigungen – bestätigte HÜ verdienen automatisch die Streak-Flammen */}
       <ParentHwConfirmList items={pendingConfirmations} childFirstName={childFirst} nudgedHomeworkIds={nudgedHomeworkIds} />

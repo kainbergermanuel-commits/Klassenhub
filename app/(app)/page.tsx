@@ -772,17 +772,16 @@ export default async function HomePage() {
     const child = matchChild(profile, allStudents ?? [])
       ?? allStudents?.[0] // preview fallback: use first student
 
-    let childDoneIds = new Set<string>()
-    let childStreak = 0 // actual – eigener Streak des Kindes (auch unbestätigt)
     // Ganzes Schuljahr kommt bereits aus dem rollenübergreifenden Batch oben
-    // (homeworkAll) — keine eigene Abfrage mehr nötig. Nur befüllt, wenn ein
-    // Kind zugeordnet ist (identisches Verhalten wie zuvor).
-    let allHwForStreak: { id: string; due_date: string }[] = []
-    if (child) {
-      const { data: childCompletions } = await supabase.from('homework_completions').select('homework_id').eq('student_id', child.id)
-      allHwForStreak = homeworkAll
-      childDoneIds = new Set((childCompletions ?? []).map(c => c.homework_id))
-    }
+    // (homeworkAll) — keine eigene Abfrage nötig. Nur befüllt, wenn ein Kind
+    // zugeordnet ist.
+    //
+    // Der unbestätigte Eigen-Streak des Kindes wurde hier früher zusätzlich
+    // berechnet (samt eigener completions-Abfrage), nur um ihn im
+    // Kind-Banner der Eltern-Startseite anzuzeigen. Mit dem Banner ist beides
+    // entfallen: Eltern sehen den eltern-bestätigten Streak, und den liefert
+    // childConfirmedStreak weiter unten aus ohnehin geladenen Daten.
+    const allHwForStreak: { id: string; due_date: string }[] = child ? homeworkAll : []
 
     const studentIdsP = (allStudents ?? []).map(s => s.id)
     const [{ data: freezesP }, { data: extensionsP }] = studentIdsP.length > 0
@@ -796,10 +795,6 @@ export default async function HomePage() {
     for (const e of extensionsP ?? []) {
       if (!extensionsByStudentP.has(e.student_id)) extensionsByStudentP.set(e.student_id, new Map())
       extensionsByStudentP.get(e.student_id)!.set(e.homework_id, e.extra_days)
-    }
-
-    if (child) {
-      childStreak = computeStreak(childDoneIds, allHwForStreak, today, frozenByStudentP.get(child.id), extensionsByStudentP.get(child.id))
     }
 
     // Streak leaderboard (nur eltern-bestätigte Streaks) + offene HÜ-Bestätigungen
@@ -818,7 +813,13 @@ export default async function HomePage() {
         : Promise.resolve({ data: [] }),
     ])
     const confirmedByStudentP = new Map<string, Set<string>>()
+    // Erledigungen des eigenen Kindes (bestätigt ODER nicht) für die
+    // Erledigt-Markierung der HÜ-Karte. Fällt hier mit ab, statt wie früher
+    // über eine zweite Abfrage: allCompletionsParent enthält bereits alle
+    // Erledigungen der Klasse zu allen HÜ des Schuljahres.
+    const childDoneIds = new Set<string>()
     for (const c of allCompletionsParent ?? []) {
+      if (child && c.student_id === child.id) childDoneIds.add(c.homework_id)
       if ((c as any).confirmed_by_parent_at) {
         if (!confirmedByStudentP.has(c.student_id)) confirmedByStudentP.set(c.student_id, new Set())
         confirmedByStudentP.get(c.student_id)!.add(c.homework_id)
@@ -959,7 +960,6 @@ export default async function HomePage() {
         childHomework={childHwWithStatus}
         reminders={upcomingReminders}
         upcomingEvents={upcomingEvents}
-        childStreak={childStreak}
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}
         nudgedHomeworkIds={nudgedHomeworkIds}
