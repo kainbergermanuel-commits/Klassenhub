@@ -114,7 +114,7 @@ export default function DutyDayStrip({
           Vorschau: wird nicht gespeichert.
         </p>
       )}
-      {confirmableUntil === 0 && (
+      {confirmableUntil === 0 && !preview && (
         <p className={`text-[11px] mt-1.5 font-medium ${onTeal ? 'text-white/75' : 'text-kh-muted'}`}>
           Diese Woche beginnt erst am Montag.
         </p>
