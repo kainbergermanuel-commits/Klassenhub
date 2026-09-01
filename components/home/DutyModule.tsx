@@ -24,7 +24,8 @@ interface Props {
   duties: MyDuty[]
   /** Bis zu welchem Wochentag bestätigt werden darf (0 = Woche läuft noch nicht). */
   confirmableUntil: number
-  readOnly?: boolean
+  /** Lehrer-Vorschau: Leiste reagiert, speichert aber nichts. */
+  preview?: boolean
 }
 
 /** Dienst-Modul für die rechte Navigation (unter dem Erinnerungen/Termine-
@@ -35,7 +36,7 @@ interface Props {
  *  Klassen doppelt. Vorher zeigte das Modul nur den ersten — der zweite war
  *  nirgends abhakbar, wodurch "Dienst durchgehalten" (Heldenbuch, Eltern- und
  *  Lehrer-Panel) dauerhaft falsch blieb. */
-export default function DutyModule({ duties, confirmableUntil, readOnly }: Props) {
+export default function DutyModule({ duties, confirmableUntil, preview }: Props) {
   const [counts, setCounts] = useState<Record<string, number>>(
     () => Object.fromEntries(duties.map(d => [d.id, d.doneWeekdays.length]))
   )
@@ -98,7 +99,7 @@ export default function DutyModule({ duties, confirmableUntil, readOnly }: Props
               dutyId={duty.id}
               doneWeekdays={duty.doneWeekdays}
               confirmableUntil={confirmableUntil}
-              readOnly={readOnly}
+              preview={preview}
               onCountChange={c => setCounts(prev => ({ ...prev, [duty.id]: c }))}
             />
           </div>

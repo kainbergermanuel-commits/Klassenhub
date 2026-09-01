@@ -230,7 +230,7 @@ export default function DutyWeek({
                         dutyId={duty.id}
                         doneWeekdays={doneMap[`${duty.id}:${userId}`] ?? []}
                         confirmableUntil={confirmableUntil}
-                        readOnly={isPreview}
+                        preview={isPreview}
                         tone="onTeal"
                       />
                     </div>

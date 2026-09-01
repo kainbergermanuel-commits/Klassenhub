@@ -134,7 +134,7 @@ export default function StudentHome({
             </AnimateIn>
             {myDuties.length > 0 && (
               <AnimateIn delay={150}>
-                <DutyModule duties={myDuties} confirmableUntil={dutyConfirmableUntil} readOnly={isPreview} />
+                <DutyModule duties={myDuties} confirmableUntil={dutyConfirmableUntil} preview={isPreview} />
               </AnimateIn>
             )}
             <AnimateIn delay={180} className="relative z-10">

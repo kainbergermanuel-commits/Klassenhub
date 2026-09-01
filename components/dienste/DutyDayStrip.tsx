@@ -13,8 +13,13 @@ interface Props {
   /** Bis zu welchem Wochentag bestätigt werden darf; 0 = Woche noch nicht
    *  begonnen. Kommt aus confirmableWeekday(weekStart) auf dem Server. */
   confirmableUntil: number
-  /** Lehrer-Vorschau: sichtbar, aber nicht bedienbar (RLS würde still scheitern). */
-  readOnly?: boolean
+  /** Lehrer-Vorschau. Die Datenbank-Session ist dort die des Lehrers, ein
+   *  Schreibversuch scheitert an der RLS-Policy (student_id = auth.uid()) —
+   *  und DARF auch nicht gelingen: der Dienst ist die Selbstbestätigung des
+   *  Kindes, keine Lehrer-Eingabe. Statt eines toten Knopfes schaltet die
+   *  Leiste hier auf reine Simulation: sie reagiert wie im Echtbetrieb,
+   *  speichert aber nichts. */
+  preview?: boolean
   /** 'light' = auf hellem Grund (Startseite), 'onTeal' = auf der türkisen
    *  Eigene-Dienst-Karte der Dienste-Seite. */
   tone?: 'light' | 'onTeal'
@@ -26,7 +31,7 @@ interface Props {
  *  gab es das Abhaken NUR auf der Startseite, während die Dienste-Seite
  *  kalendarisch vergangene Tage mit demselben grünen Haken zeigte. */
 export default function DutyDayStrip({
-  dutyId, doneWeekdays, confirmableUntil, readOnly = false, tone = 'light', onCountChange,
+  dutyId, doneWeekdays, confirmableUntil, preview = false, tone = 'light', onCountChange,
 }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -34,7 +39,7 @@ export default function DutyDayStrip({
   const [error, setError] = useState<string | null>(null)
 
   function toggle(weekday: number) {
-    if (readOnly || weekday > confirmableUntil || pending) return
+    if (weekday > confirmableUntil || pending) return
     const next = new Set(done)
     const willBeDone = !next.has(weekday)
     if (willBeDone) next.add(weekday)
@@ -42,6 +47,8 @@ export default function DutyDayStrip({
     setDone(next)
     setError(null)
     onCountChange?.(next.size)
+    // Vorschau: nur die Anzeige mitführen, nichts schreiben.
+    if (preview) return
     startTransition(async () => {
       try {
         await toggleDutyCompletion(dutyId, weekday, willBeDone)
@@ -69,7 +76,7 @@ export default function DutyDayStrip({
           const isDone = done.has(weekday)
           const isLocked = weekday > confirmableUntil
           const isToday = weekday === confirmableUntil && confirmableUntil > 0
-          const disabled = readOnly || isLocked || pending
+          const disabled = isLocked || pending
           return (
             <button
               key={label}
@@ -77,7 +84,7 @@ export default function DutyDayStrip({
               onClick={() => toggle(weekday)}
               disabled={disabled}
               className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-xl transition-all ${
-                isLocked || readOnly ? 'cursor-default' : 'hover:-translate-y-0.5'
+                isLocked ? 'cursor-default' : 'hover:-translate-y-0.5'
               } ${isLocked ? 'opacity-40' : ''}`}
               style={{
                 background: isDone
@@ -102,12 +109,12 @@ export default function DutyDayStrip({
           )
         })}
       </div>
-      {readOnly && (
+      {preview && (
         <p className={`text-[11px] mt-1.5 font-medium ${onTeal ? 'text-white/75' : 'text-kh-muted'}`}>
-          In der Vorschau nur zum Ansehen.
+          Vorschau: wird nicht gespeichert.
         </p>
       )}
-      {confirmableUntil === 0 && !readOnly && (
+      {confirmableUntil === 0 && (
         <p className={`text-[11px] mt-1.5 font-medium ${onTeal ? 'text-white/75' : 'text-kh-muted'}`}>
           Diese Woche beginnt erst am Montag.
         </p>
