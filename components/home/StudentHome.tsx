@@ -33,7 +33,9 @@ interface StudentHomeProps {
   reminders: Reminder[]
   myViewedIds: string[]
   upcomingEvents: AgendaEvent[]
-  myDuty: { id: string; name: string; partners: DutyPartner[]; doneWeekdays: number[] } | null
+  myDuties: { id: string; name: string; partners: DutyPartner[]; doneWeekdays: number[] }[]
+  dutyConfirmableUntil: number
+  isPreview: boolean
   streak: number
   confirmedStreak: number
   broken: boolean
@@ -60,7 +62,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuty, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, weekPulse, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuties, dutyConfirmableUntil, isPreview, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, weekPulse, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -130,9 +132,9 @@ export default function StudentHome({
             <AnimateIn delay={120}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
             </AnimateIn>
-            {myDuty && (
+            {myDuties.length > 0 && (
               <AnimateIn delay={150}>
-                <DutyModule dutyId={myDuty.id} dutyName={myDuty.name} partners={myDuty.partners} doneWeekdays={myDuty.doneWeekdays} />
+                <DutyModule duties={myDuties} confirmableUntil={dutyConfirmableUntil} readOnly={isPreview} />
               </AnimateIn>
             )}
             <AnimateIn delay={180} className="relative z-10">

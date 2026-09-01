@@ -15,8 +15,10 @@ export interface ChildStats {
   reminders: { seen: number; total: number } | null
   /** Bevorstehende Termine + Label des nächsten. */
   termine: { count: number; nextLabel: string | null }
-  /** Dienst des Kindes diese Woche durchgehend erledigt? null = kein Dienst. */
-  dienst: { keptUp: boolean } | null
+  /** Dienst des Kindes diese Woche durchgehend erledigt? null = kein Dienst.
+   *  `weekStarted` = false am Sonntag, wenn die angezeigte Dienstwoche erst
+   *  beginnt — dann ist "noch nicht abgehakt" keine ehrliche Aussage. */
+  dienst: { keptUp: boolean; weekStarted: boolean } | null
   /** Rückblick letzte Woche fürs Kind. null = ruhige Woche. */
   recap: { hwConfirmed: number; riddlesSolved: number } | null
 }
@@ -148,7 +150,9 @@ export default function ChildStatsPanel({ stats, childFirst }: { stats: ChildSta
         {stats.dienst && (
           <StatTooltip
             title="Dienst diese Woche"
-            body={stats.dienst.keptUp
+            body={!stats.dienst.weekStarted
+              ? `Die Dienstwoche beginnt erst am Montag.`
+              : stats.dienst.keptUp
               ? `${childFirst} hat den Dienst an allen Tagen dieser Woche erledigt.`
               : `Der Dienst dieser Woche ist noch nicht an allen Tagen abgehakt.`}
           >
@@ -156,7 +160,7 @@ export default function ChildStatsPanel({ stats, childFirst }: { stats: ChildSta
               href="/dienste"
               icon="cleaning_services" iconColor="#0F8A82" barColor="#0F8A82"
               label="Dienst diese Woche"
-              value={stats.dienst.keptUp ? 'erledigt' : 'offen'}
+              value={!stats.dienst.weekStarted ? 'ab Montag' : stats.dienst.keptUp ? 'erledigt' : 'offen'}
               pct={null}
             />
           </StatTooltip>

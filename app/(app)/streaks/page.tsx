@@ -188,15 +188,15 @@ export default async function StreaksPage() {
     const { data: dutyCompletionsRaw } = weekDutyIds.length > 0
       ? await supabase.from('duty_completions').select('duty_id,student_id,weekday').in('duty_id', weekDutyIds)
       : { data: [] }
-    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents, dutyDayCounts } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
-    // Genau EIN Dienst pro Kind (wie auf der Startseite, siehe page.tsx
-    // myDuty) — vorher zählte hier das Maximum über ALLE zugeteilten Dienste,
-    // während die Guide-Notiz weiter unten (hbDutyName) den ERSTEN nannte:
-    // bei zwei Diensten konnte der genannte Name nicht zum gezeigten
-    // Fortschritt passen, und der Fortschritt selbst wich von der Startseite ab.
-    const myDuty = (weekDuty ?? []).find(d => d.assignee_ids.includes(profile.id)) ?? null
-    const myDuties = myDuty ? [myDuty] : []
-    const dutyDoneCount = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, profile.id).length : 0
+    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents, dutyDayCounts } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [], weekStart)
+    // ALLE zugeteilten Dienste, gezählt wird der beste. Seit sich jeder Dienst
+    // einzeln abhaken lässt (DutyModule/DutyWeek), passt das wieder zur
+    // Startseite und zur Gilden-Dienstquest (dutyDayCounts). Die Guide-Notiz
+    // unten nennt weiterhin den ersten Namen.
+    const myDuties = (weekDuty ?? []).filter(d => d.assignee_ids.includes(profile.id))
+    const dutyDoneCount = myDuties.length > 0
+      ? Math.max(...myDuties.map(d => dutyDoneWeekdays(doneByDutyStudent, d.id, profile.id).length))
+      : 0
 
     const weekHw = (allHwDesc ?? []).filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
     const myOwnCompletions = (allCompletions ?? [])
@@ -434,7 +434,7 @@ export default async function StreaksPage() {
       supabase.from('quest_riddle_solutions').select('student_id,solved_at').eq('class_id', activeClassId),
       supabase.from('achievements').select('kind,key,period').in('student_id', studentIds),
     ])
-    const { doneByDutyStudent } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [])
+    const { doneByDutyStudent } = buildDutyDone(weekDuty ?? [], dutyCompletionsRaw ?? [], weekStart)
 
     const viewsByStudent = new Map<string, Set<string>>()
     for (const v of (allReminderViews ?? []) as { reminder_id: string; student_id: string }[]) {
@@ -456,8 +456,12 @@ export default async function StreaksPage() {
       const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
       const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today, frozenByStudent.get(s.id), extensionsByStudent.get(s.id))
 
-      const myDuty = (weekDuty ?? []).find(d => d.assignee_ids.includes(s.id)) ?? null
-      const dutyDoneCount = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, s.id).length : 0
+      // Wie im Schüler-Zweig oben: bester Stand über ALLE zugeteilten Dienste,
+      // damit die Lehrer-Matrix dieselbe Zahl zeigt wie das Kind selbst.
+      const studentDuties = (weekDuty ?? []).filter(d => d.assignee_ids.includes(s.id))
+      const dutyDoneCount = studentDuties.length > 0
+        ? Math.max(...studentDuties.map(d => dutyDoneWeekdays(doneByDutyStudent, d.id, s.id).length))
+        : 0
 
       const ownCompletions = (allCompletions ?? [])
         .filter(c => c.student_id === s.id)
@@ -477,7 +481,7 @@ export default async function StreaksPage() {
         dutyDoneCount,
         currentStreakLength: actualStreak,
       })
-      const feasibility = buildFeasibility(questCtx, !!myDuty)
+      const feasibility = buildFeasibility(questCtx, studentDuties.length > 0)
       const activeKeys = defaultWeeklyTemplateKeys(activeClassId, weekStart, 3, feasibility, recentTemplateKeys(activeClassId, weekStart, 3, feasibility))
       const choiceByTemplate = choicesByStudent.get(s.id)
       const results = activeKeys

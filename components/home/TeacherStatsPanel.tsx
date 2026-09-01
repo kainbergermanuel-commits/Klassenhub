@@ -25,8 +25,10 @@ export interface TeacherStats {
   reminders: { seen: number; total: number } | null
   /** Bevorstehende Termine + Label des nächsten ("in 3 Tagen"). */
   termine: { count: number; nextLabel: string | null }
-  /** Dienste diese Woche: durchgehend erledigt / zugeteilt. null = keine. */
-  dienste: { done: number; assigned: number } | null
+  /** Dienste diese Woche: durchgehend erledigt / zugeteilt. null = keine.
+   *  `weekStarted` = false am Sonntag, wenn die angezeigte Dienstwoche erst
+   *  beginnt — dann wäre "0 von N erledigt" irreführend statt informativ. */
+  dienste: { done: number; assigned: number; weekStarted: boolean } | null
   /** Kollektiver Rückblick auf die letzte Woche. null = ruhige Woche. */
   recap: { hwConfirmed: number; activeKids: number; riddlesSolved: number } | null
 }
@@ -42,7 +44,7 @@ export default function TeacherStatsPanel({ stats }: { stats: TeacherStats }) {
   const reisePct = pctOf(stats.reise.active, stats.reise.total)
   const hwPct = pctOf(stats.homework.submitted, stats.homework.slots)
   const remPct = stats.reminders ? pctOf(stats.reminders.seen, stats.reminders.total) : 0
-  const dienstePct = stats.dienste ? pctOf(stats.dienste.done, stats.dienste.assigned) : 0
+  const dienstePct = stats.dienste && stats.dienste.weekStarted ? pctOf(stats.dienste.done, stats.dienste.assigned) : 0
 
   return (
     <div className="bg-white rounded-[20px] p-4 shadow-sm border border-kh-border/50 max-md:rounded-2xl max-md:border-0 max-md:shadow-[0_8px_16px_rgba(20,40,45,.10)]">
@@ -160,13 +162,15 @@ export default function TeacherStatsPanel({ stats }: { stats: TeacherStats }) {
         {stats.dienste && (
           <StatTooltip
             title="Dienste diese Woche"
-            body={`${stats.dienste.done} von ${stats.dienste.assigned} Kindern mit Dienst haben ihn an allen Tagen erledigt.`}
+            body={stats.dienste.weekStarted
+              ? `${stats.dienste.done} von ${stats.dienste.assigned} Kindern mit Dienst haben ihn an allen Tagen erledigt.`
+              : `${stats.dienste.assigned} Kinder haben einen Dienst. Die Woche beginnt erst am Montag.`}
           >
             <BarRow
               href="/dienste"
               icon="cleaning_services" iconColor="#0F8A82" barColor="#0F8A82"
               label="Dienste erledigt"
-              value={`${stats.dienste.done}/${stats.dienste.assigned}`}
+              value={stats.dienste.weekStarted ? `${stats.dienste.done}/${stats.dienste.assigned}` : 'ab Montag'}
               pct={dienstePct}
             />
           </StatTooltip>

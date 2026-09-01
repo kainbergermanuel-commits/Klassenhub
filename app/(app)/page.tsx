@@ -10,7 +10,7 @@ import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
 import { assignGuilds, findMyGuild, weeklyGuildQuestKey, findGuildQuestTemplate, computeGuildQuestProgress, type Guild, type GuildQuestResult } from '@/lib/guilds'
 import type { GuildMember } from '@/lib/guilds'
-import { buildDutyDone, dutyDoneWeekdays } from '@/lib/duty'
+import { buildDutyDone, confirmableWeekday, dutyDoneWeekdays } from '@/lib/duty'
 import { collectAchievements, countAchievements, type AchievementCounts } from '@/lib/achievements'
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
 import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex, worldStoryMoments } from '@/lib/seasonTheme'
@@ -60,7 +60,7 @@ function streakBuckets(streaks: number[]) {
 }
 
 export default async function HomePage() {
-  const { user, profile, activeClassId } = await getEffectiveAuth()
+  const { user, profile, activeClassId, isPreview } = await getEffectiveAuth()
 
   if (!user?.id) redirect('/login')
 
@@ -266,7 +266,7 @@ export default async function HomePage() {
     const reminderTotal = statsReminderIds.length * studentIds.length
 
     // Dienste: wer diese Woche seinen Dienst durchgehend erledigt hat
-    const { keptUpStudents, assignedStudents } = buildDutyDone(duties, statsDutyCompletions ?? [])
+    const { keptUpStudents, assignedStudents } = buildDutyDone(duties, statsDutyCompletions ?? [], dutyWeekStart)
 
     // Verlauf: Abgabequote der letzten sechs bereits fälligen Hausübungen
     // (ältest → neuest). Beantwortet "wird es besser oder schlechter?", was
@@ -301,7 +301,7 @@ export default async function HomePage() {
       unconfirmed: statsUnconfirmed,
       reminders: statsReminderIds.length > 0 ? { seen: reminderSeen, total: reminderTotal } : null,
       termine: { count: upcomingEvents.length, nextLabel: nextEventLabel(upcomingEvents, today) },
-      dienste: statsDutyIds.length > 0 ? { done: keptUpStudents.size, assigned: assignedStudents.size } : null,
+      dienste: statsDutyIds.length > 0 ? { done: keptUpStudents.size, assigned: assignedStudents.size, weekStarted: confirmableWeekday(dutyWeekStart) > 0 } : null,
       recap: weeklyRecap,
     }
 
@@ -454,25 +454,36 @@ export default async function HomePage() {
     }))
 
     const myViewedIds: string[] = (myViews ?? []).map(v => v.reminder_id)
-    const myDuty = duties.find(d => d.assignee_ids.includes(user.id)) ?? null
+    // ALLE eigenen Dienste, nicht nur der erste: bei zwei Zuteilungen war der
+    // zweite nirgends abhakbar, wodurch "durchgehalten" dauerhaft falsch blieb.
+    const myDutyRows = duties.filter(d => d.assignee_ids.includes(user.id))
+    const myDuty = myDutyRows[0] ?? null
 
     // ─── DIENST-SELBSTBESTÄTIGUNG (SDT: Kind kontrolliert sich selbst) ───────
-    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents, dutyDayCounts } = buildDutyDone(duties, dutyCompletionsRaw ?? [])
-    const myDutyDoneWeekdays = myDuty ? dutyDoneWeekdays(doneByDutyStudent, myDuty.id, user.id) : []
-    const dutyDoneCount = myDutyDoneWeekdays.length
+    const { doneByDutyStudent, keptUpStudents, assignedStudents: dutyAssignedStudents, dutyDayCounts } = buildDutyDone(duties, dutyCompletionsRaw ?? [], dutyWeekStart)
 
     // Dienst-Partner (übrige zugeteilte Kinder) für das Dienst-Modul — aus den
     // bereits geladenen Klassen-Profilen, keine neue Query.
-    const myDutyPartnerIds = myDuty ? myDuty.assignee_ids.filter((id: string) => id !== user.id) : []
-    const myDutyPartners = (allStudents ?? [])
-      .filter(s => myDutyPartnerIds.includes(s.id))
-      .map(s => ({
-        full_name: s.full_name,
-        avatar_color: s.avatar_color ?? '#0F8A82',
-        avatar_seed: s.avatar_seed ?? null,
-        avatar_hair_color: s.avatar_hair_color ?? null,
-        avatar_skin_color: s.avatar_skin_color ?? null,
-      }))
+    const profileById = new Map((allStudents ?? []).map(s => [s.id, s]))
+    const myDuties = myDutyRows.map(d => ({
+      id: d.id,
+      name: d.duty_name,
+      doneWeekdays: dutyDoneWeekdays(doneByDutyStudent, d.id, user.id),
+      partners: d.assignee_ids
+        .filter((id: string) => id !== user.id)
+        .map((id: string) => profileById.get(id))
+        .filter((s): s is NonNullable<typeof s> => !!s)
+        .map(s => ({
+          full_name: s.full_name,
+          avatar_color: s.avatar_color ?? '#0F8A82',
+          avatar_seed: s.avatar_seed ?? null,
+          avatar_hair_color: s.avatar_hair_color ?? null,
+          avatar_skin_color: s.avatar_skin_color ?? null,
+        })),
+    }))
+    // Bei mehreren Diensten zählt der beste — dieselbe Schwelle wie bei der
+    // Gilden-Dienstquest (dutyDayCounts), damit Solo und Gilde nicht abweichen.
+    const dutyDoneCount = myDuties.length > 0 ? Math.max(...myDuties.map(d => d.doneWeekdays.length)) : 0
 
     // Eigener Streak: sofort sichtbar (auch unbestätigt)
     const streak = computeStreak(doneIds, allHwForStreak, today, frozenByStudentS.get(user.id), extensionsByStudentS.get(user.id))
@@ -742,7 +753,9 @@ export default async function HomePage() {
         reminders={upcomingReminders}
         myViewedIds={myViewedIds}
         upcomingEvents={upcomingEvents}
-        myDuty={myDuty ? { id: myDuty.id, name: myDuty.duty_name, partners: myDutyPartners, doneWeekdays: myDutyDoneWeekdays } : null}
+        myDuties={myDuties}
+        dutyConfirmableUntil={confirmableWeekday(dutyWeekStart)}
+        isPreview={isPreview}
         streak={streak}
         confirmedStreak={confirmedStreak}
         broken={broken}
@@ -910,7 +923,7 @@ export default async function HomePage() {
     }
 
     const nextMilestone = MILESTONES.find(m => m > childConfirmedStreak) ?? MILESTONES[MILESTONES.length - 1]
-    const { keptUpStudents: parentKeptUp, assignedStudents: parentAssigned } = buildDutyDone(duties, parentDutyCompletions ?? [])
+    const { keptUpStudents: parentKeptUp, assignedStudents: parentAssigned } = buildDutyDone(duties, parentDutyCompletions ?? [], dutyWeekStart)
     const childHasDuty = child ? parentAssigned.has(child.id) : false
 
     const lastWeekStartP = addDaysISO(-7, new Date(`${dutyWeekStart}T00:00:00`))
@@ -944,7 +957,7 @@ export default async function HomePage() {
         : null,
       reminders: parentReminderIds.length > 0 ? { seen: (childReminderViews ?? []).length, total: parentReminderIds.length } : null,
       termine: { count: upcomingEvents.length, nextLabel: nextEventLabel(upcomingEvents, today) },
-      dienst: childHasDuty ? { keptUp: parentKeptUp.has(child!.id) } : null,
+      dienst: childHasDuty ? { keptUp: parentKeptUp.has(child!.id), weekStarted: confirmableWeekday(dutyWeekStart) > 0 } : null,
       recap: childRecap,
     }
 

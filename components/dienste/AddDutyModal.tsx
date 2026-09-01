@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { Profile } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
+import { dutyIcon, STANDARD_DUTIES } from '@/lib/dutyIcon'
 
 interface EditDuty {
   id: string
@@ -23,13 +24,10 @@ interface Props {
   editDuty?: EditDuty
 }
 
-const DUTY_OPTIONS = [
-  { name: 'Tafel wischen', icon: 'water_drop' },
-  { name: 'Boden säubern', icon: 'cleaning_services' },
-  { name: 'Lüften', icon: 'air' },
-  { name: 'Blumen gießen', icon: 'local_florist' },
-  { name: 'Ordner austeilen', icon: 'folder_open' },
-  { name: 'Müll entleeren', icon: 'delete' },
+// Icons aus lib/dutyIcon — das Modal hielt vorher eine eigene Zuordnung, die
+// von der Anzeige auf Startseite und Dienste-Seite abwich.
+const DUTY_OPTIONS: { name: string; icon: string }[] = [
+  ...STANDARD_DUTIES.map(name => ({ name, icon: dutyIcon(name) })),
   { name: 'Benutzerdefiniert', icon: 'edit' },
 ]
 

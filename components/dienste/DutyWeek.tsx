@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import AddDutyModal from './AddDutyModal'
+import DutyDayStrip from './DutyDayStrip'
 import Avatar from '@/components/ui/Avatar'
 import PageHeader from '@/components/layout/PageHeader'
+import { dutyIcon, STANDARD_DUTIES, DUTY_DESCRIPTIONS } from '@/lib/dutyIcon'
 import type { Duty, Profile, Role } from '@/lib/types'
 
 interface Props {
@@ -13,36 +15,24 @@ interface Props {
   students: Profile[]
   role: Role
   userId: string
+  /** Wessen Dienst hervorgehoben wird: bei Schüler:innen sie selbst, bei
+   *  Eltern ihr Kind (deren eigene ID steht nie in assignee_ids), sonst null. */
+  highlightStudentId: string | null
   classId: string
   weekStart: string
   weekLabel: string
+  /** "dutyId:studentId" → bestätigte Wochentage. */
+  doneMap: Record<string, number[]>
+  confirmableUntil: number
+  isPreview: boolean
 }
 
-const STANDARD_DUTIES = ['Tafel wischen', 'Boden säubern', 'Lüften', 'Blumen gießen', 'Ordner austeilen', 'Müll entleeren']
+const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
 
-const DUTY_ICONS: Record<string, string> = {
-  'Tafel wischen': 'water_drop',
-  'Boden säubern': 'cleaning_services',
-  'Lüften': 'air',
-  'Blumen gießen': 'local_florist',
-  'Ordner austeilen': 'folder_open',
-  'Müll entleeren': 'delete',
-}
-
-const DUTY_DESCRIPTIONS: Record<string, string> = {
-  'Tafel wischen': 'Nimm den nassen Schwamm und wisch die Tafel nach jeder Stunde sauber, damit beim nächsten Mal wieder Platz ist.',
-  'Boden säubern': 'Schau, ob unter den Tischen Papier oder Dreck liegt, und kehr alles mit dem Besen zusammen, bevor ihr geht.',
-  'Lüften': 'Öffne in jeder Pause die Fenster für ein paar Minuten, damit frische Luft ins Klassenzimmer kommt.',
-  'Blumen gießen': 'Gieß alle Pflanzen im Klassenzimmer – aber nicht zu viel! Die Erde soll leicht feucht, nicht nass sein.',
-  'Ordner austeilen': 'Hol die Klassenordner aus dem Regal und leg jedem Schüler seinen Ordner auf den Tisch, bevor es losgeht.',
-  'Müll entleeren': 'Nimm den Mistkübel, leere ihn in den großen Mülleimer auf dem Gang und stell den leeren Kübel wieder hin.',
-}
-
-function getDutyIcon(name: string) {
-  return DUTY_ICONS[name] ?? 'star'
-}
-
-export default function DutyWeek({ duties, students, role, userId, classId, weekStart, weekLabel }: Props) {
+export default function DutyWeek({
+  duties, students, role, userId, highlightStudentId, classId, weekStart, weekLabel,
+  doneMap, confirmableUntil, isPreview,
+}: Props) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [editDuty, setEditDuty] = useState<Duty | null>(null)
@@ -53,16 +43,22 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
     setRandomizing(true)
     const shuffled = [...students].sort(() => Math.random() - 0.5)
     const supabase = createClient()
-    await Promise.all(STANDARD_DUTIES.map((name, i) => {
-      const picks = shuffled.slice(i * 2, i * 2 + 2).map(s => s.id)
-      return supabase.from('duties').upsert({
+    // Je zwei Kinder pro Dienst, ohne Wiederholung. Reicht die Klasse nicht
+    // für alle Dienste, bekommt der letzte eines — und Dienste ohne Kind
+    // werden gar nicht erst angelegt statt, wie früher, mit leerer Zuteilung.
+    const rows = STANDARD_DUTIES.map((name, i) => ({
+      name,
+      picks: shuffled.slice(i * 2, i * 2 + 2).map(s => s.id),
+    })).filter(r => r.picks.length > 0)
+    await Promise.all(rows.map(r =>
+      supabase.from('duties').upsert({
         class_id: classId,
         week_start: weekStart,
-        duty_name: name,
-        assignee_ids: picks,
+        duty_name: r.name,
+        assignee_ids: r.picks,
         created_by: userId,
       }, { onConflict: 'class_id,week_start,duty_name' })
-    }))
+    ))
     setRandomizing(false)
     router.refresh()
   }
@@ -76,16 +72,29 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
     router.refresh()
   }
 
-  // My duty (for student/parent view)
-  const myDuties = duties.filter(d => d.assignee_ids.includes(userId))
+  // Wochenleiste. Für Schüler:innen zeigt sie den EIGENEN Bestätigungsstand
+  // (bester der zugeteilten Dienste), für alle anderen nur den Kalender —
+  // vorher stand hier für jeden bloß vergangenen Tag derselbe grüne Haken, der
+  // im Startseiten-Modul "ich habe bestätigt" bedeutet.
+  const myDuties = highlightStudentId
+    ? duties.filter(d => d.assignee_ids.includes(highlightStudentId))
+    : []
+  const myDoneDays = new Set<number>(
+    myDuties.flatMap(d => doneMap[`${d.id}:${highlightStudentId}`] ?? [])
+  )
+  const showOwnProgress = myDuties.length > 0
 
-  // Wochentage als Chips: vergangene mit Häkchen, heute/künftige noch offen.
-  const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
   const weekStartDate = new Date(`${weekStart}T00:00:00`)
   const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0)
   const weekDays = Array.from({ length: 5 }, (_, i) => {
     const d = new Date(weekStartDate); d.setDate(d.getDate() + i)
-    return { label: WEEKDAY_LABELS[i], date: d.getDate(), passed: d.getTime() < todayMidnight.getTime(), isToday: d.getTime() === todayMidnight.getTime() }
+    return {
+      label: WEEKDAY_LABELS[i],
+      date: d.getDate(),
+      passed: d.getTime() < todayMidnight.getTime(),
+      isToday: d.getTime() === todayMidnight.getTime(),
+      confirmed: myDoneDays.has(i + 1),
+    }
   })
 
   return (
@@ -113,27 +122,35 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
         )}
       </div>
 
-      <div className="grid grid-cols-5 gap-1.5 mb-5 md:flex md:flex-wrap">
+      <div className={`grid grid-cols-5 gap-1.5 md:flex md:flex-wrap ${showOwnProgress ? 'mb-2' : 'mb-5'}`}>
         {weekDays.map((d, i) => (
           <div
             key={i}
             className={`flex items-center justify-center gap-1 px-2.5 max-md:px-1 py-1 rounded-full text-[12px] font-semibold border transition-colors ${
-              d.passed
+              showOwnProgress && d.confirmed
                 ? 'bg-kh-teal-light text-kh-teal border-transparent'
                 : d.isToday
                 ? 'border-kh-teal text-kh-teal'
+                : d.passed
+                ? 'border-kh-border text-kh-muted/70'
                 : 'border-kh-border text-kh-muted'
             }`}
           >
             <span>{d.label}</span>
             <span className="opacity-60">{d.date}</span>
-            <span className="msym text-[14px]" style={{ fontVariationSettings: `'FILL' ${d.passed ? 1 : 0}` }}>
-              {d.passed ? 'check_circle' : 'radio_button_unchecked'}
-            </span>
+            {showOwnProgress && (
+              <span className="msym text-[14px]" style={{ fontVariationSettings: `'FILL' ${d.confirmed ? 1 : 0}` }}>
+                {d.confirmed ? 'check_circle' : 'radio_button_unchecked'}
+              </span>
+            )}
           </div>
         ))}
       </div>
-
+      {showOwnProgress && (
+        <p className="text-[11.5px] text-kh-muted font-medium mb-5">
+          {role === 'parent' ? 'Bestätigte Diensttage des Kindes.' : 'Deine bestätigten Diensttage.'}
+        </p>
+      )}
 
       <div className="flex items-start gap-2.5 mb-5 px-3.5 py-3 rounded-xl bg-[#F6F3ED] text-[12.5px] text-kh-muted leading-relaxed">
         <span className="msym text-[18px] text-kh-teal flex-shrink-0 mt-px" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
@@ -149,48 +166,75 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {duties.map(duty => {
             const assignees = duty.assignee_ids.map(id => studentMap[id]).filter(Boolean)
-            const isMyDuty = duty.assignee_ids.includes(userId)
+            const isHighlighted = !!highlightStudentId && duty.assignee_ids.includes(highlightStudentId)
+            const onTeal = isHighlighted
+            const description = DUTY_DESCRIPTIONS[duty.duty_name]
             return (
               <div
                 key={duty.id}
-                className="rounded-2xl p-4 shadow-[0_8px_16px_rgba(20,40,45,.10)] flex items-center gap-4 group min-w-0"
-                style={isMyDuty && role === 'student'
+                className="rounded-2xl p-4 shadow-[0_8px_16px_rgba(20,40,45,.10)] flex items-start gap-4 group min-w-0"
+                style={onTeal
                   ? { background: 'linear-gradient(135deg, #0F8A82 0%, #3DB5AC 100%)' }
                   : { background: 'linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #EFEAE0 100%)' }}
               >
                 <div className="w-12 h-12 rounded-[14px] flex items-center justify-center flex-shrink-0"
-                  style={isMyDuty && role === 'student'
+                  style={onTeal
                     ? { background: 'rgba(255,255,255,0.2)' }
                     : { background: 'linear-gradient(135deg, #C2E6DF 0%, #E4F3F0 100%)' }
                   }
                 >
                   <span
                     className="msym text-[22px]"
-                    style={{ color: isMyDuty && role === 'student' ? 'white' : '#0F8A82', fontVariationSettings: "'FILL' 1" }}
+                    style={{ color: onTeal ? 'white' : '#0F8A82', fontVariationSettings: "'FILL' 1" }}
                   >
-                    {getDutyIcon(duty.duty_name)}
+                    {dutyIcon(duty.duty_name)}
                   </span>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="font-extrabold text-[15px]" style={{ color: isMyDuty && role === 'student' ? 'white' : undefined }}>{duty.duty_name}</div>
-                  {role === 'student' && DUTY_DESCRIPTIONS[duty.duty_name] && (
-                    <div className="text-[12px] mt-0.5" style={{ color: isMyDuty ? 'rgba(255,255,255,0.8)' : '#7A9896' }}>{DUTY_DESCRIPTIONS[duty.duty_name]}</div>
+                  <div className="font-extrabold text-[15px]" style={{ color: onTeal ? 'white' : undefined }}>{duty.duty_name}</div>
+                  {/* Erklärtext für alle Rollen: Eltern und Lehrer:innen sollen
+                      lesen können, was das Kind lesen kann. */}
+                  {description && (
+                    <div className="text-[12px] mt-0.5" style={{ color: onTeal ? 'rgba(255,255,255,0.8)' : '#7A9896' }}>{description}</div>
                   )}
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {assignees.map(s => (
-                      <span
-                        key={s.id}
-                        className="text-xs font-semibold pl-1 pr-2.5 py-1 rounded-full flex items-center gap-1.5"
-                        style={isMyDuty && role === 'student'
-                          ? { background: 'rgba(255,255,255,0.2)', color: 'white' }
-                          : { background: '#E0F0EE', color: '#0F8A82' }}
-                      >
-                        <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
-                        {s.full_name.split(' ')[0]}
-                      </span>
-                    ))}
+                    {assignees.map(s => {
+                      const doneCount = (doneMap[`${duty.id}:${s.id}`] ?? []).length
+                      return (
+                        <span
+                          key={s.id}
+                          className="text-xs font-semibold pl-1 pr-2.5 py-1 rounded-full flex items-center gap-1.5"
+                          style={onTeal
+                            ? { background: 'rgba(255,255,255,0.2)', color: 'white' }
+                            : { background: '#E0F0EE', color: '#0F8A82' }}
+                        >
+                          <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
+                          {s.full_name.split(' ')[0]}
+                          {/* Lehrer:innen sehen den Bestätigungsstand je Kind —
+                              bisher gab es dafür nirgends einen Ort. */}
+                          {role === 'teacher' && (
+                            <span className="text-[10.5px] font-extrabold opacity-70 tabular-nums">{doneCount}/5</span>
+                          )}
+                        </span>
+                      )
+                    })}
                   </div>
+
+                  {/* Selbstbestätigung direkt auf der Dienste-Seite. Vorher war
+                      sie ausschließlich im rechten Nav-Modul der Startseite
+                      erreichbar, das auf dem Handy ganz unten landet. */}
+                  {role === 'student' && duty.assignee_ids.includes(userId) && (
+                    <div className="mt-3">
+                      <DutyDayStrip
+                        dutyId={duty.id}
+                        doneWeekdays={doneMap[`${duty.id}:${userId}`] ?? []}
+                        confirmableUntil={confirmableUntil}
+                        readOnly={isPreview}
+                        tone="onTeal"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {role === 'teacher' && (
@@ -198,12 +242,14 @@ export default function DutyWeek({ duties, students, role, userId, classId, week
                     <button
                       onClick={() => { setEditDuty(duty); setShowModal(true) }}
                       className="msym text-[19px] text-[#CBD5D3] hover:text-kh-teal transition-colors"
+                      aria-label={`${duty.duty_name} bearbeiten`}
                     >
                       edit
                     </button>
                     <button
                       onClick={() => deleteDuty(duty.id)}
                       className="msym text-[19px] text-[#CBD5D3] hover:text-kh-red transition-colors"
+                      aria-label={`${duty.duty_name} löschen`}
                     >
                       delete
                     </button>
