@@ -4,15 +4,18 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { createEvent, createOwnEvent } from '@/app/actions/events'
+import { createEvent, createOwnEvent, updateEvent } from '@/app/actions/events'
 import { EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
+import type { CalendarEvent } from '@/lib/types'
 
 interface Props {
   today: string
   classId: string
   mode?: 'teacher' | 'student'
+  /** Gesetzt = Bearbeiten statt Anlegen. Alle Felder werden vorbelegt. */
+  editEvent?: CalendarEvent
   onClose: () => void
 }
 
@@ -103,24 +106,33 @@ function DatePicker({ value, min, onChange }: { value: string; min: string; onCh
   )
 }
 
-export default function AddEventModal({ today, classId, mode = 'teacher', onClose }: Props) {
+export default function AddEventModal({ today, classId, mode = 'teacher', editEvent, onClose }: Props) {
   const isStudent = mode === 'student'
+  const isEdit = !!editEvent
   const router = useRouter()
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [location, setLocation] = useState('')
-  const [category, setCategory] = useState<EventCategory>('sonstiges')
-  const [startDate, setStartDate] = useState(today)
-  const [endDate, setEndDate] = useState(today)
-  const [multiDay, setMultiDay] = useState(false)
-  const [allDay, setAllDay] = useState(true)
-  const [startTime, setStartTime] = useState('08:00')
-  const [endTime, setEndTime] = useState('')
+  const [title, setTitle] = useState(editEvent?.title ?? '')
+  const [description, setDescription] = useState(editEvent?.description ?? '')
+  const [location, setLocation] = useState(editEvent?.location ?? '')
+  const [category, setCategory] = useState<EventCategory>((editEvent?.category as EventCategory) ?? 'sonstiges')
+  const [startDate, setStartDate] = useState(editEvent?.start_date ?? today)
+  const [endDate, setEndDate] = useState(editEvent?.end_date ?? today)
+  const [multiDay, setMultiDay] = useState(!!editEvent && editEvent.end_date !== editEvent.start_date)
+  const [allDay, setAllDay] = useState(editEvent ? editEvent.all_day : true)
+  const [startTime, setStartTime] = useState(editEvent?.start_time ?? '08:00')
+  const [endTime, setEndTime] = useState(editEvent?.end_time ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showTargeting, setShowTargeting] = useState(false)
+  // Beim Bearbeiten eines gezielten Termins ist die Zielgruppe von Anfang an
+  // offen und vorbelegt — sonst ginge sie beim Speichern verloren.
+  const [showTargeting, setShowTargeting] = useState(!!editEvent?.target_student_ids)
   const [students, setStudents] = useState<Student[]>([])
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    new Set(editEvent?.target_student_ids ?? [])
+  )
+
+  // Ein bereits vergangener Termin muss sein eigenes Datum behalten dürfen,
+  // sonst stünde im Bearbeiten-Formular ein im Kalender gesperrter Tag.
+  const minDate = editEvent && editEvent.start_date < today ? editEvent.start_date : today
 
   useEffect(() => {
     if (isStudent || !showTargeting || students.length > 0) return
@@ -144,7 +156,11 @@ export default function AddEventModal({ today, classId, mode = 'teacher', onClos
     if (!multiDay || v > endDate) setEndDate(v)
   }
 
-  const canPost = title.trim().length > 0 && startDate && endDate >= startDate && (isStudent || !showTargeting || selectedIds.size > 0)
+  // Beim Anlegen erzwingt eine geöffnete Zielgruppe mindestens eine Auswahl.
+  // Beim Bearbeiten nicht: "keine Auswahl" ist dort die gültige Absicht,
+  // einen persönlichen Termin wieder zum Klassentermin zu machen.
+  const canPost = title.trim().length > 0 && startDate && endDate >= startDate
+    && (isStudent || isEdit || !showTargeting || selectedIds.size > 0)
 
   async function save() {
     if (!canPost || saving) return
@@ -156,8 +172,20 @@ export default function AddEventModal({ today, classId, mode = 'teacher', onClos
         startDate, endDate: multiDay ? endDate : startDate,
         allDay, startTime: allDay ? null : startTime, endTime: allDay ? null : (endTime || null),
       }
-      if (isStudent) await createOwnEvent(base)
-      else await createEvent({ ...base, targetStudentIds: selectedIds.size > 0 ? [...selectedIds] : null })
+      if (isEdit) {
+        // Zielgruppe nur mitschicken, wenn die Lehrperson sie auch gesehen hat.
+        // Sonst bleibt sie serverseitig unangetastet (siehe updateEvent).
+        await updateEvent(editEvent.id, {
+          ...base,
+          ...(isStudent || !showTargeting
+            ? {}
+            : { targetStudentIds: selectedIds.size > 0 ? [...selectedIds] : null }),
+        })
+      } else if (isStudent) {
+        await createOwnEvent(base)
+      } else {
+        await createEvent({ ...base, targetStudentIds: selectedIds.size > 0 ? [...selectedIds] : null })
+      }
       router.refresh()
       onClose()
     } catch {
@@ -171,8 +199,10 @@ export default function AddEventModal({ today, classId, mode = 'teacher', onClos
       <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl my-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-lg font-extrabold text-kh-dark">{isStudent ? 'Neuer persönlicher Termin' : 'Neuer Termin'}</h2>
-            {isStudent && <p className="text-xs text-kh-muted font-semibold mt-0.5">Nur für dich sichtbar</p>}
+            <h2 className="text-lg font-extrabold text-kh-dark">
+              {isEdit ? 'Termin bearbeiten' : isStudent ? 'Neuer persönlicher Termin' : 'Neuer Termin'}
+            </h2>
+            {isStudent && !isEdit && <p className="text-xs text-kh-muted font-semibold mt-0.5">Nur für dich sichtbar</p>}
           </div>
           <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
@@ -217,7 +247,7 @@ export default function AddEventModal({ today, classId, mode = 'teacher', onClos
             <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">
               {multiDay ? 'Von' : 'Datum'} *
             </label>
-            <DatePicker value={startDate} min={today} onChange={onStartDateChange} />
+            <DatePicker value={startDate} min={minDate} onChange={onStartDateChange} />
           </div>
           {multiDay && (
             <div>
@@ -304,7 +334,7 @@ export default function AddEventModal({ today, classId, mode = 'teacher', onClos
           </button>
           <button onClick={save} disabled={!canPost || saving}
             className="flex-1 py-3 rounded-full bg-gradient-to-br from-[#4C93C9] to-[#7EB8E5] text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40">
-            {saving ? 'Speichern…' : isStudent ? 'Persönlich anlegen' : 'Termin anlegen'}
+            {saving ? 'Speichern…' : isEdit ? 'Änderungen speichern' : isStudent ? 'Persönlich anlegen' : 'Termin anlegen'}
           </button>
         </div>
       </div>

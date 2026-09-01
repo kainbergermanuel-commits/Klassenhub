@@ -24,6 +24,17 @@ export default async function TerminePage() {
   const events = data ?? []
   const upcomingCount = events.filter(e => e.end_date >= today).length
 
+  // Vornamen nur für Lehrpersonen: sie sollen bei einem persönlichen Termin
+  // sehen, WEN er betrifft (vorher stand dort bloss "Persönlich", die eigene
+  // Auswahl war nach dem Anlegen nicht mehr nachvollziehbar). Schüler:innen
+  // und Eltern brauchen das nicht — sie sehen ohnehin nur eigene Termine.
+  let studentNames: Record<string, string> | undefined
+  if (profile.role === 'teacher' && events.some(e => e.target_student_ids)) {
+    const { data: students } = await supabase
+      .from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'student')
+    studentNames = Object.fromEntries((students ?? []).map(s => [s.id, s.full_name.split(' ')[0]]))
+  }
+
   return (
     <div>
       <PageHeader
@@ -33,7 +44,7 @@ export default async function TerminePage() {
         gradient="from-[#4C93C9] to-[#7EB8E5]"
       />
       <AnimateIn delay={0}>
-        <TermineView events={events} role={profile.role} today={today} classId={activeClassId} userId={user.id} />
+        <TermineView events={events} role={profile.role} today={today} classId={activeClassId} userId={user.id} studentNames={studentNames} />
       </AnimateIn>
     </div>
   )
