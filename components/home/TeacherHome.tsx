@@ -122,6 +122,8 @@ interface TeacherHomeProps {
   homeworkList: HomeworkWithStatus[]
   reminders: Reminder[]
   upcomingEvents: AgendaEvent[]
+  /** Gesamtzahl bevorstehender Termine (upcomingEvents ist auf sechs begrenzt). */
+  upcomingEventCount: number
   recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
   attendancePendingReports: PendingAttendanceReport[]
   absentToday: AbsentTodayEntry[]
@@ -136,7 +138,7 @@ interface TeacherHomeProps {
 }
 
 export default function TeacherHome({
-  fullName, userId, classId, klass, homeworkList, reminders, upcomingEvents, recentHomework,
+  fullName, userId, classId, klass, homeworkList, reminders, upcomingEvents, upcomingEventCount, recentHomework,
   attendancePendingReports, absentToday, students, teacherStats, agenda, subjects,
 }: TeacherHomeProps) {
   const [showModal, setShowModal] = useState(false)
@@ -280,7 +282,7 @@ export default function TeacherHome({
         <div className="relative">
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <AnimateIn delay={120}>
-              <AgendaPanel reminders={reminders} events={upcomingEvents} role="teacher" classId={classId} userId={userId} />
+              <AgendaPanel reminders={reminders} events={upcomingEvents} eventCount={upcomingEventCount} role="teacher" classId={classId} userId={userId} />
             </AnimateIn>
             {/* Anwesenheit direkt unter Terminen/Erinnerungen — nur Desktop
                 (auf Mobile sitzt die Karte oben in der Hauptspalte) */}

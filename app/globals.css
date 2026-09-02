@@ -4,6 +4,11 @@
 
 @layer base {
   * { box-sizing: border-box; }
+  /* KlassenHub ist durchgehend hell gestaltet. Ohne diese Angabe richten sich
+     die vom Browser selbst gezeichneten Bedienelemente nach dem Systemthema:
+     im macOS-Dunkelmodus erschien der Uhrzeit-Wähler (<input type="time">) als
+     schwarzes Panel mitten im hellen Formular. */
+  html { color-scheme: light; }
   html, body { margin: 0; height: 100%; }
   body { background: #EFEAE0; font-family: var(--font-hanken), sans-serif; -webkit-font-smoothing: antialiased; }
   /* Seiten-Titel/Begrüßungen: Display-Schrift (Bricolage Grotesque). Body bleibt Hanken. */

@@ -33,6 +33,8 @@ interface StudentHomeProps {
   reminders: Reminder[]
   myViewedIds: string[]
   upcomingEvents: AgendaEvent[]
+  /** Gesamtzahl bevorstehender Termine (upcomingEvents ist auf sechs begrenzt). */
+  upcomingEventCount: number
   myDuties: { id: string; name: string; partners: DutyPartner[]; doneWeekdays: number[] }[]
   dutyConfirmableUntil: number
   isPreview: boolean
@@ -62,7 +64,7 @@ interface StudentHomeProps {
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, myDuties, dutyConfirmableUntil, isPreview, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, weekPulse, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, upcomingEventCount, myDuties, dutyConfirmableUntil, isPreview, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, weekPulse, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -130,7 +132,7 @@ export default function StudentHome({
         <div className="relative">
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <AnimateIn delay={120}>
-              <AgendaPanel reminders={reminders} events={upcomingEvents} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
+              <AgendaPanel reminders={reminders} events={upcomingEvents} eventCount={upcomingEventCount} role="student" userId={userId} classId={classId} myViewedIds={myViewedIds} />
             </AnimateIn>
             {myDuties.length > 0 && (
               <AnimateIn delay={150}>

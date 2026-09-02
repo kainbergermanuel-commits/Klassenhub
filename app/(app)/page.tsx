@@ -81,6 +81,7 @@ export default async function HomePage() {
     { data: remindersArr },
     { data: weekDuties },
     { data: eventsRaw },
+    { count: upcomingEventCount },
     { data: classGoalRow },
   ] = await Promise.all([
     // Ganzes Schuljahr statt nur "bevorstehend" — deckt alle drei Rollen-Zweige
@@ -107,6 +108,13 @@ export default async function HomePage() {
       .gte('end_date', today)
       .order('start_date', { ascending: true })
       .limit(6),
+    // Die Liste oben bleibt bewusst auf sechs Eintraege begrenzt, die ANZAHL
+    // darf das aber nicht sein: die Startseiten-Kacheln zeigten sonst ab dem
+    // siebten Termin dauerhaft "6" und widersprachen der Termine-Seite.
+    supabase.from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('class_id', activeClassId)
+      .gte('end_date', today),
     supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
   ])
 
@@ -300,7 +308,7 @@ export default async function HomePage() {
       },
       unconfirmed: statsUnconfirmed,
       reminders: statsReminderIds.length > 0 ? { seen: reminderSeen, total: reminderTotal } : null,
-      termine: { count: upcomingEvents.length, nextLabel: nextEventLabel(upcomingEvents, today) },
+      termine: { count: upcomingEventCount ?? upcomingEvents.length, nextLabel: nextEventLabel(upcomingEvents, today) },
       dienste: statsDutyIds.length > 0 ? { done: keptUpStudents.size, assigned: assignedStudents.size, weekStarted: confirmableWeekday(dutyWeekStart) > 0 } : null,
       recap: weeklyRecap,
     }
@@ -354,6 +362,7 @@ export default async function HomePage() {
         homeworkList={homeworkWithCounts}
         reminders={upcomingReminders}
         upcomingEvents={upcomingEvents}
+        upcomingEventCount={upcomingEventCount ?? upcomingEvents.length}
         recentHomework={recentHw.map(h => ({ ...h, completion_count: completionCountByHw.get(h.id) ?? 0 }))}
         attendancePendingReports={attendancePendingReports}
         absentToday={absentToday}
@@ -753,6 +762,7 @@ export default async function HomePage() {
         reminders={upcomingReminders}
         myViewedIds={myViewedIds}
         upcomingEvents={upcomingEvents}
+        upcomingEventCount={upcomingEventCount ?? upcomingEvents.length}
         myDuties={myDuties}
         dutyConfirmableUntil={confirmableWeekday(dutyWeekStart)}
         isPreview={isPreview}
@@ -956,7 +966,7 @@ export default async function HomePage() {
         ? { onTime: childOnTime, total: childCompletions.length }
         : null,
       reminders: parentReminderIds.length > 0 ? { seen: (childReminderViews ?? []).length, total: parentReminderIds.length } : null,
-      termine: { count: upcomingEvents.length, nextLabel: nextEventLabel(upcomingEvents, today) },
+      termine: { count: upcomingEventCount ?? upcomingEvents.length, nextLabel: nextEventLabel(upcomingEvents, today) },
       dienst: childHasDuty ? { keptUp: parentKeptUp.has(child!.id), weekStarted: confirmableWeekday(dutyWeekStart) > 0 } : null,
       recap: childRecap,
     }
@@ -973,6 +983,7 @@ export default async function HomePage() {
         childHomework={childHwWithStatus}
         reminders={upcomingReminders}
         upcomingEvents={upcomingEvents}
+        upcomingEventCount={upcomingEventCount ?? upcomingEvents.length}
         childConfirmedStreak={childConfirmedStreak}
         pendingConfirmations={pendingConfirmations}
         nudgedHomeworkIds={nudgedHomeworkIds}

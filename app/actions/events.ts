@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import type { EventCategory } from '@/lib/eventCategories'
+import type { Database } from '@/lib/types'
 
 async function getTeacherClassId(): Promise<{ userId: string; classId: string }> {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -33,14 +34,23 @@ type EventInput = {
   category: EventCategory
 }
 
-export async function createEvent(input: EventInput & { targetStudentIds?: string[] | null }) {
-  const { userId, classId } = await getTeacherClassId()
+/** Gemeinsame Eingabepruefung von Anlegen und Bearbeiten. Die Uhrzeit war
+ *  bisher ungeprueft: "14:00 - 09:00" liess sich speichern, waehrend das
+ *  Datum gleich doppelt abgesichert ist (Action und DB-Check-Constraint). */
+function validateEventInput(input: EventInput) {
   if (!input.title.trim()) throw new Error('Titel fehlt')
   if (input.endDate < input.startDate) throw new Error('Enddatum liegt vor dem Startdatum')
+  if (!input.allDay && input.startTime && input.endTime && input.endTime <= input.startTime) {
+    throw new Error('Endzeit liegt vor der Startzeit')
+  }
+}
+
+export async function createEvent(input: EventInput & { targetStudentIds?: string[] | null }) {
+  const { userId, classId } = await getTeacherClassId()
+  validateEventInput(input)
 
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('events').insert({
+  const { error } = await supabase.from('events').insert({
     class_id: classId,
     created_by: userId,
     title: input.title.trim(),
@@ -64,12 +74,10 @@ export async function createEvent(input: EventInput & { targetStudentIds?: strin
 // Schüler:innen dürfen nur persönliche Termine für sich selbst anlegen (nie klassenweit, nie für andere)
 export async function createOwnEvent(input: EventInput) {
   const { userId, classId } = await getStudentClassId()
-  if (!input.title.trim()) throw new Error('Titel fehlt')
-  if (input.endDate < input.startDate) throw new Error('Enddatum liegt vor dem Startdatum')
+  validateEventInput(input)
 
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('events').insert({
+  const { error } = await supabase.from('events').insert({
     class_id: classId,
     created_by: userId,
     title: input.title.trim(),
@@ -104,11 +112,12 @@ export async function updateEvent(
   if (!user || !profile) throw new Error('Nicht angemeldet')
   if (!activeClassId) throw new Error('Keine Klasse aktiv')
   if (profile.role !== 'teacher' && profile.role !== 'student') throw new Error('Keine Berechtigung')
-  if (!input.title.trim()) throw new Error('Titel fehlt')
-  if (input.endDate < input.startDate) throw new Error('Enddatum liegt vor dem Startdatum')
+  validateEventInput(input)
 
   const isStudent = profile.role === 'student'
-  const patch: Record<string, unknown> = {
+  // Bewusst typisiert statt Record<string, unknown>: so faellt ein vertippter
+  // Spaltenname beim Kompilieren auf und nicht erst zur Laufzeit.
+  const patch: Database['public']['Tables']['events']['Update'] = {
     title: input.title.trim(),
     description: input.description.trim(),
     start_date: input.startDate,
@@ -130,8 +139,7 @@ export async function updateEvent(
   }
 
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any).from('events').update(patch).eq('id', id).eq('class_id', activeClassId)
+  let query = supabase.from('events').update(patch).eq('id', id).eq('class_id', activeClassId)
   if (isStudent) query = query.eq('created_by', user.id)
 
   // `.select()` macht sichtbar, ob wirklich eine Zeile getroffen wurde. Ohne
@@ -153,8 +161,7 @@ export async function deleteEvent(id: string) {
   if (profile.role !== 'teacher' && profile.role !== 'student') throw new Error('Keine Berechtigung')
 
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any).from('events').delete().eq('id', id).eq('class_id', activeClassId)
+  let query = supabase.from('events').delete().eq('id', id).eq('class_id', activeClassId)
   if (profile.role === 'student') query = query.eq('created_by', user.id)
   const { error } = await query
   if (error) throw new Error(error.message)

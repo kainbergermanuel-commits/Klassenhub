@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { todayISO } from '@/lib/date'
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
+import DatePicker from '@/components/ui/DatePicker'
 
 interface Props {
   classId: string
@@ -24,96 +25,10 @@ interface Student {
   avatar_skin_color: string | null
 }
 
-const MONTHS = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
-const WEEKDAYS = ['Mo','Di','Mi','Do','Fr','Sa','So']
-
 function addDays(dateStr: string, n: number) {
   const d = new Date(dateStr); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10)
 }
 function tomorrowISO() { return addDays(todayISO(), 1) }
-function formatDisplay(iso: string) {
-  return new Date(iso).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'long' })
-}
-function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
-function getFirstWeekday(y: number, m: number) { return (new Date(y, m, 1).getDay() + 6) % 7 }
-
-function DatePicker({ value, min, onChange }: { value: string; min: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const sel = new Date(value)
-  const [viewYear, setViewYear] = useState(sel.getFullYear())
-  const [viewMonth, setViewMonth] = useState(sel.getMonth())
-
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [])
-
-  const today = todayISO()
-  const daysInMonth = getDaysInMonth(viewYear, viewMonth)
-  const firstWeekday = getFirstWeekday(viewYear, viewMonth)
-
-  function prevMonth() {
-    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) } else setViewMonth(m => m - 1)
-  }
-  function nextMonth() {
-    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) } else setViewMonth(m => m + 1)
-  }
-  function selectDay(day: number) {
-    const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    if (iso < min) return
-    onChange(iso); setOpen(false)
-  }
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition hover:border-kh-teal/50"
-      >
-        <span>{value ? formatDisplay(value) : 'Datum wählen'}</span>
-        <span className="msym text-[18px] text-kh-muted">calendar_month</span>
-      </button>
-      {open && (
-        <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
-          <div className="flex items-center justify-between mb-3">
-            <IconButton type="button" onClick={prevMonth} icon="chevron_left" size="sm" aria-label="Vorheriger Monat" />
-            <span className="font-extrabold text-[14px] text-kh-dark">{MONTHS[viewMonth]} {viewYear}</span>
-            <IconButton type="button" onClick={nextMonth} icon="chevron_right" size="sm" aria-label="Nächster Monat" />
-          </div>
-          <div className="grid grid-cols-7 mb-1">
-            {WEEKDAYS.map(d => <div key={d} className="text-center text-[11px] font-bold text-kh-muted py-1">{d}</div>)}
-          </div>
-          <div className="grid grid-cols-7 gap-y-1">
-            {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1
-              const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-              const isSelected = iso === value
-              const isToday = iso === today
-              const isPast = iso < min
-              return (
-                <button key={day} type="button" onClick={() => selectDay(day)} disabled={isPast}
-                  className={`h-8 w-full rounded-lg text-[13px] font-semibold transition-all
-                    ${isSelected ? 'bg-kh-teal text-white font-extrabold' : ''}
-                    ${!isSelected && isToday ? 'border border-kh-teal text-kh-teal' : ''}
-                    ${!isSelected && !isPast ? 'hover:bg-[#F0FAF8] text-kh-dark' : ''}
-                    ${isPast ? 'text-kh-muted/40 cursor-not-allowed' : ''}`}
-                >
-                  {day}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default function AddReminderModal({ classId, userId, isPending = false, onClose }: Props) {
   const router = useRouter()

@@ -23,6 +23,8 @@ interface ParentHomeProps {
   childHomework: HomeworkWithStatus[]
   reminders: Reminder[]
   upcomingEvents: AgendaEvent[]
+  /** Gesamtzahl bevorstehender Termine (upcomingEvents ist auf sechs begrenzt). */
+  upcomingEventCount: number
   /** Eltern-bestätigter Streak des Kindes – bestimmt die Flammen in der Kopfzeile. */
   childConfirmedStreak: number
   pendingConfirmations: PendingConfirmation[]
@@ -39,7 +41,7 @@ interface ParentHomeProps {
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, agenda, childStats,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, upcomingEventCount, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, agenda, childStats,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -163,7 +165,7 @@ export default function ParentHome({
         <div className="relative">
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <AnimateIn delay={120}>
-              <AgendaPanel reminders={reminders} events={upcomingEvents} role="parent" />
+              <AgendaPanel reminders={reminders} events={upcomingEvents} eventCount={upcomingEventCount} role="parent" />
             </AnimateIn>
             {/* Anwesenheit unter Terminen/Erinnerungen — nur Desktop
                 (auf Mobile sitzt die Karte oben in der Hauptspalte) */}

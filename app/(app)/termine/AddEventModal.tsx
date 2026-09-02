@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -8,6 +8,7 @@ import { createEvent, createOwnEvent, updateEvent } from '@/app/actions/events'
 import { EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
+import DatePicker from '@/components/ui/DatePicker'
 import type { CalendarEvent } from '@/lib/types'
 
 interface Props {
@@ -26,84 +27,6 @@ interface Student {
   avatar_seed: string | null
   avatar_hair_color: string | null
   avatar_skin_color: string | null
-}
-
-const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
-const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-
-function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
-function getFirstWeekday(y: number, m: number) { return (new Date(y, m, 1).getDay() + 6) % 7 }
-function formatDisplay(iso: string) { return new Date(`${iso}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'long' }) }
-
-function DatePicker({ value, min, onChange }: { value: string; min: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const sel = new Date(`${value}T00:00:00`)
-  const [viewYear, setViewYear] = useState(sel.getFullYear())
-  const [viewMonth, setViewMonth] = useState(sel.getMonth())
-
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [])
-
-  const daysInMonth = getDaysInMonth(viewYear, viewMonth)
-  const firstWeekday = getFirstWeekday(viewYear, viewMonth)
-
-  function prevMonth() { if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) } else setViewMonth(m => m - 1) }
-  function nextMonth() { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) } else setViewMonth(m => m + 1) }
-  function selectDay(day: number) {
-    const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    if (iso < min) return
-    onChange(iso); setOpen(false)
-  }
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition hover:border-kh-teal/50"
-      >
-        <span>{formatDisplay(value)}</span>
-        <span className="msym text-[18px] text-kh-muted">calendar_month</span>
-      </button>
-      {open && (
-        <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-kh-border p-4 w-[280px]">
-          <div className="flex items-center justify-between mb-3">
-            <IconButton type="button" onClick={prevMonth} icon="chevron_left" size="sm" aria-label="Vorheriger Monat" />
-            <span className="font-extrabold text-[14px] text-kh-dark">{MONTHS[viewMonth]} {viewYear}</span>
-            <IconButton type="button" onClick={nextMonth} icon="chevron_right" size="sm" aria-label="Nächster Monat" />
-          </div>
-          <div className="grid grid-cols-7 mb-1">
-            {WEEKDAYS.map(d => <div key={d} className="text-center text-[11px] font-bold text-kh-muted py-1">{d}</div>)}
-          </div>
-          <div className="grid grid-cols-7 gap-y-1">
-            {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1
-              const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-              const isSelected = iso === value
-              const isPast = iso < min
-              return (
-                <button key={day} type="button" onClick={() => selectDay(day)} disabled={isPast}
-                  className={`h-8 w-full rounded-lg text-[13px] font-semibold transition-all
-                    ${isSelected ? 'bg-kh-teal text-white font-extrabold' : ''}
-                    ${!isSelected && !isPast ? 'hover:bg-[#F0FAF8] text-kh-dark' : ''}
-                    ${isPast ? 'text-kh-muted/40 cursor-not-allowed' : ''}`}
-                >
-                  {day}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
 }
 
 export default function AddEventModal({ today, classId, mode = 'teacher', editEvent, onClose }: Props) {
@@ -134,6 +57,14 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
   // sonst stünde im Bearbeiten-Formular ein im Kalender gesperrter Tag.
   const minDate = editEvent && editEvent.start_date < today ? editEvent.start_date : today
 
+  // Escape schliesst das Formular. Bisher ging das nur ueber den Abbrechen-
+  // Knopf oder einen Klick auf den Hintergrund.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   useEffect(() => {
     if (isStudent || !showTargeting || students.length > 0) return
     createClient()
@@ -159,7 +90,10 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
   // Beim Anlegen erzwingt eine geöffnete Zielgruppe mindestens eine Auswahl.
   // Beim Bearbeiten nicht: "keine Auswahl" ist dort die gültige Absicht,
   // einen persönlichen Termin wieder zum Klassentermin zu machen.
-  const canPost = title.trim().length > 0 && startDate && endDate >= startDate
+  // Endzeit muss nach der Startzeit liegen — gleiche Regel wie serverseitig
+  // in validateEventInput, hier nur frueher sichtbar.
+  const timeInvalid = !allDay && !!startTime && !!endTime && endTime <= startTime
+  const canPost = title.trim().length > 0 && startDate && endDate >= startDate && !timeInvalid
     && (isStudent || isEdit || !showTargeting || selectedIds.size > 0)
 
   async function save() {
@@ -196,13 +130,28 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
 
   const modal = (
     <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl my-auto" onClick={e => e.stopPropagation()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEdit ? 'Termin bearbeiten' : isStudent ? 'Neuer persönlicher Termin' : 'Neuer Termin'}
+        className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl my-auto"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-extrabold text-kh-dark">
               {isEdit ? 'Termin bearbeiten' : isStudent ? 'Neuer persönlicher Termin' : 'Neuer Termin'}
             </h2>
-            {isStudent && !isEdit && <p className="text-xs text-kh-muted font-semibold mt-0.5">Nur für dich sichtbar</p>}
+            {/* Vorher stand hier "Nur für dich sichtbar". Das war eine falsche
+                Zusage: die Lesepolicy gibt Lehrpersonen ausnahmslos alle
+                Termine ihrer Klasse frei, Eltern jeden Termin ihres Kindes.
+                Ein Kind, das hier etwas Privates einträgt, muss wissen, wer
+                mitliest. */}
+            {isStudent && (
+              <p className="text-xs text-kh-muted font-semibold mt-0.5">
+                Nicht für die Klasse sichtbar. Deine Lehrkraft und deine Eltern sehen ihn.
+              </p>
+            )}
           </div>
           <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
         </div>
@@ -275,9 +224,15 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
               <div className="flex-1">
                 <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Bis (optional)</label>
                 <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
-                  className="w-full border border-kh-border rounded-xl px-3 py-2.5 text-base md:text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors" />
+                  aria-invalid={timeInvalid}
+                  className={`w-full border rounded-xl px-3 py-2.5 text-base md:text-sm font-medium text-kh-dark outline-none transition-colors ${
+                    timeInvalid ? 'border-kh-red' : 'border-kh-border focus:border-kh-teal'
+                  }`} />
               </div>
             </div>
+          )}
+          {timeInvalid && (
+            <p className="text-[12px] font-semibold text-kh-red -mt-1">Die Endzeit muss nach der Startzeit liegen.</p>
           )}
 
           {/* Zielgruppe */}

@@ -13,6 +13,9 @@ import AddEventModal from '@/app/(app)/termine/AddEventModal'
 interface Props {
   reminders: Reminder[]
   events?: AgendaEvent[]
+  /** Gesamtzahl bevorstehender Termine. `events` ist bewusst auf sechs
+   *  begrenzt, das Zahlenabzeichen darf das nicht sein. */
+  eventCount?: number
   role: Role
   userId?: string
   classId?: string
@@ -35,7 +38,7 @@ function badgeStyle(days: number) {
   return { color: '#6E7E80', bg: '#ECE6D9' }
 }
 
-export default function AgendaPanel({ reminders, events = [], role, userId, classId, myViewedIds = [] }: Props) {
+export default function AgendaPanel({ reminders, events = [], eventCount, role, userId, classId, myViewedIds = [] }: Props) {
   const [tab, setTab] = useState<Tab>('erinnerungen')
   const [showAddReminder, setShowAddReminder] = useState(false)
   const [showAddEvent, setShowAddEvent] = useState(false)
@@ -94,7 +97,7 @@ export default function AgendaPanel({ reminders, events = [], role, userId, clas
       <div className="flex items-center gap-2 mb-4">
         <div className="flex-1 flex gap-0.5 p-0.5 rounded-lg bg-gradient-to-b from-[#ECE7DD] to-white">
           <TabButton value="erinnerungen" label="Erinnerungen" count={reminders.length} />
-          <TabButton value="termine" label="Termine" count={events.length} />
+          <TabButton value="termine" label="Termine" count={eventCount ?? events.length} />
         </div>
         {canAdd ? (
           <button

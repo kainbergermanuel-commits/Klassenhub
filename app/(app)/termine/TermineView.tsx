@@ -269,6 +269,7 @@ export default function TermineView({ events, role, today, classId, userId, stud
     return map
   }, [filteredEvents])
 
+  const filtersActive = filter !== 'alle' || categoryFilter !== 'alle'
   const upcoming = useMemo(() => filteredEvents.filter(e => e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date)), [filteredEvents, today])
   const past = useMemo(() => filteredEvents.filter(e => e.end_date < today).sort((a, b) => b.start_date.localeCompare(a.start_date)), [filteredEvents, today])
   const nextEvent = upcoming[0] ?? null
@@ -515,9 +516,23 @@ export default function TermineView({ events, role, today, classId, userId, stud
               {upcoming.length === 0 ? (
                 <div className="kh-card-flat p-8 text-center">
                   <span className="msym text-4xl block mb-2 text-kh-teal-light">calendar_month</span>
+                  {/* Ein aktiver Filter ist der haeufigere Grund fuer eine leere
+                      Liste als "es gibt nichts". Vorher stand hier auch dann
+                      "Noch keine Termine angelegt", wenn reichlich Termine
+                      existierten und nur keiner zum Filter passte. */}
                   <p className="text-sm text-kh-muted font-medium">
-                    {canManage ? 'Noch keine Termine angelegt.' : 'Noch keine bevorstehenden Termine.'}
+                    {filtersActive
+                      ? 'Kein bevorstehender Termin passt zu dieser Auswahl.'
+                      : canManage ? 'Noch keine Termine angelegt.' : 'Noch keine bevorstehenden Termine.'}
                   </p>
+                  {filtersActive && (
+                    <button
+                      onClick={() => { setFilter('alle'); setCategoryFilter('alle') }}
+                      className="mt-2 text-[12.5px] font-bold text-kh-teal hover:underline"
+                    >
+                      Filter zurücksetzen
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2.5">

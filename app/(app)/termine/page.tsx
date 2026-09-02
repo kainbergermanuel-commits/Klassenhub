@@ -5,7 +5,6 @@ import { todayISO } from '@/lib/date'
 import PageHeader from '@/components/layout/PageHeader'
 import TermineView from './TermineView'
 import AnimateIn from '@/components/ui/AnimateIn'
-import type { CalendarEvent } from '@/lib/types'
 
 export default async function TerminePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -15,11 +14,11 @@ export default async function TerminePage() {
   const supabase = await createClient()
   const today = todayISO()
 
-  const { data } = await (supabase
-    .from('events' as never)
+  const { data } = await supabase
+    .from('events')
     .select('*')
     .eq('class_id', activeClassId)
-    .order('start_date', { ascending: true }) as unknown as Promise<{ data: CalendarEvent[] | null }>)
+    .order('start_date', { ascending: true })
 
   const events = data ?? []
   const upcomingCount = events.filter(e => e.end_date >= today).length
