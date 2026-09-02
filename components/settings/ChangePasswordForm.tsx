@@ -93,7 +93,7 @@ export default function ChangePasswordForm() {
       <button
         type="submit"
         disabled={!canSubmit}
-        className="w-full mt-5 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full mt-5 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {saving ? 'Speichern…' : 'Passwort speichern'}
       </button>

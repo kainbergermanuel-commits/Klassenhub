@@ -148,7 +148,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
                   <button
                     onClick={(e) => { e.stopPropagation(); activateShield() }}
                     disabled={pending}
-                    className="pointer-events-auto mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#5AB4E0] to-[#3D8FC7] text-white text-[11.5px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+                    className="pointer-events-auto mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#5AB4E0] to-[#3D8FC7] text-white text-[11.5px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
                   >
                     <span className="msym text-[13px]">ac_unit</span>
                     Schild einsetzen
@@ -188,7 +188,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
                   <button
                     onClick={(e) => { e.stopPropagation(); activateCrystal() }}
                     disabled={crystalPending}
-                    className="pointer-events-auto mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#C084E8] to-[#9C5FD1] text-white text-[11.5px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+                    className="pointer-events-auto mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#C084E8] to-[#9C5FD1] text-white text-[11.5px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
                   >
                     <span className="msym text-[13px]">bolt</span>
                     Kristall einsetzen
@@ -224,7 +224,7 @@ export default function RucksackItems({ state }: { state: RucksackState }) {
                   <button
                     onClick={(e) => { e.stopPropagation(); activateNudge() }}
                     disabled={nudgePending}
-                    className="pointer-events-auto mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#F0A868] to-[#D97B3D] text-white text-[11.5px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+                    className="pointer-events-auto mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#F0A868] to-[#D97B3D] text-white text-[11.5px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
                   >
                     <span className="msym text-[13px]">send</span>
                     Erinnerung schicken

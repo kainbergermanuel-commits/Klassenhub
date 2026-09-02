@@ -161,7 +161,7 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
           )}
           <button
             onClick={() => setComposing(true)}
-            className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:brightness-105 transition-[filter,opacity] duration-150 tap"
           >
             <span className="msym text-[19px]">campaign</span>
             Sammelnachricht
@@ -301,7 +301,7 @@ function TeacherThread({
           onClick={send}
           disabled={!body.trim() || sending}
           aria-label="Senden"
-          className="w-11 h-11 rounded-full gradient-teal text-white flex items-center justify-center flex-shrink-0 disabled:opacity-40 hover:opacity-90 transition-opacity"
+          className="w-11 h-11 rounded-full gradient-teal text-white flex items-center justify-center flex-shrink-0 disabled:opacity-40 hover:brightness-105 transition-[filter,opacity] duration-150 tap"
         >
           <span className="msym text-[20px]">send</span>
         </button>
@@ -615,7 +615,7 @@ function ComposeModal({
         <button
           onClick={send}
           disabled={!body.trim() || sending || targetParents.length === 0}
-          className="w-full py-3 rounded-full gradient-teal text-white font-bold text-sm disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-full gradient-teal text-white font-bold text-sm disabled:opacity-40 hover:brightness-105 transition-[filter,opacity] duration-150 tap flex items-center justify-center gap-2"
         >
           <span className="msym text-[19px]">send</span>
           An {targetParents.length} {targetParents.length === 1 ? 'Heft' : 'Hefte'} senden

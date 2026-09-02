@@ -48,11 +48,11 @@ export function useConfirm() {
   const dialog = mounted && state
     ? createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4"
+          className="modal-backdrop fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4"
           onClick={() => close(false)}
         >
           <div
-            className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl"
+            className="modal-panel w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start gap-3">

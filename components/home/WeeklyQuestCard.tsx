@@ -9,6 +9,7 @@ import { QUEST_FOCUS_LABELS, resolveQuestNarrative } from '@/lib/questVault'
 import Avatar from '@/components/ui/Avatar'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
 import FocusInfoOverlay from '@/components/home/FocusInfoOverlay'
+import { useGrowIn } from '@/lib/useMotion'
 import type { QuestResult } from '@/lib/quests'
 import type { Guild, GuildMember, GuildQuestResult } from '@/lib/guilds'
 
@@ -39,6 +40,22 @@ function readStore(key: string): string | null {
 }
 function writeStore(key: string, value: string) {
   try { localStorage.setItem(key, value) } catch { /* privater Modus o.ä. */ }
+}
+
+/** Ein Teilziel-Balken. Eigene Komponente, weil useGrowIn ein Hook ist und
+ *  nicht innerhalb einer .map() aufgerufen werden darf. Wächst beim Erscheinen
+ *  von 0 auf seinen Wert — vorher stand der Endwert sofort da und die
+ *  vorhandene CSS-Transition lief nie. */
+function QuestPartBar({ current, target }: { current: number; target: number }) {
+  const pct = useGrowIn(target > 0 ? Math.min(100, (current / target) * 100) : 0)
+  return (
+    <div className="w-16 h-1.5 rounded-full bg-kh-border/50 overflow-hidden flex-shrink-0">
+      <div
+        className="h-full rounded-full bg-kh-teal transition-[width] duration-500 ease-out"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  )
 }
 
 function ChoiceButtons({ questKey, weekStart, choices }: { questKey: string; weekStart: string; choices: NonNullable<QuestResult['template']['choices']> }) {
@@ -89,24 +106,38 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
   // Serverseitig immer zu rendern, damit Server- und Client-Markup beim ersten
   // Durchgang übereinstimmen; localStorage folgt gleich danach im Effekt.
   const [open, setOpen] = useState(!collapsible)
+  /** Quests, die seit dem letzten Besuch neu erfüllt wurden — sie bekommen
+   *  einmal den Puls, den auch ein gelöstes Rätsel bekommt. Bisher wechselte
+   *  eine erfüllte Quest nur still ihr Symbol, was für den Kern des
+   *  Abenteuer-Systems erstaunlich wenig war. */
+  const [freshlyDone, setFreshlyDone] = useState<Set<string>>(new Set())
 
   const doneCount = quests.filter(q => q.done).length
   const doneKeys = quests.filter(q => q.done).map(q => q.template.key).sort().join(',')
 
   useEffect(() => {
-    if (!collapsible) return
-    // Frisch erfüllte Quest? Dann von selbst aufklappen — sonst verpasst das
-    // Kind genau den Moment, auf den das Quest-System hinarbeitet.
     const seen = readStore(SEEN_DONE_KEY)
     // Beim allerersten Laden ist nichts gespeichert. Dann gilt der aktuelle
     // Stand als bekannt, statt jede längst erledigte Quest als "neu" zu
     // werten — sonst spränge die Karte nach dem Deploy bei jedem Kind auf,
     // das diese Woche schon etwas geschafft hat.
     const seenSet = new Set(seen ? seen.split(',').filter(Boolean) : [])
-    const isNew = seen !== null && doneKeys.split(',').filter(Boolean).some(k => !seenSet.has(k))
+    const fresh = seen === null
+      ? []
+      : doneKeys.split(',').filter(Boolean).filter(k => !seenSet.has(k))
     writeStore(SEEN_DONE_KEY, doneKeys)
-    if (isNew) { setOpen(true); return }
-    setOpen(readStore(OPEN_KEY) === '1')
+
+    if (fresh.length > 0) {
+      setFreshlyDone(new Set(fresh))
+      // Der Puls läuft 0,9 s; danach die Markierung wieder abräumen, damit er
+      // bei einer späteren Neuberechnung nicht erneut anspringt.
+      const t = window.setTimeout(() => setFreshlyDone(new Set()), 950)
+      // Nur die Startseiten-Variante klappt dabei auf; auf /streaks ist die
+      // Karte ohnehin offen.
+      if (collapsible) setOpen(true)
+      return () => window.clearTimeout(t)
+    }
+    if (collapsible) setOpen(readStore(OPEN_KEY) === '1')
   }, [collapsible, doneKeys])
 
   function toggleOpen() {
@@ -199,7 +230,9 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
           return (
             <div
               key={q.template.key}
-              className={`rounded-xl px-3 py-2.5 ${isMeister ? 'bg-kh-amber/[0.07] border border-kh-amber/25' : 'bg-[#FAF8F3]'}`}
+              className={`rounded-xl px-3 py-2.5 ${isMeister ? 'bg-kh-amber/[0.07] border border-kh-amber/25' : 'bg-[#FAF8F3]'} ${
+                freshlyDone.has(q.template.key) ? 'animate-riddle-solve' : ''
+              }`}
             >
               <div className="flex items-center gap-2">
                 <span
@@ -234,12 +267,7 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
                   {q.parts.map(p => (
                     <div key={p.label} className="flex items-center gap-2">
                       <span className="text-[11px] text-kh-muted flex-1 truncate">{p.label}</span>
-                      <div className="w-16 h-1.5 rounded-full bg-kh-border/50 overflow-hidden flex-shrink-0">
-                        <div
-                          className="h-full rounded-full bg-kh-teal transition-[width] duration-500"
-                          style={{ width: `${(p.progress.current / p.progress.target) * 100}%` }}
-                        />
-                      </div>
+                      <QuestPartBar current={p.progress.current} target={p.progress.target} />
                       <span className="text-[10.5px] font-bold text-kh-muted flex-shrink-0 w-9 text-right">
                         {p.progress.current}/{p.progress.target}
                       </span>

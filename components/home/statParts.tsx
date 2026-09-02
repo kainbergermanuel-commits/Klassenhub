@@ -1,61 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useGrowIn, useCountUp, usePrefersReducedMotion } from '@/lib/useMotion'
 
 /** Prozent-Anteil, gerundet, 0 bei Nenner 0. */
 export const pctOf = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0)
 
 /* ─── Motion-Helfer ────────────────────────────────────────────────────────── */
-
-/** Respektiert die System-Einstellung "Bewegung reduzieren". */
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setReduced(mq.matches)
-    const onChange = () => setReduced(mq.matches)
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
-  return reduced
-}
-
-/**
- * Gibt beim ersten Frame 0 zurück, danach den Zielwert — damit Ringe und Balken
- * beim Laden von 0 auf ihren Wert wachsen (vorher stand der Endwert sofort da,
- * die CSS-Transition lief also nie).
- */
-function useGrowIn(target: number) {
-  const reduced = usePrefersReducedMotion()
-  const [value, setValue] = useState(0)
-  useEffect(() => {
-    if (reduced) { setValue(target); return }
-    const id = requestAnimationFrame(() => setValue(target))
-    return () => cancelAnimationFrame(id)
-  }, [target, reduced])
-  return reduced ? target : value
-}
-
-/** Zählt eine Zahl in ~700 ms hoch (ease-out), respektiert Reduced Motion. */
-function useCountUp(target: number, duration = 700) {
-  const reduced = usePrefersReducedMotion()
-  const [value, setValue] = useState(0)
-  const frame = useRef<number | undefined>(undefined)
-  useEffect(() => {
-    if (reduced) { setValue(target); return }
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration)
-      const eased = 1 - Math.pow(1 - t, 3)
-      setValue(Math.round(target * eased))
-      if (t < 1) frame.current = requestAnimationFrame(tick)
-    }
-    frame.current = requestAnimationFrame(tick)
-    return () => { if (frame.current) cancelAnimationFrame(frame.current) }
-  }, [target, duration, reduced])
-  return reduced ? target : value
-}
 
 /* ─── Tooltip ──────────────────────────────────────────────────────────────── */
 

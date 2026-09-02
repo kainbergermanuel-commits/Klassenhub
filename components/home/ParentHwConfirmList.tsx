@@ -88,7 +88,7 @@ export default function ParentHwConfirmList({ items, childFirstName, nudgedHomew
           <button
             onClick={confirmAll}
             disabled={loading !== null}
-            className="ml-auto mr-3 flex items-center gap-1.5 gradient-teal text-white px-3 py-1.5 rounded-full text-[12px] font-bold hover:opacity-90 transition-opacity disabled:opacity-60 flex-shrink-0"
+            className="ml-auto mr-3 flex items-center gap-1.5 gradient-teal text-white px-3 py-1.5 rounded-full text-[12px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-60 flex-shrink-0"
           >
             <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>done_all</span>
             {loading === '__all__' ? '…' : 'Alle bestätigen'}
@@ -121,7 +121,7 @@ export default function ParentHwConfirmList({ items, childFirstName, nudgedHomew
             <button
               onClick={() => confirm(item)}
               disabled={loading === item.homework_id}
-              className="flex items-center gap-1.5 gradient-teal text-white px-3 py-1.5 rounded-full text-[12px] font-bold hover:opacity-90 transition-opacity disabled:opacity-60 flex-shrink-0"
+              className="flex items-center gap-1.5 gradient-teal text-white px-3 py-1.5 rounded-full text-[12px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-60 flex-shrink-0"
             >
               <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
               {loading === item.homework_id ? '…' : 'Bestätigen'}

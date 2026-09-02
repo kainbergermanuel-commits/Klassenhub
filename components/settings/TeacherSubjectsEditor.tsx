@@ -134,7 +134,7 @@ export default function TeacherSubjectsEditor({ initial, activeClassId, allClass
         <button
           onClick={save}
           disabled={selected.length === 0}
-          className="px-5 py-2 rounded-full gradient-teal text-white text-[13px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="px-5 py-2 rounded-full gradient-teal text-white text-[13px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
         >
           {saved ? '✓ Gespeichert' : 'Speichern'}
         </button>

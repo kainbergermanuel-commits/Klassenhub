@@ -145,7 +145,7 @@ export default function MessageThread({ messages, side, senderNames = {}, sender
                     ) : (
                       <button
                         onClick={() => { setAckedLocal(prev => new Set(prev).add(m.id)); onAcknowledge?.(m.id) }}
-                        className="mt-1.5 flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full gradient-teal text-white hover:opacity-90 transition-opacity"
+                        className="mt-1.5 flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full gradient-teal text-white hover:brightness-105 transition-[filter,opacity] duration-150 tap"
                       >
                         <span className="msym text-[15px]">task_alt</span>
                         Zur Kenntnis genommen

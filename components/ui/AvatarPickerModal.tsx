@@ -150,11 +150,11 @@ export default function AvatarPickerModal({ currentSeed, currentHairColor, curre
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl"
+        className="modal-panel bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
@@ -224,7 +224,7 @@ export default function AvatarPickerModal({ currentSeed, currentHairColor, curre
           <button onClick={onClose} className="flex-1 py-3 rounded-full border border-kh-border text-sm font-bold text-kh-muted hover:bg-[#F6F3ED] transition-colors">
             Abbrechen
           </button>
-          <button onClick={confirm} className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:opacity-90 transition-opacity">
+          <button onClick={confirm} className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap">
             Übernehmen
           </button>
         </div>

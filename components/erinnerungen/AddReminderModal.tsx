@@ -80,8 +80,8 @@ export default function AddReminderModal({ classId, userId, isPending = false, o
   }
 
   const modal = (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl my-auto" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop fixed inset-0 z-[200] flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
+      <div className="modal-panel bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl my-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-extrabold text-kh-dark">Neue Erinnerung</h2>
@@ -159,7 +159,7 @@ export default function AddReminderModal({ classId, userId, isPending = false, o
             Abbrechen
           </button>
           <button onClick={save} disabled={!canPost || saving}
-            className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40">
+            className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40">
             {saving ? 'Speichern…' : isPending ? 'Zur Bestätigung senden' : 'Posten'}
           </button>
         </div>

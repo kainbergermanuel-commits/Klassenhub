@@ -106,14 +106,14 @@ export default function DutyWeek({
             <button
               onClick={randomAssign}
               disabled={randomizing}
-              className="flex items-center gap-2 gradient-violet text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+              className="flex items-center gap-2 gradient-violet text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-60"
             >
               <span className="msym text-[19px]">{randomizing ? 'hourglass_empty' : 'shuffle'}</span>
               Zufällig zuweisen
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:brightness-105 transition-[filter,opacity] duration-150 tap"
             >
               <span className="msym text-[19px]">add</span>
               Dienst zuweisen

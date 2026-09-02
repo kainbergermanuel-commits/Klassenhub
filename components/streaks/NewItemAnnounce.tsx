@@ -31,8 +31,8 @@ export default function NewItemAnnounce({ state }: { state: RucksackState }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-kh-dark/45 backdrop-blur-sm">
-      <div className="w-full max-w-[340px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(20,40,45,.35)] p-6 text-center">
+    <div className="modal-backdrop fixed inset-0 z-[100] flex items-center justify-center p-4 bg-kh-dark/45 backdrop-blur-sm">
+      <div className="modal-panel w-full max-w-[340px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(20,40,45,.35)] p-6 text-center">
         <p className="text-[10.5px] font-bold uppercase tracking-widest text-kh-muted">
           Neu in deinem Rucksack
         </p>
@@ -54,7 +54,7 @@ export default function NewItemAnnounce({ state }: { state: RucksackState }) {
         <button
           type="button"
           onClick={next}
-          className="mt-5 w-full px-4 py-2.5 rounded-full bg-gradient-to-br from-kh-teal to-[#0B6F69] text-white text-[13px] font-extrabold hover:opacity-90 transition-opacity"
+          className="mt-5 w-full px-4 py-2.5 rounded-full bg-gradient-to-br from-kh-teal to-[#0B6F69] text-white text-[13px] font-extrabold hover:brightness-105 transition-[filter,opacity] duration-150 tap"
         >
           {isLast ? 'In den Rucksack legen' : 'Weiter'}
         </button>

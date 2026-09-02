@@ -29,14 +29,14 @@ export default function FocusInfoOverlay({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={info.title}
-        className="relative w-full max-w-sm rounded-2xl bg-white shadow-xl p-6 max-h-[85vh] overflow-y-auto"
+        className="modal-panel relative w-full max-w-sm rounded-2xl bg-white shadow-xl p-6 max-h-[85vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <button

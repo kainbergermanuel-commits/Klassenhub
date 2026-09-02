@@ -93,7 +93,7 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
           <button
             onClick={submit}
             disabled={isPending}
-            className="px-5 py-2.5 rounded-full text-[13.5px] font-bold text-white gradient-teal hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+            className="px-5 py-2.5 rounded-full text-[13.5px] font-bold text-white gradient-teal hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-50 disabled:pointer-events-none"
           >
             {isPending ? 'Wird gemeldet …' : 'Abmelden'}
           </button>

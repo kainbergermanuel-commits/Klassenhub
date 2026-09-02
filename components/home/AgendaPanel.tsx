@@ -106,7 +106,7 @@ export default function AgendaPanel({ reminders, events = [], eventCount, subjec
         {canAdd ? (
           <button
             onClick={() => (tab === 'erinnerungen' ? setShowAddReminder(true) : setShowAddEvent(true))}
-            className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity flex-shrink-0"
+            className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:brightness-105 transition-[filter,opacity] duration-150 tap flex-shrink-0"
             aria-label={tab === 'erinnerungen' ? 'Neue Erinnerung' : 'Neuer Termin'}
           >
             <span className="msym text-[19px]">add</span>
@@ -114,7 +114,7 @@ export default function AgendaPanel({ reminders, events = [], eventCount, subjec
         ) : (
           <Link
             href={addLink}
-            className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity flex-shrink-0"
+            className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:brightness-105 transition-[filter,opacity] duration-150 tap flex-shrink-0"
             aria-label={tab === 'erinnerungen' ? 'Zu Erinnerungen' : 'Zu Terminen'}
           >
             <span className="msym text-[19px]">arrow_forward</span>

@@ -78,8 +78,8 @@ export default function AddDutyModal({ classId, userId, weekStart, students, ass
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={onClose}>
+      <div className="modal-panel bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-extrabold text-kh-dark">{isEdit ? 'Dienst bearbeiten' : 'Dienst zuweisen'}</h2>
           <IconButton onClick={onClose} aria-label="Schließen" icon="close" size="sm" />
@@ -166,7 +166,7 @@ export default function AddDutyModal({ classId, userId, weekStart, students, ass
           <button
             onClick={save}
             disabled={!finalName || selected.length === 0 || saving}
-            className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+            className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
           >
             {saving ? 'Speichern…' : isEdit ? 'Speichern' : 'Zuweisen'}
           </button>

@@ -170,6 +170,27 @@
   }
   .animate-duty-week { animation: duty-week .85s cubic-bezier(.22,1,.36,1); }
 
+  /* Modal-Eintritt. Kein Modal der App hatte einen: sie erschienen hart.
+     Zwei Teile, weil der Hintergrund schneller da sein muss als der Dialog —
+     sonst wirkt das Abdunkeln wie ein Nachzügler.
+     Bewusst kürzer und mit weniger Weg als card-enter (0,45 s / 14 px): ein
+     Dialog sitzt schon in der Mitte und soll sich öffnen, nicht anreisen.
+     Beim Schliessen gibt es bewusst KEINE Rückwärtsanimation — Wegräumen
+     darf sofort passieren, sonst fühlt sich die App zäh an.
+
+     ⚠️ Der Schluss-Keyframe MUSS `transform: none` sein, nicht `scale(1)`:
+     mit `animation-fill-mode: both` bliebe der Endwert dauerhaft stehen, und
+     jeder Wert ausser `none` erzeugt laut CSS-Spec einen Containing Block für
+     `position: fixed`-Kinder. Genau daran kranken sonst verschachtelte
+     Overlays (siehe die Portal-Erklärung in GuideInfoOverlay). */
+  @keyframes modal-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modal-panel-in {
+    from { opacity: 0; transform: translateY(8px) scale(.98); }
+    to   { opacity: 1; transform: none; }
+  }
+  .modal-backdrop { animation: modal-backdrop-in .15s ease-out both; }
+  .modal-panel { animation: modal-panel-in .28s cubic-bezier(.22,1,.36,1) both; }
+
   @media (prefers-reduced-motion: reduce) {
     /* Vorher waren hier NUR die hw-*-Klassen aufgeführt; card-enter,
        riddle-solve, pop-shake und wobble liefen trotz gesetzter
@@ -178,7 +199,8 @@
     .animate-hw-card, .animate-hw-strike,
     .animate-card-enter, .animate-riddle-solve,
     .animate-pop-shake, .animate-wobble,
-    .animate-duty-day, .animate-duty-week { animation: none; }
+    .animate-duty-day, .animate-duty-week,
+    .modal-backdrop, .modal-panel { animation: none; }
     .tap, .tap-sm { transition: none; }
     .tap:active, .tap-sm:active { scale: 1; }
   }

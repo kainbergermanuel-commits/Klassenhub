@@ -267,7 +267,7 @@ function PlanungPopup({
           </div>
         )}
 
-        <Link href="/planung" className="flex items-center justify-center gap-1.5 mt-5 h-10 rounded-xl gradient-teal text-white text-[13px] font-bold hover:opacity-90 transition-opacity">
+        <Link href="/planung" className="flex items-center justify-center gap-1.5 mt-5 h-10 rounded-xl gradient-teal text-white text-[13px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap">
           <span className="msym text-[17px]">edit_calendar</span> In Planung öffnen
         </Link>
       </div>

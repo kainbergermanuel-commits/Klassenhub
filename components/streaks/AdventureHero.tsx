@@ -326,7 +326,7 @@ function GoalForm({ target, setTarget, reward, setReward, error, pending, onSave
         <button
           onClick={onSave}
           disabled={pending}
-          className="px-4 py-1.5 rounded-full gradient-teal text-white text-[12.5px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="px-4 py-1.5 rounded-full gradient-teal text-white text-[12.5px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
         >
           Speichern
         </button>

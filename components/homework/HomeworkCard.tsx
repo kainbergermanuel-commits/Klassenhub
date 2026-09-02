@@ -341,7 +341,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
           <button
             onClick={confirmForChild}
             disabled={confirming}
-            className="flex-shrink-0 flex items-center gap-1 gradient-teal text-white text-[11.5px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="flex-shrink-0 flex items-center gap-1 gradient-teal text-white text-[11.5px] font-bold px-3 py-1.5 rounded-full hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-50"
           >
             <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>
               {confirming ? 'progress_activity' : 'check_circle'}
@@ -475,7 +475,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
               <button
                 onClick={saveEdit}
                 disabled={!editTitle.trim() || !editDate || saving}
-                className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+                className="flex-1 py-3 rounded-full gradient-teal text-white text-sm font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
               >
                 {saving ? 'Speichern…' : 'Speichern'}
               </button>

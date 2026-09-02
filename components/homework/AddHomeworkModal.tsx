@@ -71,8 +71,8 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl my-auto" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
+      <div className="modal-panel w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl my-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-extrabold text-kh-dark">Neue Hausübung</h2>
@@ -134,7 +134,7 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
           <button
             type="submit"
             disabled={isPending || saving || subjects.length === 0}
-            className="w-full gradient-teal text-white font-bold rounded-xl py-3.5 text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60"
+            className="w-full gradient-teal text-white font-bold rounded-xl py-3.5 text-sm flex items-center justify-center gap-2 hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-60"
           >
             {isPending || saving
               ? <span className="msym animate-spin text-lg">progress_activity</span>

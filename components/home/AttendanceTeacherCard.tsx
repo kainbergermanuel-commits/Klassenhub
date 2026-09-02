@@ -81,7 +81,7 @@ export default function AttendanceTeacherCard({ pendingReports, absentToday, stu
         <h2 className="flex-1 font-extrabold text-[15px] text-kh-dark truncate">Anwesenheit</h2>
         <Link
           href="/anwesenheit"
-          className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:opacity-90 transition-opacity flex-shrink-0"
+          className="w-8 h-8 rounded-full gradient-teal text-white flex items-center justify-center hover:brightness-105 transition-[filter,opacity] duration-150 tap flex-shrink-0"
           aria-label="Zum Tages-Abgleich"
         >
           <span className="msym text-[19px]">arrow_forward</span>

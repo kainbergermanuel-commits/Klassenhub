@@ -210,7 +210,7 @@ export default function ClassTimetableEditor({ entries, subjects, lastPushedAt }
         <button
           onClick={handlePush}
           disabled={pushing || grid.size === 0}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full gradient-teal text-white text-[13px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full gradient-teal text-white text-[13px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
         >
           <span className="msym text-[16px]">send</span>
           {pushing ? 'Wird gesendet …' : 'An alle Kinder der Klasse senden'}

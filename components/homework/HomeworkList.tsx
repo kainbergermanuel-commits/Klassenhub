@@ -133,7 +133,7 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
         {canCreate && (
           <button
             onClick={() => setShowModal(true)}
-            className="max-md:hidden flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+            className="max-md:hidden flex items-center gap-2 gradient-teal text-white px-[17px] py-[11px] rounded-full font-bold text-sm hover:brightness-105 transition-[filter,opacity] duration-150 tap"
           >
             <span className="msym text-[19px]">add</span>
             Neue Hausübung

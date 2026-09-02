@@ -208,7 +208,7 @@ export default function TeacherHome({
               <div className="flex items-center gap-3 flex-shrink-0">
                 <button
                   onClick={() => setShowModal(true)}
-                  className="flex items-center gap-1.5 gradient-teal text-white px-3.5 py-1.5 rounded-full font-bold text-[12.5px] hover:opacity-90 transition-opacity shadow-sm"
+                  className="flex items-center gap-1.5 gradient-teal text-white px-3.5 py-1.5 rounded-full font-bold text-[12.5px] hover:brightness-105 transition-[filter,opacity] duration-150 tap shadow-sm"
                 >
                   <span className="msym text-[16px]">add</span>
                   Neue Hausübung

@@ -82,7 +82,7 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
           onClick={send}
           disabled={!body.trim() || sending}
           aria-label="Senden"
-          className="w-11 h-11 rounded-full gradient-teal text-white flex items-center justify-center flex-shrink-0 disabled:opacity-40 hover:opacity-90 transition-opacity"
+          className="w-11 h-11 rounded-full gradient-teal text-white flex items-center justify-center flex-shrink-0 disabled:opacity-40 hover:brightness-105 transition-[filter,opacity] duration-150 tap"
         >
           <span className="msym text-[20px]">send</span>
         </button>

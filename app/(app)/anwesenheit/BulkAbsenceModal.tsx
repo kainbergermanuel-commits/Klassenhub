@@ -82,11 +82,11 @@ export default function BulkAbsenceModal({ students, today, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[88vh]"
+        className="modal-panel bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[88vh]"
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

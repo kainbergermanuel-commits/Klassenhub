@@ -172,12 +172,12 @@ export default function AddEventModal({
   }
 
   const modal = (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-[200] flex items-start justify-center pt-[74px] px-4 pb-4 bg-black/40 overflow-y-auto" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={isEdit ? 'Termin bearbeiten' : isStudent ? 'Neuer persönlicher Termin' : 'Neuer Termin'}
-        className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl my-auto"
+        className="modal-panel bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl my-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
@@ -372,7 +372,7 @@ export default function AddEventModal({
             Abbrechen
           </button>
           <button onClick={save} disabled={!canPost || saving}
-            className="flex-1 py-3 rounded-full bg-gradient-to-br from-[#4C93C9] to-[#7EB8E5] text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40">
+            className="flex-1 py-3 rounded-full bg-gradient-to-br from-[#4C93C9] to-[#7EB8E5] text-white text-sm font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40">
             {saving ? 'Speichern…' : isEdit ? 'Änderungen speichern' : isStudent ? 'Persönlich anlegen' : 'Termin anlegen'}
           </button>
         </div>

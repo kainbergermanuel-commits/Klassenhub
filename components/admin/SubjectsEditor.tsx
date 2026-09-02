@@ -173,7 +173,7 @@ export default function SubjectsEditor({ initial }: { initial: Subject[] }) {
         <button
           onClick={add}
           disabled={pending || !newLabel.trim() || !newShort.trim()}
-          className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full gradient-teal text-white text-[13px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full gradient-teal text-white text-[13px] font-bold hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-40"
         >
           <span className="msym text-[15px]">add</span>
           Hinzufügen
