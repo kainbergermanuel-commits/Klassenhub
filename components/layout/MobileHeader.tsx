@@ -175,7 +175,7 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
                 <Link
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                  className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all tap ${
                     active
                       ? 'bg-kh-teal-light text-kh-dark'
                       : halfActive

@@ -59,7 +59,7 @@ function ChoiceButtons({ questKey, weekStart, choices }: { questKey: string; wee
           key={c.key}
           onClick={() => choose(c.key)}
           disabled={pending}
-          className="flex items-center justify-between gap-2 text-left rounded-xl bg-white border border-kh-border/60 px-3 py-2 hover:border-kh-teal transition-colors disabled:opacity-50"
+          className="flex items-center justify-between gap-2 text-left rounded-xl bg-white border border-kh-border/60 px-3 py-2 hover:border-kh-teal transition-colors tap disabled:opacity-50"
         >
           <span className="min-w-0">
             <span className="block font-semibold text-[13px] text-kh-dark">{c.label}</span>

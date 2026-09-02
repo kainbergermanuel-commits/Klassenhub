@@ -395,7 +395,7 @@ export default function TermineView({ events, role, today, classId, userId, stud
                     onClick={() => setSelectedDate(isSelected ? null : iso)}
                     aria-label={dayLabel(iso, dayEvents.length)}
                     aria-pressed={isSelected}
-                    className={`h-9 w-full rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ${
+                    className={`h-9 w-full rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all tap-sm ${
                       isSelected ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white' : isToday ? 'border border-kh-teal text-kh-teal font-bold' : 'hover:bg-kh-page text-kh-dark'
                     }`}
                   >
@@ -446,7 +446,7 @@ export default function TermineView({ events, role, today, classId, userId, stud
                     onClick={() => setSelectedDate(isSelected ? null : iso)}
                     aria-label={dayLabel(iso, dayEvents.length)}
                     aria-pressed={isSelected}
-                    className={`w-full text-left rounded-lg px-2 py-1.5 flex items-center gap-2.5 transition-all ${
+                    className={`w-full text-left rounded-lg px-2 py-1.5 flex items-center gap-2.5 transition-all tap-sm ${
                       isSelected ? 'bg-gradient-to-br from-kh-dark to-kh-teal text-white' : isToday ? 'border border-kh-teal' : 'hover:bg-kh-page'
                     }`}
                   >

@@ -316,7 +316,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
             onClick={toggleDone}
             disabled={!status.canToggle && !optimisticDone}
             aria-label={optimisticDone ? 'Als offen markieren' : 'Als erledigt markieren'}
-            className={`flex-shrink-0 w-[30px] h-[30px] rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed ${celebrate ? 'animate-hw-check' : ''}`}
+            className={`flex-shrink-0 w-[30px] h-[30px] rounded-full flex items-center justify-center transition-all tap-sm disabled:opacity-30 disabled:cursor-not-allowed ${celebrate ? 'animate-hw-check' : ''}`}
             style={optimisticDone
               ? { background: '#2E9C6E' }
               : status.canToggle

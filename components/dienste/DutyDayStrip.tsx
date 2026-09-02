@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toggleDutyCompletion } from '@/app/actions/toggleDutyCompletion'
 
@@ -37,6 +37,31 @@ export default function DutyDayStrip({
   const [pending, startTransition] = useTransition()
   const [done, setDone] = useState<Set<number>>(new Set(doneWeekdays))
   const [error, setError] = useState<string | null>(null)
+  // Welcher Tag gerade bestätigt wurde (für den kleinen Pop) und ob damit die
+  // Woche vollständig geworden ist (für den einen grossen Moment). Beides nur
+  // beim Bestätigen, nie beim Zurücknehmen — dieselbe Regel wie bei den
+  // Hausübungen: gefeiert wird das Erledigen.
+  const [justDone, setJustDone] = useState<number | null>(null)
+  const [weekJustComplete, setWeekJustComplete] = useState(false)
+  // Tippt ein Kind zwei Tage schnell hintereinander an, würde der Timer des
+  // ersten die Animation des zweiten mitten im Lauf abräumen. Deshalb je ein
+  // Handle, das beim nächsten Tippen zurückgesetzt wird.
+  const dayTimer = useRef<number | null>(null)
+  const weekTimer = useRef<number | null>(null)
+  useEffect(() => () => {
+    if (dayTimer.current) window.clearTimeout(dayTimer.current)
+    if (weekTimer.current) window.clearTimeout(weekTimer.current)
+  }, [])
+
+  /** "Auf Stand": jeder bereits vergangene Diensttag ist bestätigt. Bewusst
+   *  dieselbe Bedingung wie dutyKeptUp() in lib/duty.ts, die auch das
+   *  Heldenbuch und die Eltern-Karte verwenden — der gefeierte Moment ist
+   *  damit genau der, der anderswo zählt. */
+  function isCaughtUp(set: Set<number>): boolean {
+    if (confirmableUntil === 0) return false
+    for (let wd = 1; wd <= confirmableUntil; wd++) if (!set.has(wd)) return false
+    return true
+  }
 
   function toggle(weekday: number) {
     if (weekday > confirmableUntil || pending) return
@@ -47,6 +72,18 @@ export default function DutyDayStrip({
     setDone(next)
     setError(null)
     onCountChange?.(next.size)
+
+    if (willBeDone) {
+      if (dayTimer.current) window.clearTimeout(dayTimer.current)
+      setJustDone(weekday)
+      dayTimer.current = window.setTimeout(() => setJustDone(null), 450)
+      if (!isCaughtUp(done) && isCaughtUp(next)) {
+        if (weekTimer.current) window.clearTimeout(weekTimer.current)
+        setWeekJustComplete(true)
+        weekTimer.current = window.setTimeout(() => setWeekJustComplete(false), 900)
+      }
+    }
+
     // Vorschau: nur die Anzeige mitführen, nichts schreiben.
     if (preview) return
     startTransition(async () => {
@@ -70,7 +107,7 @@ export default function DutyDayStrip({
 
   return (
     <div>
-      <div className="flex gap-1.5">
+      <div className={`flex gap-1.5 rounded-xl ${weekJustComplete ? 'animate-duty-week' : ''}`}>
         {DAY_LABELS.map((label, i) => {
           const weekday = i + 1
           const isDone = done.has(weekday)
@@ -84,8 +121,8 @@ export default function DutyDayStrip({
               onClick={() => toggle(weekday)}
               disabled={disabled}
               className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-xl transition-all ${
-                isLocked ? 'cursor-default' : 'hover:-translate-y-0.5'
-              } ${isLocked ? 'opacity-40' : ''}`}
+                isLocked ? 'cursor-default' : 'hover:-translate-y-0.5 tap-sm'
+              } ${isLocked ? 'opacity-40' : ''} ${justDone === weekday ? 'animate-duty-day' : ''}`}
               style={{
                 background: isDone
                   ? 'linear-gradient(135deg, #2E9C6E, #7FD3A6)'
@@ -100,7 +137,9 @@ export default function DutyDayStrip({
                 isDone ? 'text-white' : onTeal ? 'text-white/90' : isToday ? 'text-kh-violet' : 'text-kh-muted'
               }`}>{label}</span>
               <span
-                className={`msym text-[15px] ${isDone ? 'text-white' : onTeal ? 'text-white/70' : 'text-kh-muted/50'}`}
+                className={`msym text-[15px] ${isDone ? 'text-white' : onTeal ? 'text-white/70' : 'text-kh-muted/50'} ${
+                  justDone === weekday ? 'animate-hw-check-icon' : ''
+                }`}
                 style={{ fontVariationSettings: `'FILL' ${isDone ? 1 : 0}` }}
               >
                 {isDone ? 'check_circle' : 'radio_button_unchecked'}

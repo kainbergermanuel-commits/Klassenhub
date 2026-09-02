@@ -91,7 +91,7 @@ export default function RiddleCard({ riddle, solved, open, onOpenChange }: Props
                 type="button"
                 onClick={() => answer(o.key)}
                 disabled={pending}
-                className="text-left rounded-xl border border-kh-border/60 bg-white px-3.5 py-2.5 text-[13px] font-semibold text-kh-dark hover:border-kh-amber hover:bg-kh-amber/[0.05] transition-colors disabled:opacity-50"
+                className="text-left rounded-xl border border-kh-border/60 bg-white px-3.5 py-2.5 text-[13px] font-semibold text-kh-dark hover:border-kh-amber hover:bg-kh-amber/[0.05] transition-colors tap disabled:opacity-50"
               >
                 {o.label}
               </button>

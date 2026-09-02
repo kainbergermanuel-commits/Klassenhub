@@ -99,7 +99,7 @@ function Row({ hw, userId }: { hw: HomeworkWithStatus; userId: string }) {
         onClick={toggle}
         disabled={!canToggle}
         aria-label={done ? 'Als offen markieren' : 'Als erledigt markieren'}
-        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all disabled:cursor-not-allowed ${celebrate ? 'animate-hw-check' : ''}`}
+        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all tap-sm disabled:cursor-not-allowed ${celebrate ? 'animate-hw-check' : ''}`}
         style={done
           ? { background: '#2E9C6E' }
           : canToggle

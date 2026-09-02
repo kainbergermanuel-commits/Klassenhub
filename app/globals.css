@@ -10,6 +10,16 @@
      schwarzes Panel mitten im hellen Formular. */
   html { color-scheme: light; }
   html, body { margin: 0; height: 100%; }
+  /* KlassenHub ist eine installierbare PWA und wird großteils am Handy
+     benutzt, wo `hover:` wirkungslos ist. iOS legt dort über jede Berührung
+     sein graues Standard-Aufblitzen — das nimmt jeder sorgfältig gestalteten
+     Karte die Ruhe. Statt dessen gibt `.tap` (siehe utilities) eine eigene,
+     kurze Rückmeldung. `touch-action: manipulation` schaltet zusätzlich das
+     Doppeltipp-Zoomen ab, das sonst jeden Tap verzögert. */
+  button, a, [role="button"], summary {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
   body { background: #EFEAE0; font-family: var(--font-hanken), sans-serif; -webkit-font-smoothing: antialiased; }
   /* Seiten-Titel/Begrüßungen: Display-Schrift (Bricolage Grotesque). Body bleibt Hanken. */
   h1 { font-family: var(--font-display), var(--font-hanken), sans-serif; }
@@ -122,9 +132,49 @@
     animation: hw-strike .45s cubic-bezier(.22,1,.36,1) .12s both;
   }
 
+  /* Finger-Rückmeldung. Bewusst mit 120 ms die schnellste Bewegung der App:
+     sie schmückt nicht, sie überbrückt die Wartezeit bis zur Serverantwort.
+     Deshalb auch die `scale`-Eigenschaft statt `transform` — `transform`
+     würde Tailwinds hover:-translate-y überschreiben, `scale` liegt daneben
+     und komponiert sauber mit. */
+  .tap { transition: scale .12s cubic-bezier(.22,1,.36,1); }
+  .tap:active { scale: .97; }
+  /* Für Flächen, die schon klein sind (Wochentage, Kalendertage): weniger
+     Weg, sonst wirkt der Druck wie ein Wackeln. */
+  .tap-sm { transition: scale .12s cubic-bezier(.22,1,.36,1); }
+  .tap-sm:active { scale: .94; }
+
+  /* Dienst-Selbstbestätigung. Dieselbe Sprache wie beim Abhaken einer
+     Hausübung, aber gedämpft: fünf Wochentage stehen nebeneinander, und ein
+     Kind tippt an einem Tag mehrmals. Deshalb ein kleinerer Pop und KEIN
+     Halo je Tag — der eigentliche Moment ist die volle Woche (duty-week). */
+  @keyframes duty-pop {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.12); }
+    65%  { transform: scale(0.97); }
+    100% { transform: scale(1); }
+  }
+  .animate-duty-day { animation: duty-pop .42s cubic-bezier(.22,1,.36,1); }
+  /* Woche vollständig: einmal derselbe grüne Hauch und Lift wie bei der
+     Hausübungszeile — gefeiert wird das Durchhalten, nicht jeder Klick. */
+  @keyframes duty-week {
+    0%   { box-shadow: 0 0 0 0 rgba(46,156,110,0); transform: translateY(0); }
+    30%  { box-shadow: 0 0 0 6px rgba(46,156,110,.20); transform: translateY(-3px); }
+    100% { box-shadow: 0 0 0 0 rgba(46,156,110,0); transform: translateY(0); }
+  }
+  .animate-duty-week { animation: duty-week .85s cubic-bezier(.22,1,.36,1); }
+
   @media (prefers-reduced-motion: reduce) {
+    /* Vorher waren hier NUR die hw-*-Klassen aufgeführt; card-enter,
+       riddle-solve, pop-shake und wobble liefen trotz gesetzter
+       Systemeinstellung weiter. */
     .animate-hw-check, .animate-hw-check-icon, .animate-hw-row,
-    .animate-hw-card, .animate-hw-strike { animation: none; }
+    .animate-hw-card, .animate-hw-strike,
+    .animate-card-enter, .animate-riddle-solve,
+    .animate-pop-shake, .animate-wobble,
+    .animate-duty-day, .animate-duty-week { animation: none; }
+    .tap, .tap-sm { transition: none; }
+    .tap:active, .tap-sm:active { scale: 1; }
   }
 }
 
