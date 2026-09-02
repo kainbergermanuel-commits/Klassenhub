@@ -132,17 +132,23 @@
     animation: hw-strike .45s cubic-bezier(.22,1,.36,1) .12s both;
   }
 
-  /* Finger-Rückmeldung. Bewusst mit 120 ms die schnellste Bewegung der App:
-     sie schmückt nicht, sie überbrückt die Wartezeit bis zur Serverantwort.
-     Deshalb auch die `scale`-Eigenschaft statt `transform` — `transform`
-     würde Tailwinds hover:-translate-y überschreiben, `scale` liegt daneben
-     und komponiert sauber mit. */
-  .tap { transition: scale .12s cubic-bezier(.22,1,.36,1); }
-  .tap:active { scale: .97; }
-  /* Für Flächen, die schon klein sind (Wochentage, Kalendertage): weniger
-     Weg, sonst wirkt der Druck wie ein Wackeln. */
-  .tap-sm { transition: scale .12s cubic-bezier(.22,1,.36,1); }
-  .tap-sm:active { scale: .94; }
+  /* Finger-Rückmeldung. Sie schmückt nicht, sie überbrückt die Wartezeit bis
+     zur Serverantwort.
+     ASYMMETRISCH: 50 ms hinein, 200 ms zurück. Mit einer einzigen Dauer für
+     beide Richtungen war der Effekt am Rechner unsichtbar — ein Mausklick
+     dauert oft nur 60 bis 90 ms, die Taste ist also wieder oben, bevor der
+     Endwert erreicht ist, und bei einem Nav-Link wechselt die Seite obendrein
+     sofort. Am Handy fiel es nicht auf, weil der Finger länger aufliegt.
+     Das Zurückfedern darf ruhig dauern, das Eindrücken nicht.
+     Über die `scale`-Eigenschaft statt `transform` — `transform` würde
+     Tailwinds hover:-translate-y überschreiben, `scale` liegt daneben und
+     komponiert sauber mit. */
+  .tap { transition: scale .2s cubic-bezier(.22,1,.36,1); }
+  .tap:active { scale: .96; transition-duration: .05s; }
+  /* Für Flächen, die schon klein sind (Wochentage, Kalendertage): mehr Weg,
+     weil 4 % auf 40 px nur gut einen Pixel ausmachen. */
+  .tap-sm { transition: scale .2s cubic-bezier(.22,1,.36,1); }
+  .tap-sm:active { scale: .93; transition-duration: .05s; }
 
   /* Dienst-Selbstbestätigung. Dieselbe Sprache wie beim Abhaken einer
      Hausübung, aber gedämpft: fünf Wochentage stehen nebeneinander, und ein
