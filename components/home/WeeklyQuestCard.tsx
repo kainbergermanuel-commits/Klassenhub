@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSeasonTheme, isCollectiveGuide, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
 import { chooseQuestPath } from '@/app/actions/chooseQuestPath'
@@ -8,6 +8,7 @@ import { weeklyFocusTag } from '@/lib/quests'
 import { QUEST_FOCUS_LABELS, resolveQuestNarrative } from '@/lib/questVault'
 import Avatar from '@/components/ui/Avatar'
 import GuideInfoOverlay from '@/components/streaks/GuideInfoOverlay'
+import FocusInfoOverlay from '@/components/home/FocusInfoOverlay'
 import type { QuestResult } from '@/lib/quests'
 import type { Guild, GuildMember, GuildQuestResult } from '@/lib/guilds'
 
@@ -21,6 +22,23 @@ interface Props {
   /** Kooperative Gilden-Quest — wird als eigener Block unter den Solo-Quests
    *  gezeigt (früher eigene Card). Kooperation innerhalb, kein Innen-Vergleich. */
   guildSection?: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
+  /** Auf der Startseite zusammenklappbar und standardmässig zu: die Quests
+   *  stehen dort UND auf /streaks, und die Startseite war dadurch unruhig.
+   *  Auf /streaks bleibt die Karte offen — das ist der ausführliche Ort. */
+  collapsible?: boolean
+}
+
+/** Merkt sich den Auf-/Zuklapp-Zustand und welche Quests beim letzten Besuch
+ *  schon erledigt waren. Pro Gerät, absichtlich nicht in der Datenbank: es ist
+ *  eine Ansichtssache, kein Teil des Fortschritts. */
+const OPEN_KEY = 'kh.quests.open'
+const SEEN_DONE_KEY = 'kh.quests.seenDone'
+
+function readStore(key: string): string | null {
+  try { return localStorage.getItem(key) } catch { return null }
+}
+function writeStore(key: string, value: string) {
+  try { localStorage.setItem(key, value) } catch { /* privater Modus o.ä. */ }
 }
 
 function ChoiceButtons({ questKey, weekStart, choices }: { questKey: string; weekStart: string; choices: NonNullable<QuestResult['template']['choices']> }) {
@@ -54,7 +72,7 @@ function ChoiceButtons({ questKey, weekStart, choices }: { questKey: string; wee
   )
 }
 
-export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePortrait = true, guildSection }: Props) {
+export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePortrait = true, guildSection, collapsible = false }: Props) {
   if (quests.length === 0 && !guildSection) return null
   const theme = getSeasonTheme(season)
   const focus = weeklyFocusTag(weekStart)
@@ -67,12 +85,61 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
   const guideTitle = team ? 'Wer sind sie' : guideParts.slice(0, -1).join(' ')
   const guideName = team ? 'Die Guides' : guideParts[guideParts.length - 1]
   const [guideInfoOpen, setGuideInfoOpen] = useState(false)
+  const [focusInfoOpen, setFocusInfoOpen] = useState(false)
+  // Serverseitig immer zu rendern, damit Server- und Client-Markup beim ersten
+  // Durchgang übereinstimmen; localStorage folgt gleich danach im Effekt.
+  const [open, setOpen] = useState(!collapsible)
+
+  const doneCount = quests.filter(q => q.done).length
+  const doneKeys = quests.filter(q => q.done).map(q => q.template.key).sort().join(',')
+
+  useEffect(() => {
+    if (!collapsible) return
+    // Frisch erfüllte Quest? Dann von selbst aufklappen — sonst verpasst das
+    // Kind genau den Moment, auf den das Quest-System hinarbeitet.
+    const seen = readStore(SEEN_DONE_KEY)
+    // Beim allerersten Laden ist nichts gespeichert. Dann gilt der aktuelle
+    // Stand als bekannt, statt jede längst erledigte Quest als "neu" zu
+    // werten — sonst spränge die Karte nach dem Deploy bei jedem Kind auf,
+    // das diese Woche schon etwas geschafft hat.
+    const seenSet = new Set(seen ? seen.split(',').filter(Boolean) : [])
+    const isNew = seen !== null && doneKeys.split(',').filter(Boolean).some(k => !seenSet.has(k))
+    writeStore(SEEN_DONE_KEY, doneKeys)
+    if (isNew) { setOpen(true); return }
+    setOpen(readStore(OPEN_KEY) === '1')
+  }, [collapsible, doneKeys])
+
+  function toggleOpen() {
+    setOpen(v => {
+      const next = !v
+      writeStore(OPEN_KEY, next ? '1' : '0')
+      return next
+    })
+  }
 
   return (
     <div className="kh-card p-5">
       <div className="flex items-center gap-2 mb-1">
         <span className="msym text-[19px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>
         <h2 className="font-extrabold text-base text-kh-dark">Wochen-Quests</h2>
+        {/* Die Kopfzeile sagt im zugeklappten Zustand, wo das Kind steht —
+            sonst wäre die eingeklappte Karte eine blosse Überschrift. */}
+        {collapsible && quests.length > 0 && (
+          <span className="text-[11.5px] font-bold text-kh-muted">
+            {doneCount} von {quests.length} erledigt
+          </span>
+        )}
+        {collapsible && (
+          <button
+            type="button"
+            onClick={toggleOpen}
+            aria-expanded={open}
+            aria-label={open ? 'Wochen-Quests zuklappen' : 'Wochen-Quests aufklappen'}
+            className="ml-auto w-8 h-8 rounded-full flex items-center justify-center text-kh-muted hover:bg-[#F6F3ED] hover:text-kh-dark transition-colors flex-shrink-0"
+          >
+            <span className="msym text-[20px]">{open ? 'expand_less' : 'expand_more'}</span>
+          </button>
+        )}
         {portrait && (
           <button
             type="button"
@@ -96,13 +163,27 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
       {guideInfoOpen && (
         <GuideInfoOverlay theme={theme} onClose={() => setGuideInfoOpen(false)} />
       )}
+      {/* Die Fokus-Pille erklärt sich auf Antippen. "Aufmerksamkeit" ist für
+          ein Kind sonst nur ein Wort. Bleibt auch im zugeklappten Zustand
+          sichtbar: sie sagt, worum es diese Woche geht. */}
       <div className="mb-3">
-        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-kh-teal bg-kh-teal/10 px-2 py-0.5 rounded-full">
+        <button
+          type="button"
+          onClick={() => setFocusInfoOpen(true)}
+          className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-kh-teal bg-kh-teal/10 px-2 py-0.5 rounded-full hover:bg-kh-teal/20 transition-colors"
+          aria-label={`Was bedeutet ${QUEST_FOCUS_LABELS[focus]}?`}
+        >
           <span className="msym text-[12px]">bolt</span>
           Fokus: {QUEST_FOCUS_LABELS[focus]}
-        </span>
+          <span className="msym text-[12px] opacity-70">help</span>
+        </button>
       </div>
 
+      {focusInfoOpen && (
+        <FocusInfoOverlay focus={focus} onClose={() => setFocusInfoOpen(false)} />
+      )}
+
+      {open && (
       <div className="flex flex-col gap-2.5">
         {quests.length > 0 && quests.map(q => {
           // Nach einer Wahlpfad-Entscheidung zeigt die Anleitung des GEWÄHLTEN
@@ -228,6 +309,7 @@ export default function WeeklyQuestCard({ quests, weekStart, season, showGuidePo
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

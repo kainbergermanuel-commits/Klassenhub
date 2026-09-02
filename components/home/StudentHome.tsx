@@ -100,7 +100,7 @@ export default function StudentHome({
 
           {/* Wochen-Quests (inkl. Gilden-Quest als Block) */}
           <AnimateIn delay={60}>
-            <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} showGuidePortrait={false} guildSection={guildSection} />
+            <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} showGuidePortrait={false} guildSection={guildSection} collapsible />
           </AnimateIn>
 
           {/* Interaktive Rätsel: Arc-Item + ggf. Splitter (Neugier + Nochmal-Lesen).
