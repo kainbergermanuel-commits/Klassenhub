@@ -282,7 +282,7 @@ export default function TeacherHome({
         <div className="relative">
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <AnimateIn delay={120}>
-              <AgendaPanel reminders={reminders} events={upcomingEvents} eventCount={upcomingEventCount} role="teacher" classId={classId} userId={userId} />
+              <AgendaPanel reminders={reminders} events={upcomingEvents} eventCount={upcomingEventCount} subjects={subjects} role="teacher" classId={classId} userId={userId} />
             </AnimateIn>
             {/* Anwesenheit direkt unter Terminen/Erinnerungen — nur Desktop
                 (auf Mobile sitzt die Karte oben in der Hauptspalte) */}

@@ -5,7 +5,9 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { createEvent, createOwnEvent, updateEvent } from '@/app/actions/events'
-import { EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
+import { EVENT_CATEGORIES, hasSubjectField, type EventCategory } from '@/lib/eventCategories'
+import { findCollisions, type SchularbeitLike } from '@/lib/schularbeit'
+import type { SubjectOption } from '@/lib/subjectsCatalog'
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
 import DatePicker from '@/components/ui/DatePicker'
@@ -17,6 +19,10 @@ interface Props {
   mode?: 'teacher' | 'student'
   /** Gesetzt = Bearbeiten statt Anlegen. Alle Felder werden vorbelegt. */
   editEvent?: CalendarEvent
+  /** Fächer-Katalog für Schularbeit/Prüfung. */
+  subjects?: SubjectOption[]
+  /** Bereits eingetragene Termine der Klasse, für die Kollisionsprüfung. */
+  existingEvents?: SchularbeitLike[]
   onClose: () => void
 }
 
@@ -29,7 +35,9 @@ interface Student {
   avatar_skin_color: string | null
 }
 
-export default function AddEventModal({ today, classId, mode = 'teacher', editEvent, onClose }: Props) {
+export default function AddEventModal({
+  today, classId, mode = 'teacher', editEvent, subjects = [], existingEvents = [], onClose,
+}: Props) {
   const isStudent = mode === 'student'
   const isEdit = !!editEvent
   const router = useRouter()
@@ -43,6 +51,10 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
   const [allDay, setAllDay] = useState(editEvent ? editEvent.all_day : true)
   const [startTime, setStartTime] = useState(editEvent?.start_time ?? '08:00')
   const [endTime, setEndTime] = useState(editEvent?.end_time ?? '')
+  const [subjectShort, setSubjectShort] = useState<string | null>(editEvent?.subject_short ?? null)
+  // Merkt sich, ob der Titel noch unberührt ist. Nur dann darf die Fachauswahl
+  // ihn vorschlagen — eine eigene Formulierung wird nie überschrieben.
+  const [titleTouched, setTitleTouched] = useState(!!editEvent)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Beim Bearbeiten eines gezielten Termins ist die Zielgruppe von Anfang an
@@ -56,6 +68,32 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
   // Ein bereits vergangener Termin muss sein eigenes Datum behalten dürfen,
   // sonst stünde im Bearbeiten-Formular ein im Kalender gesperrter Tag.
   const minDate = editEvent && editEvent.start_date < today ? editEvent.start_date : today
+  // Ohne Fächer-Katalog gäbe es keine Fachauswahl — eine Schularbeit liesse
+  // sich dann anwählen, aber nicht speichern (Fach ist Pflicht). Deshalb
+  // erscheint die Kategorie erst gar nicht.
+  const availableCategories = subjects.length > 0
+    ? EVENT_CATEGORIES
+    : EVENT_CATEGORIES.filter(c => c.value !== 'schularbeit')
+  const showSubject = hasSubjectField(category)
+  const subjectMeta = subjects.find(x => x.short === subjectShort) ?? null
+
+  function pickSubject(short: string) {
+    const next = subjectShort === short ? null : short
+    setSubjectShort(next)
+    // Bequemlichkeit: leerer Titel + Fach gewählt = "Deutsch-Schularbeit".
+    if (!titleTouched && next && category === 'schularbeit') {
+      const label = subjects.find(x => x.short === next)?.label
+      if (label) setTitle(`${label}-Schularbeit`)
+    }
+  }
+
+  // Kollisionen nur bei Schularbeiten und nur gegen die bereits geladenen
+  // Termine der Klasse — kein zusätzlicher Query, keine Serverlogik.
+  const collisions = category === 'schularbeit'
+    ? findCollisions(startDate, existingEvents, today,
+        short => subjects.find(x => x.short === short)?.label ?? short ?? 'Schularbeit',
+        editEvent?.id)
+    : []
 
   // Escape schliesst das Formular. Bisher ging das nur ueber den Abbrechen-
   // Knopf oder einen Klick auf den Hintergrund.
@@ -93,7 +131,11 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
   // Endzeit muss nach der Startzeit liegen — gleiche Regel wie serverseitig
   // in validateEventInput, hier nur frueher sichtbar.
   const timeInvalid = !allDay && !!startTime && !!endTime && endTime <= startTime
+  // Eine Schularbeit ohne Fach ist sinnlos — das Fach IST ihre Identität.
+  // Bei einer Prüfung bleibt es freiwillig.
+  const subjectMissing = category === 'schularbeit' && !subjectShort
   const canPost = title.trim().length > 0 && startDate && endDate >= startDate && !timeInvalid
+    && !subjectMissing
     && (isStudent || isEdit || !showTargeting || selectedIds.size > 0)
 
   async function save() {
@@ -105,6 +147,7 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
         title, description, location, category,
         startDate, endDate: multiDay ? endDate : startDate,
         allDay, startTime: allDay ? null : startTime, endTime: allDay ? null : (endTime || null),
+        subjectShort: showSubject ? subjectShort : null,
       }
       if (isEdit) {
         // Zielgruppe nur mitschicken, wenn die Lehrperson sie auch gesehen hat.
@@ -158,7 +201,7 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
 
         <div className="flex flex-col gap-3">
           <input
-            autoFocus value={title} onChange={e => setTitle(e.target.value)}
+            autoFocus value={title} onChange={e => { setTitle(e.target.value); setTitleTouched(true) }}
             placeholder="Titel *"
             className="w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
           />
@@ -177,7 +220,7 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
           <div>
             <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Kategorie</label>
             <div className="flex flex-wrap gap-1.5">
-              {EVENT_CATEGORIES.map(c => (
+              {availableCategories.map(c => (
                 <button key={c.value} type="button" onClick={() => setCategory(c.value)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-semibold transition-all ${
                     category === c.value ? 'text-white border-transparent' : 'border-kh-border text-kh-dark hover:border-kh-teal/50'
@@ -190,6 +233,32 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
               ))}
             </div>
           </div>
+
+          {/* Fach — nur bei Schularbeit und Prüfung, damit das Formular bei
+              allen anderen Kategorien unverändert schlank bleibt. */}
+          {showSubject && subjects.length > 0 && (
+            <div>
+              <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">
+                Fach {category === 'schularbeit' ? '*' : '(optional)'}
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {subjects.map(sub => {
+                  const active = subjectShort === sub.short
+                  return (
+                    <button key={sub.short} type="button" onClick={() => pickSubject(sub.short)}
+                      aria-pressed={active}
+                      className={`px-3 py-1.5 rounded-full border text-[12.5px] font-bold transition-all ${
+                        active ? 'text-white border-transparent' : 'border-kh-border text-kh-dark hover:border-kh-teal/50'
+                      }`}
+                      style={active ? { background: sub.color } : undefined}
+                    >
+                      {sub.short}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Datum */}
           <div>
@@ -204,6 +273,21 @@ export default function AddEventModal({ today, classId, mode = 'teacher', editEv
               <DatePicker value={endDate} min={startDate} onChange={setEndDate} />
             </div>
           )}
+          {/* Kollisionshinweise. Bewusst warm-gelb und nicht rot: es ist nichts
+              falsch, die Lehrperson soll es nur wissen. Halten nicht auf. */}
+          {collisions.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {collisions.map(c => (
+                <div key={c.kind}
+                  className="flex gap-2.5 items-start rounded-xl px-3.5 py-3"
+                  style={{ background: '#FDF6E7', border: '1px solid #EBD9AE' }}>
+                  <span className="msym text-[17px] flex-shrink-0" style={{ color: '#C98A2B' }}>info</span>
+                  <span className="text-[12.5px] font-semibold leading-relaxed" style={{ color: '#7A5A17' }}>{c.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <button type="button" onClick={() => setMultiDay(v => !v)} className="flex items-center gap-1.5 text-[12px] font-bold text-kh-muted hover:text-kh-dark transition-colors self-start">
             <span className="msym text-[15px]">{multiDay ? 'check_box' : 'check_box_outline_blank'}</span>
             Mehrtägig

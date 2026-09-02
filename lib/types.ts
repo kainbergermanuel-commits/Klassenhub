@@ -62,6 +62,10 @@ export type CalendarEvent = {
   category: string
   created_at: string
   target_student_ids: string[] | null
+  /** Fachkürzel aus dem Katalog `subjects` (D, E, M …). Nur bei Schularbeit
+   *  und Prüfung gesetzt. Bezeichnung und Farbe werden beim Anzeigen aus dem
+   *  Katalog aufgelöst, siehe supabase/add-event-schularbeiten.sql. */
+  subject_short: string | null
 }
 
 /** Schlanke Termin-Repräsentation für die Startseiten-Agenda. */
@@ -258,6 +262,7 @@ export type Database = {
           location?: string
           category?: string
           target_student_ids?: string[] | null
+          subject_short?: string | null
           created_at?: string
         }
         Update: Partial<AppEvent>
@@ -456,6 +461,8 @@ export type AppEvent = {
   location: string
   category: string
   target_student_ids: string[] | null
+  /** Fachkürzel aus dem Katalog `subjects`, nur bei Schularbeit/Prüfung. */
+  subject_short: string | null
   created_at: string
 }
 

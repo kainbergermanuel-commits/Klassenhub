@@ -5,6 +5,7 @@ import { todayISO } from '@/lib/date'
 import PageHeader from '@/components/layout/PageHeader'
 import TermineView from './TermineView'
 import AnimateIn from '@/components/ui/AnimateIn'
+import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 
 export default async function TerminePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -14,11 +15,16 @@ export default async function TerminePage() {
   const supabase = await createClient()
   const today = todayISO()
 
-  const { data } = await supabase
-    .from('events')
-    .select('*')
-    .eq('class_id', activeClassId)
-    .order('start_date', { ascending: true })
+  // Fächer-Katalog löst `subject_short` in Bezeichnung und Farbe auf
+  // (Schularbeiten). Günstiger Query, läuft parallel zu den Terminen.
+  const [{ data }, subjects] = await Promise.all([
+    supabase
+      .from('events')
+      .select('*')
+      .eq('class_id', activeClassId)
+      .order('start_date', { ascending: true }),
+    loadSubjectsCatalog(supabase),
+  ])
 
   const events = data ?? []
   const upcomingCount = events.filter(e => e.end_date >= today).length
@@ -43,7 +49,15 @@ export default async function TerminePage() {
         gradient="from-[#4C93C9] to-[#7EB8E5]"
       />
       <AnimateIn delay={0}>
-        <TermineView events={events} role={profile.role} today={today} classId={activeClassId} userId={user.id} studentNames={studentNames} />
+        <TermineView
+          events={events}
+          role={profile.role}
+          today={today}
+          classId={activeClassId}
+          userId={user.id}
+          studentNames={studentNames}
+          subjects={subjects}
+        />
       </AnimateIn>
     </div>
   )

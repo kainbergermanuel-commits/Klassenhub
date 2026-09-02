@@ -4,6 +4,8 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { monthLabel, addDaysISO, getMondayOfWeek } from '@/lib/date'
 import { eventCategoryMeta, EVENT_CATEGORIES, type EventCategory } from '@/lib/eventCategories'
+import { countdownLabel } from '@/lib/schularbeit'
+import type { SubjectOption } from '@/lib/subjectsCatalog'
 import { deleteEvent } from '@/app/actions/events'
 import AddEventModal from './AddEventModal'
 import IconButton from '@/components/ui/IconButton'
@@ -21,6 +23,25 @@ interface Props {
   /** Nur für Lehrpersonen befüllt: id → Vorname, um bei persönlichen Terminen
    *  zu zeigen, WEN sie betreffen. Bisher stand dort nur "Persönlich". */
   studentNames?: Record<string, string>
+  /** Fächer-Katalog: löst `subject_short` in Bezeichnung und Farbe auf. */
+  subjects?: SubjectOption[]
+}
+
+/** Ein Schularbeits-Termin trägt die Farbe seines FACHS, nicht die der
+ *  Kategorie: das Fach ist seine Identität ("Deutsch-Schularbeit", nicht
+ *  "Prüfung"). Fehlt das Fach im Katalog, bleibt die Kategoriefarbe. */
+function eventAccent(event: CalendarEvent, subjects: SubjectOption[]) {
+  const cat = eventCategoryMeta(event.category)
+  const sub = event.subject_short ? subjects.find(x => x.short === event.subject_short) : undefined
+  const isSchularbeit = event.category === 'schularbeit'
+  return {
+    color: isSchularbeit && sub ? sub.color : cat.color,
+    label: cat.label,
+    icon: cat.icon,
+    short: sub?.short ?? event.subject_short ?? null,
+    subjectLabel: sub?.label ?? null,
+    isSchularbeit,
+  }
 }
 
 type Filter = 'alle' | 'klasse' | 'persoenlich'
@@ -94,8 +115,8 @@ function RowActions({ onEdit, onDelete, title }: { onEdit?: () => void; onDelete
   )
 }
 
-function EventRow({ event, canDelete, canEdit, onDelete, onEdit, studentNames }: { event: CalendarEvent; canDelete: boolean; canEdit: boolean; onDelete: (id: string) => void; onEdit: (e: CalendarEvent) => void; studentNames?: Record<string, string> }) {
-  const meta = eventCategoryMeta(event.category)
+function EventRow({ event, canDelete, canEdit, onDelete, onEdit, studentNames, subjects = [], today }: { event: CalendarEvent; canDelete: boolean; canEdit: boolean; onDelete: (id: string) => void; onEdit: (e: CalendarEvent) => void; studentNames?: Record<string, string>; subjects?: SubjectOption[]; today: string }) {
+  const meta = eventAccent(event, subjects)
   const badge = dateBadge(event.start_date)
   const isPersonal = !!event.target_student_ids
   const multiDay = event.end_date !== event.start_date
@@ -107,15 +128,33 @@ function EventRow({ event, canDelete, canEdit, onDelete, onEdit, studentNames }:
     : null
 
   return (
-    <div className="kh-card-flat p-4 flex gap-3.5 items-start group">
+    <div
+      className="kh-card-flat p-4 flex gap-3.5 items-start group"
+      style={meta.isSchularbeit
+        ? { borderLeft: `4px solid ${meta.color}`, borderRadius: '0 16px 16px 0' }
+        : undefined}
+    >
       <div className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-white flex-shrink-0" style={{ background: `linear-gradient(135deg, ${meta.color}ee 0%, ${meta.color}99 100%)` }}>
         <span className="text-[10px] font-bold uppercase opacity-80">{badge.month}</span>
         <span className="text-[18px] font-extrabold leading-none">{badge.day}</span>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-          <span className="msym text-[13px]" style={{ color: meta.color }}>{meta.icon}</span>
+          {/* Fachkürzel als Plakette — dieselbe visuelle Sprache wie bei den
+              Hausübungen, damit "D" überall dasselbe bedeutet. */}
+          {meta.short ? (
+            <span className="text-[11px] font-extrabold px-1.5 py-0.5 rounded-md text-white"
+              style={{ background: meta.color }}>{meta.short}</span>
+          ) : (
+            <span className="msym text-[13px]" style={{ color: meta.color }}>{meta.icon}</span>
+          )}
           <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: meta.color }}>{meta.label}</span>
+          {meta.isSchularbeit && event.end_date >= today && (
+            <span className="text-[10.5px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full"
+              style={{ background: `${meta.color}14`, color: meta.color }}>
+              {countdownLabel(event.start_date, today)}
+            </span>
+          )}
           {isPersonal && (
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-[#8B5CF6] bg-[#8B5CF6]/10 px-1.5 py-0.5 rounded-full">
               <span className="msym text-[11px]">person</span>
@@ -150,8 +189,8 @@ function EventRow({ event, canDelete, canEdit, onDelete, onEdit, studentNames }:
   )
 }
 
-function NextEventCard({ event, today, canDelete, canEdit, onDelete, onEdit, studentNames }: { event: CalendarEvent; today: string; canDelete: boolean; canEdit: boolean; onDelete: (id: string) => void; onEdit: (e: CalendarEvent) => void; studentNames?: Record<string, string> }) {
-  const meta = eventCategoryMeta(event.category)
+function NextEventCard({ event, today, canDelete, canEdit, onDelete, onEdit, studentNames, subjects = [] }: { event: CalendarEvent; today: string; canDelete: boolean; canEdit: boolean; onDelete: (id: string) => void; onEdit: (e: CalendarEvent) => void; studentNames?: Record<string, string>; subjects?: SubjectOption[] }) {
+  const meta = eventAccent(event, subjects)
   const badge = dateBadge(event.start_date)
   const isPersonal = !!event.target_student_ids
   const multiDay = event.end_date !== event.start_date
@@ -177,7 +216,10 @@ function NextEventCard({ event, today, canDelete, canEdit, onDelete, onEdit, stu
             {relativeLabel(event, today)}
           </span>
           <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide" style={{ color: meta.color }}>
-            <span className="msym text-[13px]">{meta.icon}</span>{meta.label}
+            {meta.short
+              ? <span className="text-[11px] font-extrabold px-1.5 py-0.5 rounded-md text-white" style={{ background: meta.color }}>{meta.short}</span>
+              : <span className="msym text-[13px]">{meta.icon}</span>}
+            {meta.label}
           </span>
           {isPersonal && (
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-[#8B5CF6] bg-[#8B5CF6]/10 px-1.5 py-0.5 rounded-full">
@@ -202,7 +244,7 @@ function NextEventCard({ event, today, canDelete, canEdit, onDelete, onEdit, stu
   )
 }
 
-export default function TermineView({ events, role, today, classId, userId, studentNames }: Props) {
+export default function TermineView({ events, role, today, classId, userId, studentNames, subjects = [] }: Props) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null)
@@ -269,6 +311,16 @@ export default function TermineView({ events, role, today, classId, userId, stud
     return map
   }, [filteredEvents])
 
+  // Die Leiste zieht bewusst aus ALLEN Terminen, nicht aus den gefilterten:
+  // sie ist ein fixer Orientierungspunkt und soll nicht verschwinden, nur
+  // weil gerade nach "Ausflug" gefiltert wird.
+  const nextSchularbeiten = useMemo(
+    () => events
+      .filter(e => e.category === 'schularbeit' && e.end_date >= today)
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))
+      .slice(0, 3),
+    [events, today]
+  )
   const filtersActive = filter !== 'alle' || categoryFilter !== 'alle'
   const upcoming = useMemo(() => filteredEvents.filter(e => e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date)), [filteredEvents, today])
   const past = useMemo(() => filteredEvents.filter(e => e.end_date < today).sort((a, b) => b.start_date.localeCompare(a.start_date)), [filteredEvents, today])
@@ -353,9 +405,16 @@ export default function TermineView({ events, role, today, classId, userId, stud
                       // plus Restzahl, damit die Kappung sichtbar wird — die
                       // Wochenansicht macht das mit "+n" schon lange so.
                       <span className="flex items-center gap-0.5 leading-none">
-                        {dayEvents.slice(0, dayEvents.length > 3 ? 2 : 3).map((e, idx) => (
-                          <span key={idx} className="w-1 h-1 rounded-full" style={{ background: isSelected ? 'rgba(255,255,255,.8)' : eventCategoryMeta(e.category).color }} />
-                        ))}
+                        {/* Schularbeiten als kurzer Balken in der Fachfarbe,
+                            alles andere als Punkt — so ist beim Überfliegen
+                            des Monats sofort klar, was für ein Tag das ist. */}
+                        {dayEvents.slice(0, dayEvents.length > 3 ? 2 : 3).map((e, idx) => {
+                          const m = eventAccent(e, subjects)
+                          const bg = isSelected ? 'rgba(255,255,255,.85)' : m.color
+                          return m.isSchularbeit
+                            ? <span key={idx} className="h-[3px] w-[11px] rounded-sm" style={{ background: bg }} />
+                            : <span key={idx} className="w-1 h-1 rounded-full" style={{ background: bg }} />
+                        })}
                         {dayEvents.length > 3 && (
                           <span className={`text-[8px] font-bold ${isSelected ? 'opacity-80' : 'text-kh-muted'}`}>
                             +{dayEvents.length - 2}
@@ -431,6 +490,43 @@ export default function TermineView({ events, role, today, classId, userId, stud
 
       {/* Liste */}
       <div className="flex flex-col gap-4">
+        {/* Schularbeiten-Leiste: nur wenn es kommende gibt. Weil es pro Fach
+            und Semester zwei bis drei sind, bleibt sie dauerhaft kurz und
+            braucht kein Aufklappen. */}
+        {nextSchularbeiten.length > 0 && (
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-kh-muted mb-2">
+              Nächste Schularbeiten
+            </p>
+            <div className="flex gap-2.5 flex-wrap">
+              {nextSchularbeiten.map(e => {
+                const m = eventAccent(e, subjects)
+                return (
+                  <button
+                    key={e.id}
+                    onClick={() => { setCategoryFilter('schularbeit'); setSelectedDate(null) }}
+                    className="flex-1 min-w-[170px] text-left bg-white rounded-2xl px-3.5 py-3 flex items-center gap-3 shadow-[0_4px_12px_rgba(20,40,45,.07)] hover:-translate-y-0.5 transition-transform"
+                    style={{ borderLeft: `4px solid ${m.color}` }}
+                    aria-label={`${m.subjectLabel ?? m.short ?? 'Schularbeit'} am ${new Date(`${e.start_date}T00:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })}`}
+                  >
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-extrabold text-[13px] flex-shrink-0"
+                      style={{ background: m.color }}>
+                      {m.short ?? '?'}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[15px] font-extrabold leading-tight text-kh-dark">
+                        {countdownLabel(e.start_date, today)}
+                      </span>
+                      <span className="block text-[11.5px] font-semibold text-kh-muted truncate">
+                        {new Date(`${e.start_date}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'long' })}
+                      </span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
         {personalCount > 0 && (
           // Umschalter im Standard-Stil (Creme-Weiß-Verlaufskapsel +
           // Verlaufs-Unterstrich statt gefüllter Pille), in Termine-Blau
@@ -504,7 +600,7 @@ export default function TermineView({ events, role, today, classId, userId, stud
               <button onClick={() => setSelectedDate(null)} className="text-[12px] font-bold text-kh-teal hover:underline">Alle Termine</button>
             </div>
             {selectedDayEvents && selectedDayEvents.length > 0 ? (
-              selectedDayEvents.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} canEdit={canEditEvent(e)} onDelete={handleDelete} onEdit={openEdit} studentNames={studentNames} />)
+              selectedDayEvents.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} canEdit={canEditEvent(e)} onDelete={handleDelete} onEdit={openEdit} studentNames={studentNames} subjects={subjects} today={today} />)
             ) : (
               <p className="text-sm text-kh-muted font-medium">Keine Termine an diesem Tag.</p>
             )}
@@ -541,9 +637,10 @@ export default function TermineView({ events, role, today, classId, userId, stud
                       event={nextEvent} today={today}
                       canDelete={canDeleteEvent(nextEvent)} canEdit={canEditEvent(nextEvent)}
                       onDelete={handleDelete} onEdit={openEdit} studentNames={studentNames}
+                      subjects={subjects}
                     />
                   )}
-                  {restUpcoming.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} canEdit={canEditEvent(e)} onDelete={handleDelete} onEdit={openEdit} studentNames={studentNames} />)}
+                  {restUpcoming.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} canEdit={canEditEvent(e)} onDelete={handleDelete} onEdit={openEdit} studentNames={studentNames} subjects={subjects} today={today} />)}
                 </div>
               )}
             </div>
@@ -560,7 +657,7 @@ export default function TermineView({ events, role, today, classId, userId, stud
                       <div key={g.label}>
                         <div className="text-[11px] font-bold text-kh-muted uppercase tracking-wide mb-2 opacity-70">{g.label}</div>
                         <div className="flex flex-col gap-2.5 opacity-70">
-                          {g.items.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} canEdit={canEditEvent(e)} onDelete={handleDelete} onEdit={openEdit} studentNames={studentNames} />)}
+                          {g.items.map(e => <EventRow key={e.id} event={e} canDelete={canDeleteEvent(e)} canEdit={canEditEvent(e)} onDelete={handleDelete} onEdit={openEdit} studentNames={studentNames} subjects={subjects} today={today} />)}
                         </div>
                       </div>
                     ))}
@@ -578,6 +675,8 @@ export default function TermineView({ events, role, today, classId, userId, stud
           classId={classId}
           mode={canManage ? 'teacher' : 'student'}
           editEvent={editEvent ?? undefined}
+          subjects={subjects}
+          existingEvents={events}
           onClose={closeModal}
         />
       )}

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { daysUntil, daysUntilLabel, todayISO } from '@/lib/date'
 import { eventCategoryMeta } from '@/lib/eventCategories'
 import type { Reminder, Role, AgendaEvent } from '@/lib/types'
+import type { SubjectOption } from '@/lib/subjectsCatalog'
 import AddReminderModal from '@/components/erinnerungen/AddReminderModal'
 import AddEventModal from '@/app/(app)/termine/AddEventModal'
 
@@ -16,6 +17,9 @@ interface Props {
   /** Gesamtzahl bevorstehender Termine. `events` ist bewusst auf sechs
    *  begrenzt, das Zahlenabzeichen darf das nicht sein. */
   eventCount?: number
+  /** Fächer-Katalog, damit sich von hier aus auch eine Schularbeit anlegen
+   *  lässt. Fehlt er, blendet das Modal die Kategorie aus. */
+  subjects?: SubjectOption[]
   role: Role
   userId?: string
   classId?: string
@@ -38,7 +42,7 @@ function badgeStyle(days: number) {
   return { color: '#6E7E80', bg: '#ECE6D9' }
 }
 
-export default function AgendaPanel({ reminders, events = [], eventCount, role, userId, classId, myViewedIds = [] }: Props) {
+export default function AgendaPanel({ reminders, events = [], eventCount, subjects = [], role, userId, classId, myViewedIds = [] }: Props) {
   const [tab, setTab] = useState<Tab>('erinnerungen')
   const [showAddReminder, setShowAddReminder] = useState(false)
   const [showAddEvent, setShowAddEvent] = useState(false)
@@ -237,6 +241,7 @@ export default function AgendaPanel({ reminders, events = [], eventCount, role, 
         today={todayISO()}
         classId={classId}
         mode={role === 'student' ? 'student' : 'teacher'}
+        subjects={subjects}
         onClose={() => setShowAddEvent(false)}
       />
     )}

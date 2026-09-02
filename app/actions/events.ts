@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import type { EventCategory } from '@/lib/eventCategories'
+import { hasSubjectField, type EventCategory } from '@/lib/eventCategories'
 import type { Database } from '@/lib/types'
 
 async function getTeacherClassId(): Promise<{ userId: string; classId: string }> {
@@ -32,11 +32,33 @@ type EventInput = {
   endTime: string | null
   location: string
   category: EventCategory
+  /** Fachkürzel, nur bei Schularbeit/Prüfung. */
+  subjectShort?: string | null
 }
 
 /** Gemeinsame Eingabepruefung von Anlegen und Bearbeiten. Die Uhrzeit war
  *  bisher ungeprueft: "14:00 - 09:00" liess sich speichern, waehrend das
  *  Datum gleich doppelt abgesichert ist (Action und DB-Check-Constraint). */
+/** Fach nur behalten, wenn die Kategorie überhaupt eines vorsieht. Sonst
+ *  bliebe an einem Ausflug ein Fach hängen, das die Oberfläche nie zeigt —
+ *  etwa wenn beim Bearbeiten die Kategorie gewechselt wird. */
+function normalizedSubject(input: EventInput): string | null {
+  if (!hasSubjectField(input.category)) return null
+  const s = input.subjectShort?.trim()
+  return s ? s : null
+}
+
+/** Existiert das Kürzel im Admin-Katalog? Ein frei erfundenes Fach würde in
+ *  der Anzeige farblos bleiben, also hier abfangen statt dort ausblenden. */
+async function assertKnownSubject(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  short: string | null,
+) {
+  if (!short) return
+  const { data } = await supabase.from('subjects').select('short').eq('short', short).maybeSingle()
+  if (!data) throw new Error('Unbekanntes Fach')
+}
+
 function validateEventInput(input: EventInput) {
   if (!input.title.trim()) throw new Error('Titel fehlt')
   if (input.endDate < input.startDate) throw new Error('Enddatum liegt vor dem Startdatum')
@@ -50,6 +72,8 @@ export async function createEvent(input: EventInput & { targetStudentIds?: strin
   validateEventInput(input)
 
   const supabase = await createClient()
+  const subjectShort = normalizedSubject(input)
+  await assertKnownSubject(supabase, subjectShort)
   const { error } = await supabase.from('events').insert({
     class_id: classId,
     created_by: userId,
@@ -63,6 +87,7 @@ export async function createEvent(input: EventInput & { targetStudentIds?: strin
     location: input.location.trim(),
     category: input.category,
     target_student_ids: input.targetStudentIds && input.targetStudentIds.length > 0 ? input.targetStudentIds : null,
+    subject_short: subjectShort,
   })
   if (error) throw new Error(error.message)
   // Server-seitige Revalidierung, damit die Termine-Ansicht nach dem Anlegen
@@ -77,6 +102,8 @@ export async function createOwnEvent(input: EventInput) {
   validateEventInput(input)
 
   const supabase = await createClient()
+  const subjectShort = normalizedSubject(input)
+  await assertKnownSubject(supabase, subjectShort)
   const { error } = await supabase.from('events').insert({
     class_id: classId,
     created_by: userId,
@@ -90,6 +117,7 @@ export async function createOwnEvent(input: EventInput) {
     location: input.location.trim(),
     category: input.category,
     target_student_ids: [userId],
+    subject_short: subjectShort,
   })
   if (error) throw new Error(error.message)
   revalidatePath('/termine')
@@ -127,6 +155,7 @@ export async function updateEvent(
     end_time: input.allDay ? null : input.endTime,
     location: input.location.trim(),
     category: input.category,
+    subject_short: normalizedSubject(input),
   }
   if (isStudent) {
     // Serverseitig erzwungen: ein Kind kann seinen Termin nie klassenweit oder
@@ -139,6 +168,7 @@ export async function updateEvent(
   }
 
   const supabase = await createClient()
+  await assertKnownSubject(supabase, patch.subject_short ?? null)
   let query = supabase.from('events').update(patch).eq('id', id).eq('class_id', activeClassId)
   if (isStudent) query = query.eq('created_by', user.id)
 
