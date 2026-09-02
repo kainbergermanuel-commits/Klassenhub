@@ -191,7 +191,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                 <Link
                   href={item.href}
                   title={collapsed ? item.label : undefined}
-                  className={`group relative flex items-center gap-3 py-2.5 rounded-xl overflow-hidden transition-all duration-200 ${
+                  className={`group relative flex items-center gap-3 py-2.5 rounded-xl overflow-hidden transition-all duration-200 tap ${
                     collapsed ? 'justify-center px-2' : 'px-3.5'
                   } ${
                     active
