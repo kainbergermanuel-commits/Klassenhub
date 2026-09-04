@@ -25,7 +25,7 @@ export default function AdventureTeaser() {
     : 'dann bricht die Klasse gemeinsam auf.'
 
   return (
-    <div className="relative z-20 flex items-stretch rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)]">
+    <div className="relative z-20 mx-auto w-full max-w-[560px] min-h-[220px] sm:min-h-[250px] flex items-stretch rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)]">
       {/* Hintergrund-Ebene mit eigenem Clipping, damit Vala oben überragen kann */}
       <div className="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-[#EFEAE0] to-[#FAF8F3]">
         {Art && (
@@ -36,11 +36,11 @@ export default function AdventureTeaser() {
       </div>
 
       {portrait && (
-        <div className="relative z-10 -ml-2.5 w-[29%] min-w-[70px] max-w-[120px] sm:w-[37%] sm:min-w-[115px] sm:max-w-[195px] flex-shrink-0 self-stretch pointer-events-none">
+        <div className="relative z-10 -ml-3 w-[34%] min-w-[92px] max-w-[150px] sm:w-[40%] sm:min-w-[150px] sm:max-w-[220px] flex-shrink-0 self-stretch pointer-events-none">
           <img
             src={portrait}
             alt="Bergführerin Vala"
-            className="absolute -top-7 left-[-6px] w-[113%] h-[calc(100%+28px)] sm:-top-6 sm:left-[-14px] sm:w-[137%] sm:h-[calc(100%+24px)] object-contain object-bottom"
+            className="absolute -top-9 left-[-8px] w-[124%] h-[calc(100%+36px)] sm:-top-10 sm:left-[-16px] sm:w-[142%] sm:h-[calc(100%+40px)] object-contain object-bottom"
           />
         </div>
       )}
