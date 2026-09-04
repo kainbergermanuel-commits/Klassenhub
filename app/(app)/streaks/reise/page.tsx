@@ -5,6 +5,8 @@ import { todayISO, lastDayOfMonthISO } from '@/lib/date'
 import { countClassGoalDone, suggestGoalTarget } from '@/lib/classGoal'
 import ReiseOverview from '@/components/streaks/ReiseOverview'
 import AnimateIn from '@/components/ui/AnimateIn'
+import { adventureUnlocked } from '@/lib/adventureStart'
+import AdventureTeaser from '@/components/streaks/AdventureTeaser'
 
 /** "Die Reise": alle Kapitel der aktuellen Klassenreise durchblätterbar,
  *  nicht nur die aktuelle Etappe wie in der kompakten SeasonJourney-Leiste
@@ -14,6 +16,15 @@ export default async function ReisePage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user) redirect('/login')
   if (!activeClassId) redirect('/')
+
+  // Gleiche Sperre wie auf /streaks (siehe lib/adventureStart.ts).
+  if (!adventureUnlocked()) {
+    return (
+      <AnimateIn delay={0}>
+        <AdventureTeaser />
+      </AnimateIn>
+    )
+  }
 
   const supabase = await createClient()
   const today = todayISO()

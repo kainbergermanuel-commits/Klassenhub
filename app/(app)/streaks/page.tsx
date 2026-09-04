@@ -17,11 +17,25 @@ import { activeRiddles, type Riddle } from '@/lib/riddles'
 import { suggestGoalTarget } from '@/lib/classGoal'
 import { matchChild } from '@/lib/auth'
 import StreakOverview from '@/components/streaks/StreakOverview'
+import { adventureUnlocked } from '@/lib/adventureStart'
+import AdventureTeaser from '@/components/streaks/AdventureTeaser'
+import AnimateIn from '@/components/ui/AnimateIn'
 
 export default async function StreaksPage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user) redirect('/login')
   if (!activeClassId) redirect('/')
+
+  // Erste Schulwoche: Abenteuer noch nicht scharfgeschaltet (siehe
+  // lib/adventureStart.ts). Bewusst VOR allen Abfragen — so kostet die
+  // gesperrte Seite auch keine Datenbanklast.
+  if (!adventureUnlocked()) {
+    return (
+      <AnimateIn delay={0}>
+        <AdventureTeaser />
+      </AnimateIn>
+    )
+  }
 
   const supabase = await createClient()
   const today = todayISO()

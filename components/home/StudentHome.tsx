@@ -6,6 +6,7 @@ import RiddleList from './RiddleList'
 import WeekPulse from './WeekPulse'
 import HeldenbuchCard from './HeldenbuchCard'
 import NewItemAnnounce from '@/components/streaks/NewItemAnnounce'
+import AdventureTeaser from '@/components/streaks/AdventureTeaser'
 import DutyModule from './DutyModule'
 import AnimateIn from '@/components/ui/AnimateIn'
 import type { HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
@@ -61,10 +62,13 @@ interface StudentHomeProps {
   guildSection: { guild: Guild; members: GuildMember[]; quest: GuildQuestResult } | null
   achievementCounts: AchievementCounts
   rucksack: RucksackState
+  /** Erste Schulwoche: Abenteuer noch gesperrt, statt der Erzählebene steht
+   *  nur der Countdown-Teaser (siehe lib/adventureStart.ts). */
+  adventureUnlocked: boolean
 }
 
 export default function StudentHome({
-  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, upcomingEventCount, myDuties, dutyConfirmableUntil, isPreview, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, weekPulse, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack,
+  fullName, userId, classId, allHomework, reminders, myViewedIds, upcomingEvents, upcomingEventCount, myDuties, dutyConfirmableUntil, isPreview, streak, confirmedStreak, broken, pendingMilestone, classGoal, classGoalDone, season, quests, questWeekStart, riddles, weekPulse, guideNote, noteGuideIcon, preferredGuideIcon, chronicle, guildSection, achievementCounts, rucksack, adventureUnlocked,
 }: StudentHomeProps) {
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -79,7 +83,7 @@ export default function StudentHome({
       {/* Erwerbs-Moment für neu gefundene Rucksack-Zeichen — bewusst nur hier
           auf der Startseite (nicht zusätzlich auf /streaks), damit die Übergabe
           nicht doppelt auftaucht. */}
-      <NewItemAnnounce state={rucksack} />
+      {adventureUnlocked && <NewItemAnnounce state={rucksack} />}
 
       <header className="mb-6">
         <div className="flex items-center gap-3 min-w-0 max-md:pr-16">
@@ -93,27 +97,32 @@ export default function StudentHome({
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6 mx-auto w-full">
-          {/* Story-Hero: Etappe, Guide-Text, Maskottchen-Platzhalter */}
+          {/* Story-Hero: Etappe, Guide-Text, Maskottchen-Platzhalter. In der
+              ersten Schulwoche steht hier stattdessen der Countdown-Teaser. */}
           <AnimateIn delay={30} className="relative z-20">
-            <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} />
+            {adventureUnlocked
+              ? <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} />
+              : <AdventureTeaser />}
           </AnimateIn>
 
           {/* Wochen-Quests (inkl. Gilden-Quest als Block) */}
-          <AnimateIn delay={60}>
-            <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} showGuidePortrait={false} guildSection={guildSection} collapsible />
-          </AnimateIn>
+          {adventureUnlocked && (
+            <AnimateIn delay={60}>
+              <WeeklyQuestCard quests={quests} weekStart={questWeekStart} season={season} showGuidePortrait={false} guildSection={guildSection} collapsible />
+            </AnimateIn>
+          )}
 
           {/* Interaktive Rätsel: Arc-Item + ggf. Splitter (Neugier + Nochmal-Lesen).
               Bedingung bewusst AUSSEN: RiddleList returned bei leerer Liste null,
               der AnimateIn-Wrapper-div bliebe aber stehen und erzeugte im
               flex-col gap-5 eine doppelte Lücke. */}
-          {riddles.length > 0 && (
+          {adventureUnlocked && riddles.length > 0 && (
             <AnimateIn delay={75}>
               <RiddleList riddles={riddles} />
             </AnimateIn>
           )}
 
-          {weekPulse !== null && (
+          {adventureUnlocked && weekPulse !== null && (
             <AnimateIn delay={90}>
               <WeekPulse total={weekPulse.total} today={weekPulse.today} />
             </AnimateIn>
@@ -139,9 +148,11 @@ export default function StudentHome({
                 <DutyModule duties={myDuties} confirmableUntil={dutyConfirmableUntil} preview={isPreview} />
               </AnimateIn>
             )}
+            {adventureUnlocked && (
             <AnimateIn delay={180} className="relative z-10">
               <HeldenbuchCard streak={streak} confirmedStreak={confirmedStreak} broken={broken} pendingMilestone={pendingMilestone} season={season} achievementCounts={achievementCounts} guideNote={guideNote} noteGuideIcon={noteGuideIcon} preferredGuideIcon={preferredGuideIcon} chronicle={chronicle} awakenedSigns={rucksack.awakenedSignCount} rucksack={rucksack} />
             </AnimateIn>
+            )}
           </div>
         </div>
       </div>

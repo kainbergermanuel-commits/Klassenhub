@@ -15,6 +15,7 @@ import { collectAchievements, countAchievements, type AchievementCounts } from '
 import { buildGuideNote, buildChronicle } from '@/lib/heldenbuch'
 import { getSeasonTheme, isArcUnlocked, splitterFound, awakenedSignCount, currentStageIndex, worldStoryMoments } from '@/lib/seasonTheme'
 import { activeRiddles } from '@/lib/riddles'
+import { adventureUnlocked } from '@/lib/adventureStart'
 import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
@@ -784,6 +785,7 @@ export default async function HomePage() {
         guildSection={guildSection}
         achievementCounts={achievementCounts}
         rucksack={rucksack}
+        adventureUnlocked={adventureUnlocked()}
       />
     )
   }
