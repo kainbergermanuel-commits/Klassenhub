@@ -24,8 +24,10 @@ export default function AdventureTeaser() {
     ? 'Vala hat das Basislager fertig eingerichtet.'
     : 'dann bricht die Klasse gemeinsam auf.'
 
+  // Vala ragt bewusst über den oberen Kartenrand. Der Abstand oben (mt) gibt
+  // ihrem Kopf den nötigen Raum — ohne ihn schneidet der Seitenrand ihn ab.
   return (
-    <div className="relative z-20 mx-auto w-full max-w-[560px] min-h-[220px] sm:min-h-[250px] flex items-stretch rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)]">
+    <div className="relative z-20 mx-auto mt-9 sm:mt-11 w-full max-w-[560px] min-h-[220px] sm:min-h-[250px] flex items-stretch rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)]">
       {/* Hintergrund-Ebene mit eigenem Clipping, damit Vala oben überragen kann */}
       <div className="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-[#EFEAE0] to-[#FAF8F3]">
         {Art && (
