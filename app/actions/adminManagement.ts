@@ -252,22 +252,31 @@ export async function adminResetPassword(profileId: string) {
   const { data: profile } = await supabase.from('profiles').select('full_name,role').eq('id', profileId).single()
   if (!profile) throw new Error('Profil nicht gefunden')
 
-  let password: string
-  let username: string
-  if (profile.role === 'teacher') {
-    username = toTeacherUsername(profile.full_name)
-    password = toTeacherPassword(profile.full_name)
-  } else {
-    username = profile.full_name // fallback — teacher actions handle their own
-    password = `${profile.full_name.split(' ')[0].toLowerCase()}123`
-  }
-  const email = `${username}@klassenhub.local`
+  const password = profile.role === 'teacher'
+    ? toTeacherPassword(profile.full_name)
+    : `${profile.full_name.split(' ')[0].toLowerCase()}123`
 
-  const res = await adminFetch(`users/${profileId}`, 'PUT', { password, email })
+  // Nur das Passwort setzen, NICHT die E-Mail (= den Benutzernamen).
+  //
+  // Vorher wurde die Adresse aus dem Namen neu berechnet. Das schlug bei
+  // Schüler:innen und Eltern immer fehl, weil dort der volle Name mit
+  // Leerzeichen eingesetzt wurde ("Ryan Wilson@klassenhub.local") und der
+  // Reset mit 500 endete. Und selbst bei Lehrkräften war es falsch: die
+  // Anlage hängt bei Namensgleichheit eine Ziffer an (vorname.nachname2),
+  // ein neu berechneter Wert hätte den Login stillschweigend umbenannt und
+  // die gedruckten Zugangszettel entwertet.
+  const res = await adminFetch(`users/${profileId}`, 'PUT', { password })
   if (!res.ok) {
     const err = await res.json()
     throw new Error(err.message ?? 'Passwort-Reset fehlgeschlagen')
   }
+
+  // Das Konto steht wieder auf einem Standardpasswort nach bekanntem Muster.
+  // Deshalb den Willkommens-Screen erneut scharfstellen: beim nächsten Login
+  // wird wieder ein eigenes Passwort angeboten. Ohne das bliebe genau der
+  // häufigste Fall, "Passwort vergessen", dauerhaft auf dem Standardwert.
+  const service = createServiceClient()
+  await service.from('profiles').update({ onboarded_at: null }).eq('id', profileId)
 
   return { password }
 }

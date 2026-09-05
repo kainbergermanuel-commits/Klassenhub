@@ -24,13 +24,32 @@ export default function WillkommenForm({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Drei Rollen, nicht zwei. Eine bloße Kind-oder-nicht-Prüfung begrüßte
+  // Lehrkräfte als "Familie" und erklärte ihnen Nachrichten "zwischen Ihnen
+  // und mir", obwohl sie die Absenderin dieser Nachrichten sind.
   const kind = role === 'student'
+  const lehrkraft = role === 'teacher'
   const tooShort = password.length > 0 && password.length < 6
   const mismatch = confirm.length > 0 && confirm !== password
   const canSubmit = password.length >= 6 && password === confirm && !saving
 
-  async function fertig() {
-    await willkommenAbschliessen()
+  /**
+   * Erst merken, dann weiterleiten. Schlägt das Merken fehl, DARF nicht
+   * navigiert werden: das App-Layout schickte sofort wieder hierher zurück,
+   * und zwar endlos und ohne Erklärung. Stattdessen bleibt der Screen stehen
+   * und sagt, was los ist.
+   */
+  async function fertig(passwortGeaendert = false) {
+    const r = await willkommenAbschliessen()
+    if (!r.ok) {
+      setSaving(false)
+      setError(
+        passwortGeaendert
+          ? 'Das neue Passwort ist gespeichert, aber diese Seite konnte nicht abgeschlossen werden. Bitte noch einmal versuchen.'
+          : 'Das hat gerade nicht geklappt. Bitte noch einmal versuchen.',
+      )
+      return
+    }
     window.location.href = '/'
   }
 
@@ -47,7 +66,7 @@ export default function WillkommenForm({
       setError(error.message)
       return
     }
-    await fertig()
+    await fertig(true)
   }
 
   async function spaeter() {
@@ -79,7 +98,9 @@ export default function WillkommenForm({
               </div>
 
               <h1 className="text-2xl font-extrabold text-kh-dark mb-2 leading-tight">
-                {kind ? `Hallo ${vorname}!` : `Willkommen, Familie ${nachname || vorname}!`}
+                {kind ? `Hallo ${vorname}!`
+                  : lehrkraft ? `Willkommen, ${vorname}!`
+                  : `Willkommen, Familie ${nachname || vorname}!`}
               </h1>
 
               {kind ? (
@@ -91,6 +112,17 @@ export default function WillkommenForm({
                   <p>
                     Hier stehen deine Hausübungen, dein Stundenplan und was in der Klasse ansteht.
                     Und dein Abenteuer wartet auch schon auf dich.
+                  </p>
+                </div>
+              ) : lehrkraft ? (
+                <div className="text-[15px] text-kh-muted font-medium leading-relaxed flex flex-col gap-3">
+                  <p>
+                    Schön, dass Sie da sind. <strong className="text-kh-dark">KlassenHub</strong> ist die
+                    Klassen-App: Hier läuft zusammen, was Schule und Zuhause voneinander wissen müssen.
+                  </p>
+                  <p>
+                    Hausübungen, Termine, Stundenplan, Dienste, Anwesenheit und die Nachrichten mit
+                    den Familien Ihrer Klasse.
                   </p>
                 </div>
               ) : (
@@ -129,6 +161,12 @@ export default function WillkommenForm({
                   <>
                     Dein Passwort steht auf dem Zettel, den deine Eltern bekommen haben. Du kannst dir
                     hier ein eigenes ausdenken, das nur du kennst. Merk es dir gut!
+                  </>
+                ) : lehrkraft ? (
+                  <>
+                    Ihr Startpasswort folgt einem festen Muster aus Ihrem Vornamen und ist damit leicht
+                    zu erraten. Da Sie Zugriff auf die Daten Ihrer ganzen Klasse haben, vergeben Sie
+                    bitte jetzt ein eigenes.
                   </>
                 ) : (
                   <>
@@ -206,7 +244,9 @@ export default function WillkommenForm({
         <p className="text-center text-xs text-kh-muted mt-6 font-medium">
           {kind
             ? 'Wenn du dein Passwort vergisst, sag es einfach Herrn Kainberger.'
-            : 'Das Passwort lässt sich jederzeit unter Einstellungen ändern.'}
+            : lehrkraft
+              ? 'Vergessen? Die Administration kann das Passwort zurücksetzen.'
+              : 'Das Passwort lässt sich jederzeit unter Einstellungen ändern.'}
         </p>
       </div>
     </div>

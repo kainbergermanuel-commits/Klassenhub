@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAuth } from '@/lib/auth'
 
 /**
- * Markiert den Willkommens-Screen als erledigt — egal ob das Passwort
+ * Markiert den Willkommens-Screen als erledigt, egal ob das Passwort
  * geändert oder der Schritt übersprungen wurde. Der Screen ist eine
  * Empfehlung, keine Sperre: wer ihn wegklickt, kommt trotzdem in die App.
  *
