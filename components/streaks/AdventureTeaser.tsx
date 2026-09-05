@@ -9,7 +9,13 @@ import { SEASON_ART } from '@/components/streaks/seasonArt'
  *  damit die Kinder die Karte am Starttag wiedererkennen.
  *  Vala ist gesetzt, weil sie im September ohnehin die Welt führt
  *  (Bergexpedition, Icon `landscape` in lib/seasonTheme.ts). */
-export default function AdventureTeaser() {
+/**
+ * `vollbreite`: auf der Startseite füllt der Teaser die Spalte wie jede andere
+ * Karte (Hausübungen, Termine) — eine schmalere Karte mitten in der Reihe liest
+ * sich dort als Fehler. Auf den Abenteuer-Seiten steht er allein und bekommt
+ * deshalb die gedeckelte Breite, damit er nicht auseinanderläuft.
+ */
+export default function AdventureTeaser({ vollbreite = false }: { vollbreite?: boolean } = {}) {
   const days = daysUntilAdventure()
   const Art = SEASON_ART['landscape']
   const portrait = GUIDE_PORTRAIT['landscape']
@@ -27,7 +33,7 @@ export default function AdventureTeaser() {
   // Vala ragt bewusst über den oberen Kartenrand. Der Abstand oben (mt) gibt
   // ihrem Kopf den nötigen Raum — ohne ihn schneidet der Seitenrand ihn ab.
   return (
-    <div className="relative z-20 mx-auto mt-9 sm:mt-11 w-full max-w-[560px] min-h-[220px] sm:min-h-[250px] flex items-stretch rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)]">
+    <div className={`relative z-20 mt-9 sm:mt-11 w-full min-h-[220px] sm:min-h-[250px] flex items-stretch rounded-2xl shadow-[0_8px_16px_rgba(20,40,45,.10)]${vollbreite ? '' : ' mx-auto max-w-[560px]'}`}>
       {/* Hintergrund-Ebene mit eigenem Clipping, damit Vala oben überragen kann */}
       <div className="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-[#EFEAE0] to-[#FAF8F3]">
         {Art && (

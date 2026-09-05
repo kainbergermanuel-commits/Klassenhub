@@ -102,7 +102,7 @@ export default function StudentHome({
           <AnimateIn delay={30} className="relative z-20">
             {adventureUnlocked
               ? <StoryHeroCard season={season} classGoal={classGoal} classGoalDone={classGoalDone} quests={quests} upcomingEvents={upcomingEvents} />
-              : <AdventureTeaser />}
+              : <AdventureTeaser vollbreite />}
           </AnimateIn>
 
           {/* Wochen-Quests (inkl. Gilden-Quest als Block) */}
