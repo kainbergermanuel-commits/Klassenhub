@@ -25,6 +25,11 @@ export type Profile = {
    *  Klassenwelt. Nur wirksam, wenn der Guide bereits freigeschaltet ist
    *  (siehe isArcUnlocked in lib/seasonTheme.ts). */
   preferred_guide_icon: string | null
+  /** Willkommens-Screen beim ersten Login: NULL = noch nicht gesehen, dann
+   *  leitet das App-Layout auf /willkommen um. Zeitstempel = erledigt.
+   *  Bestandsprofile wurden per Migration auf now() gesetzt, damit der
+   *  Screen nur bei neu angelegten Konten erscheint. */
+  onboarded_at: string | null
 }
 
 export type TimetableEntry = {

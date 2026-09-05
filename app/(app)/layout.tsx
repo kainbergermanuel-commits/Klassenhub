@@ -172,6 +172,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { user: realUser, profile: realProfile } = await getAuth()
   if (!realUser || !realProfile) redirect('/login')
 
+  // Erster Login: Willkommens-Screen vorschalten. Bewusst gegen realProfile
+  // geprüft, nicht gegen das Vorschauprofil — sonst risse die Rollenvorschau
+  // einer Lehrkraft sie in das Onboarding eines Kindes. /willkommen liegt in
+  // der (auth)-Gruppe und fällt daher nicht unter dieses Layout.
+  //
+  // Streng auf null geprüft, nicht auf falsy: fehlt die Spalte (Migration noch
+  // nicht eingespielt), ist der Wert undefined — dann passiert nichts, statt
+  // die ganze App in eine Weiterleitungsschleife zu schicken.
+  if (realProfile.onboarded_at === null) redirect('/willkommen')
+
   // effectiveProfile: aktive Rolle (Schüler/Elternteil während Vorschau)
   const { user, profile, activeClassId } = await getEffectiveAuth()
 
