@@ -340,19 +340,19 @@ export default function AddEventModal({
                     Keinen
                   </button>
                 </div>
-                <div className="mt-1 grid grid-cols-4 gap-2">
+                <div className="mt-1 flex flex-wrap gap-1.5">
                   {students.map(s => {
                     const selected = selectedIds.has(s.id)
                     const firstName = s.full_name.split(' ')[0]
-                    const long = firstName.length > 7
+                      const long = firstName.length > 9
                     return (
                       <button key={s.id} type="button" onClick={() => toggleStudent(s.id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all ${
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all max-w-full ${
                           selected ? 'border-kh-teal bg-kh-teal/10' : 'border-kh-border hover:border-kh-teal/50'
                         }`}>
                         <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed}
-                          hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={22} />
-                        <span className={`${long ? 'text-[10px]' : 'text-[12px]'} font-semibold leading-tight break-words min-w-0 ${selected ? 'text-kh-teal' : 'text-kh-dark'}`}>
+                          hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={18} />
+                        <span className={`${long ? 'text-[10px]' : 'text-[11.5px]'} font-semibold leading-tight whitespace-nowrap overflow-hidden text-ellipsis min-w-0 ${selected ? 'text-kh-teal' : 'text-kh-dark'}`}>
                           {firstName}
                         </span>
                       </button>

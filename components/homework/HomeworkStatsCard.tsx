@@ -4,12 +4,16 @@ import { useId } from 'react'
 import { Ring } from '@/components/home/statParts'
 import { todayISO, monthLabel } from '@/lib/date'
 import type { HomeworkWithStatus, Role } from '@/lib/types'
+import { studentCountForHw } from '@/lib/homeworkScope'
 
 interface Props {
   homework: HomeworkWithStatus[]
   stats: { open: number; done: number; missed: number }
   role: Role
-  studentCount: number
+  /** IDs statt nur der Anzahl: die Nenner der Lehrer-Quoten werden je
+   *  Hausübung gebildet, weil einzelne Kinder von einzelnen HÜ ausgenommen
+   *  sein können (siehe lib/homeworkScope.ts). */
+  studentIds: string[]
 }
 
 /**
@@ -19,7 +23,7 @@ interface Props {
  * Chips und Balken, damit die Karte neben dem sonst eher ruhigen Listen-Layout
  * als klarer visueller Anker wirkt.
  */
-export default function HomeworkStatsCard({ homework, stats, role, studentCount }: Props) {
+export default function HomeworkStatsCard({ homework, stats, role, studentIds }: Props) {
   const gradId = useId()
   const published = homework.filter(h => h.status === 'published')
   // Der Ring rechnet über den LAUFENDEN MONAT, nicht über das ganze
@@ -32,7 +36,10 @@ export default function HomeworkStatsCard({ homework, stats, role, studentCount 
 
   if (role === 'teacher') {
     const totalDone = published.reduce((s, h) => s + (h.completion_count ?? 0), 0)
-    const monthPossible = studentCount * inMonth.length
+    // Summe der tatsächlich betroffenen Kinder je HÜ statt Klassenstärke mal
+    // Anzahl. Sonst könnte der Ring nie 100 Prozent erreichen, sobald auch nur
+    // ein Kind von einer Hausübung ausgenommen ist.
+    const monthPossible = inMonth.reduce((n, h) => n + studentCountForHw(h, studentIds), 0)
     const monthDone = inMonth.reduce((s, h) => s + (h.completion_count ?? 0), 0)
     const pct = monthPossible > 0 ? Math.round((monthDone / monthPossible) * 100) : 0
 
@@ -40,7 +47,7 @@ export default function HomeworkStatsCard({ homework, stats, role, studentCount 
     for (const hw of published) {
       const entry = bySubject.get(hw.subject) ?? { name: hw.subject, color: hw.subject_color, done: 0, possible: 0 }
       entry.done += hw.completion_count ?? 0
-      entry.possible += studentCount
+      entry.possible += studentCountForHw(hw, studentIds)
       bySubject.set(hw.subject, entry)
     }
     const subjectRows = Array.from(bySubject.values()).sort((a, b) => b.possible - a.possible)

@@ -23,13 +23,15 @@ interface Props {
   classId: string
   subtitle: string
   stats?: { open: number; done: number; missed: number }
-  studentCount?: number
+  /** IDs der Kinder der Klasse — die Lehrer-Quoten bilden ihre Nenner je
+   *  Hausübung, siehe HomeworkStatsCard. */
+  studentIds?: string[]
   subjects: SubjectOption[]
   /** Nur für Eltern: ID des verknüpften Kindes (für den Bestätigen-Knopf). */
   childId?: string | null
 }
 
-export default function HomeworkList({ homework, role, specialRole, userId, classId, subtitle, stats, studentCount, subjects, childId }: Props) {
+export default function HomeworkList({ homework, role, specialRole, userId, classId, subtitle, stats, studentIds, subjects, childId }: Props) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -164,7 +166,7 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
               Karte rechts in der Seitenspalte (siehe unten). */}
           {stats && (
             <div className="lg:hidden">
-              <HomeworkStatsCard homework={homework} stats={stats} role={role} studentCount={studentCount ?? 0} />
+              <HomeworkStatsCard homework={homework} stats={stats} role={role} studentIds={studentIds ?? []} />
             </div>
           )}
           {listError && (
@@ -251,7 +253,7 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
 
         {stats && (
           <div className="max-lg:hidden">
-            <HomeworkStatsCard homework={homework} stats={stats} role={role} studentCount={studentCount ?? 0} />
+            <HomeworkStatsCard homework={homework} stats={stats} role={role} studentIds={studentIds ?? []} />
           </div>
         )}
         </div>

@@ -136,7 +136,6 @@ export default async function HomeworkPage() {
     .eq('class_id', activeClassId)
     .eq('role', 'student')
   const studentIds = (studentRows ?? []).map(r => r.id)
-  const studentCount = studentIds.length
 
   const subtitle =
     profile.role === 'teacher'
@@ -153,7 +152,7 @@ export default async function HomeworkPage() {
         classId={activeClassId}
         subtitle={subtitle}
         stats={{ open: openCount, done: doneCount, missed: missedCount }}
-        studentCount={studentCount}
+        studentIds={studentIds}
         childId={childId}
         subjects={subjects}
       />

@@ -100,11 +100,18 @@ export default function StudentExclusionPicker({ classId, value, onChange, defau
                   Alle wieder dazunehmen
                 </button>
               )}
-              <div className="mt-2 grid grid-cols-4 gap-2">
+              {/* Bewusst KEIN festes Spaltenraster: in einem Vierer-Grid sind
+                  alle Spalten gleich breit, und lange Vornamen brechen mitten
+                  im Wort um ("Alexand/er"). Als umbrechende Reihe wächst jeder
+                  Chip mit seinem Namen, und kein Name wird zerschnitten. */}
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {students.map(s => {
                   const isExcluded = excluded.has(s.id)
                   const firstName = s.full_name.split(' ')[0]
-                  const long = firstName.length > 7
+                  // Lange Vornamen etwas kleiner setzen. Das spart Breite, ohne
+                  // dass ein Name zerschnitten wird — im festen Raster von
+                  // vorher war beides nötig und half trotzdem nicht.
+                  const long = firstName.length > 9
                   return (
                     <button
                       key={s.id}
@@ -112,7 +119,7 @@ export default function StudentExclusionPicker({ classId, value, onChange, defau
                       onClick={() => toggle(s.id)}
                       aria-pressed={isExcluded}
                       title={isExcluded ? `${firstName} bekommt diese HÜ nicht` : `${firstName} bekommt diese HÜ`}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all ${
+                      className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all max-w-full ${
                         isExcluded
                           ? 'border-kh-border bg-[#F6F3ED] opacity-55'
                           : 'border-kh-teal/40 bg-kh-teal/5'
@@ -121,10 +128,13 @@ export default function StudentExclusionPicker({ classId, value, onChange, defau
                       <span className={isExcluded ? 'grayscale' : ''}>
                         <Avatar
                           name={s.full_name} color={s.avatar_color} seed={s.avatar_seed}
-                          hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={22}
+                          hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={18}
                         />
                       </span>
-                      <span className={`${long ? 'text-[10px]' : 'text-[12px]'} font-semibold leading-tight break-words min-w-0 ${
+                      {/* Eine Zeile, notfalls mit Auslassungspunkten. Ein
+                          angeschnittener Name bleibt lesbar, ein mitten im Wort
+                          umgebrochener nicht. */}
+                      <span className={`${long ? 'text-[10px]' : 'text-[11.5px]'} font-semibold leading-tight whitespace-nowrap overflow-hidden text-ellipsis min-w-0 ${
                         isExcluded ? 'text-kh-muted line-through decoration-1' : 'text-kh-dark'
                       }`}>
                         {firstName}
