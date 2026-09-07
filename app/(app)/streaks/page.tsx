@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO, localDateOf, todayLocal, getWeekNumber, isActionable } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp } from '@/lib/streak'
 import { hwForStudent } from '@/lib/homeworkScope'
+import { isTargetedAt } from '@/lib/targeting'
 import { computeQuestProgress, defaultWeeklyTemplateKeys, recentTemplateKeys, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
@@ -205,7 +206,7 @@ export default async function StreaksPage() {
     ])
 
     const weekReminderIds = (weekReminders ?? [])
-      .filter(r => !r.target_student_ids || r.target_student_ids.includes(profile.id))
+      .filter(r => isTargetedAt(r, profile.id))
       .map(r => r.id)
     const { data: myViews } = weekReminderIds.length > 0
       ? await supabase.from('reminder_views').select('reminder_id').eq('student_id', profile.id).in('reminder_id', weekReminderIds)

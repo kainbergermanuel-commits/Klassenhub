@@ -1,4 +1,5 @@
 import type { QuestContext, QuestFeasibility } from '@/lib/quests'
+import { isTargetedAt } from '@/lib/targeting'
 
 /** Konsolidiert den `QuestContext`-Aufbau, der zuvor identisch in
  *  app/(app)/page.tsx UND app/(app)/streaks/page.tsx dupliziert war (Risiko:
@@ -58,12 +59,12 @@ export function buildQuestContext(input: QuestContextInput): QuestContext {
 
   const weekReminderIds = reminders
     .filter(r => r.event_date >= weekStart && r.event_date <= weekEnd)
-    .filter(r => !r.target_student_ids || r.target_student_ids.includes(studentId))
+    .filter(r => isTargetedAt(r, studentId))
     .map(r => r.id)
 
   const weekEventIds = events
     .filter(e => e.start_date >= weekStart && e.start_date <= weekEnd)
-    .filter(e => !e.target_student_ids || e.target_student_ids.includes(studentId))
+    .filter(e => isTargetedAt(e, studentId))
     .map(e => e.id)
 
   return {

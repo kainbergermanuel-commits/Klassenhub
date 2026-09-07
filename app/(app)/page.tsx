@@ -22,6 +22,7 @@ import TeacherHome from '@/components/home/TeacherHome'
 import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
 import type { HomeworkWithStatus, Reminder, Duty, AgendaEvent } from '@/lib/types'
+import { targetedStudentCount } from '@/lib/targeting'
 
 /**
  * Label des nächsten Termins fürs Statistik-Panel ("Elternabend · morgen").
@@ -276,7 +277,12 @@ export default async function HomePage() {
     // in der Klasse sind, filtern wir gegen die aktuelle Schülerliste.
     const studentIdSet = new Set(studentIds)
     const reminderSeen = (statsReminderViews ?? []).filter(v => studentIdSet.has(v.student_id)).length
-    const reminderTotal = statsReminderIds.length * studentIds.length
+    // Je Erinnerung nur ihre Empfänger zählen, nicht pauschal die ganze
+    // Klasse: Erinnerungen lassen sich gezielt an einzelne Kinder schicken
+    // (target_student_ids). Eine gezielte Erinnerung, die alle ihre Empfänger
+    // gesehen haben, kam sonst nie über einen Bruchteil hinaus und sah
+    // dauerhaft nach einer Lücke aus.
+    const reminderTotal = upcomingReminders.reduce((n, r) => n + targetedStudentCount(r, studentIds), 0)
 
     // Dienste: wer diese Woche seinen Dienst durchgehend erledigt hat
     const { keptUpStudents, assignedStudents } = buildDutyDone(duties, statsDutyCompletions ?? [], dutyWeekStart)
