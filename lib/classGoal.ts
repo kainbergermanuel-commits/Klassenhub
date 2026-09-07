@@ -1,5 +1,6 @@
 import { firstDayOfMonthISO, lastDayOfMonthISO } from '@/lib/date'
 import { getSeasonTheme } from '@/lib/seasonTheme'
+import { studentCountForHw } from '@/lib/homeworkScope'
 
 /**
  * Aktuelles Season-Fenster [erster Tag des Monats .. letzter Tag des Monats].
@@ -31,32 +32,44 @@ const SUGGESTION_MIN = 10
 const ASSUMED_MONTHLY_HOMEWORK = 4
 
 /**
- * Vorschlagswert für ein nicht gesetztes Klassenziel. Basis ist die tatsächliche
- * HÜ-Zahl des Monats; ist der laufende Monat noch dünn besetzt, zieht der
- * Vormonat als Referenz. `null` = für diese Season ist bewusst kein Ziel
- * vorgesehen (Epilog-Welt) oder es gibt keine Kinder.
+ * Vorschlagswert für ein nicht gesetztes Klassenziel. Basis sind die
+ * tatsächlich möglichen Bestätigungen des Monats; ist der laufende Monat noch
+ * dünn besetzt, zieht der Vormonat als Referenz. `null` = für diese Season ist
+ * bewusst kein Ziel vorgesehen (Epilog-Welt) oder es gibt keine Kinder.
+ *
+ * Gezählt werden PLÄTZE, nicht Hausübungen mal Kinder: Kinder, die von einer
+ * Hausübung ausgenommen sind, können sie nicht bestätigen lassen, und ein
+ * Vorschlag, der sie mitzählt, wäre um genau diese Plätze zu hoch. Bei einer
+ * Klasse ohne Ausnahmen ist die Summe identisch zum früheren Produkt, das
+ * Vorschlagsziel ändert sich dort also nicht.
  *
  * Rein rechnerisch aus bereits geladenen Daten, macht KEINE eigene DB-Abfrage.
  */
 export function suggestGoalTarget(
-  allHomework: { due_date: string }[],
-  studentCount: number,
+  allHomework: { due_date: string; excluded_student_ids: string[] | null }[],
+  studentIds: string[],
   season: string,
 ): number | null {
   if (getSeasonTheme(season).isEpilogue) return null
-  if (studentCount <= 0) return null
+  if (studentIds.length === 0) return null
 
   const now = new Date()
   const prevRef = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const inRange = (from: string, to: string) =>
-    allHomework.filter(h => h.due_date >= from && h.due_date <= to).length
+  /** Mögliche Bestätigungen im Zeitraum: je Hausübung nur die Kinder, für die
+   *  sie überhaupt gilt. */
+  const slotsInRange = (from: string, to: string) =>
+    allHomework
+      .filter(h => h.due_date >= from && h.due_date <= to)
+      .reduce((n, h) => n + studentCountForHw(h, studentIds), 0)
 
   const base = Math.max(
-    inRange(firstDayOfMonthISO(now), lastDayOfMonthISO(now)),
-    inRange(firstDayOfMonthISO(prevRef), lastDayOfMonthISO(prevRef)),
-    ASSUMED_MONTHLY_HOMEWORK,
+    slotsInRange(firstDayOfMonthISO(now), lastDayOfMonthISO(now)),
+    slotsInRange(firstDayOfMonthISO(prevRef), lastDayOfMonthISO(prevRef)),
+    // Der Rückfall kennt noch keine echten Hausübungen und damit auch keine
+    // Ausnahmen — hier bleibt es beim Produkt.
+    ASSUMED_MONTHLY_HOMEWORK * studentIds.length,
   )
-  return Math.max(SUGGESTION_MIN, Math.round(base * studentCount * SUGGESTION_SHARE))
+  return Math.max(SUGGESTION_MIN, Math.round(base * SUGGESTION_SHARE))
 }
 
 /**

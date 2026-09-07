@@ -32,11 +32,14 @@ export default async function ReisePage() {
   const monthEnd = lastDayOfMonthISO()
   const currentSeason = today.slice(0, 7)
 
-  const [{ data: classGoal }, { data: allHw }, { count: studentCount }] = await Promise.all([
+  const [{ data: classGoal }, { data: allHw }, { data: studentRows }] = await Promise.all([
     supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
-    supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).eq('status', 'published').lte('due_date', monthEnd).order('due_date', { ascending: false }),
-    // Nur die Anzahl, kein Datensatz — Grundlage für das Vorschlagsziel.
-    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('class_id', activeClassId).eq('role', 'student'),
+    supabase.from('homework').select('id,due_date,excluded_student_ids').eq('class_id', activeClassId).eq('status', 'published').lte('due_date', monthEnd).order('due_date', { ascending: false }),
+    // Die IDs, nicht nur die Anzahl: das Vorschlagsziel zählt je Hausübung,
+    // für wie viele Kinder sie gilt (Ausnahmen, siehe lib/homeworkScope.ts).
+    // Dieselbe Abfrage, nur ohne head — bei einer Schulklasse sind das ein
+    // paar Dutzend UUIDs.
+    supabase.from('profiles').select('id').eq('class_id', activeClassId).eq('role', 'student'),
   ])
 
   const hwIds = (allHw ?? []).map(h => h.id)
@@ -47,7 +50,7 @@ export default async function ReisePage() {
   const done = countClassGoalDone(allHw ?? [], completions ?? [])
   // Ohne gesetztes Ziel greift derselbe Vorschlag wie auf /streaks — sonst
   // stünden hier ALLE Etappen auf „gesperrt" und die Reise wäre leer.
-  const effectiveTarget = classGoal?.target ?? suggestGoalTarget(allHw ?? [], studentCount ?? 0, currentSeason)
+  const effectiveTarget = classGoal?.target ?? suggestGoalTarget(allHw ?? [], (studentRows ?? []).map(r => r.id), currentSeason)
   const pct = effectiveTarget ? Math.min(100, Math.round((done / effectiveTarget) * 100)) : 0
 
   return (

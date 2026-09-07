@@ -64,7 +64,7 @@ export default async function StreaksPage() {
   // Ohne gesetztes Monatsziel greift ein berechneter Vorschlag, damit die
   // Erzählebene nie ausfällt (siehe lib/classGoal.ts suggestGoalTarget).
   // `isSuggested` trägt die UI als Chip, ein echtes Ziel überschreibt ihn.
-  const suggested = classGoal ? null : suggestGoalTarget(allHwDesc ?? [], studentIds.length, currentSeason)
+  const suggested = classGoal ? null : suggestGoalTarget(allHwDesc ?? [], studentIds, currentSeason)
   const effectiveGoal: { target: number; reward: string | null; isSuggested: boolean } | null =
     classGoal
       ? { target: classGoal.target, reward: classGoal.reward, isSuggested: false }

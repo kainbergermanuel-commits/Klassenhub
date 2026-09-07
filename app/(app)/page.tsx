@@ -673,7 +673,7 @@ export default async function HomePage() {
     const classGoalDoneValue = countClassGoalDone(homeworkAll, allCompletionsStudent ?? [])
     // Ohne gesetztes Monatsziel greift ein berechneter Vorschlag, damit die
     // Erzählebene nie ausfällt (siehe lib/classGoal.ts suggestGoalTarget).
-    const suggestedTarget = classGoal ? null : suggestGoalTarget(homeworkAll, (allStudents ?? []).length, currentSeason)
+    const suggestedTarget = classGoal ? null : suggestGoalTarget(homeworkAll, (allStudents ?? []).map(s => s.id), currentSeason)
     const effectiveGoal: { target: number; reward: string | null; isSuggested: boolean } | null =
       classGoal
         ? { target: classGoal.target, reward: classGoal.reward, isSuggested: false }
