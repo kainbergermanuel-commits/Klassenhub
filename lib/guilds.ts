@@ -1,3 +1,5 @@
+import { isHwForStudent } from '@/lib/homeworkScope'
+
 /** Gilden (Gamification Phase 3): wechselnde Kleingruppen pro Season.
  *  Bewusst wie die Quest-Auswahl rein berechnet, keine eigene DB-Tabelle —
  *  die Einteilung ist deterministisch aus (Klasse, Season) und für alle
@@ -184,7 +186,11 @@ export function weeklyGuildQuestKey(classId: string, weekStart: string, feasibil
 }
 
 export interface GuildQuestContext {
-  weekHomeworkIds: string[]
+  /** Die Hausübungen dieser Woche für die GANZE Klasse, samt Geltungsbereich.
+   *  Bewusst nicht nur die IDs: einzelne Mitglieder können von einzelnen HÜ
+   *  ausgenommen sein (siehe lib/homeworkScope.ts), und eine Gilde darf ein
+   *  Mitglied nicht an einer Aufgabe messen, die es nie bekommen hat. */
+  weekHomework: { id: string; excluded_student_ids: string[] | null }[]
   doneByStudent: Map<string, Set<string>>
   confirmedByStudent: Map<string, Set<string>>
   /** Bestätigte Diensttage je Kind (nicht mehr „lückenlos durchgehalten?"),
@@ -219,25 +225,39 @@ export interface GuildQuestResult {
 }
 
 export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: Guild, ctx: GuildQuestContext): GuildQuestResult {
-  const size = guild.memberIds.length
+  /** Die HÜ-IDs dieser Woche, die für DIESES Mitglied gelten. Ein Kind, das
+   *  von einer HÜ ausgenommen wurde, kann sie nicht erledigen — es darf daran
+   *  also auch nicht gemessen werden. */
+  const idsFor = (sid: string) =>
+    ctx.weekHomework.filter(h => isHwForStudent(h, sid)).map(h => h.id)
 
   if (template.signal.type === 'distributed_homework') {
     const { totalCount, minContributors } = template.signal
     let collected = 0
     let contributors = 0
+    let reachableSlots = 0
+    let membersWithHomework = 0
     for (const sid of guild.memberIds) {
       const done = ctx.doneByStudent.get(sid) ?? new Set<string>()
-      const doneCount = ctx.weekHomeworkIds.filter(id => done.has(id)).length
+      const mine = idsFor(sid)
+      if (mine.length > 0) membersWithHomework++
+      reachableSlots += mine.length
+      const doneCount = mine.filter(id => done.has(id)).length
       collected += doneCount
       if (doneCount > 0) contributors++
     }
-    const requiredContributors = Math.min(minContributors, size)
+    // Beide Schwellen auf das begrenzen, was die Gilde diese Woche überhaupt
+    // erreichen KANN. Sind genug Mitglieder von genug Hausübungen ausgenommen,
+    // stünde sonst ein rechnerisch unerfüllbares Ziel im Balken — und die
+    // Gilde sähe eine Aufgabe, an der sie nur scheitern kann.
+    const requiredContributors = Math.min(minContributors, membersWithHomework)
+    const target = Math.min(totalCount, reachableSlots)
     return {
       template,
       membersMet: contributors,
       total: requiredContributors,
-      done: size > 0 && collected >= totalCount && contributors >= requiredContributors,
-      collected: { current: collected, target: totalCount },
+      done: membersWithHomework > 0 && collected >= target && contributors >= requiredContributors,
+      collected: { current: collected, target },
     }
   }
 
@@ -245,13 +265,13 @@ export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: G
     switch (template.signal.type) {
       case 'homework': {
         const done = ctx.doneByStudent.get(studentId) ?? new Set<string>()
-        return ctx.weekHomeworkIds.filter(id => done.has(id)).length >= template.signal.targetCount
+        return idsFor(studentId).filter(id => done.has(id)).length >= template.signal.targetCount
       }
       case 'duty_done':
         return (ctx.dutyDayCountByStudent.get(studentId) ?? 0) >= template.signal.targetCount
       case 'parent_confirm': {
         const confirmed = ctx.confirmedByStudent.get(studentId) ?? new Set<string>()
-        return ctx.weekHomeworkIds.filter(id => confirmed.has(id)).length >= template.signal.targetCount
+        return idsFor(studentId).filter(id => confirmed.has(id)).length >= template.signal.targetCount
       }
       default:
         return false
@@ -262,9 +282,17 @@ export function computeGuildQuestProgress(template: GuildQuestTemplate, guild: G
   // Sonst müssten 75 % der GESAMTEN Gilde einen Dienst haben UND erfüllen —
   // bei 2 Dienst-Kindern pro Dienst praktisch nie erreichbar. Andere Signale
   // (HÜ, Eltern-Bestätigung) kann jedes Mitglied erbringen → ganze Gilde.
+  // Genau dieselbe Überlegung wie beim Dienst, nur für Hausübungen: wer von
+  // den HÜ dieser Woche so weit ausgenommen ist, dass er die geforderte Anzahl
+  // gar nicht erreichen KANN, gehört nicht in die Bezugsgröße. Sonst zählte er
+  // stumm als säumiges Mitglied und drückte die Gilde unter die 75 Prozent —
+  // für etwas, das er nie hätte tun können.
+  const neededHomework = template.signal.type === 'homework' || template.signal.type === 'parent_confirm'
+    ? template.signal.targetCount
+    : 0
   const eligible = template.signal.type === 'duty_done'
     ? guild.memberIds.filter(id => ctx.dutyAssignedStudents.has(id))
-    : guild.memberIds
+    : guild.memberIds.filter(id => idsFor(id).length >= neededHomework)
   const poolSize = eligible.length
   const membersMet = eligible.filter(meetsSignal).length
   // "X von Y" statt "alle" (Prinzip 1: kein einzelnes Kind blockiert/beschämt

@@ -646,7 +646,7 @@ export default async function HomePage() {
       const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart, guildFeasibility))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
-          weekHomeworkIds: weekHwClass.map(h => h.id),
+          weekHomework: weekHwClass,
           doneByStudent: doneByStudentAll,
           confirmedByStudent: confirmedByStudentAll,
           dutyDayCountByStudent: dutyDayCounts,

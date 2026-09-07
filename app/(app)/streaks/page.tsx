@@ -277,7 +277,7 @@ export default async function StreaksPage() {
       const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart, guildFeasibility))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
-          weekHomeworkIds: weekHw.map(h => h.id),
+          weekHomework: weekHw,
           doneByStudent,
           confirmedByStudent: confirmedDoneByStudent,
           dutyDayCountByStudent: dutyDayCounts,
