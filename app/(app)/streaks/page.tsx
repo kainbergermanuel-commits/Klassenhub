@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, lastDayOfMonthISO, firstDayOfMonthISO, getRelevantMondayOfWeek, addDaysISO, localDateOf, todayLocal, getWeekNumber, isActionable } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp } from '@/lib/streak'
+import { hwForStudent } from '@/lib/homeworkScope'
 import { computeQuestProgress, defaultWeeklyTemplateKeys, recentTemplateKeys, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
 import { findQuestTemplate } from '@/lib/questVault'
@@ -51,7 +52,10 @@ export default async function StreaksPage() {
     { data: classGoal },
   ] = await Promise.all([
     supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
-    supabase.from('homework').select('id,due_date').eq('class_id', activeClassId).eq('status', 'published').order('due_date', { ascending: false }),
+    // excluded_student_ids muss mit: Lehrpersonen sehen per RLS ALLE Zeilen,
+    // auch die für einzelne Kinder ausgenommenen. Ohne die Spalte könnte
+    // hwForStudent() unten nicht filtern (siehe lib/homeworkScope.ts).
+    supabase.from('homework').select('id,due_date,excluded_student_ids').eq('class_id', activeClassId).eq('status', 'published').order('due_date', { ascending: false }),
     supabase.from('class_goals').select('target,reward').eq('class_id', activeClassId).eq('season', currentSeason).maybeSingle(),
   ])
 
@@ -122,8 +126,12 @@ export default async function StreaksPage() {
     const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
     const frozenIds = frozenByStudent.get(s.id)
     const extensions = extensionsByStudent.get(s.id)
-    const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today, frozenIds, extensions)
-    const displayStreak = computeStreak(confirmedIds, allHwDesc ?? [], today, frozenIds, extensions)
+    // Nur die HÜ, die für DIESES Kind gelten. Für Schüler- und Elternkonten
+    // hat die RLS das schon erledigt und der Aufruf ändert nichts; in der
+    // Lehrer-Sicht ist er der Unterschied zwischen richtig und falsch.
+    const myHw = hwForStudent(allHwDesc ?? [], s.id)
+    const actualStreak = computeStreak(doneIds, myHw, today, frozenIds, extensions)
+    const displayStreak = computeStreak(confirmedIds, myHw, today, frozenIds, extensions)
 
     // Pending: erreichter (actual) Meilenstein liegt über dem eltern-bestätigten
     const actualMilestone = currentMilestone(actualStreak)
@@ -150,17 +158,23 @@ export default async function StreaksPage() {
     const myConfirmedIds = confirmedDoneByStudent.get(profile.id) ?? new Set<string>()
     const myFrozenIds = frozenByStudent.get(profile.id)
     const myExtensions = extensionsByStudent.get(profile.id)
-    myActualStreak = computeStreak(myOwnDoneIds, allHwDesc ?? [], today, myFrozenIds, myExtensions)
-    const myDisplayStreak = computeStreak(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions)
+    // Auch hier filtern, obwohl die RLS es für eine echte Schüler-Sitzung
+    // bereits getan hat: in der Lehrer-VORSCHAU (preview_role, siehe
+    // lib/previewAuth.ts) wird nur das Profil getauscht, die Datenbank-Sitzung
+    // bleibt die der Lehrperson. Ohne diese Zeile zeigte die Vorschau dem Kind
+    // eine HÜ, die es gar nicht hat, und rechnete seinen Streak dagegen.
+    const myHw = hwForStudent(allHwDesc ?? [], profile.id)
+    myActualStreak = computeStreak(myOwnDoneIds, myHw, today, myFrozenIds, myExtensions)
+    const myDisplayStreak = computeStreak(myConfirmedIds, myHw, today, myFrozenIds, myExtensions)
     const actualMs = currentMilestone(myActualStreak)
     myPendingMilestone = myActualStreak >= 5 && actualMs > currentMilestone(myDisplayStreak) ? actualMs : null
-    const broken = findBreakingHomework(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions) !== null
+    const broken = findBreakingHomework(myConfirmedIds, myHw, today, myFrozenIds, myExtensions) !== null
     const jokerUsedThisSeason = freezeUsedThisSeasonByStudent.has(profile.id)
     // Verfügbar nur, wenn das Item die Streak hier auch wirklich rettet
     // (deckt sich mit dem Wirkungs-Guard in useStreakFreeze/useTimeCrystal).
-    const jokerAvailable = freezeWouldHelp(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions) && !jokerUsedThisSeason
+    const jokerAvailable = freezeWouldHelp(myConfirmedIds, myHw, today, myFrozenIds, myExtensions) && !jokerUsedThisSeason
     const crystalUsedThisSeason = crystalUsedThisSeasonByStudent.has(profile.id)
-    const crystalAvailable = crystalWouldHelp(myConfirmedIds, allHwDesc ?? [], today, myFrozenIds, myExtensions) && !crystalUsedThisSeason
+    const crystalAvailable = crystalWouldHelp(myConfirmedIds, myHw, today, myFrozenIds, myExtensions) && !crystalUsedThisSeason
     myStreak = { streak: myDisplayStreak, broken, jokerAvailable, jokerUsedThisSeason, crystalAvailable, crystalUsedThisSeason }
   }
 
@@ -224,7 +238,7 @@ export default async function StreaksPage() {
       weekEnd,
       today,
       studentId: profile.id,
-      allHomework: allHwDesc ?? [],
+      allHomework: hwForStudent(allHwDesc ?? [], profile.id),
       ownCompletions: myOwnCompletions,
       confirmedHomeworkIds: confirmedDoneByStudent.get(profile.id) ?? new Set<string>(),
       reminders: weekReminders ?? [],
@@ -468,7 +482,8 @@ export default async function StreaksPage() {
     allAdventureStats = (students ?? []).map(s => {
       const doneIds = doneByStudent.get(s.id) ?? new Set<string>()
       const confirmedIds = confirmedDoneByStudent.get(s.id) ?? new Set<string>()
-      const actualStreak = computeStreak(doneIds, allHwDesc ?? [], today, frozenByStudent.get(s.id), extensionsByStudent.get(s.id))
+      const myHw = hwForStudent(allHwDesc ?? [], s.id)
+      const actualStreak = computeStreak(doneIds, myHw, today, frozenByStudent.get(s.id), extensionsByStudent.get(s.id))
 
       // Wie im Schüler-Zweig oben: bester Stand über ALLE zugeteilten Dienste,
       // damit die Lehrer-Matrix dieselbe Zahl zeigt wie das Kind selbst.
@@ -486,7 +501,7 @@ export default async function StreaksPage() {
         weekEnd,
         today,
         studentId: s.id,
-        allHomework: allHwDesc ?? [],
+        allHomework: myHw,
         ownCompletions,
         confirmedHomeworkIds: confirmedIds,
         reminders: weekReminders ?? [],

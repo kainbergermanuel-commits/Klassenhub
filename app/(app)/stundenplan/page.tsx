@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { hwForStudent } from '@/lib/homeworkScope'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getClass } from '@/lib/auth'
 import { getStundenplanMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from '@/lib/date'
@@ -198,7 +199,7 @@ export default async function StundenplanPage(
   if (classId) {
     const { data: weekHomework } = await supabase
       .from('homework')
-      .select('id,subject,title,due_date')
+      .select('id,subject,title,due_date,excluded_student_ids')
       .eq('class_id', classId)
       // Nur freigegebene HÜ — eine noch nicht bestätigte Einreichung darf
       // keine Stunde markieren (siehe Kommentar in app/(app)/page.tsx).
@@ -206,7 +207,9 @@ export default async function StundenplanPage(
       .gte('due_date', monday <= today ? today : monday)
       .lte('due_date', friday)
 
-    const homework = weekHomework ?? []
+    // Die Marker gelten immer für EIN Kind, also auch nur dessen HÜ. In der
+    // Lehrer-Vorschau filtert die RLS nicht (siehe lib/previewAuth.ts).
+    const homework = hwForStudent(weekHomework ?? [], studentId)
     const hwIds = homework.map(h => h.id)
     const { data: completions } = hwIds.length > 0
       ? await supabase.from('homework_completions').select('homework_id').eq('student_id', studentId).in('homework_id', hwIds)

@@ -8,6 +8,7 @@ import StudentHomeworkStats from './StudentHomeworkStats'
 import { gendered } from '@/lib/gender'
 import { dueInfo } from '@/lib/date'
 import { dueDateFor } from '@/lib/homework'
+import { hwForStudent } from '@/lib/homeworkScope'
 import type { Homework, Profile } from '@/lib/types'
 
 interface Props {
@@ -36,15 +37,24 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
   const confirmedIds = new Set(selectedCompletions.filter(c => c.confirmedAt).map(c => c.homeworkId))
   const completedAtByHw = new Map(selectedCompletions.map(c => [c.homeworkId, c.completedAt]))
 
+  // Alles unterhalb rechnet über EIN ausgewähltes Kind, also auch nur über die
+  // HÜ, die für dieses Kind gelten. Die Seite ist der Lehrperson vorbehalten,
+  // die per RLS alle Zeilen sieht — ohne diesen Filter stünden hier auch
+  // Hausübungen, von denen das Kind ausgenommen wurde, und zwar als offen.
+  const studentHomework = useMemo(
+    () => (selectedId ? hwForStudent(homework, selectedId) : homework),
+    [homework, selectedId],
+  )
+
   // All subjects present in homework (stable order by first appearance, newest-first)
   const subjects = useMemo(() => {
     const seen = new Map<string, { label: string; short: string; color: string }>()
-    const sorted = [...homework].sort((a, b) => b.due_date.localeCompare(a.due_date))
+    const sorted = [...studentHomework].sort((a, b) => b.due_date.localeCompare(a.due_date))
     for (const hw of sorted) {
       if (!seen.has(hw.subject)) seen.set(hw.subject, { label: hw.subject, short: hw.subject_short, color: hw.subject_color })
     }
     return Array.from(seen.values())
-  }, [homework])
+  }, [studentHomework])
 
   // Reset filter when switching student
   useEffect(() => { setActiveSubject(null) }, [selectedId])
@@ -52,7 +62,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
   // Group homework by KW, sorted newest first, with subject filter
   const grouped = useMemo(() => {
     if (!selectedId) return []
-    const filtered = activeSubject ? homework.filter(h => h.subject === activeSubject) : homework
+    const filtered = activeSubject ? studentHomework.filter(h => h.subject === activeSubject) : studentHomework
     const sorted = [...filtered].sort((a, b) => b.due_date.localeCompare(a.due_date))
     const map = new Map<string, { kw: number; year: number; items: Homework[] }>()
     for (const hw of sorted) {
@@ -63,7 +73,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
       map.get(key)!.items.push(hw)
     }
     return Array.from(map.values())
-  }, [selectedId, homework, activeSubject])
+  }, [selectedId, studentHomework, activeSubject])
 
   // Close on Escape
   useEffect(() => {
@@ -125,7 +135,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
               <div className="flex-1 min-w-0">
                 <div className="font-extrabold text-[16px] text-kh-dark truncate">{selected.full_name}</div>
                 <div className="text-xs text-kh-muted font-medium">
-                  {homework.length} Hausübungen · {doneIds.size} erledigt
+                  {studentHomework.length} Hausübungen · {doneIds.size} erledigt
                 </div>
               </div>
               <button
@@ -165,7 +175,7 @@ export default function StudentHomeworkPanel({ students, homework, completionsBy
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-6">
               <StudentHomeworkStats
-                homework={homework}
+                homework={studentHomework}
                 doneIds={doneIds}
                 confirmedIds={confirmedIds}
                 completedAtByHw={completedAtByHw}

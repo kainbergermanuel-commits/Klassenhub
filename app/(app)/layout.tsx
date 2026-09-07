@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { hwForStudent } from '@/lib/homeworkScope'
 import { getAuth, getClass, getTeacherClasses } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO } from '@/lib/date'
@@ -145,12 +146,11 @@ async function computeHwBadge(profile: Profile, classId: string | null): Promise
   // lib/date.ts). Mit `gte` zählte das Badge sie als offen, während die Seite
   // darunter sie als versäumt führt.
   const { data: upcoming } = await supabase
-    .from('homework').select('id').eq('class_id', classId).eq('status', 'published').gt('due_date', today)
-  const upcomingIds = (upcoming ?? []).map(h => h.id)
+    .from('homework').select('id,excluded_student_ids').eq('class_id', classId).eq('status', 'published').gt('due_date', today)
 
-  // Lehrer: Anzahl aktiver HÜ
-  if (profile.role === 'teacher') return upcomingIds.length
-  if (upcomingIds.length === 0) return 0
+  // Lehrer: Anzahl aktiver HÜ der Klasse, Ausnahmen ändern daran nichts —
+  // die HÜ existiert ja, nur nicht für jedes Kind.
+  if (profile.role === 'teacher') return (upcoming ?? []).length
 
   // Schüler: eigene offene; Elternteil: offene des Kindes
   let studentId = profile.id
@@ -158,6 +158,11 @@ async function computeHwBadge(profile: Profile, classId: string | null): Promise
     if (!profile.child_id) return 0
     studentId = profile.child_id
   }
+
+  // Auf die HÜ dieses Kindes eingrenzen. In der Lehrer-Vorschau filtert die
+  // RLS nicht, sonst zählte das Badge hier eine HÜ mit, die es nicht gibt.
+  const upcomingIds = hwForStudent(upcoming ?? [], studentId).map(h => h.id)
+  if (upcomingIds.length === 0) return 0
 
   const { count } = await supabase
     .from('homework_completions')

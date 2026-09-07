@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { matchChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, getMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber, isOver, isActionable } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, effectiveDueDate, VETERAN_MILESTONE, MILESTONES } from '@/lib/streak'
+import { hwForStudent, studentCountForHw } from '@/lib/homeworkScope'
 import { countClassGoalDone, suggestGoalTarget } from '@/lib/classGoal'
 import { defaultWeeklyTemplateKeys, recentTemplateKeys, computeQuestProgress, type QuestResult } from '@/lib/quests'
 import { buildQuestContext, buildFeasibility } from '@/lib/questContext'
@@ -259,9 +260,12 @@ export default async function HomePage() {
     }
     // Die einzelnen Streaks behalten wir (statt nur zu zählen) — daraus fällt
     // die anonyme Längenverteilung fürs Panel ohne weitere Abfrage ab.
+    // hwForStudent pro Kind: Lehrpersonen sehen per RLS alle Zeilen, auch die
+    // für einzelne Kinder ausgenommenen. Ohne den Filter zählte eine
+    // Ausnahme dem Kind hier als versäumt und riss seine Flamme.
     const statsStreaks = students.map(s => computeStreak(
       statsConfirmedByStudent.get(s.id) ?? new Set(),
-      allHwForStreaks, today,
+      hwForStudent(allHwForStreaks, s.id), today,
       statsFrozenByStudent.get(s.id), statsExtByStudent.get(s.id),
     ))
     const reiseActive = statsStreaks.filter(st => st >= 1).length
@@ -282,8 +286,11 @@ export default async function HomePage() {
     // eine einzelne Momentaufnahme nicht kann. homeworkAll ist absteigend
     // sortiert, deshalb slice-dann-reverse.
     const pastHw = homeworkAll.filter(h => isOver(h.due_date, today))
+    // Nenner je HÜ, nicht pauschal die Klassenstärke: sind zwei Kinder von
+    // einer HÜ ausgenommen, wäre eine vollständig erledigte HÜ sonst dauerhaft
+    // als 87 Prozent ausgewiesen und die Quote könnte nie 100 erreichen.
     const hwHistory = pastHw.slice(0, 6).reverse()
-      .map(h => pctOfNum(completionCountByHw.get(h.id) ?? 0, studentCount ?? 0))
+      .map(h => pctOfNum(completionCountByHw.get(h.id) ?? 0, studentCountForHw(h, studentIds)))
     const hwTrend = hwHistory.length >= 2
       ? hwHistory[hwHistory.length - 1] - hwHistory[hwHistory.length - 2]
       : 0
@@ -297,7 +304,9 @@ export default async function HomePage() {
       && !(c as { confirmed_by_parent_at?: string | null }).confirmed_by_parent_at
     ).length
 
-    const statsHwSlots = (studentCount ?? 0) * homework.length
+    // Aus demselben Grund summiert statt multipliziert: jede aktive HÜ steuert
+    // nur so viele Plätze bei, wie sie Kinder betrifft.
+    const statsHwSlots = homework.reduce((n, h) => n + studentCountForHw(h, studentIds), 0)
     const teacherStats = {
       reise: {
         active: reiseActive, total: studentCount ?? 0,
@@ -387,14 +396,22 @@ export default async function HomePage() {
 
     // Ganzes Schuljahr kommt bereits aus dem rollenübergreifenden Batch oben
     // (homeworkAll) — keine eigene Abfrage mehr nötig.
-    const allHwForStreak = homeworkAll
+    // Für DIESES Kind geltende HÜ. Bei einer echten Schüler-Sitzung hat die
+    // RLS bereits gefiltert; in der Lehrer-VORSCHAU (lib/previewAuth.ts) wird
+    // nur das Profil getauscht und die Sitzung bleibt die der Lehrperson —
+    // dort ist dieser Aufruf der einzige Schutz.
+    const allHwForStreak = hwForStudent(homeworkAll, user.id)
 
     const doneIds = new Set((completions ?? []).map(c => c.homework_id))
 
     const studentIdsS = (allStudents ?? []).map(s => s.id)
     const dutyIds = duties.map(d => d.id)
     const reminderIds = upcomingReminders.map(r => r.id)
-    const allHwIds = allHwForStreak.map(h => h.id)
+    // Bewusst homeworkAll und NICHT die eigene gefilterte Liste: mit diesen
+    // IDs werden gleich die Erledigungen der GANZEN Klasse geladen (für
+    // Klassenziel und Gilde). Gefiltert fehlten die Erledigungen der anderen
+    // zu einer HÜ, von der ausgerechnet ich ausgenommen bin.
+    const allHwIds = homeworkAll.map(h => h.id)
     const weekStart = dutyWeekStart
     const weekEnd = addDaysISO(6, new Date(`${weekStart}T00:00:00`))
 
@@ -451,11 +468,16 @@ export default async function HomePage() {
     // in die Liste, obwohl ihr rohes Fälligkeitsdatum schon vergangen ist.
     const myExtensions = extensionsByStudentS.get(user.id)
     const extendedStillOpen = myExtensions
-      ? homeworkAll.filter(h =>
+      ? allHwForStreak.filter(h =>
           isOver(h.due_date, today) &&
           isActionable(effectiveDueDate(h.due_date, h.id, myExtensions), today))
       : []
-    const homeworkWithStatus: HomeworkWithStatus[] = [...homework, ...extendedStillOpen].map(h => ({
+    // `homework` ist die Liste der ganzen Klasse (die Lehrer-Zweige brauchen
+    // sie so). Für die eigene Wochenliste zählt nur, was für dieses Kind gilt.
+    // Bei einer echten Schüler-Sitzung ist das schon durch die RLS erledigt,
+    // in der Lehrer-Vorschau nicht (siehe lib/previewAuth.ts).
+    const myHomework = hwForStudent(homework, user.id)
+    const homeworkWithStatus: HomeworkWithStatus[] = [...myHomework, ...extendedStillOpen].map(h => ({
       ...h,
       done: doneIds.has(h.id),
       ...(myExtensions?.has(h.id)
@@ -546,6 +568,9 @@ export default async function HomePage() {
     const choiceByTemplate = new Map((myChoices ?? []).map(c => [c.template_key, c.choice_key]))
 
     const weekHw = allHwForStreak.filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
+    // Die Gilde ist eine Gruppe: ihr Aufgabenpool darf nicht davon abhängen,
+    // wer gerade draufschaut. Deshalb klassenweit statt eigengefiltert.
+    const weekHwClass = homeworkAll.filter(h => h.due_date >= weekStart && h.due_date <= weekEnd)
     const questCtx = buildQuestContext({
       weekStart,
       weekEnd,
@@ -615,13 +640,13 @@ export default async function HomePage() {
       }
       // Machbarkeit JE GILDE (siehe streaks/page.tsx).
       const guildFeasibility = {
-        hasWeekHomework: weekHw.length > 0,
+        hasWeekHomework: weekHwClass.length > 0,
         hasWeekDuty: myGuild.memberIds.some(id => dutyAssignedStudents.has(id)),
       }
       const guildTemplate = findGuildQuestTemplate(weeklyGuildQuestKey(activeClassId, weekStart, guildFeasibility))
       if (guildTemplate) {
         const guildQuest = computeGuildQuestProgress(guildTemplate, myGuild, {
-          weekHomeworkIds: weekHw.map(h => h.id),
+          weekHomeworkIds: weekHwClass.map(h => h.id),
           doneByStudent: doneByStudentAll,
           confirmedByStudent: confirmedByStudentAll,
           dutyDayCountByStudent: dutyDayCounts,
@@ -642,10 +667,13 @@ export default async function HomePage() {
     }
 
     // ─── ERFOLGE (Heldenbuch-Statistik) ───────────────────────────────────────
-    const classGoalDoneValue = countClassGoalDone(allHwForStreak, allCompletionsStudent ?? [])
+    // homeworkAll, nicht die eigene Liste: das Klassenziel ist für alle
+    // dieselbe Zahl. Gefiltert sähe jedes Kind mit einer Ausnahme einen
+    // anderen, zu niedrigen Klassenfortschritt.
+    const classGoalDoneValue = countClassGoalDone(homeworkAll, allCompletionsStudent ?? [])
     // Ohne gesetztes Monatsziel greift ein berechneter Vorschlag, damit die
     // Erzählebene nie ausfällt (siehe lib/classGoal.ts suggestGoalTarget).
-    const suggestedTarget = classGoal ? null : suggestGoalTarget(allHwForStreak, (allStudents ?? []).length, currentSeason)
+    const suggestedTarget = classGoal ? null : suggestGoalTarget(homeworkAll, (allStudents ?? []).length, currentSeason)
     const effectiveGoal: { target: number; reward: string | null; isSuggested: boolean } | null =
       classGoal
         ? { target: classGoal.target, reward: classGoal.reward, isSuggested: false }
@@ -806,7 +834,8 @@ export default async function HomePage() {
     // Kind-Banner der Eltern-Startseite anzuzeigen. Mit dem Banner ist beides
     // entfallen: Eltern sehen den eltern-bestätigten Streak, und den liefert
     // childConfirmedStreak weiter unten aus ohnehin geladenen Daten.
-    const allHwForStreak: { id: string; due_date: string }[] = child ? homeworkAll : []
+    // Wie im Schüler-Zweig: gefiltert auf das Kind, wegen der Lehrer-Vorschau.
+    const allHwForStreak = child ? hwForStudent(homeworkAll, child.id) : []
 
     const studentIdsP = (allStudents ?? []).map(s => s.id)
     const [{ data: freezesP }, { data: extensionsP }] = studentIdsP.length > 0
@@ -883,7 +912,10 @@ export default async function HomePage() {
     const childUpcomingAbsences = childAbsencesRaw ?? []
     const nudgedHomeworkIds = new Set((childNudges ?? []).map(n => n.homework_id))
 
-    const childHwWithStatus: HomeworkWithStatus[] = homework.map(h => ({ ...h, done: childDoneIds.has(h.id) }))
+    // Gleicher Grund wie im Schüler-Zweig: `homework` ist die Klassenliste,
+    // die Eltern-Startseite zeigt aber die HÜ IHRES Kindes.
+    const childHwWithStatus: HomeworkWithStatus[] = (child ? hwForStudent(homework, child.id) : homework)
+      .map(h => ({ ...h, done: childDoneIds.has(h.id) }))
 
     // ─── AGENDA (Stundenplan des Kindes) + KIND-STATISTIK ─────────────────────
     // Eltern lesen den gepushten timetable_entries des Kindes (nicht die

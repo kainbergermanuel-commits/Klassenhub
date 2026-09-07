@@ -7,6 +7,7 @@ import AnimateIn from '@/components/ui/AnimateIn'
 import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 import { todayISO, schoolYearStartISO, isOver, isActionable } from '@/lib/date'
 import { effectiveDueDate } from '@/lib/streak'
+import { hwForStudent } from '@/lib/homeworkScope'
 import type { HomeworkWithStatus } from '@/lib/types'
 
 export default async function HomeworkPage() {
@@ -32,7 +33,14 @@ export default async function HomeworkPage() {
     loadSubjectsCatalog(supabase),
   ])
 
-  const homework = homeworkRaw ?? []
+  const homeworkAll = homeworkRaw ?? []
+  // In der Lehrer-VORSCHAU (lib/previewAuth.ts) wird nur das Profil getauscht,
+  // die Datenbank-Sitzung bleibt die der Lehrperson und die RLS filtert nicht.
+  // Ohne diese Zeile zeigte die Vorschau dem Kind Hausübungen, die es gar
+  // nicht bekommen hat. Für Lehrpersonen bleibt die volle Liste stehen.
+  const homework = profile.role === 'student'
+    ? hwForStudent(homeworkAll, user.id)
+    : homeworkAll
 
   let homeworkWithStatus: HomeworkWithStatus[]
   // Für den Bestätigen-Knopf der Eltern (Server-Action braucht die Kind-ID).
@@ -101,7 +109,9 @@ export default async function HomeworkPage() {
       }
       extMap = extensionMap(childExtensions)
     }
-    homeworkWithStatus = homework.map(h => ({
+    // Erst hier filterbar, weil das Kind vorher nicht feststeht. Gleicher
+    // Grund wie oben: die Vorschau umgeht die RLS.
+    homeworkWithStatus = (child ? hwForStudent(homework, child.id) : homework).map(h => ({
       ...h,
       done: childDoneIds.has(h.id),
       confirmed: childConfirmedIds.has(h.id),

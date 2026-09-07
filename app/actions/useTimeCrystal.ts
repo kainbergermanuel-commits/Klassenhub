@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO, schoolYearStartISO, localDateOf } from '@/lib/date'
 import { computeStreak, findBreakingHomework, CRYSTAL_EXTENSION_DAYS } from '@/lib/streak'
+import { hwForStudent } from '@/lib/homeworkScope'
 
 /** Setzt den Zeitkristall ein (1× pro Season) — verlängert die Frist der HÜ,
  *  an der die Streak des eingeloggten Schülers gerade reißt, um
@@ -26,13 +27,18 @@ export async function useTimeCrystal(): Promise<{ newStreak: number }> {
   const schoolYearStart = schoolYearStartISO()
 
   const [{ data: allHw }, { data: completions }, { data: freezes }, { data: extensions }] = await Promise.all([
-    supabase.from('homework').select('id,due_date').eq('class_id', profile.class_id).eq('status', 'published').gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
+    supabase.from('homework').select('id,due_date,excluded_student_ids').eq('class_id', profile.class_id).eq('status', 'published').gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
     supabase.from('homework_completions').select('homework_id').eq('student_id', profile.id).not('confirmed_by_parent_at', 'is', null),
     supabase.from('streak_freezes').select('homework_id').eq('student_id', profile.id),
     supabase.from('homework_extensions').select('homework_id,extra_days,created_at').eq('student_id', profile.id),
   ])
 
-  const hw = allHw ?? []
+  // ⚠️ Diese Action ist über getEffectiveAuth() auch aus der Lehrer-VORSCHAU
+  // erreichbar. Dort bleibt die Datenbank-Sitzung die der Lehrperson, die RLS
+  // filtert also NICHT auf das vorgeschaute Kind. Ohne hwForStudent würde hier
+  // gegen fremde Hausübungen gerechnet — und das entscheidet darüber, ob ein
+  // Item verbraucht wird, das es nur einmal pro Season gibt.
+  const hw = hwForStudent(allHw ?? [], user.id)
   const doneIds = new Set((completions ?? []).map(c => c.homework_id))
   const frozenIds = new Set((freezes ?? []).map(f => f.homework_id))
   const extensionMap = new Map((extensions ?? []).map(e => [e.homework_id, e.extra_days]))

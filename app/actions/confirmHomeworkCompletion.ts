@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAuth } from '@/lib/auth'
 import { todayISO, schoolYearStartISO } from '@/lib/date'
 import { computeStreak, MILESTONES } from '@/lib/streak'
+import { hwForStudent } from '@/lib/homeworkScope'
 
 /** Liefert den neu erreichten Meilenstein (5/10/15/20) zurück, falls diese
  *  Bestätigung eine Schwelle überschritten hat – sonst null. */
@@ -67,13 +68,17 @@ async function recordReachedMilestones(
   const schoolYearStart = schoolYearStartISO()
 
   const [{ data: allHw }, { data: confirmedCompletions }, { data: existing }, { data: freezes }, { data: extensions }] = await Promise.all([
-    supabase.from('homework').select('id,due_date').eq('class_id', classId).eq('status', 'published').gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
+    supabase.from('homework').select('id,due_date,excluded_student_ids').eq('class_id', classId).eq('status', 'published').gte('due_date', schoolYearStart).order('due_date', { ascending: false }),
     supabase.from('homework_completions').select('homework_id').eq('student_id', studentId).not('confirmed_by_parent_at', 'is', null),
     supabase.from('streak_confirmations').select('milestone').eq('student_id', studentId),
     supabase.from('streak_freezes').select('homework_id').eq('student_id', studentId),
     supabase.from('homework_extensions').select('homework_id,extra_days').eq('student_id', studentId),
   ])
-  const hw = allHw ?? []
+  // Die Elternsitzung ist per RLS bereits auf das eigene Kind gefiltert, der
+  // Aufruf ändert hier also nichts. Er steht trotzdem da, damit ein späterer
+  // Wechsel von getAuth() auf getEffectiveAuth() den Fehler nicht still
+  // wieder einbaut (siehe die Warnung in useStreakFreeze.ts).
+  const hw = hwForStudent(allHw ?? [], studentId)
   // Joker + Zeitkristall einbeziehen — sonst könnte ein durch sie überbrücktes
   // Loch einen tatsächlich erreichten Meilenstein verdecken oder fälschlich
   // als "gerade überschritten" melden (siehe lib/streak.ts effectiveDueDate).
