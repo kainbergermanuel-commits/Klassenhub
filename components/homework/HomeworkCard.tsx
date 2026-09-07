@@ -12,6 +12,8 @@ import Avatar from '@/components/ui/Avatar'
 import DatePicker from '@/components/ui/DatePicker'
 import HomeworkDetails from './HomeworkDetails'
 import SubjectPicker from './SubjectPicker'
+import StudentExclusionPicker from './StudentExclusionPicker'
+import { isHwForStudent } from '@/lib/homeworkScope'
 import { toggleHomeworkCompletion } from '@/app/actions/toggleHomeworkCompletion'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 
@@ -93,6 +95,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
   const [editDate, setEditDate] = useState(hw.due_date)
   const [editSubject, setEditSubject] = useState(hw.subject)
   const [editDetails, setEditDetails] = useState(hw.details ?? '')
+  const [editExcluded, setEditExcluded] = useState<string[]>(hw.excluded_student_ids ?? [])
   const [saving, setSaving] = useState(false)
   const [deleted, setDeleted] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -149,6 +152,7 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
     setEditDate(hw.due_date)
     setEditSubject(hw.subject)
     setEditDetails(hw.details ?? '')
+    setEditExcluded(hw.excluded_student_ids ?? [])
     setActionError(null)
     setEditing(true)
   }
@@ -224,6 +228,11 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
       title: editTitle.trim(),
       due_date: editDate,
       details: editDetails.trim() || null,
+      // Ausdrücklich mitschreiben, nicht weglassen: ein Update ohne dieses
+      // Feld liesse eine versehentlich gesetzte Ausnahme für immer stehen,
+      // ein implizites null würde sie stillschweigend aufheben. Beides wäre
+      // aus der Oberfläche heraus nicht nachvollziehbar.
+      excluded_student_ids: editExcluded.length > 0 ? editExcluded : null,
       ...(picked && picked.label !== hw.subject
         ? { subject: picked.label, subject_short: picked.short, subject_color: picked.color }
         : {}),
@@ -363,6 +372,13 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
                   davon {hw.confirmed_count} bestätigt
                 </span>
               )}
+              {/* Ohne diesen Hinweis wirkt "12 gemacht" bei 16 Kindern nach
+                  vier Versäumnissen, obwohl zwei die HÜ nie bekommen haben. */}
+              {(hw.excluded_student_ids?.length ?? 0) > 0 && (
+                <span className="text-[10.5px] font-semibold text-kh-muted whitespace-nowrap">
+                  {hw.excluded_student_ids!.length} ausgenommen
+                </span>
+              )}
             </div>
             <div className="flex gap-1.5 text-[#B6C0BE]">
               <button onClick={openEdit} aria-label="Hausübung bearbeiten" className="msym text-[19px] hover:text-kh-teal transition-colors">edit</button>
@@ -421,9 +437,26 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
                   fill={0}
                   color="#6E7E80"
                   chipBg="#F6F3ED"
-                  students={students.filter(s => !s.done)}
+                  students={students.filter(s => !s.done && isHwForStudent(hw, s.id))}
                   emptyText="Alle haben gemacht 🎉"
                 />
+                {/* Ausgenommene Kinder standen vorher unter "Nicht gemacht" und
+                    sahen damit aus wie ein Versäumnis. Eigene Gruppe, und nur
+                    da, wenn es sie überhaupt gibt. */}
+                {students.some(s => !isHwForStudent(hw, s.id)) && (
+                  <>
+                    <div className="border-t border-kh-border/40" />
+                    <StudentGroup
+                      label="Bekommen diese HÜ nicht"
+                      icon="do_not_disturb_on"
+                      fill={0}
+                      color="#6E7E80"
+                      chipBg="#F6F3ED"
+                      students={students.filter(s => !isHwForStudent(hw, s.id))}
+                      emptyText="Niemand"
+                    />
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -467,6 +500,14 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
                 <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Fällig am</label>
                 <DatePicker value={editDate} min={TOMORROW} onChange={setEditDate} />
               </div>
+              {/* Bestehende Ausnahmen gleich sichtbar, sonst ändert man sie
+                  beim Bearbeiten versehentlich nicht mit. */}
+              <StudentExclusionPicker
+                classId={hw.class_id}
+                value={editExcluded}
+                onChange={setEditExcluded}
+                defaultOpen={(hw.excluded_student_ids?.length ?? 0) > 0}
+              />
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setEditing(false)} className="flex-1 py-3 rounded-full border border-kh-border text-sm font-bold text-kh-muted hover:bg-[#F6F3ED] transition-colors">

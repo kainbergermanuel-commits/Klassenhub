@@ -7,6 +7,7 @@ import { addDaysISO } from '@/lib/date'
 import IconButton from '@/components/ui/IconButton'
 import DatePicker from '@/components/ui/DatePicker'
 import SubjectPicker from './SubjectPicker'
+import StudentExclusionPicker from './StudentExclusionPicker'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 
 /** Frühestes wählbares Fälligkeitsdatum: morgen. Eine heute fällige HÜ wäre
@@ -36,6 +37,8 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState(EARLIEST_DUE())
   const [details, setDetails] = useState('')
+  // Leer = die HÜ gilt für alle, der Normalfall. Siehe lib/homeworkScope.ts.
+  const [excludedIds, setExcludedIds] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -60,6 +63,10 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
       details: details.trim() || null,
       created_by: userId,
       status: asPending ? 'pending' : 'published',
+      // null statt leerem Array: "gilt für alle" ist in der Datenbank NULL,
+      // damit die RLS-Klausel den billigen Weg nimmt und nicht jede Zeile
+      // gegen ein leeres Array prüft.
+      excluded_student_ids: excludedIds.length > 0 ? excludedIds : null,
     })
 
     if (dbError) { setError('Fehler beim Speichern. Bitte erneut versuchen.'); setSaving(false); return }
@@ -126,6 +133,12 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
             <label className="text-xs font-bold text-kh-dark mb-1.5 block">Fällig am</label>
             <DatePicker value={dueDate} min={EARLIEST_DUE()} onChange={setDueDate} />
           </div>
+
+          {/* Wer bekommt die HÜ? Einreichungen von Kindern (hw_admin) bieten das
+              nicht an — über den Geltungsbereich entscheidet die Lehrperson. */}
+          {!asPending && (
+            <StudentExclusionPicker classId={classId} value={excludedIds} onChange={setExcludedIds} />
+          )}
 
           {error && (
             <div className="bg-kh-red-light text-kh-red text-sm font-semibold rounded-xl px-4 py-3">{error}</div>
