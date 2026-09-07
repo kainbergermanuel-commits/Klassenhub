@@ -101,6 +101,11 @@ export type Homework = {
    *  Zeilenumbrüche bleiben erhalten (whitespace-pre-line in der Anzeige). */
   details: string | null
   status: 'published' | 'pending'
+  /** Kinder, für die diese HÜ NICHT gilt (etwa weil sie im Fach gesondert
+   *  unterrichtet werden). `null` ist der Normalfall und heisst "gilt für
+   *  alle" — siehe supabase/add-homework-exclusions.sql. Auswerten immer über
+   *  hwForStudent()/isHwForStudent() in lib/homeworkScope.ts, nie von Hand. */
+  excluded_student_ids: string[] | null
 }
 
 export type HomeworkCompletion = {
@@ -156,6 +161,7 @@ export type Database = {
           attachment_name?: string | null
           details?: string | null
           status?: 'published' | 'pending'
+          excluded_student_ids?: string[] | null
         }
         Update: Partial<Homework>
         Relationships: []
