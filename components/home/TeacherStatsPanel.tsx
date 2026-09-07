@@ -83,7 +83,7 @@ export default function TeacherStatsPanel({ stats }: { stats: TeacherStats }) {
           title="Abgabequote der aktiven Hausübungen"
           body={
             stats.homework.active > 0
-              ? `${stats.homework.submitted} von ${stats.homework.slots} möglichen Abgaben (${stats.homework.active} aktive HÜ × ${stats.reise.total} Kinder). Der Verlauf zeigt die letzten fälligen Hausübungen.`
+              ? `${stats.homework.submitted} von ${stats.homework.slots} möglichen Abgaben über ${stats.homework.active} aktive Hausübungen. Von einzelnen Hausübungen ausgenommene Kinder zählen dabei nicht mit. Der Verlauf zeigt die letzten fälligen Hausübungen.`
               : 'Gerade sind keine Hausübungen offen.'
           }
         >

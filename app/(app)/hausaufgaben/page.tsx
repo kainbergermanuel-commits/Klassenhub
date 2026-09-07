@@ -7,7 +7,7 @@ import AnimateIn from '@/components/ui/AnimateIn'
 import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 import { todayISO, schoolYearStartISO, isOver, isActionable } from '@/lib/date'
 import { effectiveDueDate } from '@/lib/streak'
-import { hwForStudent } from '@/lib/homeworkScope'
+import { hwForStudent, studentCountForHw } from '@/lib/homeworkScope'
 import type { HomeworkWithStatus } from '@/lib/types'
 
 export default async function HomeworkPage() {
@@ -128,15 +128,19 @@ export default async function HomeworkPage() {
   const openCount = published.filter(h => !h.done && isActionable(h.due_date, today)).length
   const missedCount = published.filter(h => !h.done && isOver(h.due_date, today)).length
 
-  const { count: studentCount } = await supabase
+  // IDs statt nur der Anzahl: der Nenner unten wird je HÜ gebildet, weil
+  // einzelne Kinder von einer HÜ ausgenommen sein können.
+  const { data: studentRows } = await supabase
     .from('profiles')
-    .select('id', { count: 'exact', head: true })
+    .select('id')
     .eq('class_id', activeClassId)
     .eq('role', 'student')
+  const studentIds = (studentRows ?? []).map(r => r.id)
+  const studentCount = studentIds.length
 
   const subtitle =
     profile.role === 'teacher'
-      ? `${published.length} Aufgaben · ${published.reduce((s, h) => s + (h.completion_count ?? 0), 0)}/${(studentCount ?? 0) * published.length} Abgaben`
+      ? `${published.length} Aufgaben · ${published.reduce((s, h) => s + (h.completion_count ?? 0), 0)}/${published.reduce((n, h) => n + studentCountForHw(h, studentIds), 0)} Abgaben`
       : `${openCount} offen · ${doneCount} erledigt · ${missedCount} versäumt`
 
   return (
@@ -149,7 +153,7 @@ export default async function HomeworkPage() {
         classId={activeClassId}
         subtitle={subtitle}
         stats={{ open: openCount, done: doneCount, missed: missedCount }}
-        studentCount={studentCount ?? 0}
+        studentCount={studentCount}
         childId={childId}
         subjects={subjects}
       />
