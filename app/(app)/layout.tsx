@@ -26,8 +26,8 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
     { href: '/planung', icon: 'edit_calendar', label: 'Planung' },
-    { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined, section: 'Kommunikation' },
-    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
+    { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined, badgeKind: 'new' as const, section: 'Kommunikation' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined, badgeKind: 'new' as const },
     { href: '/termine', icon: 'calendar_month', label: 'Termine' },
     { href: '/klasse', icon: 'groups', label: 'Klasse', section: 'Verwaltung' },
     ...(profile.is_admin ? [
@@ -47,7 +47,7 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     // Eltern-/Lehrer-Sache; für ein Grundschulkind gibt es hier nichts zu tun,
     // und eine eigene „Anwesenheitsquote" würde unverschuldete Krankheit zur
     // Leistungszahl machen. Route zusätzlich serverseitig gesperrt (page.tsx).
-    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined, section: 'Aktuelles' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined, badgeKind: 'new' as const, section: 'Aktuelles' },
     { href: '/termine', icon: 'calendar_month', label: 'Termine' },
     { href: '/meine-klasse', icon: 'groups', label: 'Meine Klasse', section: 'Klasse' },
     ...(profile.is_admin ? [
@@ -65,8 +65,8 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
     { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit' },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
-    { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined, section: 'Kommunikation' },
-    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined },
+    { href: '/mitteilungsheft', icon: 'menu_book', label: 'Mitteilungsheft', badge: messageUnread || undefined, badgeKind: 'new' as const, section: 'Kommunikation' },
+    { href: '/erinnerungen', icon: 'push_pin', label: 'Erinnerungen', badge: reminderUnread || undefined, badgeKind: 'new' as const },
     { href: '/termine', icon: 'calendar_month', label: 'Termine' },
     ...(profile.is_admin ? [
       { href: '/admin', icon: 'admin_panel_settings', label: 'Admin', section: 'Verwaltung' },

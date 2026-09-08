@@ -191,6 +191,15 @@
   .modal-backdrop { animation: modal-backdrop-in .15s ease-out both; }
   .modal-panel { animation: modal-panel-in .28s cubic-bezier(.22,1,.36,1) both; }
 
+  /* Nav-Signal (NavBadge): taucht kurz auf, statt einfach dazustehen — so
+     merkt man das Eintreffen auch dann, wenn man gerade woanders hinschaut. */
+  @keyframes badge-in {
+    from { opacity: 0; scale: 0.4; }
+    60%  { opacity: 1; scale: 1.12; }
+    to   { opacity: 1; scale: 1; }
+  }
+  .animate-badge-in { animation: badge-in .34s cubic-bezier(.22,1,.36,1) both; }
+
   @media (prefers-reduced-motion: reduce) {
     /* Vorher waren hier NUR die hw-*-Klassen aufgeführt; card-enter,
        riddle-solve, pop-shake und wobble liefen trotz gesetzter
@@ -199,7 +208,7 @@
     .animate-hw-card, .animate-hw-strike,
     .animate-card-enter, .animate-riddle-solve,
     .animate-pop-shake, .animate-wobble,
-    .animate-duty-day, .animate-duty-week,
+    .animate-duty-day, .animate-duty-week, .animate-badge-in,
     .modal-backdrop, .modal-panel { animation: none; }
     .tap, .tap-sm { transition: none; }
     .tap:active, .tap-sm:active { scale: 1; }

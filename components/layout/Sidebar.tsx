@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
+import NavBadge from '@/components/layout/NavBadge'
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
 import { gendered } from '@/lib/gender'
 import { STREAKS_SUBLINKS } from '@/lib/streaksNav'
@@ -15,6 +16,8 @@ interface NavItem {
   icon: string
   label: string
   badge?: number
+  /** „count" = offene Arbeit (Ziffer bleibt stehen), „new" = Ungesehenes (nur Punkt) */
+  badgeKind?: 'count' | 'new'
   /** Beginnt eine neue Gruppe — dezentes Label davor (bzw. Trennlinie, wenn eingeklappt) */
   section?: string
 }
@@ -222,12 +225,10 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
                     </span>
                   )}
                   {!collapsed && item.badge ? (
-                    <span className="min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center gradient-amber text-white shadow-[0_2px_6px_rgba(201,138,43,.4)]">
-                      {item.badge}
-                    </span>
+                    <NavBadge count={item.badge} kind={item.badgeKind} />
                   ) : null}
                   {collapsed && item.badge ? (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-kh-amber" />
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full gradient-teal" />
                   ) : null}
                 </Link>
 
