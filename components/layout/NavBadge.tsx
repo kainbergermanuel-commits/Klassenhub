@@ -10,8 +10,11 @@
  *
  *   kind="count"  Ruhige Kapsel mit Ziffer, im Stil der Umschalter-Chips.
  *                 Darf dastehen, ohne zu drängeln.
- *   kind="new"    Nur ein Punkt, keine Zahl. Bei Nachrichten ist „da ist was"
- *                 die eigentliche Information, nicht die genaue Anzahl.
+ *   kind="new"    Pille mit dem Wort „neu", keine Zahl. Bei Nachrichten ist
+ *                 „da ist was" die eigentliche Information, nicht die genaue
+ *                 Anzahl. Geschrieben statt gepunktet: „neu" ist auf einen
+ *                 Blick eindeutig, ein Punkt muss erst gedeutet werden, und
+ *                 die Versalien nehmen den Ton der Gruppentitel darüber auf.
  *
  * Beide in Teal: die Nav-Farbe. Amber bleibt für den einen Fall reserviert,
  * in dem Gelb wieder etwas bedeutet (versäumte Hausübungen) — noch ungenutzt.
@@ -22,9 +25,11 @@ export default function NavBadge({ count, kind = 'count' }: { count: number; kin
   if (kind === 'new') {
     return (
       <span
-        className="w-[7px] h-[7px] rounded-full flex-shrink-0 gradient-teal animate-badge-in"
+        className="h-[17px] px-2 rounded-full text-[9.5px] font-bold tracking-[0.06em] uppercase flex items-center flex-shrink-0 gradient-teal text-white animate-badge-in"
         aria-label={`${count} neu`}
-      />
+      >
+        neu
+      </span>
     )
   }
 
