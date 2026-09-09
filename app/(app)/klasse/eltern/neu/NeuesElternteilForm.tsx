@@ -87,7 +87,7 @@ export default function NeuesElternteilForm({ students }: { students: Student[] 
             <label className="text-xs font-bold text-kh-dark mb-1.5 block">Kind (optional)</label>
             <select
               name="child_id"
-              className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition bg-white"
+              className="w-full rounded-xl border border-kh-border px-4 py-3 text-[16px] md:text-sm font-medium text-kh-dark focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition bg-white"
             >
               <option value="">— Kein Kind verknüpfen —</option>
               {students.map(s => (

@@ -56,7 +56,7 @@ export default function ChangePasswordForm() {
             onChange={e => setPassword(e.target.value)}
             autoComplete="new-password"
             placeholder="••••••••"
-            className="w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
+            className="w-full border border-kh-border rounded-xl px-4 py-3 text-[16px] md:text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
           />
           {tooShort && <p className="text-[12px] font-semibold text-kh-red mt-1.5">Mindestens 6 Zeichen.</p>}
         </div>
@@ -69,7 +69,7 @@ export default function ChangePasswordForm() {
             onChange={e => setConfirm(e.target.value)}
             autoComplete="new-password"
             placeholder="••••••••"
-            className="w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
+            className="w-full border border-kh-border rounded-xl px-4 py-3 text-[16px] md:text-sm font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
           />
           {mismatch && <p className="text-[12px] font-semibold text-kh-red mt-1.5">Passwörter stimmen nicht überein.</p>}
         </div>

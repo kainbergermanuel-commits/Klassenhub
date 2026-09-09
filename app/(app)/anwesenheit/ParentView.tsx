@@ -85,7 +85,7 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
               type="text" value={note} maxLength={300}
               onChange={e => setNote(e.target.value)}
               placeholder="z. B. Arzttermin"
-              className="w-full border border-kh-border rounded-xl px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
+              className="w-full border border-kh-border rounded-xl px-4 py-3 text-[16px] md:text-sm font-medium text-kh-dark placeholder:text-[#B0BCBA] outline-none focus:border-kh-teal transition-colors"
             />
           </div>
         </div>

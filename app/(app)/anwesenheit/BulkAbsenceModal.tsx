@@ -141,7 +141,7 @@ export default function BulkAbsenceModal({ students, today, onClose }: Props) {
               onChange={e => setNote(e.target.value)}
               maxLength={300}
               placeholder="z.B. Skikurs"
-              className="w-full rounded-xl border border-kh-border px-4 py-3 text-sm font-medium text-kh-dark placeholder:text-kh-muted/70 focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition"
+              className="w-full rounded-xl border border-kh-border px-4 py-3 text-[16px] md:text-sm font-medium text-kh-dark placeholder:text-kh-muted/70 focus:outline-none focus:ring-2 focus:ring-kh-teal/40 focus:border-kh-teal transition"
             />
           </label>
 

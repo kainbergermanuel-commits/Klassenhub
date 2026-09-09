@@ -295,7 +295,7 @@ function TeacherThread({
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
           rows={1}
           placeholder="Nachricht schreiben…"
-          className="flex-1 resize-none rounded-[18px] border border-kh-border/70 px-4 py-2.5 text-[14px] focus:outline-none focus:border-kh-teal max-h-32"
+          className="flex-1 resize-none rounded-[18px] border border-kh-border/70 px-4 py-2.5 text-[16px] md:text-[14px] focus:outline-none focus:border-kh-teal max-h-32"
         />
         <button
           onClick={send}
@@ -594,7 +594,7 @@ function ComposeModal({
           onChange={e => setBody(e.target.value)}
           rows={4}
           placeholder="Nachricht an die ausgewählten Hefte…"
-          className="w-full resize-none rounded-[16px] border border-kh-border/70 px-4 py-3 text-[14px] focus:outline-none focus:border-kh-teal mb-3"
+          className="w-full resize-none rounded-[16px] border border-kh-border/70 px-4 py-3 text-[16px] md:text-[14px] focus:outline-none focus:border-kh-teal mb-3"
         />
 
         {/* Bestätigung anfordern: Eltern müssen aktiv "Zur Kenntnis genommen" klicken. */}

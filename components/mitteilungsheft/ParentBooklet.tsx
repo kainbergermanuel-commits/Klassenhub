@@ -76,7 +76,7 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
           rows={1}
           placeholder="Antwort schreiben…"
-          className="flex-1 resize-none rounded-[18px] border border-kh-border/70 px-4 py-2.5 text-[14px] focus:outline-none focus:border-kh-teal max-h-32"
+          className="flex-1 resize-none rounded-[18px] border border-kh-border/70 px-4 py-2.5 text-[16px] md:text-[14px] focus:outline-none focus:border-kh-teal max-h-32"
         />
         <button
           onClick={send}
