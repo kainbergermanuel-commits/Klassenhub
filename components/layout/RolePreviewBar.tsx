@@ -17,6 +17,8 @@ interface Props {
   parents: Student[]
 }
 
+const COLLAPSED_KEY = 'kh:preview-bar-collapsed'
+
 const ROLES = [
   { key: 'teacher', label: 'Lehrperson', icon: 'school' },
   { key: 'student', label: 'Schüler', icon: 'face' },
@@ -29,8 +31,31 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
   const [active, setActive] = useState(currentPreview ?? 'teacher')
   const [showDropup, setShowDropup] = useState<'student' | 'parent' | null>(null)
   const [localName, setLocalName] = useState<string | null>(previewName)
+  const [collapsed, setCollapsed] = useState(false)
   const studentDropupRef = useRef<HTMLDivElement>(null)
   const parentDropupRef = useRef<HTMLDivElement>(null)
+
+  // Eingeklappt-Zustand merken. Die Leiste baut sich bei jedem Rollenwechsel
+  // neu auf (window.location.href), und die Seite lädt beim Navigieren neu —
+  // ohne Speicher wäre sie danach jedes Mal wieder ausgeklappt. localStorage
+  // statt Cookie, weil es reine Ansichtssache dieses Geräts ist und den
+  // Server nichts angeht.
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(COLLAPSED_KEY) === '1')
+    } catch {
+      // Privater Modus o. Ä.: dann bleibt die Leiste eben ausgeklappt.
+    }
+  }, [])
+
+  function toggleCollapsed() {
+    setCollapsed(next => {
+      const value = !next
+      try { localStorage.setItem(COLLAPSED_KEY, value ? '1' : '0') } catch {}
+      return value
+    })
+    setShowDropup(null)
+  }
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -69,6 +94,31 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
   const activeParentName = active === 'parent'
     ? (localName ?? (parents[0] ? parents[0].full_name.split(' ').slice(1).join(' ') || parents[0].full_name : undefined))
     : undefined
+
+  const isPreviewing = active !== 'teacher'
+  const activeRole = ROLES.find(r => r.key === active) ?? ROLES[0]
+
+  // Eingeklappt: nur noch ein Knopf. Er zeigt weiterhin das Zeichen der
+  // aktiven Rolle und färbt sich teal, solange eine Vorschau läuft — sonst
+  // könnte man vergessen, dass man die App gerade als Kind sieht, und
+  // Beobachtungen daraus für echte hielte.
+  if (collapsed) {
+    return (
+      <div className="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-30 md:z-50">
+        <button
+          onClick={toggleCollapsed}
+          aria-label={isPreviewing ? `Vorschau als ${activeRole.label} — Leiste ausklappen` : 'Vorschau-Leiste ausklappen'}
+          className={`tap w-10 h-10 rounded-full backdrop-blur-sm shadow-xl flex items-center justify-center ${
+            isPreviewing ? 'bg-kh-teal text-white' : 'bg-kh-dark/90 text-[#9FC4C0]'
+          }`}
+        >
+          <span className="msym text-[18px]" style={{ fontVariationSettings: `'FILL' ${isPreviewing ? 1 : 0}` }}>
+            {activeRole.icon}
+          </span>
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-30 md:z-50">
@@ -176,6 +226,16 @@ export default function RolePreviewBar({ currentPreview, previewName, previewStu
             </div>
           )}
         </div>
+
+        {/* Einklappen */}
+        <button
+          onClick={toggleCollapsed}
+          aria-label="Vorschau-Leiste einklappen"
+          title="Einklappen"
+          className="tap ml-0.5 mr-0.5 w-7 h-7 rounded-full flex items-center justify-center text-[#9FC4C0] hover:text-white hover:bg-white/10 transition-colors"
+        >
+          <span className="msym text-[16px]">close</span>
+        </button>
       </div>
     </div>
   )
