@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Hanken_Grotesk, Bricolage_Grotesque } from 'next/font/google'
 import ServiceWorkerRegister from '@/components/layout/ServiceWorkerRegister'
+import { SPLASH_SCREENS } from '@/lib/splashScreens'
 import './globals.css'
 
 const hanken = Hanken_Grotesk({
@@ -38,10 +39,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="de" className={`${hanken.variable} ${bricolage.variable}`}>
       <head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
-        />
+        {/* Startbilder für den iOS-Homescreen. Ohne eine passende Media-Query
+            zeigt iOS beim Start eine leere (je nach Erscheinungsbild schwarze)
+            Fläche; das Manifest-`background_color` greift dort nicht.
+            Erzeugt von scripts/generate-splash.py. */}
+        {SPLASH_SCREENS.map(s => (
+          <link
+            key={`${s.w}x${s.h}`}
+            rel="apple-touch-startup-image"
+            href={`/splash/${s.w}x${s.h}.png`}
+            media={`(device-width: ${s.deviceWidth}px) and (device-height: ${s.deviceHeight}px) and (-webkit-device-pixel-ratio: ${s.ratio}) and (orientation: portrait)`}
+          />
+        ))}
       </head>
       <body>
         {children}

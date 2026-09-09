@@ -1,3 +1,20 @@
+/* Icon-Schrift, lokal statt von fonts.googleapis.com.
+   Zugeschnitten auf die tatsächlich benutzten Symbole (siehe
+   scripts/generate-icon-font.py): 331 KB statt 5,1 MB. Der externe
+   Stylesheet-Aufruf im <head> entfiel damit auch — er blockierte das
+   erste Rendern auf einer fremden Domain.
+
+   `font-display: block` statt `swap`: bei einer Icon-Schrift zeigt der
+   Fallback nicht ein anderes Schriftbild, sondern den Ligaturnamen als
+   Wort („home"). Kurz nichts zu sehen ist besser als das. */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('/fonts/material-symbols-rounded.woff2') format('woff2');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

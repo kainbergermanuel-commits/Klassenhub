@@ -219,7 +219,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
         {/* Wochennotiz */}
         <div className="mt-4 pt-4 border-t border-kh-page">
           <div className="flex items-center gap-1.5 mb-1">
-            <span className="material-symbols-rounded text-[16px] text-kh-muted">sticky_note_2</span>
+            <span className="msym text-[16px] text-kh-muted">sticky_note_2</span>
             <span className="text-[12px] font-extrabold text-kh-dark uppercase tracking-wide">Wochennotiz</span>
           </div>
           <GrowingTextarea
@@ -232,7 +232,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
         {weekEmpty && (
           <button onClick={onCopyWeek} disabled={copying}
             className="mt-3 w-full h-9 rounded-xl bg-gradient-to-br from-kh-page to-kh-teal-light flex items-center justify-center gap-1.5 text-[12px] font-bold text-kh-dark hover:brightness-95 transition-colors disabled:opacity-50">
-            <span className="material-symbols-rounded text-[16px]">content_copy</span>
+            <span className="msym text-[16px]">content_copy</span>
             {copying ? 'Kopiere …' : 'Vorwoche übernehmen'}
           </button>
         )}
@@ -291,7 +291,7 @@ export default function PlanungWeek({ weekStart, prevWeek, nextWeek, currentWeek
                 </span>
                 <button onClick={() => removeNote(subject)} aria-label={`${subject}-Notiz entfernen`}
                   className="text-kh-muted/40 hover:text-kh-muted transition-colors md:opacity-0 md:group-hover:opacity-100">
-                  <span className="material-symbols-rounded text-[16px]">close</span>
+                  <span className="msym text-[16px]">close</span>
                 </button>
               </div>
               <GrowingTextarea
