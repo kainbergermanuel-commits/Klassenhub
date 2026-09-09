@@ -48,6 +48,17 @@
     font-weight: normal;
     line-height: 1;
     user-select: none;
+    /* Die Symbole entstehen als Ligatur aus ihrem Namen ("event_available").
+       Alles, was den Text verändert oder die Ligatur abschaltet, macht daraus
+       wieder das blanke Wort. Genau das passierte in den Status-Pillen, die
+       `uppercase tracking-*` setzen: aus event_available wurde EVENT_AVAILABLE,
+       wofür es keine Ligatur gibt. Diese vier Zeilen kappen die Vererbung —
+       Googles eigene Klasse .material-symbols-rounded macht dasselbe, nur
+       hatte .msym sie nie übernommen. */
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: nowrap;
+    direction: ltr;
   }
   .scrollbar-kh { scrollbar-width: thin; scrollbar-color: #A9D6CD transparent; }
   .scrollbar-kh::-webkit-scrollbar { width: 8px; height: 8px; }

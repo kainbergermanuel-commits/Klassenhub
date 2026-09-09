@@ -73,6 +73,47 @@ def used_icon_names() -> list[str]:
     return sorted(names)
 
 
+def verify(font: bytes, names: list[str]) -> None:
+    """Prüft, dass jeder angeforderte Name als Ligatur in der Schrift steckt.
+
+    Ohne diese Prüfung fällt ein unvollständiger Zuschnitt erst im Betrieb auf,
+    und zwar als Wort mitten in der Oberfläche. Braucht fontTools; fehlt es,
+    wird die Prüfung übersprungen statt den Lauf zu verhindern.
+    """
+    try:
+        from fontTools.ttLib import TTFont
+    except ImportError:
+        print("Hinweis: fontTools nicht installiert, Ligatur-Prüfung übersprungen.")
+        return
+
+    import io
+
+    tt = TTFont(io.BytesIO(font))
+    gsub = tt["GSUB"].table
+
+    # Ligaturen sind über GLYPHNAMEN definiert, nicht über Zeichen: der
+    # Unterstrich heißt dort "underscore". Ohne diese Rückübersetzung meldet
+    # die Prüfung jeden Namen mit "_" fälschlich als fehlend.
+    to_char = {glyph: chr(code) for code, glyph in tt.getBestCmap().items()}
+
+    ligatures: set[str] = set()
+    for lookup in gsub.LookupList.Lookup:
+        for sub in lookup.SubTable:
+            # LookupType 7 (Extension) verpackt die eigentliche Subtable
+            table = sub.ExtSubTable if sub.__class__.__name__.startswith("Extension") else sub
+            for first, entries in (getattr(table, "ligatures", None) or {}).items():
+                for entry in entries:
+                    glyphs = [first, *entry.Component]
+                    ligatures.add("".join(to_char.get(g, "\uFFFD") for g in glyphs))
+
+    missing = sorted(set(names) - ligatures)
+    if missing:
+        raise SystemExit(
+            f"Zuschnitt unvollständig, {len(missing)} Symbole fehlen: {', '.join(missing[:10])}"
+        )
+    print(f"Geprüft: alle {len(names)} Symbole als Ligatur vorhanden.")
+
+
 def main() -> None:
     names = used_icon_names()
     if not names:
@@ -89,6 +130,7 @@ def main() -> None:
         sys.exit("In der Antwort von Google stand keine Schrift-URL.")
 
     font = fetch(url.group(1))
+    verify(font, names)
     FONT_OUT.parent.mkdir(parents=True, exist_ok=True)
     FONT_OUT.write_bytes(font)
     LIST_OUT.write_text("\n".join(names) + "\n", encoding="utf-8")
