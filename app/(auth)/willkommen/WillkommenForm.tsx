@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { willkommenAbschliessen } from '@/app/actions/onboarding'
 import type { Role } from '@/lib/types'
+import Wordmark from '@/components/ui/Wordmark'
 
 /**
  * Zwei Schritte: begrüßen, dann Passwort anbieten.
@@ -85,7 +86,7 @@ export default function WillkommenForm({
             </span>
           </div>
           <div>
-            <div className="text-xl font-extrabold text-kh-dark tracking-tight">ClassHaven</div>
+            <Wordmark className="text-xl block" />
             <div className="text-xs text-kh-muted font-medium">MS Hirtenberg</div>
           </div>
         </div>

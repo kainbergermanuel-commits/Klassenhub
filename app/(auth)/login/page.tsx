@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Wordmark from '@/components/ui/Wordmark'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -41,7 +42,7 @@ export default function LoginPage() {
             </span>
           </div>
           <div>
-            <div className="text-xl font-extrabold text-kh-dark tracking-tight">ClassHaven</div>
+            <Wordmark className="text-xl block" />
             <div className="text-xs text-kh-muted font-medium">MS Hirtenberg</div>
           </div>
         </div>

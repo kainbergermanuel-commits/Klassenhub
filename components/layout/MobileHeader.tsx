@@ -10,6 +10,7 @@ import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
 import { gendered } from '@/lib/gender'
 import { STREAKS_SUBLINKS } from '@/lib/streaksNav'
 import type { Profile, Class } from '@/lib/types'
+import Wordmark from '@/components/ui/Wordmark'
 
 interface NavItem {
   href: string
@@ -94,7 +95,7 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
             <div className="w-7 h-7 rounded-[9px] gradient-teal flex items-center justify-center text-white flex-shrink-0">
               <span className="msym text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
             </div>
-            <span className="font-extrabold text-[15px] text-kh-dark tracking-tight">ClassHaven</span>
+            <Wordmark className="text-[15px]" />
           </div>
           <button
             onClick={() => setOpen(false)}
