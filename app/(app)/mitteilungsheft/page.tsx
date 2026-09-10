@@ -22,6 +22,11 @@ export default async function MitteilungsheftPage() {
       .from('messages')
       .select('*')
       .eq('parent_id', user.id)
+      // Ein Heft je Klasse, nicht je Elternteil: hinter jeder Klasse steht eine
+      // andere Lehrperson. Ohne diesen Filter sähe eine Familie mit
+      // Geschwistern einen gemischten Strom aus zwei Klassen, während ihre
+      // Antwort nur in einer davon landet.
+      .eq('class_id', activeClassId)
       .order('created_at', { ascending: true })
 
     // Anzeigenamen + Avatare der Absender (Lehrkraft[en] + eigener Name).

@@ -125,7 +125,7 @@ async function computeMessageBadge(profile: Profile, userId: string, classId: st
     // Eigenes Heft: ungesehene Nachrichten der Lehrkraft (sender ≠ ich).
     const { data } = await supabase
       .from('messages').select('sender_id')
-      .eq('parent_id', userId).is('seen_at', null)
+      .eq('parent_id', userId).eq('class_id', classId).is('seen_at', null)
     return (data ?? []).filter(m => m.sender_id !== userId).length
   }
 
