@@ -198,3 +198,27 @@ Die fünf Familien bekommen von Anfang an einen Zugang für beide Kinder.
 Zugangsdaten wieder einzusammeln ist deutlich teurer als ein Abend Vorarbeit.
 Stufe 4 kann danach in Ruhe folgen; bis dahin sehen Eltern schlicht ihr
 Hauptkind, so wie heute.
+
+---
+
+## Bekannter Fehler: Admin-Vorschau springt beim zweiten Kind
+
+**Gemeldet 10.09.2026, nicht dringend, echte Familien nicht betroffen.**
+
+In der Vorschau auf ein Elternkonto zeigt das Hauptkind korrekt an. Beim
+Umschalten auf das zweite Kind springt die Anzeige auf ein fremdes Kind,
+reproduzierbar auf das alphabetisch erste der aktiven Klasse.
+
+**Ursache.** `getEffectiveAuth` lässt die aktive Klasse nur im Zweig für echte
+Eltern dem aktiven Kind folgen. Der Vorschau-Zweig setzt weiterhin
+`activeClassId: effectiveProfile.class_id`, also die Klasse des Hauptkindes.
+Die Seite lädt daraufhin die Schülerliste der falschen Klasse, das zweite Kind
+kommt darin nicht vor, `resolveActiveChild` liefert `null`, und der
+Vorschau-Rückfall `?? students?.[0]` in `streaks/page.tsx` greift.
+
+Der Rückfall ist nicht der Fehler; ohne ihn zeigte die Vorschau gar nichts. Er
+verdeckt nur, dass die Klasse nicht mitgewandert ist.
+
+**Behebung.** Im Vorschau-Zweig von `lib/previewAuth.ts` das aktive Kind
+auflösen und dessen `class_id` als `activeClassId` setzen, analog zum bereits
+umgestellten Zweig für echte Eltern.
