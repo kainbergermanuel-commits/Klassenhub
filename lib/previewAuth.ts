@@ -65,7 +65,15 @@ export const getEffectiveAuth = cache(async (): Promise<EffectiveAuth> => {
     const target = data?.[0]
     const effectiveProfile: Profile = target ?? { ...profile, role: 'parent' }
     const effectiveUser = target ? { ...user, id: target.id } : user
-    return { user: effectiveUser, profile: effectiveProfile, isPreview: true, previewRole, activeClassId: effectiveProfile.class_id ?? activeClassId }
+    // Auch in der Vorschau muss die aktive Klasse dem aktiven Kind folgen.
+    // Sonst lädt die Seite die Schülerliste der Klasse des Hauptkindes, findet
+    // das zweite Kind darin nicht und fällt auf das erste Kind dieser Liste
+    // zurück — immer dasselbe fremde Kind, was wie ein Rechtefehler aussieht.
+    const kind = await getActiveChild(effectiveProfile.id)
+    return {
+      user: effectiveUser, profile: effectiveProfile, isPreview: true, previewRole,
+      activeClassId: kind?.class_id ?? effectiveProfile.class_id ?? activeClassId,
+    }
   }
 
   return { user, profile, isPreview: false, previewRole: null, activeClassId }
