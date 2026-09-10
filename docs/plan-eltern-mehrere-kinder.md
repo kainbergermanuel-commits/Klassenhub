@@ -1,6 +1,23 @@
 # Ein Elternkonto, mehrere Kinder
 
-**Stand:** 10.09.2026 · noch nicht begonnen
+**Stand:** 10.09.2026 · **Stufen 0 bis 5 erledigt und verifiziert.**
+
+| Stufe | Zustand |
+|---|---|
+| 0 Inventur | erledigt, 15 Policies statt der vermuteten 10 |
+| 1 Schema | eingespielt, 43 Verknüpfungen, alle als Hauptkind |
+| 2 Funktionen | eingespielt: `my_child_ids()`, `my_student_ids()`, `my_class_ids()` erweitert |
+| 3 Policies | eingespielt, beide Gegenproben bestanden (0 alte Muster, 11 neue) |
+| 4 Anwendung | gebaut, Umschalter im Browser verifiziert |
+| 5 Verwaltung | `adminLinkChildToParent` und `adminUnlinkChildFromParent` |
+| 6 Aufräumen | **gesperrt**, siehe unten |
+
+**Verifikation am 10.09. mit echtem Login gegen RLS:** Ein Testelternteil sah nach dem
+Verknüpfen eines zweiten Kindes 27 statt 12 Schülerprofile in zwei statt einer Klasse,
+dazu die Anwesenheit und den Stundenplan des zweiten Kindes. Für ein **nicht** verknüpftes
+Kind lieferten `attendance`, `timetable_entries`, `duty_completions`, `streak_freezes`,
+`homework_extensions` und `parent_nudges` jeweils 0 Zeilen, und ein Schreibversuch wurde
+mit HTTP 403 von RLS abgewiesen. Der Test wurde vollständig zurückgebaut.
 
 ## Das Problem
 
