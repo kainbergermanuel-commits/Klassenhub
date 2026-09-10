@@ -126,15 +126,6 @@ export default function StudentOpenHomework({ homework, userId, season }: Props)
 
   return (
     <div className="relative overflow-hidden rounded-2xl p-5 shadow-[0_8px_16px_rgba(20,40,45,.10)]" style={{ background: 'linear-gradient(135deg, #FBF9F3 0%, #FEFEFC 100%)' }}>
-      {open.length === 0 && (
-        <img
-          src="/images/ian-stauffer-bH7kZ0yazB0-unsplash.webp"
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: 0.6 }}
-        />
-      )}
       <div className="relative flex items-center justify-between gap-2 mb-3">
         <h2 className="flex items-center gap-2 font-extrabold text-base text-kh-dark whitespace-nowrap min-w-0">
           <span className="msym text-[20px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>assignment</span>
@@ -143,18 +134,11 @@ export default function StudentOpenHomework({ homework, userId, season }: Props)
         <Link href="/hausaufgaben" className="text-sm font-semibold text-kh-teal hover:underline flex-shrink-0">Alle</Link>
       </div>
       {open.length === 0 ? (
-        <div className="relative flex flex-col items-start justify-end pt-14 pb-4 px-1 gap-1.5 min-h-[300px]">
-          <p
-            className="text-[19px] font-extrabold text-kh-dark"
-            style={{ textShadow: '0 1px 3px rgba(255,255,255,.9), 0 0 12px rgba(255,255,255,.8)' }}
-          >
-            Alles erledigt!
-          </p>
-          <p
-            className="text-sm font-bold text-kh-dark/70"
-            style={{ textShadow: '0 1px 3px rgba(255,255,255,.9), 0 0 10px rgba(255,255,255,.8)' }}
-          >
-            {guideNod ? `${guideNod}: „Alles erledigt, genieß die Pause."` : 'Keine offenen Hausübungen'}
+        <div className="relative flex flex-col items-center text-center py-5">
+          <span className="msym text-[34px] text-kh-green mb-1.5" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+          <p className="font-bold text-[15px] text-kh-dark">Alles erledigt!</p>
+          <p className="text-[13px] text-kh-muted font-medium mt-0.5">
+            {guideNod ? `${guideNod}: „Genieß die Pause."` : 'Keine offenen Hausübungen'}
           </p>
         </div>
       ) : (
