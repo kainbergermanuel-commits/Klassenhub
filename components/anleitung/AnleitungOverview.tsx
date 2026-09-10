@@ -176,7 +176,7 @@ export default function AnleitungOverview({ role, season }: { role: Role; season
       <header className="mb-6">
         <div className="min-w-0">
           <h1 className="text-[25px] max-md:text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Erste Schritte</h1>
-          <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">So funktioniert KlassenHub, jederzeit zum Nachblättern</p>
+          <p className="text-[13.5px] text-kh-muted font-medium leading-tight mt-0.5">So funktioniert ClassHaven, jederzeit zum Nachblättern</p>
         </div>
       </header>
 

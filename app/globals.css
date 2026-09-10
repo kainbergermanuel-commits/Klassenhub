@@ -21,13 +21,13 @@
 
 @layer base {
   * { box-sizing: border-box; }
-  /* KlassenHub ist durchgehend hell gestaltet. Ohne diese Angabe richten sich
+  /* ClassHaven ist durchgehend hell gestaltet. Ohne diese Angabe richten sich
      die vom Browser selbst gezeichneten Bedienelemente nach dem Systemthema:
      im macOS-Dunkelmodus erschien der Uhrzeit-Wähler (<input type="time">) als
      schwarzes Panel mitten im hellen Formular. */
   html { color-scheme: light; }
   html, body { margin: 0; height: 100%; }
-  /* KlassenHub ist eine installierbare PWA und wird großteils am Handy
+  /* ClassHaven ist eine installierbare PWA und wird großteils am Handy
      benutzt, wo `hover:` wirkungslos ist. iOS legt dort über jede Berührung
      sein graues Standard-Aufblitzen — das nimmt jeder sorgfältig gestalteten
      Karte die Ruhe. Statt dessen gibt `.tap` (siehe utilities) eine eigene,

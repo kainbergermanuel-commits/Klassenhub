@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'KlassenHub',
-    short_name: 'KlassenHub',
+    name: 'ClassHaven',
+    short_name: 'ClassHaven',
     description: 'Mobile-first Klassen-Kommunikation',
     start_url: '/',
     display: 'standalone',

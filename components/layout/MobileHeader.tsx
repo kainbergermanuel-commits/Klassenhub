@@ -94,7 +94,7 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
             <div className="w-7 h-7 rounded-[9px] gradient-teal flex items-center justify-center text-white flex-shrink-0">
               <span className="msym text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
             </div>
-            <span className="font-extrabold text-[15px] text-kh-dark tracking-tight">KlassenHub</span>
+            <span className="font-extrabold text-[15px] text-kh-dark tracking-tight">ClassHaven</span>
           </div>
           <button
             onClick={() => setOpen(false)}

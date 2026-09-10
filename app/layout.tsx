@@ -18,12 +18,12 @@ const bricolage = Bricolage_Grotesque({
 })
 
 export const metadata: Metadata = {
-  title: 'KlassenHub',
+  title: 'ClassHaven',
   description: 'Mobile-first Klassen-Kommunikation',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: 'KlassenHub',
+    title: 'ClassHaven',
     statusBarStyle: 'default',
   },
 }

@@ -171,7 +171,7 @@ export default function AdventureHero({ season, role, goal, done }: Props) {
                       {goal.isSuggested && (
                         <span
                           title={isTeacher
-                            ? 'Für diesen Monat ist noch kein Ziel gesetzt. Bis dahin schlägt KlassenHub eines vor, damit die Reise weiterläuft. Tippe auf den Stift, um ein eigenes zu setzen.'
+                            ? 'Für diesen Monat ist noch kein Ziel gesetzt. Bis dahin schlägt ClassHaven eines vor, damit die Reise weiterläuft. Tippe auf den Stift, um ein eigenes zu setzen.'
                             : 'Für diesen Monat steht noch kein festes Ziel. So lange gilt ein Vorschlag.'}
                           className="ml-2 align-middle text-[9.5px] font-extrabold text-kh-muted bg-kh-muted/12 px-1.5 py-0.5 rounded-full cursor-default"
                         >

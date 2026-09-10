@@ -41,7 +41,7 @@ export default function LoginPage() {
             </span>
           </div>
           <div>
-            <div className="text-xl font-extrabold text-kh-dark tracking-tight">KlassenHub</div>
+            <div className="text-xl font-extrabold text-kh-dark tracking-tight">ClassHaven</div>
             <div className="text-xs text-kh-muted font-medium">MS Hirtenberg</div>
           </div>
         </div>

@@ -77,7 +77,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
             <div className="w-7 h-7 rounded-[9px] gradient-teal flex items-center justify-center text-white flex-shrink-0">
               <span className="msym text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
             </div>
-            {!collapsed && <span className="font-extrabold text-[15px] text-kh-dark tracking-tight">KlassenHub</span>}
+            {!collapsed && <span className="font-extrabold text-[15px] text-kh-dark tracking-tight">ClassHaven</span>}
           </div>
           <button
             onClick={() => setCollapsed(c => !c)}

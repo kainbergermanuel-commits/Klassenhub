@@ -15,7 +15,7 @@ function formatDisplay(iso: string) {
 }
 
 /**
- * Datumsauswahl im KlassenHub-Stil (Button mit Klartext-Datum + aufklappender
+ * Datumsauswahl im ClassHaven-Stil (Button mit Klartext-Datum + aufklappender
  * Monatskalender). Bewusst KEIN `<input type="date">`: dessen Darstellung
  * unterscheidet sich je nach Browser und Betriebssystem und passt sich nicht
  * an das übrige Formular-Styling an.

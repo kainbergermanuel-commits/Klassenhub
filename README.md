@@ -1,4 +1,4 @@
-# KlassenHub
+# ClassHaven
 
 Mobile-first Klassen-Kommunikation · Next.js 14 + Supabase
 

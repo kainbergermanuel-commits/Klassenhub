@@ -85,7 +85,7 @@ export default function WillkommenForm({
             </span>
           </div>
           <div>
-            <div className="text-xl font-extrabold text-kh-dark tracking-tight">KlassenHub</div>
+            <div className="text-xl font-extrabold text-kh-dark tracking-tight">ClassHaven</div>
             <div className="text-xs text-kh-muted font-medium">MS Hirtenberg</div>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function WillkommenForm({
               {kind ? (
                 <div className="text-[15px] text-kh-muted font-medium leading-relaxed flex flex-col gap-3">
                   <p>
-                    Schön, dass du da bist. Das hier ist <strong className="text-kh-dark">KlassenHub</strong>,
+                    Schön, dass du da bist. Das hier ist <strong className="text-kh-dark">ClassHaven</strong>,
                     unsere Klasse im Netz.
                   </p>
                   <p>
@@ -117,7 +117,7 @@ export default function WillkommenForm({
               ) : lehrkraft ? (
                 <div className="text-[15px] text-kh-muted font-medium leading-relaxed flex flex-col gap-3">
                   <p>
-                    Schön, dass Sie da sind. <strong className="text-kh-dark">KlassenHub</strong> ist die
+                    Schön, dass Sie da sind. <strong className="text-kh-dark">ClassHaven</strong> ist die
                     Klassen-App: Hier läuft zusammen, was Schule und Zuhause voneinander wissen müssen.
                   </p>
                   <p>
@@ -128,7 +128,7 @@ export default function WillkommenForm({
               ) : (
                 <div className="text-[15px] text-kh-muted font-medium leading-relaxed flex flex-col gap-3">
                   <p>
-                    Schön, dass Sie da sind. <strong className="text-kh-dark">KlassenHub</strong> ist unsere
+                    Schön, dass Sie da sind. <strong className="text-kh-dark">ClassHaven</strong> ist unsere
                     Klassen-App: Hier läuft zusammen, was Schule und Zuhause voneinander wissen müssen.
                   </p>
                   <p>

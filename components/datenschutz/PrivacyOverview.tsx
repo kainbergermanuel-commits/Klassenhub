@@ -251,8 +251,8 @@ export default function PrivacyOverview({ role }: Props) {
         title="Datenschutz"
         subtitle={
           isStudent
-            ? 'Was KlassenHub über dich speichert und wer es sieht'
-            : 'Welche Daten KlassenHub speichert und wer sie sieht'
+            ? 'Was ClassHaven über dich speichert und wer es sieht'
+            : 'Welche Daten ClassHaven speichert und wer sie sieht'
         }
         gradient="from-kh-violet to-[#7B86D6]"
       />
@@ -263,8 +263,8 @@ export default function PrivacyOverview({ role }: Props) {
           <section className="kh-card p-6">
             <p className="text-[14.5px] text-kh-dark font-medium leading-relaxed">
               {isStudent
-                ? 'KlassenHub speichert nur das, was für die Schule gebraucht wird. Hier steht ehrlich, was das ist und wer es sehen kann. Wenn dir etwas davon komisch vorkommt, sag es deiner Lehrperson oder deinen Eltern.'
-                : 'KlassenHub speichert ausschließlich Daten, die für den Schulalltag gebraucht werden. Diese Seite listet vollständig auf, welche das sind und wer sie sehen kann.'}
+                ? 'ClassHaven speichert nur das, was für die Schule gebraucht wird. Hier steht ehrlich, was das ist und wer es sehen kann. Wenn dir etwas davon komisch vorkommt, sag es deiner Lehrperson oder deinen Eltern.'
+                : 'ClassHaven speichert ausschließlich Daten, die für den Schulalltag gebraucht werden. Diese Seite listet vollständig auf, welche das sind und wer sie sehen kann.'}
             </p>
           </section>
         </AnimateIn>
@@ -383,7 +383,7 @@ export default function PrivacyOverview({ role }: Props) {
           <section className="kh-card p-6">
             <SectionTitle
               icon="do_not_disturb_on"
-              title={isStudent ? 'Was KlassenHub nicht speichert' : 'Was bewusst nicht gespeichert wird'}
+              title={isStudent ? 'Was ClassHaven nicht speichert' : 'Was bewusst nicht gespeichert wird'}
             />
             <ul className="flex flex-col gap-2 mt-5">
               {NOT_STORED.map(n => (
