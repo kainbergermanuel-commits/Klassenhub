@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { getAuth } from '@/lib/auth'
+import { getAuth, getParentChildren } from '@/lib/auth'
 import { todayISO, schoolYearStartISO } from '@/lib/date'
 import { computeStreak, MILESTONES } from '@/lib/streak'
 import { hwForStudent } from '@/lib/homeworkScope'
@@ -14,7 +14,9 @@ export async function confirmHomeworkCompletion(
 ): Promise<{ reachedMilestone: number | null }> {
   const { profile } = await getAuth()
   if (!profile || profile.role !== 'parent') throw new Error('Unauthorized')
-  if (profile.child_id !== studentId) throw new Error('Not your child')
+  // Besitzprüfung gegen ALLE verknüpften Kinder, nicht nur das Hauptkind.
+  const kind = (await getParentChildren(profile.id)).find(k => k.id === studentId)
+  if (!kind) throw new Error('Not your child')
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -27,7 +29,7 @@ export async function confirmHomeworkCompletion(
 
   // Meilenstein-Chronik fortschreiben + prüfen, ob GENAU diese Bestätigung eine
   // Schwelle (5/10/15/20) frisch überschritten hat (für die Jubel-Anzeige).
-  const reachedMilestone = await recordReachedMilestones(supabase, studentId, profile.class_id ?? null, profile.id, [homeworkId])
+  const reachedMilestone = await recordReachedMilestones(supabase, studentId, kind.class_id ?? null, profile.id, [homeworkId])
   return { reachedMilestone }
 }
 
@@ -38,7 +40,8 @@ export async function confirmAllHomeworkCompletions(
 ): Promise<{ reachedMilestone: number | null }> {
   const { profile } = await getAuth()
   if (!profile || profile.role !== 'parent') throw new Error('Unauthorized')
-  if (profile.child_id !== studentId) throw new Error('Not your child')
+  const kind = (await getParentChildren(profile.id)).find(k => k.id === studentId)
+  if (!kind) throw new Error('Not your child')
   if (homeworkIds.length === 0) return { reachedMilestone: null }
 
   const supabase = await createClient()
@@ -51,7 +54,7 @@ export async function confirmAllHomeworkCompletions(
 
   if (error) throw new Error(error.message)
 
-  const reachedMilestone = await recordReachedMilestones(supabase, studentId, profile.class_id ?? null, profile.id, homeworkIds)
+  const reachedMilestone = await recordReachedMilestones(supabase, studentId, kind.class_id ?? null, profile.id, homeworkIds)
   return { reachedMilestone }
 }
 

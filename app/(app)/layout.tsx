@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { hwForStudent } from '@/lib/homeworkScope'
-import { getAuth, getClass, getTeacherClasses } from '@/lib/auth'
+import { getAuth, getClass, getTeacherClasses, getActiveChild, getParentChildren } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO } from '@/lib/date'
 import BodyTheme from '@/components/layout/BodyTheme'
@@ -105,8 +105,9 @@ async function computeReminderBadge(profile: Profile, userId: string, classId: s
 
   let studentId = userId
   if (profile.role === 'parent') {
-    if (!profile.child_id) return upcomingIds.length
-    studentId = profile.child_id
+    const kindId = (await getActiveChild(profile.id))?.id ?? profile.child_id
+    if (!kindId) return upcomingIds.length
+    studentId = kindId
   }
 
   const { count } = await supabase
@@ -155,8 +156,9 @@ async function computeHwBadge(profile: Profile, classId: string | null): Promise
   // Schüler: eigene offene; Elternteil: offene des Kindes
   let studentId = profile.id
   if (profile.role === 'parent') {
-    if (!profile.child_id) return 0
-    studentId = profile.child_id
+    const kindId = (await getActiveChild(profile.id))?.id ?? profile.child_id
+    if (!kindId) return 0
+    studentId = kindId
   }
 
   // Auf die HÜ dieses Kindes eingrenzen. In der Lehrer-Vorschau filtert die
@@ -193,6 +195,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const klass = await getClass(activeClassId)
 
   const teacherClasses = realProfile.role === 'teacher' ? await getTeacherClasses(realProfile.id) : []
+  // Kinder-Umschalter: nur für echte Elternkonten, und nur wenn mehr als eines.
+  const parentChildren = profile.role === 'parent' ? await getParentChildren(profile.id) : []
+  const activeChildId = profile.role === 'parent' ? (await getActiveChild(profile.id))?.id ?? null : null
 
   const [hwOpen, reminderUnread, messageUnread, attendancePending] = await Promise.all([
     computeHwBadge(profile, activeClassId),
@@ -236,7 +241,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <BodyTheme color="#ffffff" />
       <div className="relative flex min-h-[calc(100dvh-1.5rem)] md:min-h-[calc(100dvh-42px)] max-md:min-h-[100dvh] rounded-[28px] max-md:rounded-none bg-white overflow-hidden shadow-[0_10px_40px_rgba(20,40,45,.08)]">
         <ClassGoalWatermark />
-        <Sidebar profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} isPreview={!!previewRole} />
+        <Sidebar profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} isPreview={!!previewRole} parentChildren={parentChildren} activeChildId={activeChildId} />
         {/* Kein eigener Scroll-Container: der äußere Wrapper hat nur
             min-height (kein Cap), wächst also mit dem Inhalt mit — die
             Seite scrollt nativ als Ganzes. overflow-y-auto hier erzeugte
@@ -245,7 +250,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             auf einem gestreckten Flex-Item), ohne dass die Sidebar dadurch
             fixiert blieb — sie wuchs ohnehin mit. */}
         <main className="relative z-10 flex-1 min-w-0">
-          <MobileHeader profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} />
+          <MobileHeader profile={profile} klass={klass as Class | null} navItems={all} teacherClasses={teacherClasses} activeClassId={activeClassId} parentChildren={parentChildren} activeChildId={activeChildId} />
           <div className="max-w-[1180px] mx-auto px-7 py-7 pb-20 max-md:px-4 max-md:py-5 max-md:pb-6 max-md:pt-[calc(env(safe-area-inset-top)+1.25rem)]">
             {children}
           </div>

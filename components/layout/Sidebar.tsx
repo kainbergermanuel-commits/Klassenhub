@@ -10,6 +10,7 @@ import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
 import { gendered } from '@/lib/gender'
 import { STREAKS_SUBLINKS } from '@/lib/streaksNav'
 import type { Profile, Class } from '@/lib/types'
+import ChildSwitcher, { type ChildOption } from '@/components/layout/ChildSwitcher'
 import Wordmark from '@/components/ui/Wordmark'
 
 interface NavItem {
@@ -30,9 +31,11 @@ interface SidebarProps {
   teacherClasses?: Class[]
   activeClassId?: string | null
   isPreview?: boolean
+  parentChildren?: ChildOption[]
+  activeChildId?: string | null
 }
 
-export default function Sidebar({ profile, klass, navItems, teacherClasses = [], activeClassId, isPreview = false }: SidebarProps) {
+export default function Sidebar({ profile, klass, navItems, teacherClasses = [], activeClassId, isPreview = false, parentChildren = [], activeChildId = null }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [showPicker, setShowPicker] = useState(!isPreview && profile.role === 'student' && !profile.avatar_seed)
@@ -125,6 +128,13 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
             </>
           )}
         </div>
+
+        {/* Kinder-Umschalter (nur bei mehreren Kindern) */}
+        {parentChildren.length > 1 && (
+          <div className={`mb-2 ${collapsed ? 'px-2' : 'px-3.5'}`}>
+            <ChildSwitcher children={parentChildren} activeChildId={activeChildId} collapsed={collapsed} />
+          </div>
+        )}
 
         {/* Klassen-Umschalter (nur bei mehreren Klassen) */}
         {showClassSwitcher && (

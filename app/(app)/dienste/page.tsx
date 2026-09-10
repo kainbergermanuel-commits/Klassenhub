@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { matchChild } from '@/lib/auth'
+import { resolveActiveChild } from '@/lib/auth'
 import { getRelevantMondayOfWeek, getWeekNumber } from '@/lib/date'
 import { buildDutyDone, confirmableWeekday, dutyDoneWeekdays } from '@/lib/duty'
 import DutyWeek from '@/components/dienste/DutyWeek'
@@ -43,7 +43,7 @@ export default async function DienstePage() {
   // Eltern sollen sehen, welcher Dienst ihrem Kind gehört. Ihre eigene ID
   // steht nie in assignee_ids, deshalb wird hier das Kind aufgelöst.
   const childId = profile.role === 'parent'
-    ? (matchChild(profile, students ?? [])?.id ?? null)
+    ? ((await resolveActiveChild(profile, students ?? []))?.id ?? null)
     : null
   const highlightId = profile.role === 'student' ? user.id : childId
 

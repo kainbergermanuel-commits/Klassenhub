@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
-import { getAuth, getTeacherClasses } from './auth'
+import { getAuth, getTeacherClasses, getActiveChild } from './auth'
 import { createClient } from './supabase/server'
 import type { Profile } from './types'
 
@@ -16,7 +16,16 @@ export const getEffectiveAuth = cache(async (): Promise<EffectiveAuth> => {
   const { user, profile } = await getAuth()
 
   if (!user || !profile || profile.role !== 'teacher') {
-    return { user: user ?? { id: '' }, profile: profile!, isPreview: false, previewRole: null, activeClassId: profile?.class_id ?? null }
+    // Bei Eltern folgt die aktive Klasse dem aktiven Kind. Ohne das zeigte die
+    // ganze Seite weiter die Klasse des Hauptkindes, auch wenn gerade das
+    // Geschwisterkind gewählt ist — Hausübungen, Termine und Erinnerungen
+    // hängen alle an activeClassId.
+    let activeClassId = profile?.class_id ?? null
+    if (profile?.role === 'parent') {
+      const kind = await getActiveChild(profile.id)
+      if (kind?.class_id) activeClassId = kind.class_id
+    }
+    return { user: user ?? { id: '' }, profile: profile!, isPreview: false, previewRole: null, activeClassId }
   }
 
   const jar = await cookies()

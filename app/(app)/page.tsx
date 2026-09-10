@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { matchChild, getClass } from '@/lib/auth'
+import { resolveActiveChild, getClass } from '@/lib/auth'
 import { todayISO, getRelevantMondayOfWeek, getMondayOfWeek, schoolYearStartISO, addDaysISO, localDateOf, todayLocal, getWeekNumber, isOver, isActionable } from '@/lib/date'
 import { computeStreak, currentMilestone, findBreakingHomework, freezeWouldHelp, crystalWouldHelp, groupFrozenByStudent, effectiveDueDate, VETERAN_MILESTONE, MILESTONES } from '@/lib/streak'
 import { hwForStudent, studentCountForHw } from '@/lib/homeworkScope'
@@ -828,7 +828,7 @@ export default async function HomePage() {
   if (profile.role === 'parent') {
     const { data: allStudents } = await supabase
       .from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student')
-    const child = matchChild(profile, allStudents ?? [])
+    const child = await resolveActiveChild(profile, allStudents ?? [])
       ?? allStudents?.[0] // preview fallback: use first student
 
     // Ganzes Schuljahr kommt bereits aus dem rollenübergreifenden Batch oben

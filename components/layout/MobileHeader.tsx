@@ -10,6 +10,7 @@ import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
 import { gendered } from '@/lib/gender'
 import { STREAKS_SUBLINKS } from '@/lib/streaksNav'
 import type { Profile, Class } from '@/lib/types'
+import ChildSwitcher, { type ChildOption } from '@/components/layout/ChildSwitcher'
 import Wordmark from '@/components/ui/Wordmark'
 
 interface NavItem {
@@ -29,9 +30,11 @@ interface Props {
   navItems: NavItem[]
   teacherClasses?: Class[]
   activeClassId?: string | null
+  parentChildren?: ChildOption[]
+  activeChildId?: string | null
 }
 
-export default function MobileHeader({ profile, klass, navItems, teacherClasses = [], activeClassId }: Props) {
+export default function MobileHeader({ profile, klass, navItems, teacherClasses = [], activeClassId, parentChildren = [], activeChildId = null }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -132,6 +135,13 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
             </div>
           </div>
         </div>
+
+        {/* Kinder-Umschalter (nur bei mehreren Kindern) */}
+        {parentChildren.length > 1 && (
+          <div className="px-4 pt-3">
+            <ChildSwitcher children={parentChildren} activeChildId={activeChildId} />
+          </div>
+        )}
 
         {/* Klassen-Wechsler */}
         {showClassSwitcher && (

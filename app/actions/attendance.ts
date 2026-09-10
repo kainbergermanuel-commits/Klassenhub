@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
+import { getActiveChild } from '@/lib/auth'
 import type { AttendanceStatus } from '@/lib/types'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -164,7 +165,9 @@ export async function reportAbsence(startDate: string, endDate: string, note: st
   const { user, profile } = await getEffectiveAuth()
   if (!user || !profile) throw new Error('Nicht angemeldet')
   if (profile.role !== 'parent') throw new Error('Keine Berechtigung')
-  if (!profile.child_id) throw new Error('Kein Kind verknüpft')
+  const aktivesKind = await getActiveChild(profile.id)
+  const kindId = aktivesKind?.id ?? profile.child_id
+  if (!kindId) throw new Error('Kein Kind verknüpft')
   if (!ISO_DATE.test(startDate) || !ISO_DATE.test(endDate)) throw new Error('Ungültiges Datum')
   if (endDate < startDate) throw new Error('Enddatum liegt vor dem Startdatum')
 
@@ -175,7 +178,7 @@ export async function reportAbsence(startDate: string, endDate: string, note: st
 
   const supabase = await createClient()
   const { data: child } = await supabase
-    .from('profiles').select('id,class_id').eq('id', profile.child_id).maybeSingle()
+    .from('profiles').select('id,class_id').eq('id', kindId).maybeSingle()
   if (!child?.class_id) throw new Error('Kind ist keiner Klasse zugeordnet')
 
   const rows = []

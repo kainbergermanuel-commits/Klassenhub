@@ -17,7 +17,7 @@ import type { AdventureData } from '@/components/streaks/TeacherAdventurePanel'
 import type { ChildAdventureData } from '@/components/streaks/ChildAdventureStats'
 import { activeRiddles, type Riddle } from '@/lib/riddles'
 import { suggestGoalTarget } from '@/lib/classGoal'
-import { matchChild } from '@/lib/auth'
+import { resolveActiveChild } from '@/lib/auth'
 import StreakOverview from '@/components/streaks/StreakOverview'
 import { adventureUnlocked } from '@/lib/adventureStart'
 import AdventureTeaser from '@/components/streaks/AdventureTeaser'
@@ -643,7 +643,7 @@ export default async function StreaksPage() {
   if (profile.role === 'teacher') {
     adventureStats = allAdventureStats
   } else if (profile.role === 'parent') {
-    const child = matchChild(profile, students ?? []) ?? students?.[0] // Vorschau-Fallback wie in page.tsx
+    const child = (await resolveActiveChild(profile, students ?? [])) ?? students?.[0] // Vorschau-Fallback wie in page.tsx
     adventureStats = child ? allAdventureStats.filter(a => a.id === child.id) : []
   }
 
@@ -657,7 +657,7 @@ export default async function StreaksPage() {
   if (profile.role === 'student' || profile.role === 'parent') {
     const selfId = profile.role === 'student'
       ? profile.id
-      : (matchChild(profile, students ?? []) ?? students?.[0])?.id ?? null
+      : ((await resolveActiveChild(profile, students ?? [])) ?? students?.[0])?.id ?? null
     if (selfId) {
       const flameBucketIndex = (v: number) => [0, 3, 7, 14, Infinity].findIndex(e => v <= e)
       const flameBuckets = ['0 HÜ', '1–3', '4–7', '8–14', '15+'].map((label, i) => ({

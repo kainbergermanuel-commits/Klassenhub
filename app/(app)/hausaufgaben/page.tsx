@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { matchChild } from '@/lib/auth'
+import { resolveActiveChild } from '@/lib/auth'
 import HomeworkList from '@/components/homework/HomeworkList'
 import AnimateIn from '@/components/ui/AnimateIn'
 import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
@@ -93,7 +93,7 @@ export default async function HomeworkPage() {
     // parent: show child's completions
     const { data: allStudents } = await supabase
       .from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'student')
-    const child = matchChild(profile, allStudents ?? [])
+    const child = await resolveActiveChild(profile, allStudents ?? [])
     childId = child?.id ?? null
     const childDoneIds = new Set<string>()
     const childConfirmedIds = new Set<string>()

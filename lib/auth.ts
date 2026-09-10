@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { cookies } from 'next/headers'
 import { isAuthApiError, isAuthSessionMissingError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile, Class } from '@/lib/types'
@@ -83,11 +84,69 @@ export const getTeacherClasses = cache(async (teacherId: string): Promise<Class[
   return (data ?? []).map((r: any) => r.classes).filter(Boolean) as Class[]
 })
 
-export function matchChild<T extends { id: string; full_name: string }>(
-  parent: { full_name: string; child_id?: string | null },
+/**
+ * Welches Kind aus dieser Liste zeigen wir dem Elternteil?
+ *
+ * Löst das aktive Kind auf und fällt auf das Hauptkind zurück. Der Rückfall
+ * hält die Rollen-Vorschau am Leben, hinter der kein echtes Elternkonto steht.
+ * Ersetzt das frühere matchChild(), das ausschließlich profiles.child_id kannte.
+ */
+export async function resolveActiveChild<T extends { id: string; full_name: string }>(
+  parent: { id: string; child_id?: string | null },
   students: T[],
-): T | null {
+): Promise<T | null> {
   if (students.length === 0) return null
-  if (parent.child_id) return students.find(s => s.id === parent.child_id) ?? null
-  return null
+  const aktiv = await getActiveChild(parent.id)
+  const id = aktiv?.id ?? parent.child_id
+  return id ? students.find(s => s.id === id) ?? null : null
 }
+
+/** Ein Kind, an dem ein Elternkonto hängt. */
+export interface ChildRef {
+  id: string
+  full_name: string
+  class_id: string | null
+  /** Das Kind, das ohne ausdrückliche Wahl angezeigt wird. */
+  is_primary: boolean
+}
+
+/**
+ * Alle Kinder eines Elternteils, Hauptkind zuerst.
+ *
+ * Gegenstück zu getTeacherClasses. Geschwister an derselben Schule bekommen
+ * damit ein Konto statt eines pro Kind.
+ */
+export const getParentChildren = cache(async (parentId: string): Promise<ChildRef[]> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('parent_children')
+    .select('is_primary, student:profiles!student_id(id,full_name,class_id)')
+    .eq('parent_id', parentId)
+    .order('is_primary', { ascending: false })
+  return (data ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((r: any) => (r.student ? { ...r.student, is_primary: r.is_primary } : null))
+    .filter(Boolean) as ChildRef[]
+})
+
+/**
+ * Welches Kind sieht dieses Elternteil gerade?
+ *
+ * Der Wunsch steht im Cookie `active_child_id`, gesetzt vom Umschalter. Er wird
+ * ausdrücklich gegen die tatsächliche Kinderliste geprüft und nie übernommen:
+ * ein Cookie kommt vom Client und wäre sonst eine freie Wahl fremder Kinder.
+ * Die Datenbank bleibt über RLS die eigentliche Grenze, diese Prüfung ist die
+ * zweite Schicht davor.
+ *
+ * Ohne gültige Wahl gilt das Hauptkind, also das bisherige Verhalten.
+ */
+export const getActiveChild = cache(async (parentId: string): Promise<ChildRef | null> => {
+  const children = await getParentChildren(parentId)
+  if (children.length === 0) return null
+
+  const jar = await cookies()
+  const gewuenscht = jar.get('active_child_id')?.value
+  const treffer = gewuenscht ? children.find(c => c.id === gewuenscht) : undefined
+
+  return treffer ?? children.find(c => c.is_primary) ?? children[0]
+})

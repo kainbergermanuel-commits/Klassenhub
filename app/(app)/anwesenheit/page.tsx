@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
+import { getActiveChild } from '@/lib/auth'
 import { todayISO, schoolYearStartISO } from '@/lib/date'
 import PageHeader from '@/components/layout/PageHeader'
 import TeacherView from './TeacherView'
@@ -50,7 +51,7 @@ export default async function AnwesenheitPage() {
   // unten nur noch die Elternansicht.
   if (profile.role !== 'parent') redirect('/')
 
-  const studentId = profile.child_id
+  const studentId = (await getActiveChild(profile.id))?.id ?? profile.child_id
   let entries: Attendance[] = []
   let childName: string | null = null
 
