@@ -95,7 +95,23 @@ export async function createClass(formData: FormData) {
   return { classId: data.id as string, className: name }
 }
 
-export async function adminCreateStudentsForClass(classId: string, names: string[]) {
+/**
+ * Ein Kind für die Sammelanlage. Ein reiner String verhält sich wie bisher:
+ * Benutzername und Erstpasswort werden aus dem Namen abgeleitet.
+ *
+ * Als Objekt lassen sich beide vorgeben. Das ist nötig, weil die Ableitung die
+ * Grenze zwischen Vor- und Nachname raten muss (erstes Wort = Vorname) und bei
+ * mehrteiligen Namen zwangsläufig danebenliegt: aus „Beren Ayse Soytarioglu"
+ * würde „beren.aysesoytarioglu". Solche Benutzernamen stehen später gedruckt
+ * auf dem Zugangszettel und müssen von Kindern abgetippt werden.
+ */
+export interface StudentInput {
+  fullName: string
+  username?: string
+  password?: string
+}
+
+export async function adminCreateStudentsForClass(classId: string, names: (string | StudentInput)[]) {
   await assertAdmin()
   const service = createServiceClient()
 
@@ -103,15 +119,16 @@ export async function adminCreateStudentsForClass(classId: string, names: string
   const errors: string[] = []
   const usedEmails = new Set<string>()
 
-  for (const fullName of names) {
-    const trimmed = fullName.trim()
+  for (const eintrag of names) {
+    const kind: StudentInput = typeof eintrag === 'string' ? { fullName: eintrag } : eintrag
+    const trimmed = kind.fullName.trim()
     if (!trimmed) continue
 
-    const baseUsername = toBaseUsername(trimmed)
     const normalized = trimmed.toLowerCase()
       .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
       .replace(/[^a-z0-9\s]/g, '').trim()
-    const password = `${normalized.split(/\s+/)[0]}123`
+    const baseUsername = kind.username?.trim() || toBaseUsername(trimmed)
+    const password = kind.password?.trim() || `${normalized.split(/\s+/)[0]}123`
 
     let authUser: { id: string }
     let username: string
@@ -138,6 +155,81 @@ export async function adminCreateStudentsForClass(classId: string, names: string
       errors.push(`${trimmed}: ${error.message}`)
     } else {
       results.push({ fullName: trimmed, username, password })
+    }
+  }
+
+  return { results, errors }
+}
+
+/**
+ * Ein Elternkonto für die Sammelanlage, immer an genau ein Kind gebunden.
+ * Der Nachname trägt beides: den Anzeigenamen „Fam. Soundso" und den
+ * Benutzernamen „eltern.soundso".
+ */
+export interface ParentInput {
+  childId: string
+  lastName: string
+  /** Setzt den abgeleiteten Benutzernamen außer Kraft, etwa bei Doppelnachnamen. */
+  username?: string
+}
+
+/**
+ * Legt zu einer Liste von Kindern die zugehörigen Elternkonten an.
+ *
+ * Gegenstück zu adminCreateStudentsForClass. Ohne diesen Weg gäbe es Eltern nur
+ * über createParent, und das hängt an assertTeacher und der eigenen Klasse der
+ * aufrufenden Lehrperson. Für Klassen, in denen man nicht Klassenvorstand ist,
+ * kommt man darüber nicht weiter.
+ *
+ * Ist ein Nachname bereits vergeben, weil ein Geschwisterkind in einer anderen
+ * Klasse sitzt, hängt createAuthUserUnique eine Ziffer an. Das steht dann auch
+ * so auf dem Zugangszettel, deshalb meldet die Rückgabe jeden Benutzernamen
+ * ausdrücklich zurück.
+ */
+export async function adminCreateParentsForClass(classId: string, eltern: ParentInput[]) {
+  await assertAdmin()
+  const service = createServiceClient()
+
+  const results: { fullName: string; username: string; password: string; childId: string }[] = []
+  const errors: string[] = []
+  const usedEmails = new Set<string>()
+
+  for (const e of eltern) {
+    const lastName = e.lastName.trim()
+    if (!lastName) continue
+
+    const fullName = `Fam. ${lastName}`
+    const baseUsername = e.username?.trim() || `eltern.${
+      lastName.toLowerCase()
+        .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+        .replace(/[^a-z0-9]/g, '')
+    }`
+    const password = 'eltern123'
+
+    let authUser: { id: string }
+    let username: string
+    try {
+      ;({ authUser, username } = await createAuthUserUnique(baseUsername, password, usedEmails))
+    } catch (err) {
+      errors.push(`${fullName}: ${(err as Error).message}`)
+      continue
+    }
+
+    const { error } = await service.from('profiles').upsert({
+      id: authUser.id,
+      role: 'parent',
+      full_name: fullName,
+      class_id: classId,
+      child_id: e.childId,
+      avatar_color: '#C98A2B',
+      avatar_seed: crypto.randomUUID(),
+      is_admin: false,
+    } as never)
+
+    if (error) {
+      errors.push(`${fullName}: ${error.message}`)
+    } else {
+      results.push({ fullName, username, password, childId: e.childId })
     }
   }
 
