@@ -85,6 +85,20 @@ export const getTeacherClasses = cache(async (teacherId: string): Promise<Class[
 })
 
 /**
+ * Die ID des Kindes, das dieses Elternteil gerade sieht.
+ *
+ * Der Rückfall auf profiles.child_id steht bewusst hier und nur hier: er hält
+ * die Rollen-Vorschau am Leben, hinter der kein echtes Elternkonto steht und
+ * für die parent_children deshalb leer bleibt. Verstreut über die Aufrufer
+ * wäre dieselbe Überlegung sechsmal zu pflegen.
+ */
+export async function getActiveChildId(
+  parent: { id: string; child_id?: string | null },
+): Promise<string | null> {
+  return (await getActiveChild(parent.id))?.id ?? parent.child_id ?? null
+}
+
+/**
  * Welches Kind aus dieser Liste zeigen wir dem Elternteil?
  *
  * Löst das aktive Kind auf und fällt auf das Hauptkind zurück. Der Rückfall
@@ -96,8 +110,7 @@ export async function resolveActiveChild<T extends { id: string; full_name: stri
   students: T[],
 ): Promise<T | null> {
   if (students.length === 0) return null
-  const aktiv = await getActiveChild(parent.id)
-  const id = aktiv?.id ?? parent.child_id
+  const id = await getActiveChildId(parent)
   return id ? students.find(s => s.id === id) ?? null : null
 }
 

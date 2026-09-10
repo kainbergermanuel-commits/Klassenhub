@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { hwForStudent } from '@/lib/homeworkScope'
-import { getAuth, getClass, getTeacherClasses, getActiveChild, getParentChildren } from '@/lib/auth'
+import { getAuth, getClass, getTeacherClasses, getActiveChildId, getParentChildren } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO } from '@/lib/date'
 import BodyTheme from '@/components/layout/BodyTheme'
@@ -105,7 +105,7 @@ async function computeReminderBadge(profile: Profile, userId: string, classId: s
 
   let studentId = userId
   if (profile.role === 'parent') {
-    const kindId = (await getActiveChild(profile.id))?.id ?? profile.child_id
+    const kindId = await getActiveChildId(profile)
     if (!kindId) return upcomingIds.length
     studentId = kindId
   }
@@ -156,7 +156,7 @@ async function computeHwBadge(profile: Profile, classId: string | null): Promise
   // Schüler: eigene offene; Elternteil: offene des Kindes
   let studentId = profile.id
   if (profile.role === 'parent') {
-    const kindId = (await getActiveChild(profile.id))?.id ?? profile.child_id
+    const kindId = await getActiveChildId(profile)
     if (!kindId) return 0
     studentId = kindId
   }
@@ -197,7 +197,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const teacherClasses = realProfile.role === 'teacher' ? await getTeacherClasses(realProfile.id) : []
   // Kinder-Umschalter: nur für echte Elternkonten, und nur wenn mehr als eines.
   const parentChildren = profile.role === 'parent' ? await getParentChildren(profile.id) : []
-  const activeChildId = profile.role === 'parent' ? (await getActiveChild(profile.id))?.id ?? null : null
+  const activeChildId = profile.role === 'parent' ? await getActiveChildId(profile) : null
 
   const [hwOpen, reminderUnread, messageUnread, attendancePending] = await Promise.all([
     computeHwBadge(profile, activeClassId),

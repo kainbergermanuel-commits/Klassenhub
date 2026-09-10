@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { hwForStudent } from '@/lib/homeworkScope'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getClass, getActiveChild } from '@/lib/auth'
+import { getClass, getActiveChildId } from '@/lib/auth'
 import { getStundenplanMondayOfWeek, getWeekNumber, addDaysISO, todayISO } from '@/lib/date'
 import TimetableGrid from './TimetableGrid'
 import ClassTimetableEditor from './ClassTimetableEditor'
@@ -165,7 +165,7 @@ export default async function StundenplanPage(
 
   const studentId = profile.role === 'student'
     ? user.id
-    : (await getActiveChild(profile.id))?.id ?? profile.child_id ?? null
+    : await getActiveChildId(profile)
 
   if (!studentId) {
     return (

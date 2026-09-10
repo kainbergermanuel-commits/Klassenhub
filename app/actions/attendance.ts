@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getActiveChild } from '@/lib/auth'
+import { getActiveChildId } from '@/lib/auth'
 import type { AttendanceStatus } from '@/lib/types'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -165,8 +165,7 @@ export async function reportAbsence(startDate: string, endDate: string, note: st
   const { user, profile } = await getEffectiveAuth()
   if (!user || !profile) throw new Error('Nicht angemeldet')
   if (profile.role !== 'parent') throw new Error('Keine Berechtigung')
-  const aktivesKind = await getActiveChild(profile.id)
-  const kindId = aktivesKind?.id ?? profile.child_id
+  const kindId = await getActiveChildId(profile)
   if (!kindId) throw new Error('Kein Kind verknüpft')
   if (!ISO_DATE.test(startDate) || !ISO_DATE.test(endDate)) throw new Error('Ungültiges Datum')
   if (endDate < startDate) throw new Error('Enddatum liegt vor dem Startdatum')

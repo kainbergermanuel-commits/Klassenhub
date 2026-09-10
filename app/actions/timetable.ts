@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getActiveChild } from '@/lib/auth'
+import { getActiveChildId } from '@/lib/auth'
 
 async function getStudentId(): Promise<string> {
   const { profile, user } = await getEffectiveAuth()
@@ -11,8 +11,7 @@ async function getStudentId(): Promise<string> {
   if (profile.role === 'parent') {
     // Aktives Kind, sonst das Hauptkind. Der Rückfall hält die Rollen-Vorschau
     // am Leben, die kein echtes Elternkonto hinter sich hat.
-    const aktiv = await getActiveChild(profile.id)
-    const studentId = aktiv?.id ?? profile.child_id
+    const studentId = await getActiveChildId(profile)
     if (!studentId) throw new Error('Kein Kind verknüpft')
     return studentId
   }
