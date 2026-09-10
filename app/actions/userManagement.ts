@@ -150,6 +150,15 @@ export async function createParent(formData: FormData) {
     throw new Error(error.message)
   }
 
+  // Verknüpfung mitschreiben, sonst taucht das Kind im Umschalter nicht auf.
+  if (childId) {
+    await service.from('parent_children').upsert({
+      parent_id: authUser.id,
+      student_id: childId,
+      is_primary: true,
+    } as never)
+  }
+
   return { username, password, fullName }
 }
 

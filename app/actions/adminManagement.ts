@@ -229,11 +229,68 @@ export async function adminCreateParentsForClass(classId: string, eltern: Parent
     if (error) {
       errors.push(`${fullName}: ${error.message}`)
     } else {
+      // Die Verknüpfung ist ab jetzt die führende Quelle für "welche Kinder".
+      // profiles.child_id bleibt als Hauptkind bestehen, solange Policies mit
+      // Rückfallpfaden existieren.
+      await service.from('parent_children').upsert({
+        parent_id: authUser.id,
+        student_id: e.childId,
+        is_primary: true,
+      } as never)
       results.push({ fullName, username, password, childId: e.childId })
     }
   }
 
   return { results, errors }
+}
+
+/**
+ * Hängt ein weiteres Kind an ein bestehendes Elternkonto.
+ *
+ * Der Alltagsfall sind Geschwister an derselben Schule: statt eines zweiten
+ * Kontos bekommt die Familie ein zweites Kind an ihrem vorhandenen Zugang.
+ * Das erste Kind bleibt Hauptkind, es sei denn, es gibt noch keines.
+ */
+export async function adminLinkChildToParent(parentId: string, studentId: string) {
+  await assertAdmin()
+  const service = createServiceClient()
+
+  const { data: eltern } = await service
+    .from('profiles').select('id,role').eq('id', parentId).maybeSingle()
+  if (!eltern || (eltern as { role: string }).role !== 'parent') throw new Error('Kein Elternkonto')
+
+  const { data: kind } = await service
+    .from('profiles').select('id,role').eq('id', studentId).maybeSingle()
+  if (!kind || (kind as { role: string }).role !== 'student') throw new Error('Kein Schülerkonto')
+
+  const { count } = await service
+    .from('parent_children').select('student_id', { count: 'exact', head: true })
+    .eq('parent_id', parentId)
+
+  const { error } = await service.from('parent_children').upsert({
+    parent_id: parentId,
+    student_id: studentId,
+    is_primary: (count ?? 0) === 0,
+  } as never)
+  if (error) throw new Error(error.message)
+}
+
+/** Löst eine Kind-Verknüpfung wieder. Das Hauptkind lässt sich so nicht entfernen. */
+export async function adminUnlinkChildFromParent(parentId: string, studentId: string) {
+  await assertAdmin()
+  const service = createServiceClient()
+
+  const { data: zeile } = await service
+    .from('parent_children').select('is_primary')
+    .eq('parent_id', parentId).eq('student_id', studentId).maybeSingle()
+  if (!zeile) return
+  if ((zeile as { is_primary: boolean }).is_primary) {
+    throw new Error('Das Hauptkind kann nicht gelöst werden. Vorher ein anderes Kind zum Hauptkind machen.')
+  }
+
+  const { error } = await service.from('parent_children')
+    .delete().eq('parent_id', parentId).eq('student_id', studentId)
+  if (error) throw new Error(error.message)
 }
 
 export async function createTeacher(formData: FormData) {
