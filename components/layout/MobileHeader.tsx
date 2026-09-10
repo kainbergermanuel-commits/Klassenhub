@@ -139,7 +139,7 @@ export default function MobileHeader({ profile, klass, navItems, teacherClasses 
         {/* Kinder-Umschalter (nur bei mehreren Kindern) */}
         {parentChildren.length > 1 && (
           <div className="px-4 pt-3">
-            <ChildSwitcher children={parentChildren} activeChildId={activeChildId} />
+            <ChildSwitcher kinder={parentChildren} activeChildId={activeChildId} />
           </div>
         )}
 

@@ -20,18 +20,18 @@ export interface ChildOption {
  * die aktive Klasse und sämtliche Zähler daran hängen.
  */
 export default function ChildSwitcher({
-  children,
+  kinder,
   activeChildId,
   collapsed = false,
 }: {
-  children: ChildOption[]
+  kinder: ChildOption[]
   activeChildId: string | null
   collapsed?: boolean
 }) {
   const router = useRouter()
   const [wechselt, setWechselt] = useState(false)
 
-  if (children.length < 2) return null
+  if (kinder.length < 2) return null
 
   const vorname = (name: string) => name.split(' ')[0]
 
@@ -50,7 +50,7 @@ export default function ChildSwitcher({
   if (collapsed) {
     return (
       <div className="flex flex-col gap-1 items-center">
-        {children.map(k => (
+        {kinder.map(k => (
           <button
             key={k.id}
             onClick={() => wechseln(k.id)}
@@ -73,7 +73,7 @@ export default function ChildSwitcher({
     <div>
       <span className="text-[11px] font-bold text-kh-muted/70 block mb-1.5">Kind</span>
       <div className="flex items-center gap-1.5 flex-wrap">
-        {children.map(k => (
+        {kinder.map(k => (
           <button
             key={k.id}
             onClick={() => wechseln(k.id)}

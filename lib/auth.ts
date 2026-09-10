@@ -150,3 +150,39 @@ export const getActiveChild = cache(async (parentId: string): Promise<ChildRef |
 
   return treffer ?? children.find(c => c.is_primary) ?? children[0]
 })
+
+/**
+ * Alle Elternkonten, die an eine dieser Schüler-IDs hängen.
+ *
+ * Lehrerseiten haben Eltern bisher über `profiles.class_id` geholt. Das
+ * funktioniert nicht mehr, sobald ein Konto zwei Kinder in zwei Klassen führt:
+ * es trägt nur EINE Klasse und wäre in der anderen unsichtbar. Der Weg geht
+ * deshalb über die Kinder, nicht über die Klassenspalte des Elternteils.
+ *
+ * Liefert zusätzlich je Elternteil die Kinder, die in dieser Auswahl liegen,
+ * damit die Anzeige „Elternteil von …" alle nennen kann statt nur das Hauptkind.
+ */
+export async function getParentsOfStudents(
+  studentIds: string[],
+): Promise<{ parents: Profile[]; childrenByParent: Record<string, string[]> }> {
+  if (studentIds.length === 0) return { parents: [], childrenByParent: {} }
+  const supabase = await createClient()
+
+  const { data: links } = await supabase
+    .from('parent_children')
+    .select('parent_id, student_id')
+    .in('student_id', studentIds)
+
+  const childrenByParent: Record<string, string[]> = {}
+  for (const l of (links ?? []) as { parent_id: string; student_id: string }[]) {
+    ;(childrenByParent[l.parent_id] ??= []).push(l.student_id)
+  }
+
+  const parentIds = Object.keys(childrenByParent)
+  if (parentIds.length === 0) return { parents: [], childrenByParent }
+
+  const { data: parents } = await supabase
+    .from('profiles').select('*').in('id', parentIds).eq('role', 'parent').order('full_name')
+
+  return { parents: (parents ?? []) as Profile[], childrenByParent }
+}

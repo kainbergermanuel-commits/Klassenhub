@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getClass } from '@/lib/auth'
+import { getClass, getParentsOfStudents } from '@/lib/auth'
 import { todayISO } from '@/lib/date'
 import StudentHomeworkPanel from '@/components/klasse/StudentHomeworkPanel'
 import KlasseManageBar from '@/components/klasse/KlasseManageBar'
@@ -19,14 +19,15 @@ export default async function KlassePage() {
   const supabase = await createClient()
   const klass = await getClass(activeClassId)
 
-  const [{ data: students }, { data: parents }, { data: allHomework }] = await Promise.all([
+  const [{ data: students }, { data: allHomework }] = await Promise.all([
     supabase.from('profiles').select('*').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
-    supabase.from('profiles').select('*').eq('class_id', activeClassId).eq('role', 'parent').order('full_name'),
     supabase.from('homework').select('*').eq('class_id', activeClassId).eq('status', 'published').order('due_date', { ascending: false }),
   ])
 
   const studentList = (students ?? []) as Profile[]
-  const parentList = (parents ?? []) as Profile[]
+  // Eltern über ihre Kinder holen, nicht über profiles.class_id: ein Konto mit
+  // Geschwistern in zwei Klassen trägt nur eine Klasse und fehlte sonst hier.
+  const { parents: parentList, childrenByParent } = await getParentsOfStudents(studentList.map(s => s.id))
   const studentById = Object.fromEntries(studentList.map(s => [s.id, s]))
   const homeworkList = allHomework ?? []
 
@@ -100,8 +101,8 @@ export default async function KlassePage() {
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-[15px] text-kh-dark truncate">{p.full_name}</div>
                   <div className="text-xs text-kh-muted font-medium mt-0.5">
-                    {p.child_id && studentById[p.child_id]
-                      ? `Elternteil von ${studentById[p.child_id].full_name.split(' ')[0]}`
+                    {(childrenByParent[p.id] ?? []).length > 0
+                      ? `Elternteil von ${(childrenByParent[p.id] ?? []).map(id => studentById[id]?.full_name.split(' ')[0]).filter(Boolean).join(' und ')}`
                       : 'Elternteil'}
                   </div>
                 </div>

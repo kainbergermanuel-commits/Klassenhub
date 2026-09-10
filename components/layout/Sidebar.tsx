@@ -132,7 +132,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
         {/* Kinder-Umschalter (nur bei mehreren Kindern) */}
         {parentChildren.length > 1 && (
           <div className={`mb-2 ${collapsed ? 'px-2' : 'px-3.5'}`}>
-            <ChildSwitcher children={parentChildren} activeChildId={activeChildId} collapsed={collapsed} />
+            <ChildSwitcher kinder={parentChildren} activeChildId={activeChildId} collapsed={collapsed} />
           </div>
         )}
 
