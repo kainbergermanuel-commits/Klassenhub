@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getTeacherClasses, getParentsOfStudents, getParentChildren } from '@/lib/auth'
+import { getTeacherClasses, getParentsOfStudents, getParentChildren, getClass } from '@/lib/auth'
 import ParentBooklet from '@/components/mitteilungsheft/ParentBooklet'
 import TeacherBooklets from '@/components/mitteilungsheft/TeacherBooklets'
 import AnimateIn from '@/components/ui/AnimateIn'
@@ -61,9 +61,18 @@ export default async function MitteilungsheftPage() {
       }
     }
 
+    // Das Kind steht nur im Titel, wenn es Geschwister gibt: bei einem Kind
+    // wäre der Name eine Wiederholung ohne Unterscheidungswert.
+    const klasse = await getClass(activeClassId)
+    const aktivesKind = kinder.length > 1
+      ? kinder.find(k => k.class_id === activeClassId) ?? null
+      : null
+
     return (
       <AnimateIn delay={0}>
         <ParentBooklet
+          className={klasse?.name ?? null}
+          childName={aktivesKind?.full_name ?? null}
           andereHefte={andereHefte}
           messages={(messages ?? []) as Message[]}
           userId={user.id}

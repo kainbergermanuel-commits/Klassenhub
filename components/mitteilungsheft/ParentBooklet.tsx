@@ -10,6 +10,10 @@ function firstName(full: string) { return full.split(' ')[0] }
 
 interface Props {
   messages: Message[]
+  /** Name der Klasse, zu der dieses Heft gehört. */
+  className?: string | null
+  /** Nur gesetzt, wenn es Geschwister gibt — sonst wäre der Name redundant. */
+  childName?: string | null
   /** Ungelesenes in den Heften der Geschwister. Leer, wenn es nur ein Kind gibt. */
   andereHefte?: { childId: string; childName: string; count: number }[]
   userId: string
@@ -18,7 +22,7 @@ interface Props {
   senderAvatars?: Record<string, SenderAvatar>
 }
 
-export default function ParentBooklet({ messages, userId, classId, senderNames, senderAvatars, andereHefte = [] }: Props) {
+export default function ParentBooklet({ messages, userId, classId, senderNames, senderAvatars, andereHefte = [], className = null, childName = null }: Props) {
   const router = useRouter()
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
@@ -79,8 +83,14 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
           <span className="msym text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
         </div>
         <div>
-          <h1 className="text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Mitteilungsheft</h1>
-          <p className="text-[13px] text-kh-muted font-medium">Direkter Draht zur Lehrkraft</p>
+          <h1 className="text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">
+            {childName ? `Mitteilungsheft von ${firstName(childName)}` : 'Mitteilungsheft'}
+          </h1>
+          <p className="text-[13px] text-kh-muted font-medium">
+            {className
+              ? `Direkter Draht zu den Lehrpersonen der ${className}`
+              : 'Direkter Draht zu den Lehrpersonen'}
+          </p>
         </div>
       </div>
 
