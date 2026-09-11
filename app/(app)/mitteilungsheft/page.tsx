@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
-import { getTeacherClasses, getParentsOfStudents } from '@/lib/auth'
+import { getTeacherClasses, getParentsOfStudents, getParentChildren } from '@/lib/auth'
 import ParentBooklet from '@/components/mitteilungsheft/ParentBooklet'
 import TeacherBooklets from '@/components/mitteilungsheft/TeacherBooklets'
 import AnimateIn from '@/components/ui/AnimateIn'
@@ -42,9 +42,29 @@ export default async function MitteilungsheftPage() {
       }
     }
 
+    // Geschwister-Fall: ein Heft je Klasse heißt, dass eine Nachricht für das
+    // andere Kind hier nicht auftaucht. Das Zeichen in der Navigation zählt sie
+    // trotzdem mit — ohne diesen Hinweis führte es ins Leere.
+    // Die Kinderliste ist bereits geladen (getEffectiveAuth), der Block kostet
+    // Familien mit einem Kind deshalb keine einzige zusätzliche Abfrage.
+    const kinder = await getParentChildren(user.id)
+    const andereHefte: { childId: string; childName: string; count: number }[] = []
+    const andereKlassen = kinder.filter(k => k.class_id && k.class_id !== activeClassId)
+    if (andereKlassen.length > 0) {
+      const { data: ungelesen } = await supabase
+        .from('messages').select('class_id,sender_id')
+        .eq('parent_id', user.id).is('seen_at', null)
+        .in('class_id', andereKlassen.map(k => k.class_id as string))
+      for (const k of andereKlassen) {
+        const count = (ungelesen ?? []).filter(m => m.class_id === k.class_id && m.sender_id !== user.id).length
+        if (count > 0) andereHefte.push({ childId: k.id, childName: k.full_name, count })
+      }
+    }
+
     return (
       <AnimateIn delay={0}>
         <ParentBooklet
+          andereHefte={andereHefte}
           messages={(messages ?? []) as Message[]}
           userId={user.id}
           classId={activeClassId}

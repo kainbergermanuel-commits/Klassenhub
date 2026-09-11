@@ -6,15 +6,19 @@ import { createClient } from '@/lib/supabase/client'
 import MessageThread, { type SenderAvatar } from './MessageThread'
 import type { Message } from '@/lib/types'
 
+function firstName(full: string) { return full.split(' ')[0] }
+
 interface Props {
   messages: Message[]
+  /** Ungelesenes in den Heften der Geschwister. Leer, wenn es nur ein Kind gibt. */
+  andereHefte?: { childId: string; childName: string; count: number }[]
   userId: string
   classId: string
   senderNames?: Record<string, string>
   senderAvatars?: Record<string, SenderAvatar>
 }
 
-export default function ParentBooklet({ messages, userId, classId, senderNames, senderAvatars }: Props) {
+export default function ParentBooklet({ messages, userId, classId, senderNames, senderAvatars, andereHefte = [] }: Props) {
   const router = useRouter()
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
@@ -47,6 +51,21 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
     router.refresh()
   }
 
+  const [wechselt, setWechselt] = useState<string | null>(null)
+
+  // Umschalten wie im ChildSwitcher: Cookie serverseitig setzen, dann neu
+  // laden. Die aktive Klasse und damit das gezeigte Heft hängen daran.
+  async function zumHeft(childId: string) {
+    if (wechselt) return
+    setWechselt(childId)
+    await fetch('/api/active-child', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ childId }),
+    })
+    router.refresh()
+  }
+
   async function acknowledge(id: string) {
     const supabase = createClient()
     await supabase.from('messages').update({ acknowledged_at: new Date().toISOString() }).eq('id', id)
@@ -64,6 +83,30 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
           <p className="text-[13px] text-kh-muted font-medium">Direkter Draht zur Lehrkraft</p>
         </div>
       </div>
+
+      {andereHefte.map(h => (
+        <button
+          key={h.childId}
+          onClick={() => zumHeft(h.childId)}
+          disabled={!!wechselt}
+          className="w-full flex items-center gap-3 mb-3 px-4 py-3 rounded-2xl text-left border border-kh-teal/30 bg-kh-teal-light/60 hover:border-kh-teal transition-colors disabled:opacity-60"
+        >
+          <span className="msym text-[22px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
+            mark_email_unread
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13.5px] font-bold text-kh-dark">
+              {h.count === 1
+                ? `Im Heft von ${firstName(h.childName)} liegt eine ungelesene Nachricht`
+                : `Im Heft von ${firstName(h.childName)} liegen ${h.count} ungelesene Nachrichten`}
+            </span>
+            <span className="block text-[11.5px] text-kh-muted leading-snug">
+              {wechselt === h.childId ? 'Wird geöffnet…' : `Tippen, um zum Heft von ${firstName(h.childName)} zu wechseln`}
+            </span>
+          </span>
+          <span className="msym text-[20px] text-kh-teal flex-shrink-0">chevron_right</span>
+        </button>
+      ))}
 
       <div className="flex-1 overflow-y-auto scrollbar-kh -mx-1 px-1">
         <MessageThread messages={messages} side="parent" currentUserId={userId} senderNames={senderNames} senderAvatars={senderAvatars} onAcknowledge={acknowledge} />

@@ -123,9 +123,13 @@ async function computeMessageBadge(profile: Profile, userId: string, classId: st
 
   if (profile.role === 'parent') {
     // Eigenes Heft: ungesehene Nachrichten der Lehrkraft (sender ≠ ich).
+    // Bewusst OHNE Klassenfilter: eine Nachricht ist an die Eltern gerichtet,
+    // nicht an das gerade gewählte Kind. Bei Geschwistern in zwei Klassen
+    // bliebe sie sonst unsichtbar, bis zufällig umgeschaltet wird. Das Heft
+    // selbst zeigt dann, in welchem der Hefte sie liegt.
     const { data } = await supabase
       .from('messages').select('sender_id')
-      .eq('parent_id', userId).eq('class_id', classId).is('seen_at', null)
+      .eq('parent_id', userId).is('seen_at', null)
     return (data ?? []).filter(m => m.sender_id !== userId).length
   }
 
