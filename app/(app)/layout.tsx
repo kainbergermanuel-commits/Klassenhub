@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { hwForStudent } from '@/lib/homeworkScope'
-import { getAuth, getClass, getTeacherClasses, getActiveChildId, getParentChildren } from '@/lib/auth'
+import { getAuth, getClass, getTeacherClasses, getActiveChildId, getParentChildren, getParentsOfStudents } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO } from '@/lib/date'
 import BodyTheme from '@/components/layout/BodyTheme'
@@ -224,12 +224,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     previewRole = jar.get('preview_role')?.value ?? null
     previewStudentId = jar.get('preview_student_id')?.value ?? null
     previewParentId = jar.get('preview_parent_id')?.value ?? null
-    const [{ data: students }, { data: parents }] = await Promise.all([
-      supabase.from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
-      supabase.from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'parent').order('full_name'),
-    ])
+    const { data: students } = await supabase
+      .from('profiles').select('id,full_name').eq('class_id', activeClassId).eq('role', 'student').order('full_name')
     allStudents = students ?? []
-    allParents = parents ?? []
+    // Eltern über ihre Kinder statt über profiles.class_id: die trägt nur EINE
+    // Klasse, Familien mit Geschwistern in zwei Klassen fehlten sonst in der
+    // Vorschau-Liste der zweiten Klasse.
+    const { parents } = await getParentsOfStudents(allStudents.map(s => s.id))
+    allParents = parents.map(p => ({ id: p.id, full_name: p.full_name }))
     if (previewRole === 'student') {
       const active = previewStudentId ? allStudents.find(s => s.id === previewStudentId) : allStudents[0]
       previewName = active?.full_name.split(' ')[0] ?? null

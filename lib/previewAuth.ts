@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
-import { getAuth, getTeacherClasses, getActiveChild } from './auth'
+import { getAuth, getTeacherClasses, getActiveChild, getParentsOfStudents } from './auth'
 import { createClient } from './supabase/server'
 import type { Profile } from './types'
 
@@ -58,11 +58,17 @@ export const getEffectiveAuth = cache(async (): Promise<EffectiveAuth> => {
 
   if (previewRole === 'parent') {
     const parentId = jar.get('preview_parent_id')?.value ?? null
-    const query = supabase.from('profiles').select('*').eq('class_id', activeClassId).eq('role', 'parent')
-    const { data } = parentId
-      ? await query.eq('id', parentId).limit(1)
-      : await query.order('full_name').limit(1)
-    const target = data?.[0]
+    // Eltern über ihre Kinder suchen statt über profiles.class_id: die trägt
+    // nur EINE Klasse. Familien mit Geschwistern in zwei Klassen waren in der
+    // Vorschau der zweiten Klasse nicht auswählbar.
+    const { data: kinderDerKlasse } = await supabase
+      .from('profiles').select('id').eq('class_id', activeClassId).eq('role', 'student')
+    const { parents: elternDerKlasse } = await getParentsOfStudents(
+      (kinderDerKlasse ?? []).map(k => k.id),
+    )
+    // Ein Cookie, das auf ein Elternteil einer anderen Klasse zeigt, wird nicht
+    // übernommen — sonst sähe man in der 4a plötzlich eine 1b-Familie.
+    const target = (parentId ? elternDerKlasse.find(p => p.id === parentId) : null) ?? elternDerKlasse[0]
     const effectiveProfile: Profile = target ?? { ...profile, role: 'parent' }
     const effectiveUser = target ? { ...user, id: target.id } : user
     // Auch in der Vorschau muss die aktive Klasse dem aktiven Kind folgen.
