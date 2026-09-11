@@ -352,6 +352,10 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
   // Standard ist die aktive Klasse: die Liste soll beim Öffnen ruhig sein,
   // nicht alle Klassen gleichzeitig zeigen.
   const [filterClassId, setFilterClassId] = useState<string>(activeClassId)
+  // "Erledigt" ist abgeleitet, nicht abgehakt: eine Sammelnachricht gilt als
+  // erledigt, sobald alle bestätigt haben (bzw. alle gesehen haben, wenn keine
+  // Bestätigung angefordert wurde).
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'done'>('all')
 
   // Nur Klassen anbieten, in denen es auch Sammelnachrichten gibt.
   const usedClasses = useMemo(
@@ -360,9 +364,12 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
   )
 
   const shown = useMemo(() => {
-    const list = filterClassId === 'all'
-      ? broadcasts
-      : broadcasts.filter(b => b.classIds.includes(filterClassId))
+    const list = broadcasts.filter(b => {
+      if (filterClassId !== 'all' && !b.classIds.includes(filterClassId)) return false
+      if (statusFilter === 'all') return true
+      const done = (b.requiresAck ? b.acked : b.seen) === b.total
+      return statusFilter === 'done' ? done : !done
+    })
     // Offene zuerst: die Frage der Lehrkraft ist "wer fehlt mir noch",
     // nicht "was habe ich geschickt". Erledigtes rutscht nach unten.
     return [...list].sort((a, b) => {
@@ -371,9 +378,14 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
       if (aDone !== bDone) return aDone ? 1 : -1
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-  }, [broadcasts, filterClassId])
+  }, [broadcasts, filterClassId, statusFilter])
 
-  const openCount = shown.filter(b => (b.requiresAck ? b.acked : b.seen) < b.total).length
+  // Zählt über die Klasse, nicht über den Statusfilter: sonst stünde bei
+  // "Erledigt" immer "Alles erledigt", egal wie viel offen ist.
+  const openCount = broadcasts.filter(b =>
+    (filterClassId === 'all' || b.classIds.includes(filterClassId))
+    && (b.requiresAck ? b.acked : b.seen) < b.total,
+  ).length
 
   return (
     <>
@@ -387,39 +399,36 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
         </div>
       </div>
 
-      {usedClasses.length > 1 && (
-        // Gleiche Umschalter-Kapsel wie bei den Hausübungen: Creme-Weiß-Verlauf
-        // mit Pastellblau-Unterstrich für die aktive Lage.
-        <div className="flex flex-wrap items-start gap-2 mb-4">
-          <div
-            className="inline-flex items-stretch rounded-xl w-fit"
-            style={{ background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)', boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)' }}
-          >
-            {[{ id: 'all', label: 'Alle' }, ...usedClasses.map(c => ({ id: c.id, label: c.name }))].map((opt, i, arr) => {
-              const active = filterClassId === opt.id
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setFilterClassId(opt.id)}
-                  className={`px-4 py-2 text-[13px] font-semibold transition-[color,transform] duration-150 ${i === 0 ? 'rounded-l-xl' : ''} ${i === arr.length - 1 ? 'rounded-r-xl' : ''} ${active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'}`}
-                  style={{
-                    backgroundImage: active ? 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)' : undefined,
-                    backgroundSize: '100% 3px',
-                    backgroundPosition: 'bottom',
-                    backgroundRepeat: 'no-repeat',
-                  }}
-                >
-                  {opt.label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {/* Zwei getrennte Kapseln wie bei den Hausübungen, damit sie auf schmalen
+          Displays umbrechen statt die Seite seitlich zu schieben. */}
+      <div className="flex flex-wrap items-start gap-2 mb-4">
+        <FilterCapsule
+          options={[
+            { id: 'all', label: 'Alle' },
+            { id: 'open', label: 'Offen' },
+            { id: 'done', label: 'Erledigt' },
+          ]}
+          value={statusFilter}
+          onChange={v => setStatusFilter(v as 'all' | 'open' | 'done')}
+        />
+        {usedClasses.length > 1 && (
+          <FilterCapsule
+            options={[{ id: 'all', label: 'Alle Klassen' }, ...usedClasses.map(c => ({ id: c.id, label: c.name }))]}
+            value={filterClassId}
+            onChange={setFilterClassId}
+          />
+        )}
+      </div>
 
       <div className="flex flex-col gap-2.5">
         {shown.length === 0 && (
-          <p className="text-[13.5px] text-kh-muted py-8 text-center">Für diese Klasse wurde noch nichts gesendet.</p>
+          <p className="text-[13.5px] text-kh-muted py-8 text-center">
+            {statusFilter === 'open'
+              ? 'Hier ist nichts mehr offen.'
+              : statusFilter === 'done'
+                ? 'Noch nichts vollständig erledigt.'
+                : 'Für diese Klasse wurde noch nichts gesendet.'}
+          </p>
         )}
         {shown.map(b => {
           const open = openId === b.id
@@ -518,6 +527,40 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
         })}
       </div>
     </>
+  )
+}
+
+// Umschalter-Kapsel im Stil der Hausübungsliste: Creme-Weiß-Verlauf,
+// Pastellblau-Unterstrich für die aktive Lage.
+function FilterCapsule({ options, value, onChange }: {
+  options: { id: string; label: string }[]
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div
+      className="inline-flex items-stretch rounded-xl w-fit"
+      style={{ background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)', boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)' }}
+    >
+      {options.map((opt, i) => {
+        const active = value === opt.id
+        return (
+          <button
+            key={opt.id}
+            onClick={() => onChange(opt.id)}
+            className={`px-4 py-2 text-[13px] font-semibold transition-[color,transform] duration-150 ${i === 0 ? 'rounded-l-xl' : ''} ${i === options.length - 1 ? 'rounded-r-xl' : ''} ${active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'}`}
+            style={{
+              backgroundImage: active ? 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)' : undefined,
+              backgroundSize: '100% 3px',
+              backgroundPosition: 'bottom',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
