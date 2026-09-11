@@ -359,6 +359,7 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
   // Standard sind die eigenen Nachrichten: die Liste beantwortet zuerst
   // "was habe ich offen", nicht "was hat das Kollegium geschrieben".
   const [authorFilter, setAuthorFilter] = useState<'mine' | 'all'>('mine')
+  const [showOlder, setShowOlder] = useState(false)
 
   // Nur Klassen anbieten, in denen es auch Sammelnachrichten gibt.
   const usedClasses = useMemo(
@@ -384,6 +385,18 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
   }, [broadcasts, filterClassId, statusFilter, authorFilter])
+
+  // Alt UND erledigt wandert hinter einen Knopf. Nur "alt" würde zu wenig
+  // unterscheiden: eine zwei Wochen alte Nachricht, bei der noch die Hälfte
+  // fehlt, ist kein Altfall, sondern genau das, was die Lehrkraft sehen muss.
+  // Nichts wird gelöscht oder umdeklariert, es ist nur zusammengeklappt.
+  const olderThreshold = useMemo(() => Date.now() - 14 * 24 * 60 * 60 * 1000, [])
+  const isSettled = (b: BroadcastSummary) =>
+    (b.requiresAck ? b.acked : b.seen) === b.total
+    && new Date(b.created_at).getTime() < olderThreshold
+
+  const recent = shown.filter(b => !isSettled(b))
+  const older = shown.filter(isSettled)
 
   // Zählt über die Klasse, nicht über den Statusfilter: sonst stünde bei
   // "Erledigt" immer "Alles erledigt", egal wie viel offen ist.
@@ -445,7 +458,7 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
                   : 'Für diese Klasse wurde noch nichts gesendet.'}
           </p>
         )}
-        {shown.map(b => {
+        {[...recent, ...(showOlder ? older : [])].map(b => {
           const open = openId === b.id
           // Bei angeforderter Bestätigung ist "bestätigt" die relevante Kennzahl, sonst "gesehen".
           const count = b.requiresAck ? b.acked : b.seen
@@ -540,6 +553,24 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
             </div>
           )
         })}
+
+        {older.length > 0 && !showOlder && (
+          <button
+            onClick={() => setShowOlder(true)}
+            className="self-center mt-1 flex items-center gap-1.5 text-[12.5px] font-semibold text-kh-teal bg-kh-teal-light px-3.5 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+          >
+            <span className="msym text-[16px]">history</span>
+            Ältere anzeigen ({older.length})
+          </button>
+        )}
+        {showOlder && older.length > 0 && (
+          <button
+            onClick={() => setShowOlder(false)}
+            className="self-center mt-1 text-[12.5px] font-semibold text-kh-muted hover:text-kh-dark transition-colors"
+          >
+            Ältere wieder einklappen
+          </button>
+        )}
       </div>
     </>
   )
