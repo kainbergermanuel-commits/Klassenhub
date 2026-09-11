@@ -114,6 +114,7 @@ export default async function MitteilungsheftPage() {
         userId={user.id}
         ownName={profile.full_name}
         senderProfiles={senderProfiles}
+        childrenByParent={childrenByParent}
         classId={activeClassId}
       />
     </AnimateIn>

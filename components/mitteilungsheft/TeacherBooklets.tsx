@@ -43,20 +43,42 @@ interface Props {
   ownName: string
   classId: string
   senderProfiles: Record<string, SenderAvatar>
+  // Führende Quelle für "welche Kinder": profiles.child_id kennt nur EIN
+  // Hauptkind, und bei Geschwistern sitzt das oft in einer anderen Klasse.
+  childrenByParent: Record<string, string[]>
 }
 
 function firstName(full: string) { return full.split(' ')[0] }
+// Elternkonten heissen "Fam. Soundso" — der erste Buchstabe waere bei jeder
+// Familie ein "F" und damit kein Unterscheidungsmerkmal.
+function familyInitial(full: string) {
+  return (full.replace(/^Fam\.\s*/i, '').trim()[0] ?? '?').toUpperCase()
+}
 
-export default function TeacherBooklets({ parents, students, allParents, allStudents, classes, messages, broadcastMessages, userId, ownName, classId, senderProfiles }: Props) {
+export default function TeacherBooklets({ parents, students, allParents, allStudents, classes, messages, broadcastMessages, userId, ownName, classId, senderProfiles, childrenByParent }: Props) {
   const router = useRouter()
   const [openParentId, setOpenParentId] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
   const [showBroadcasts, setShowBroadcasts] = useState(false)
 
   const studentById = useMemo(
-    () => Object.fromEntries(students.map(s => [s.id, s])),
-    [students],
+    () => Object.fromEntries(allStudents.map(s => [s.id, s])),
+    [allStudents],
   )
+
+  // Das Kind, um das es in DIESER Klasse geht. Eine Familie kann mehrere
+  // haben; angezeigt wird, wer hier sitzt, nicht das Hauptkind aus child_id.
+  const childrenHere = useMemo(() => {
+    const inClass = new Set(students.map(s => s.id))
+    const map: Record<string, StudentLite[]> = {}
+    for (const p of parents) {
+      map[p.id] = (childrenByParent[p.id] ?? [])
+        .filter(id => inClass.has(id))
+        .map(id => studentById[id])
+        .filter(Boolean)
+    }
+    return map
+  }, [parents, students, childrenByParent, studentById])
   // Anzeigenamen je Absender: eigene Lehrkraft + alle Eltern.
   const senderNames = useMemo(
     () => ({
@@ -148,7 +170,7 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
     return (
       <TeacherThread
         parent={openParent}
-        child={openParent.child_id ? studentById[openParent.child_id] : undefined}
+        kinder={childrenHere[openParent.id] ?? []}
         messages={byParent[openParent.id] ?? []}
         userId={userId}
         senderNames={senderNames}
@@ -197,13 +219,25 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
               className="flex items-center gap-3 p-3.5 rounded-2xl kh-card-flat hover:-translate-y-[2px] hover:shadow-md transition-all text-left min-w-0"
             >
               {(() => {
-                const child = parent.child_id ? studentById[parent.child_id] : undefined
+                const kinder = childrenHere[parent.id] ?? []
                 return (
                   <div className="flex flex-col items-center gap-0.5 flex-shrink-0 w-[52px]">
-                    {child
-                      ? <Avatar name={child.full_name} color={child.avatar_color} seed={child.avatar_seed} hairColor={child.avatar_hair_color} skinColor={child.avatar_skin_color} size={38} />
-                      : <div className="w-[38px] h-[38px] rounded-full bg-kh-teal-light text-kh-teal font-bold flex items-center justify-center">{firstName(parent.full_name)[0]?.toUpperCase()}</div>}
-                    {child && <span className="text-[11px] font-semibold text-kh-muted truncate max-w-full">{firstName(child.full_name)}</span>}
+                    {kinder.length > 0
+                      ? (
+                        <div className="flex items-center justify-center">
+                          {kinder.slice(0, 2).map((child, i) => (
+                            <div key={child.id} className={i > 0 ? '-ml-3' : ''}>
+                              <Avatar name={child.full_name} color={child.avatar_color} seed={child.avatar_seed} hairColor={child.avatar_hair_color} skinColor={child.avatar_skin_color} size={38} />
+                            </div>
+                          ))}
+                        </div>
+                      )
+                      : <div className="w-[38px] h-[38px] rounded-full bg-kh-teal-light text-kh-teal font-bold flex items-center justify-center">{familyInitial(parent.full_name)}</div>}
+                    {kinder.length > 0 && (
+                      <span className="text-[11px] font-semibold text-kh-muted truncate max-w-full">
+                        {kinder.map(k => firstName(k.full_name)).join(', ')}
+                      </span>
+                    )}
                   </div>
                 )
               })()}
@@ -233,6 +267,7 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
 
       {composing && (
         <ComposeModal
+          childrenByParent={childrenByParent}
           allParents={allParents}
           allStudents={allStudents}
           classes={classes}
@@ -246,10 +281,10 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
 }
 
 function TeacherThread({
-  parent, child, messages, userId, senderNames, senderAvatars, classId, onBack,
+  parent, kinder, messages, userId, senderNames, senderAvatars, classId, onBack,
 }: {
   parent: ParentLite
-  child?: StudentLite
+  kinder: StudentLite[]
   messages: Message[]
   userId: string
   senderNames: Record<string, string>
@@ -293,12 +328,24 @@ function TeacherThread({
     <div className="flex flex-col h-[calc(100dvh-70px)] -mb-20 max-md:h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-20px)] max-md:-mb-6">
       <div className="flex items-center gap-3 mb-4">
         <IconButton onClick={onBack} aria-label="Zurück" icon="arrow_back" />
-        {child
-          ? <Avatar name={child.full_name} color={child.avatar_color} seed={child.avatar_seed} hairColor={child.avatar_hair_color} skinColor={child.avatar_skin_color} size={44} />
-          : <div className="w-11 h-11 rounded-full bg-kh-teal-light text-kh-teal font-bold flex items-center justify-center flex-shrink-0">{firstName(parent.full_name)[0]?.toUpperCase()}</div>}
+        {kinder.length > 0
+          ? (
+            <div className="flex items-center flex-shrink-0">
+              {kinder.slice(0, 2).map((child, i) => (
+                <div key={child.id} className={i > 0 ? '-ml-3.5' : ''}>
+                  <Avatar name={child.full_name} color={child.avatar_color} seed={child.avatar_seed} hairColor={child.avatar_hair_color} skinColor={child.avatar_skin_color} size={44} />
+                </div>
+              ))}
+            </div>
+          )
+          : <div className="w-11 h-11 rounded-full bg-kh-teal-light text-kh-teal font-bold flex items-center justify-center flex-shrink-0">{familyInitial(parent.full_name)}</div>}
         <div className="min-w-0">
           <h1 className="text-[18px] font-extrabold text-kh-dark tracking-tight leading-tight truncate">{parent.full_name}</h1>
-          {child && <p className="text-[13px] text-kh-muted font-medium truncate">Eltern von {firstName(child.full_name)}</p>}
+          {kinder.length > 0 && (
+            <p className="text-[13px] text-kh-muted font-medium truncate">
+              Eltern von {kinder.map(k => firstName(k.full_name)).join(' und ')}
+            </p>
+          )}
         </div>
       </div>
 
@@ -611,8 +658,9 @@ function FilterCapsule({ options, value, onChange }: {
 }
 
 function ComposeModal({
-  allParents, allStudents, classes, activeClassId, userId, onClose,
+  childrenByParent, allParents, allStudents, classes, activeClassId, userId, onClose,
 }: {
+  childrenByParent: Record<string, string[]>
   allParents: ParentLite[]
   allStudents: StudentLite[]
   classes: ClassLite[]
@@ -628,12 +676,17 @@ function ComposeModal({
   // Standardmäßig nur die aktive Klasse gewählt.
   const [pickedClasses, setPickedClasses] = useState<Set<string>>(new Set([activeClassId]))
 
-  // Eltern je Schüler (child_id) gruppieren – über alle Klassen.
+  // Eltern je Schüler über parent_children, nicht über profiles.child_id.
+  // child_id kennt nur EIN Hauptkind: das zweite Kind einer Familie hätte hier
+  // keinen Eintrag, landete unter "Kind ohne Elternkonto" und wäre nicht
+  // anschreibbar gewesen.
   const parentsByChild = useMemo(() => {
     const map: Record<string, ParentLite[]> = {}
-    for (const p of allParents) if (p.child_id) (map[p.child_id] ??= []).push(p)
+    for (const p of allParents) {
+      for (const sid of childrenByParent[p.id] ?? []) (map[sid] ??= []).push(p)
+    }
     return map
-  }, [allParents])
+  }, [allParents, childrenByParent])
 
   // Auswählbare Schüler = mit verknüpftem Elternteil UND in einer gewählten Klasse.
   const selectable = useMemo(
@@ -662,34 +715,50 @@ function ComposeModal({
     })
   }
 
-  // Eltern der aktuell gewählten Klassen (Basis für "an alle").
-  const parentsInClasses = useMemo(
-    () => allParents.filter(p => p.class_id && pickedClasses.has(p.class_id)),
-    [allParents, pickedClasses],
-  )
-
-  // Ziel-Eltern: keine Schülerauswahl = an alle Eltern der gewählten Klassen;
-  // sonst Eltern der ausgewählten (und noch sichtbaren) Schüler.
-  const targetParents: ParentLite[] = useMemo(() => {
-    if (picked.size === 0) return parentsInClasses
-    const out: ParentLite[] = []
-    const visible = new Set(selectable.map(s => s.id))
-    for (const sid of picked) if (visible.has(sid)) out.push(...(parentsByChild[sid] ?? []))
+  // Ziel ist ein HEFT, also ein Paar aus Elternteil und Klasse — nicht ein
+  // Elternteil. Ein Konto mit Geschwistern in zwei Klassen hat zwei Hefte und
+  // bekommt zwei Nachrichten. profiles.class_id taugt dafür nicht: sie trägt
+  // nur eine Klasse, und Familien mit Kindern in zwei Klassen fielen bei
+  // "an alle" lautlos aus der Empfängerliste.
+  const targets = useMemo(() => {
+    const seen = new Set<string>()
+    const out: { parent: ParentLite; classId: string }[] = []
+    const add = (parent: ParentLite, classId: string) => {
+      const key = `${parent.id}|${classId}`
+      if (seen.has(key)) return
+      seen.add(key)
+      out.push({ parent, classId })
+    }
+    if (picked.size === 0) {
+      // An alle: jede Familie, die ein Kind in einer gewählten Klasse hat.
+      for (const s of allStudents) {
+        if (!s.class_id || !pickedClasses.has(s.class_id)) continue
+        for (const p of parentsByChild[s.id] ?? []) add(p, s.class_id)
+      }
+    } else {
+      const visible = new Set(selectable.map(s => s.id))
+      for (const sid of picked) {
+        if (!visible.has(sid)) continue
+        const klasse = allStudents.find(s => s.id === sid)?.class_id
+        if (!klasse) continue
+        for (const p of parentsByChild[sid] ?? []) add(p, klasse)
+      }
+    }
     return out
-  }, [picked, parentsInClasses, selectable, parentsByChild])
+  }, [picked, pickedClasses, selectable, parentsByChild, allStudents])
 
   async function send() {
     const text = body.trim()
-    if (!text || sending || targetParents.length === 0) return
+    if (!text || sending || targets.length === 0) return
     setSending(true)
     const supabase = createClient()
-    const broadcastId = targetParents.length > 1 ? crypto.randomUUID() : null
-    // Jede Zeile trägt die EIGENE Klasse des Elternteils (RLS-Anforderung).
-    const rows = targetParents
-      .filter(p => p.class_id)
-      .map(p => ({
-        class_id: p.class_id as string,
-        parent_id: p.id,
+    const broadcastId = targets.length > 1 ? crypto.randomUUID() : null
+    // Jede Zeile trägt die Klasse des KINDES, nicht die des Elternprofils:
+    // ein Heft je Klasse, sonst landet die Nachricht im falschen Heft.
+    const rows = targets
+      .map(({ parent, classId }) => ({
+        class_id: classId,
+        parent_id: parent.id,
         sender_id: userId,
         body: text,
         broadcast_id: broadcastId,
@@ -737,7 +806,7 @@ function ComposeModal({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[12px] font-bold text-kh-muted">
-              {picked.size > 0 ? `${targetParents.length} Empfänger` : 'An alle Eltern der gewählten Klassen'}
+              {picked.size > 0 ? `${targets.length} Empfänger` : 'An alle Eltern der gewählten Klassen'}
             </span>
             <div className="flex gap-1.5">
               <button type="button" onClick={() => setPicked(new Set(selectable.map(s => s.id)))}
@@ -816,11 +885,11 @@ function ComposeModal({
 
         <button
           onClick={send}
-          disabled={!body.trim() || sending || targetParents.length === 0}
+          disabled={!body.trim() || sending || targets.length === 0}
           className="w-full py-3 rounded-full gradient-teal text-white font-bold text-sm disabled:opacity-40 hover:brightness-105 transition-[filter,opacity] duration-150 tap flex items-center justify-center gap-2"
         >
           <span className="msym text-[19px]">send</span>
-          An {targetParents.length} {targetParents.length === 1 ? 'Heft' : 'Hefte'} senden
+          An {targets.length} {targets.length === 1 ? 'Heft' : 'Hefte'} senden
         </button>
       </div>
     </div>
