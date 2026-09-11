@@ -356,6 +356,9 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
   // erledigt, sobald alle bestätigt haben (bzw. alle gesehen haben, wenn keine
   // Bestätigung angefordert wurde).
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'done'>('all')
+  // Standard sind die eigenen Nachrichten: die Liste beantwortet zuerst
+  // "was habe ich offen", nicht "was hat das Kollegium geschrieben".
+  const [authorFilter, setAuthorFilter] = useState<'mine' | 'all'>('mine')
 
   // Nur Klassen anbieten, in denen es auch Sammelnachrichten gibt.
   const usedClasses = useMemo(
@@ -366,6 +369,8 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
   const shown = useMemo(() => {
     const list = broadcasts.filter(b => {
       if (filterClassId !== 'all' && !b.classIds.includes(filterClassId)) return false
+      // authorName ist null, wenn die Nachricht von der lesenden Lehrkraft stammt.
+      if (authorFilter === 'mine' && b.authorName !== null) return false
       if (statusFilter === 'all') return true
       const done = (b.requiresAck ? b.acked : b.seen) === b.total
       return statusFilter === 'done' ? done : !done
@@ -378,12 +383,13 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
       if (aDone !== bDone) return aDone ? 1 : -1
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-  }, [broadcasts, filterClassId, statusFilter])
+  }, [broadcasts, filterClassId, statusFilter, authorFilter])
 
   // Zählt über die Klasse, nicht über den Statusfilter: sonst stünde bei
   // "Erledigt" immer "Alles erledigt", egal wie viel offen ist.
   const openCount = broadcasts.filter(b =>
     (filterClassId === 'all' || b.classIds.includes(filterClassId))
+    && (authorFilter === 'all' || b.authorName === null)
     && (b.requiresAck ? b.acked : b.seen) < b.total,
   ).length
 
@@ -411,6 +417,13 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
           value={statusFilter}
           onChange={v => setStatusFilter(v as 'all' | 'open' | 'done')}
         />
+        {broadcasts.some(b => b.authorName !== null) && (
+          <FilterCapsule
+            options={[{ id: 'mine', label: 'Meine' }, { id: 'all', label: 'Kollegium' }]}
+            value={authorFilter}
+            onChange={v => setAuthorFilter(v as 'mine' | 'all')}
+          />
+        )}
         {usedClasses.length > 1 && (
           <FilterCapsule
             options={[{ id: 'all', label: 'Alle Klassen' }, ...usedClasses.map(c => ({ id: c.id, label: c.name }))]}
@@ -423,11 +436,13 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
       <div className="flex flex-col gap-2.5">
         {shown.length === 0 && (
           <p className="text-[13.5px] text-kh-muted py-8 text-center">
-            {statusFilter === 'open'
-              ? 'Hier ist nichts mehr offen.'
-              : statusFilter === 'done'
-                ? 'Noch nichts vollständig erledigt.'
-                : 'Für diese Klasse wurde noch nichts gesendet.'}
+            {authorFilter === 'mine' && broadcasts.some(b => b.authorName !== null)
+              ? 'Von dir wurde hier noch nichts gesendet. Über „Kollegium“ siehst du die Nachrichten der anderen Lehrkräfte.'
+              : statusFilter === 'open'
+                ? 'Hier ist nichts mehr offen.'
+                : statusFilter === 'done'
+                  ? 'Noch nichts vollständig erledigt.'
+                  : 'Für diese Klasse wurde noch nichts gesendet.'}
           </p>
         )}
         {shown.map(b => {
