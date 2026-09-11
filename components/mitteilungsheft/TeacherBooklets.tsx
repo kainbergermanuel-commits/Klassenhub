@@ -13,7 +13,8 @@ import type { Message } from '@/lib/types'
 type ParentLite = {
   id: string
   full_name: string
-  child_id: string | null
+  // Kein child_id: Hauptkind und Klasse des Elternprofils reichen bei
+  // Geschwistern nicht — die Zuordnung kommt aus childrenByParent.
   class_id?: string | null
   avatar_color: string
   avatar_seed: string | null
