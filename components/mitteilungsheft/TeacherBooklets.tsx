@@ -388,23 +388,32 @@ function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
       </div>
 
       {usedClasses.length > 1 && (
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          {[...usedClasses.map(c => ({ id: c.id, label: c.name })), { id: 'all', label: 'Alle' }].map(opt => {
-            const active = filterClassId === opt.id
-            return (
-              <button
-                key={opt.id}
-                onClick={() => setFilterClassId(opt.id)}
-                className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
-                  active
-                    ? 'text-kh-dark bg-gradient-to-b from-white to-[#FBF9F4] border-b-[3px] border-b-[#A9C9E8] shadow-sm'
-                    : 'text-kh-muted border border-kh-border hover:text-kh-dark'
-                }`}
-              >
-                {opt.label}
-              </button>
-            )
-          })}
+        // Gleiche Umschalter-Kapsel wie bei den Hausübungen: Creme-Weiß-Verlauf
+        // mit Pastellblau-Unterstrich für die aktive Lage.
+        <div className="flex flex-wrap items-start gap-2 mb-4">
+          <div
+            className="inline-flex items-stretch rounded-xl w-fit"
+            style={{ background: 'linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 100%)', boxShadow: '0 1px 2px rgba(20,40,45,.05), 0 10px 24px rgba(20,40,45,.14)' }}
+          >
+            {[{ id: 'all', label: 'Alle' }, ...usedClasses.map(c => ({ id: c.id, label: c.name }))].map((opt, i, arr) => {
+              const active = filterClassId === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setFilterClassId(opt.id)}
+                  className={`px-4 py-2 text-[13px] font-semibold transition-[color,transform] duration-150 ${i === 0 ? 'rounded-l-xl' : ''} ${i === arr.length - 1 ? 'rounded-r-xl' : ''} ${active ? 'text-[#2F86C5]' : 'text-kh-muted hover:text-kh-dark hover:-translate-y-px'}`}
+                  style={{
+                    backgroundImage: active ? 'linear-gradient(90deg, #2F86C5 0%, #56AEE6 100%)' : undefined,
+                    backgroundSize: '100% 3px',
+                    backgroundPosition: 'bottom',
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
