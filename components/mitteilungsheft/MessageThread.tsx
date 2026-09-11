@@ -14,8 +14,10 @@ export type SenderAvatar = {
 
 interface Props {
   messages: Message[]
-  // Aus welcher Perspektive wird gelesen? Bestimmt, welche Blasen rechts (eigene) stehen.
+  // Aus welcher Perspektive wird gelesen? Bestimmt, welche Zusatzinfos zur Blase gehoeren.
   side: 'parent' | 'teacher'
+  // Wer liest gerade? Nur DIESE Person bekommt rechte Blasen mit "Du".
+  currentUserId: string
   // Anzeigename je Absender-ID — fuer die Kopfzeile ueber der Bubble.
   senderNames?: Record<string, string>
   // Avatar je Absender-ID — fuer eingehende Nachrichten.
@@ -24,8 +26,14 @@ interface Props {
   onAcknowledge?: (id: string) => void
 }
 
-function fromTeacherSide(m: Message) {
-  return m.sender_id !== m.parent_id
+// Drei Blasenarten statt zwei. Die Seite sagt "von mir oder nicht",
+// die Farbe sagt "von der Elternseite oder von der Lehrerseite".
+// Ohne diese Trennung erschien jede Nachricht einer Kollegin als die eigene.
+type Kind = 'own' | 'teacher' | 'parent'
+
+function kindOf(m: Message, currentUserId: string): Kind {
+  if (m.sender_id === currentUserId) return 'own'
+  return m.sender_id === m.parent_id ? 'parent' : 'teacher'
 }
 
 function timeOf(iso: string) {
@@ -48,7 +56,7 @@ function dayLabel(iso: string) {
 
 const INITIAL_COUNT = 4
 
-export default function MessageThread({ messages, side, senderNames = {}, senderAvatars = {}, onAcknowledge }: Props) {
+export default function MessageThread({ messages, side, currentUserId, senderNames = {}, senderAvatars = {}, onAcknowledge }: Props) {
   const endRef = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState(false)
   // Optimistisch: sofort als bestätigt anzeigen, bevor der Server-Refresh durch ist.
@@ -85,7 +93,8 @@ export default function MessageThread({ messages, side, senderNames = {}, sender
         </div>
       )}
       {visible.map(m => {
-        const own = fromTeacherSide(m) === (side === 'teacher')
+        const kind = kindOf(m, currentUserId)
+        const own = kind === 'own'
         const name = m.sender_id ? senderNames[m.sender_id] : undefined
         const avatar = m.sender_id ? senderAvatars[m.sender_id] : undefined
         const showDay = dayKey(m.created_at) !== lastDay
@@ -118,7 +127,10 @@ export default function MessageThread({ messages, side, senderNames = {}, sender
                     </>
                   ) : (
                     <>
-                      <span className="font-semibold text-kh-muted">{name ?? 'Mitteilung'}</span>
+                      <span className="font-semibold text-kh-muted">{name ?? (kind === 'teacher' ? 'Lehrkraft' : 'Mitteilung')}</span>
+                      {kind === 'teacher' && side === 'teacher' && (
+                        <span className="text-[10px] font-semibold text-kh-teal bg-kh-teal-light px-1.5 py-px rounded-full">Kollegium</span>
+                      )}
                       <span className="text-kh-muted/85">{timeOf(m.created_at)}</span>
                     </>
                   )}
@@ -128,15 +140,23 @@ export default function MessageThread({ messages, side, senderNames = {}, sender
                     own
                       ? 'gradient-teal text-white rounded-[18px_18px_2px_18px]'
                       : 'text-kh-dark rounded-[2px_18px_18px_18px]'
-                  }`}
-                  style={own ? undefined : { background: 'linear-gradient(135deg, #C2E6DF 0%, #E4F3F0 100%)', color: '#2C5550' }}
+                  } ${kind === 'teacher' ? 'border-l-[3px] border-kh-teal' : ''}`}
+                  style={
+                    own
+                      ? undefined
+                      : kind === 'teacher'
+                        // Lehrerseite, aber eingehend: naeher am eigenen Gradient als am Eltern-Mint,
+                        // damit links nicht zwei verwandte Toene nebeneinanderstehen.
+                        ? { background: 'linear-gradient(135deg, #CFE7E4 0%, #EAF4F2 100%)', color: '#22423F' }
+                        : { background: 'linear-gradient(135deg, #C2E6DF 0%, #E4F3F0 100%)', color: '#2C5550' }
+                  }
                 >
                   {m.body}
                 </div>
                 {m.requires_ack && (() => {
                   const acked = !!m.acknowledged_at || ackedLocal.has(m.id)
                   // Elternteil, eingehende Lehrer-Nachricht: aktiver Bestätigungs-Button.
-                  if (!own && side === 'parent') {
+                  if (kind === 'teacher' && side === 'parent') {
                     return acked ? (
                       <span className="mt-1.5 flex items-center gap-1 text-[11.5px] font-semibold text-kh-teal">
                         <span className="msym text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
@@ -152,12 +172,20 @@ export default function MessageThread({ messages, side, senderNames = {}, sender
                       </button>
                     )
                   }
-                  // Lehrer-Sicht auf die eigene Nachricht: Bestätigungs-Status dieses Hefts.
-                  if (own && side === 'teacher') {
+                  // Lehrer-Sicht auf eine Nachricht der Lehrerseite (eigene oder die einer
+                  // Kollegin): Bestätigungs-Status dieses Hefts, in drei Stufen.
+                  // "gesehen, nicht bestätigt" und "nie geöffnet" sind zwei verschiedene
+                  // Gespräche und dürfen nicht zu einem Zustand verschmelzen.
+                  if (kind !== 'parent' && side === 'teacher') {
+                    const state = acked
+                      ? { icon: 'task_alt', fill: 1, text: 'Bestätigt', cls: 'text-kh-teal' }
+                      : m.seen_at
+                        ? { icon: 'pending_actions', fill: 1, text: 'Gelesen, noch nicht bestätigt', cls: 'text-kh-amber' }
+                        : { icon: 'mark_email_unread', fill: 0, text: 'Noch nicht geöffnet', cls: 'text-kh-muted' }
                     return (
-                      <span className={`mt-1.5 flex items-center gap-1 text-[11px] font-semibold ${acked ? 'text-kh-teal' : 'text-kh-muted'}`}>
-                        <span className="msym text-[14px]" style={{ fontVariationSettings: `'FILL' ${acked ? 1 : 0}` }}>{acked ? 'task_alt' : 'pending_actions'}</span>
-                        {acked ? 'Bestätigt' : 'Bestätigung ausstehend'}
+                      <span className={`mt-1.5 flex items-center gap-1 text-[11px] font-semibold ${state.cls}`}>
+                        <span className="msym text-[14px]" style={{ fontVariationSettings: `'FILL' ${state.fill}` }}>{state.icon}</span>
+                        {state.text}
                       </span>
                     )
                   }

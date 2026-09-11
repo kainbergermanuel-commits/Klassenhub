@@ -42,11 +42,12 @@ interface Props {
   userId: string
   ownName: string
   classId: string
+  senderProfiles: Record<string, SenderAvatar>
 }
 
 function firstName(full: string) { return full.split(' ')[0] }
 
-export default function TeacherBooklets({ parents, students, allParents, allStudents, classes, messages, broadcastMessages, userId, ownName, classId }: Props) {
+export default function TeacherBooklets({ parents, students, allParents, allStudents, classes, messages, broadcastMessages, userId, ownName, classId, senderProfiles }: Props) {
   const router = useRouter()
   const [openParentId, setOpenParentId] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
@@ -58,8 +59,12 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
   )
   // Anzeigenamen je Absender: eigene Lehrkraft + alle Eltern.
   const senderNames = useMemo(
-    () => ({ [userId]: ownName, ...Object.fromEntries(parents.map(p => [p.id, p.full_name])) }),
-    [userId, ownName, parents],
+    () => ({
+      [userId]: ownName,
+      ...Object.fromEntries(parents.map(p => [p.id, p.full_name])),
+      ...Object.fromEntries(Object.entries(senderProfiles).map(([id, s]) => [id, s.name])),
+    }),
+    [userId, ownName, parents, senderProfiles],
   )
   // Avatare eingehender Absender (Eltern) = Avatar des Elternteils selbst.
   const senderAvatars = useMemo(() => {
@@ -67,8 +72,8 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
     for (const p of parents) {
       map[p.id] = { name: p.full_name, color: p.avatar_color, seed: p.avatar_seed, hairColor: p.avatar_hair_color, skinColor: p.avatar_skin_color }
     }
-    return map
-  }, [parents])
+    return { ...map, ...senderProfiles }
+  }, [parents, senderProfiles])
 
   const byParent = useMemo(() => {
     const map: Record<string, Message[]> = {}
@@ -112,6 +117,8 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
         id,
         body: msgs[0].body,
         created_at: msgs[0].created_at,
+        authorName: msgs[0].sender_id === userId ? null : (senderNames[msgs[0].sender_id ?? ''] ?? 'Andere Lehrkraft'),
+        classIds: [...new Set(msgs.map(m => m.class_id))],
         total: msgs.length,
         seen: msgs.filter(m => m.seen_at).length,
         requiresAck: !!msgs[0].requires_ack,
@@ -122,12 +129,19 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
           .sort((a, b) => a.name.localeCompare(b.name)),
       }))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-  }, [broadcastMessages, broadcastNames, classNameById])
+  }, [broadcastMessages, broadcastNames, classNameById, senderNames, userId])
 
   const openParent = openParentId ? parents.find(p => p.id === openParentId) ?? null : null
 
   if (showBroadcasts) {
-    return <BroadcastsView broadcasts={broadcasts} onBack={() => setShowBroadcasts(false)} />
+    return (
+      <BroadcastsView
+        broadcasts={broadcasts}
+        classes={classes}
+        activeClassId={classId}
+        onBack={() => setShowBroadcasts(false)}
+      />
+    )
   }
 
   if (openParent) {
@@ -199,7 +213,11 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
                 </div>
                 <p className="text-[13px] text-kh-muted truncate mt-0.5">
                   {last
-                    ? `${last.sender_id === parent.id ? '' : 'Sie: '}${last.body}`
+                    ? `${last.sender_id === parent.id
+                        ? ''
+                        : last.sender_id === userId
+                          ? 'Sie: '
+                          : `${firstName(senderNames[last.sender_id ?? ''] ?? 'Kollegium')}: `}${last.body}`
                     : 'Noch keine Nachrichten'}
                 </p>
               </div>
@@ -285,7 +303,7 @@ function TeacherThread({
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-kh -mx-1 px-1">
-        <MessageThread messages={messages} side="teacher" senderNames={senderNames} senderAvatars={senderAvatars} />
+        <MessageThread messages={messages} side="teacher" currentUserId={userId} senderNames={senderNames} senderAvatars={senderAvatars} />
       </div>
 
       <div className="flex items-end gap-2 pt-3 border-t border-kh-border/50">
@@ -314,6 +332,8 @@ type BroadcastSummary = {
   id: string
   body: string
   created_at: string
+  authorName: string | null
+  classIds: string[]
   total: number
   seen: number
   requiresAck: boolean
@@ -322,8 +342,38 @@ type BroadcastSummary = {
   recipients: { name: string; seen: boolean; acked: boolean }[]
 }
 
-function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]; onBack: () => void }) {
+function BroadcastsView({ broadcasts, classes, activeClassId, onBack }: {
+  broadcasts: BroadcastSummary[]
+  classes: ClassLite[]
+  activeClassId: string
+  onBack: () => void
+}) {
   const [openId, setOpenId] = useState<string | null>(null)
+  // Standard ist die aktive Klasse: die Liste soll beim Öffnen ruhig sein,
+  // nicht alle Klassen gleichzeitig zeigen.
+  const [filterClassId, setFilterClassId] = useState<string>(activeClassId)
+
+  // Nur Klassen anbieten, in denen es auch Sammelnachrichten gibt.
+  const usedClasses = useMemo(
+    () => classes.filter(c => broadcasts.some(b => b.classIds.includes(c.id))),
+    [classes, broadcasts],
+  )
+
+  const shown = useMemo(() => {
+    const list = filterClassId === 'all'
+      ? broadcasts
+      : broadcasts.filter(b => b.classIds.includes(filterClassId))
+    // Offene zuerst: die Frage der Lehrkraft ist "wer fehlt mir noch",
+    // nicht "was habe ich geschickt". Erledigtes rutscht nach unten.
+    return [...list].sort((a, b) => {
+      const aDone = (a.requiresAck ? a.acked : a.seen) === a.total
+      const bDone = (b.requiresAck ? b.acked : b.seen) === b.total
+      if (aDone !== bDone) return aDone ? 1 : -1
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  }, [broadcasts, filterClassId])
+
+  const openCount = shown.filter(b => (b.requiresAck ? b.acked : b.seen) < b.total).length
 
   return (
     <>
@@ -331,29 +381,62 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
         <IconButton onClick={onBack} aria-label="Zurück" icon="arrow_back" />
         <div>
           <h1 className="text-[22px] font-extrabold text-kh-dark tracking-tight leading-tight">Gesendete Sammelnachrichten</h1>
-          <p className="text-[13px] text-kh-muted font-medium">Lesestatus je Mitteilung</p>
+          <p className="text-[13px] text-kh-muted font-medium">
+            {openCount === 0 ? 'Alles erledigt' : `${openCount} noch offen`}
+          </p>
         </div>
       </div>
 
+      {usedClasses.length > 1 && (
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {[...usedClasses.map(c => ({ id: c.id, label: c.name })), { id: 'all', label: 'Alle' }].map(opt => {
+            const active = filterClassId === opt.id
+            return (
+              <button
+                key={opt.id}
+                onClick={() => setFilterClassId(opt.id)}
+                className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
+                  active
+                    ? 'text-kh-dark bg-gradient-to-b from-white to-[#FBF9F4] border-b-[3px] border-b-[#A9C9E8] shadow-sm'
+                    : 'text-kh-muted border border-kh-border hover:text-kh-dark'
+                }`}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       <div className="flex flex-col gap-2.5">
-        {broadcasts.map(b => {
+        {shown.length === 0 && (
+          <p className="text-[13.5px] text-kh-muted py-8 text-center">Für diese Klasse wurde noch nichts gesendet.</p>
+        )}
+        {shown.map(b => {
           const open = openId === b.id
           // Bei angeforderter Bestätigung ist "bestätigt" die relevante Kennzahl, sonst "gesehen".
           const count = b.requiresAck ? b.acked : b.seen
           const allDone = count === b.total
           const pending = b.recipients.filter(r => !(b.requiresAck ? r.acked : r.seen))
+          // Erledigtes bleibt sichtbar, tritt aber zurück, damit Offenes auffällt.
           return (
-            <div key={b.id} className="kh-card-flat rounded-2xl overflow-hidden">
+            <div key={b.id} className={`kh-card-flat rounded-2xl overflow-hidden transition-opacity ${allDone && !open ? 'opacity-[0.62]' : ''}`}>
               <button
                 onClick={() => setOpenId(open ? null : b.id)}
                 className="w-full flex items-center gap-3 p-4 text-left"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] text-kh-dark font-medium line-clamp-2">{b.body}</p>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <p className="text-[12px] text-kh-muted">
                       {new Date(b.created_at).toLocaleDateString('de-AT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </p>
+                    {b.authorName && (
+                      <span className="flex items-center gap-1 text-[11px] font-semibold text-kh-muted">
+                        <span className="msym text-[13px]">person</span>
+                        {b.authorName}
+                      </span>
+                    )}
                     {b.requiresAck && (
                       <span className="flex items-center gap-1 text-[11px] font-bold text-kh-teal">
                         <span className="msym text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
@@ -379,15 +462,36 @@ function BroadcastsView({ broadcasts, onBack }: { broadcasts: BroadcastSummary[]
               {open && (
                 <div className="px-4 pb-4 -mt-1">
                   <div className="border-t border-kh-border/50 pt-3 flex flex-col gap-1.5">
+                    {b.requiresAck && (
+                      // Gelesen-aber-nicht-bestätigt und nie-geöffnet sind zwei
+                      // verschiedene Gespräche und stehen deshalb getrennt.
+                      <p className="text-[12px] text-kh-muted mb-1">
+                        {b.seen - b.acked > 0
+                          ? `${b.seen - b.acked} haben gelesen, aber noch nicht bestätigt · ${b.total - b.seen} haben die Nachricht nie geöffnet`
+                          : `${b.total - b.seen} haben die Nachricht nie geöffnet`}
+                      </p>
+                    )}
                     {b.recipients.map((r, i) => {
                       const done = b.requiresAck ? r.acked : r.seen
+                      // Drei Stufen statt zwei, sobald eine Bestätigung angefordert wurde.
+                      const hint = done
+                        ? null
+                        : b.requiresAck
+                          ? (r.seen ? 'gelesen, nicht bestätigt' : 'nicht geöffnet')
+                          : 'noch nicht gesehen'
+                      const amber = !done && (!b.requiresAck || r.seen)
                       return (
                         <div key={i} className="flex items-center gap-2 text-[13px]">
-                          <span className={`msym text-[16px] ${done ? 'text-kh-teal' : 'text-kh-border'}`} style={{ fontVariationSettings: `'FILL' ${done ? 1 : 0}` }}>
-                            {done ? 'check_circle' : 'radio_button_unchecked'}
+                          <span
+                            className={`msym text-[16px] ${done ? 'text-kh-teal' : amber ? 'text-kh-amber' : 'text-kh-border'}`}
+                            style={{ fontVariationSettings: `'FILL' ${done ? 1 : 0}` }}
+                          >
+                            {done ? 'check_circle' : amber ? 'pending_actions' : 'radio_button_unchecked'}
                           </span>
                           <span className={done ? 'text-kh-dark' : 'text-kh-muted'}>{r.name}</span>
-                          {!done && <span className="text-[11px] text-kh-amber ml-auto">{b.requiresAck ? 'noch nicht bestätigt' : 'noch nicht gesehen'}</span>}
+                          {hint && (
+                            <span className={`text-[11px] ml-auto ${amber ? 'text-kh-amber' : 'text-kh-muted'}`}>{hint}</span>
+                          )}
                         </div>
                       )
                     })}

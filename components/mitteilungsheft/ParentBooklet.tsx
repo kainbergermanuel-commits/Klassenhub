@@ -66,7 +66,7 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-kh -mx-1 px-1">
-        <MessageThread messages={messages} side="parent" senderNames={senderNames} senderAvatars={senderAvatars} onAcknowledge={acknowledge} />
+        <MessageThread messages={messages} side="parent" currentUserId={userId} senderNames={senderNames} senderAvatars={senderAvatars} onAcknowledge={acknowledge} />
       </div>
 
       <div className="flex items-end gap-2 pt-3 border-t border-kh-border/50">

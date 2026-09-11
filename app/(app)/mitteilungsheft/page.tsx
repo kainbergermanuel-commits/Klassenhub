@@ -74,6 +74,25 @@ export default async function MitteilungsheftPage() {
     (allStudents ?? []).map(s => s.id),
   )
 
+  // Absender-Profile der Lehrerseite (eigene Kolleginnen und Kollegen).
+  // Ohne sie stand ueber jeder fremden Lehrer-Nachricht "Du" — die Lehrkraft
+  // haette fuer Aussagen eingestanden, die jemand anderer getroffen hat.
+  const teacherSenderIds = [...new Set(
+    [...(messages ?? []), ...(broadcastMessages ?? [])]
+      .map(m => m.sender_id)
+      .filter((id): id is string => !!id && id !== user.id),
+  )]
+  const senderProfiles: Record<string, SenderAvatar> = {}
+  if (teacherSenderIds.length > 0) {
+    const { data: senders } = await supabase
+      .from('profiles')
+      .select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color')
+      .in('id', teacherSenderIds)
+    for (const t of senders ?? []) {
+      senderProfiles[t.id] = { name: t.full_name, color: t.avatar_color, seed: t.avatar_seed, hairColor: t.avatar_hair_color, skinColor: t.avatar_skin_color }
+    }
+  }
+
   const students = (allStudents ?? []).filter(s => s.class_id === activeClassId)
   const idsAktiveKlasse = new Set(students.map(s => s.id))
   // Heft-Liste zeigt weiterhin nur die aktive Klasse: ein Elternteil gehört
@@ -94,6 +113,7 @@ export default async function MitteilungsheftPage() {
         broadcastMessages={(broadcastMessages ?? []) as Message[]}
         userId={user.id}
         ownName={profile.full_name}
+        senderProfiles={senderProfiles}
         classId={activeClassId}
       />
     </AnimateIn>
