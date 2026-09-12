@@ -109,20 +109,37 @@ export async function deleteLearningGroup(groupId: string) {
   revalidatePath('/gruppen')
 }
 
-/** Ersetzt die Mitgliederliste einer Gruppe vollständig. */
+/**
+ * Setzt die Mitgliederliste einer Gruppe.
+ *
+ * Bewusst als DIFFERENZ und mit dem Einfügen zuerst, nicht als „erst alles
+ * löschen, dann neu schreiben": Scheiterte dort der zweite Schritt — Netzfehler,
+ * ein zwischenzeitlich gelöschtes Kind —, stand die Gruppe leer da statt
+ * unverändert. Eine Transaktion gibt es über die REST-Schnittstelle nicht, also
+ * wird die Reihenfolge so gewählt, dass ein Teilfehler nichts vernichtet:
+ * schlägt das Einfügen fehl, ist die alte Liste noch vollständig vorhanden.
+ */
 export async function setLearningGroupMembers(groupId: string, studentIds: string[]) {
   await requireAdmin()
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = (supabase as any).from('learning_group_members')
+  const table = () => (supabase as any).from('learning_group_members')
 
-  const { error: delError } = await table.delete().eq('group_id', groupId)
-  if (delError) throw new Error(delError.message)
+  const { data: current, error: readError } = await table()
+    .select('student_id').eq('group_id', groupId)
+  if (readError) throw new Error(readError.message)
 
-  if (studentIds.length > 0) {
-    const { error } = await table.insert(
-      studentIds.map(id => ({ group_id: groupId, student_id: id }))
-    )
+  const before = new Set(((current ?? []) as { student_id: string }[]).map(r => r.student_id))
+  const after = new Set(studentIds)
+  const toAdd = studentIds.filter(id => !before.has(id))
+  const toRemove = [...before].filter(id => !after.has(id))
+
+  if (toAdd.length > 0) {
+    const { error } = await table().insert(toAdd.map(id => ({ group_id: groupId, student_id: id })))
+    if (error) throw new Error(error.message)
+  }
+  if (toRemove.length > 0) {
+    const { error } = await table().delete().eq('group_id', groupId).in('student_id', toRemove)
     if (error) throw new Error(error.message)
   }
   revalidatePath('/admin/gruppen')

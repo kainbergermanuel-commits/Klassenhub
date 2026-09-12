@@ -53,11 +53,18 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
    */
   async function confirmHomework(hw: HomeworkWithStatus) {
     const supabase = createClient()
-    const { data: defaults } = await supabase
+    const { data: defaults, error: defaultsError } = await supabase
       .from('subject_default_exclusions' as never)
       .select('student_id')
       .eq('class_id', hw.class_id)
       .eq('subject_short', hw.subject_short)
+    // Abbrechen statt ohne Ausnahmen freigeben: scheitert diese Abfrage, wüsste
+    // niemand, dass ein dauerhaft befreites Kind die HÜ nun doch bekommt. Ein
+    // sichtbarer Fehlschlag ist besser als eine stille falsche Zuteilung.
+    if (defaultsError) {
+      setListError('Die Standard-Ausnahmen konnten nicht geladen werden. Bitte erneut versuchen.')
+      return
+    }
     const defaultIds = ((defaults as { student_id: string }[] | null) ?? []).map(d => d.student_id)
     const merged = [...new Set([...(hw.excluded_student_ids ?? []), ...defaultIds])]
 

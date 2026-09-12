@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
-import Avatar from '@/components/ui/Avatar'
+import StudentChip from '@/components/ui/StudentChip'
 import DatePicker from '@/components/ui/DatePicker'
 import IconButton from '@/components/ui/IconButton'
-import { addDaysISO, dueInfo, todayISO } from '@/lib/date'
+import { addDaysISO, dueInfo, schoolYearStartISO, todayISO } from '@/lib/date'
 import { createGroupHomework, deleteGroupHomework, updateGroupHomework } from '@/app/actions/learningGroups'
 
 interface Group {
@@ -123,20 +123,23 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
     setError(null)
     try {
       const supabase = createClient()
+      // Ein Aufruf für Mitglieder UND Hausübungen (group_overview bündelt die
+      // beiden Funktionen serverseitig). Die Hausübungen sind auf das laufende
+      // Schuljahr begrenzt — wie überall sonst in der App, sonst stünde hier im
+      // zweiten Jahr alles seit Anfang.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const client = supabase as any
-      const [mem, hw] = await Promise.all([
-        client.rpc('group_members', { p_group: group.id }),
-        client.rpc('group_homework', { p_group: group.id }),
-      ])
+      const { data, error: rpcError } = await (supabase as any).rpc('group_overview', {
+        p_group: group.id,
+        p_since: schoolYearStartISO(),
+      })
       if (seq !== loadSeq.current) return
-      const failure = mem.error ?? hw.error
-      if (failure) {
-        setError(`Konnte die Gruppe nicht laden: ${failure.message ?? 'unbekannter Fehler'}`)
+      if (rpcError) {
+        setError(`Konnte die Gruppe nicht laden: ${rpcError.message ?? 'unbekannter Fehler'}`)
         return
       }
-      setMembers((mem.data as Member[] | null) ?? [])
-      setHomework((hw.data as GroupHw[] | null) ?? [])
+      const overview = (data ?? {}) as { members?: Member[]; homework?: GroupHw[] }
+      setMembers(overview.members ?? [])
+      setHomework(overview.homework ?? [])
     } catch (e) {
       if (seq !== loadSeq.current) return
       setError(e instanceof Error ? `Konnte die Gruppe nicht laden: ${e.message}` : 'Konnte die Gruppe nicht laden.')
@@ -220,14 +223,7 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
               {/* Mitglieder */}
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {(members ?? []).map(m => (
-                  <span key={m.student_id} className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-kh-border bg-white">
-                    <Avatar
-                      name={m.full_name} color={m.avatar_color} seed={m.avatar_seed}
-                      hairColor={m.avatar_hair_color} skinColor={m.avatar_skin_color} size={18}
-                    />
-                    <span className="text-[11.5px] font-semibold text-kh-dark">{m.full_name.split(' ')[0]}</span>
-                    {m.class_name && <span className="text-[10px] font-bold text-kh-muted">{m.class_name}</span>}
-                  </span>
+                  <StudentChip key={m.student_id} student={m} classLabel={m.class_name} />
                 ))}
                 {(members ?? []).length === 0 && (
                   <span className="text-[12.5px] text-kh-muted font-semibold">
@@ -291,16 +287,23 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
 /** Eine Gruppen-HÜ mit Abgabestand; aufklappbar zur namentlichen Kontrolle. */
 function HomeworkRow({ hw, onEdit, onDelete }: { hw: GroupHw; onEdit: () => void; onDelete: () => void }) {
   const [students, setStudents] = useState<HwStudent[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const due = dueInfo(hw.due_date)
 
   async function toggle() {
     setOpen(o => !o)
-    if (students === null) {
-      const supabase = createClient()
+    if (students !== null || loadError) return
+    // Fehler sichtbar machen: eine leere Liste hiesse sonst „niemand hat
+    // abgegeben", obwohl die Abfrage gar nicht durchkam.
+    const supabase = createClient()
+    try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any).rpc('group_homework_students', { p_batch: hw.batch_id })
+      const { data, error } = await (supabase as any).rpc('group_homework_students', { p_batch: hw.batch_id })
+      if (error) { setLoadError(error.message ?? 'unbekannter Fehler'); return }
       setStudents((data as HwStudent[] | null) ?? [])
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'unbekannter Fehler')
     }
   }
 
@@ -328,23 +331,21 @@ function HomeworkRow({ hw, onEdit, onDelete }: { hw: GroupHw; onEdit: () => void
 
       {open && (
         <div className="mt-2.5 pt-2.5 border-t border-kh-border/40 flex flex-wrap gap-1.5">
-          {students === null ? (
+          {loadError ? (
+            <span className="text-[12px] text-kh-red font-semibold">
+              Konnte die Abgaben nicht laden: {loadError}
+            </span>
+          ) : students === null ? (
             <span className="text-[12px] text-kh-muted font-semibold">Lädt…</span>
           ) : students.map(s => (
-            <span
+            <StudentChip
               key={s.student_id}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-[11.5px] font-semibold ${
-                s.done ? 'border-kh-teal/40 bg-kh-teal/10 text-kh-dark' : 'border-kh-border text-kh-muted'
-              }`}
+              student={s}
+              tone={s.done ? 'aktiv' : 'neutral'}
+              classLabel={s.class_name}
+              icon={s.done ? (s.confirmed ? 'verified' : 'check_circle') : undefined}
               title={`${s.full_name}${s.class_name ? ` · ${s.class_name}` : ''}${s.done ? (s.confirmed ? ' · erledigt und bestätigt' : ' · erledigt') : ' · offen'}`}
-            >
-              <Avatar
-                name={s.full_name} color={s.avatar_color} seed={s.avatar_seed}
-                hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={18}
-              />
-              {s.full_name.split(' ')[0]}
-              {s.done && <span className="msym text-[13px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>{s.confirmed ? 'verified' : 'check_circle'}</span>}
-            </span>
+            />
           ))}
         </div>
       )}

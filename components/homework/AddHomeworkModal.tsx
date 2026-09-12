@@ -48,6 +48,9 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
    *  die alte Vorauswahl zurücknimmt, von Hand ergänzte Ausnahmen aber
    *  stehen bleiben. */
   const [autoIds, setAutoIds] = useState<string[]>([])
+  /** Die Standard-Ausnahmen konnten nicht geladen werden — dann fehlt die
+   *  Vorauswahl, und die Lehrperson muss es wissen. */
+  const [defaultsFailed, setDefaultsFailed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -61,7 +64,14 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
       .from('subject_default_exclusions' as never)
       .select('student_id,subject_short')
       .eq('class_id', classId)
-      .then(({ data }) => setDefaults((data as { student_id: string; subject_short: string }[] | null) ?? []))
+      .then(({ data, error: loadError }) => {
+        // Sichtbar machen statt verschlucken: ohne Hinweis sähe eine
+        // fehlgeschlagene Abfrage aus wie „es gibt keine Standard-Ausnahmen",
+        // und ein befreites Kind bekäme die HÜ, ohne dass es jemand merkt.
+        if (loadError) { setDefaultsFailed(true); return }
+        setDefaultsFailed(false)
+        setDefaults((data as { student_id: string; subject_short: string }[] | null) ?? [])
+      })
   }, [classId, asPending])
 
   // Fachwechsel: alte Vorauswahl raus, neue rein, manuell Gesetztes bleibt.
@@ -176,6 +186,12 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
                 onChange={setExcludedIds}
                 defaultOpen={autoIds.length > 0}
               />
+              {defaultsFailed && (
+                <p className="text-[11.5px] font-semibold text-kh-amber leading-snug -mt-2">
+                  Die Standard-Ausnahmen konnten nicht geladen werden — dauerhaft befreite
+                  Kinder sind hier gerade NICHT vorausgewählt. Bitte von Hand prüfen.
+                </p>
+              )}
               {autoIds.length > 0 && (
                 // Die Vorauswahl muss sichtbar sein und bleibt überschreibbar:
                 // eine stille Automatik wäre genau die Art Ausnahme, die
