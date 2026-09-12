@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { addDaysISO } from '@/lib/date'
@@ -39,10 +39,42 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
   const [details, setDetails] = useState('')
   // Leer = die HÜ gilt für alle, der Normalfall. Siehe lib/homeworkScope.ts.
   const [excludedIds, setExcludedIds] = useState<string[]>([])
+  /** Standard-Ausnahmen der Klasse: Kind → Fachkürzel, in denen es dauerhaft
+   *  nicht mitarbeitet (siehe supabase/add-subject-default-exclusions.sql).
+   *  Sie wirken NUR hier als Vorauswahl; gespeichert wird danach allein
+   *  excluded_student_ids. Einmal geladen beim Öffnen, Lehreransicht. */
+  const [defaults, setDefaults] = useState<{ student_id: string; subject_short: string }[]>([])
+  /** Welche IDs zuletzt automatisch gesetzt wurden — damit ein Fachwechsel
+   *  die alte Vorauswahl zurücknimmt, von Hand ergänzte Ausnahmen aber
+   *  stehen bleiben. */
+  const [autoIds, setAutoIds] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const subject = subjects[subjectIdx]
+
+  // Einreichungen von Kindern (asPending) entscheiden nicht über den
+  // Geltungsbereich — dort wird auch nichts vorausgewählt.
+  useEffect(() => {
+    if (asPending) return
+    createClient()
+      .from('subject_default_exclusions' as never)
+      .select('student_id,subject_short')
+      .eq('class_id', classId)
+      .then(({ data }) => setDefaults((data as { student_id: string; subject_short: string }[] | null) ?? []))
+  }, [classId, asPending])
+
+  // Fachwechsel: alte Vorauswahl raus, neue rein, manuell Gesetztes bleibt.
+  useEffect(() => {
+    const next = defaults.filter(d => d.subject_short === subject?.short).map(d => d.student_id)
+    setExcludedIds(prev => {
+      const manual = prev.filter(id => !autoIds.includes(id))
+      return [...new Set([...manual, ...next])]
+    })
+    setAutoIds(next)
+    // autoIds bewusst nicht in den Abhängigkeiten: es wird hier selbst gesetzt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaults, subject?.short])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -137,7 +169,24 @@ export default function AddHomeworkModal({ classId, userId, subjects, asPending 
           {/* Wer bekommt die HÜ? Einreichungen von Kindern (hw_admin) bieten das
               nicht an — über den Geltungsbereich entscheidet die Lehrperson. */}
           {!asPending && (
-            <StudentExclusionPicker classId={classId} value={excludedIds} onChange={setExcludedIds} />
+            <>
+              <StudentExclusionPicker
+                classId={classId}
+                value={excludedIds}
+                onChange={setExcludedIds}
+                defaultOpen={autoIds.length > 0}
+              />
+              {autoIds.length > 0 && (
+                // Die Vorauswahl muss sichtbar sein und bleibt überschreibbar:
+                // eine stille Automatik wäre genau die Art Ausnahme, die
+                // niemand bemerkt, wenn sie einmal falsch ist.
+                <p className="text-[11px] font-semibold text-kh-muted leading-snug -mt-2">
+                  {autoIds.length === 1 ? 'Ein Kind ist' : `${autoIds.length} Kinder sind`} in
+                  {' '}{subject?.label ?? 'diesem Fach'} dauerhaft nicht dabei und deshalb schon
+                  ausgenommen. Du kannst das für diese Hausübung ändern.
+                </p>
+              )}
+            </>
           )}
 
           {error && (

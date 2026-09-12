@@ -42,9 +42,29 @@ export default function HomeworkList({ homework, role, specialRole, userId, clas
   const canCreate = role === 'teacher' || specialRole === 'hw_admin'
   const asPending = role !== 'teacher'
 
-  async function confirmHomework(id: string) {
+  /**
+   * Eingereichte HÜ freigeben.
+   *
+   * Hier — und nicht nur im Lehrer-Formular — werden die Standard-Ausnahmen
+   * angewandt: eine Einreichung eines Kindes (hw_admin) kennt keinen
+   * Geltungsbereich, und ohne diesen Schritt bekäme ein dauerhaft vom Fach
+   * befreites Kind die HÜ über den Umweg der Einreichung doch. Bestehende
+   * Ausnahmen der Zeile bleiben erhalten.
+   */
+  async function confirmHomework(hw: HomeworkWithStatus) {
     const supabase = createClient()
-    const { error } = await supabase.from('homework').update({ status: 'published' }).eq('id', id)
+    const { data: defaults } = await supabase
+      .from('subject_default_exclusions' as never)
+      .select('student_id')
+      .eq('class_id', hw.class_id)
+      .eq('subject_short', hw.subject_short)
+    const defaultIds = ((defaults as { student_id: string }[] | null) ?? []).map(d => d.student_id)
+    const merged = [...new Set([...(hw.excluded_student_ids ?? []), ...defaultIds])]
+
+    const { error } = await supabase.from('homework').update({
+      status: 'published',
+      excluded_student_ids: merged.length > 0 ? merged : null,
+    }).eq('id', hw.id)
     if (error) { setListError('Bestätigen fehlgeschlagen. Bitte erneut versuchen.'); return }
     setListError(null)
     router.refresh()
@@ -439,7 +459,7 @@ function OwnPendingCard({ hw }: { hw: HomeworkWithStatus }) {
   )
 }
 
-function PendingHomeworkCard({ hw, onConfirm, onReject }: { hw: HomeworkWithStatus; onConfirm: (id: string) => void; onReject: (hw: HomeworkWithStatus) => void }) {
+function PendingHomeworkCard({ hw, onConfirm, onReject }: { hw: HomeworkWithStatus; onConfirm: (hw: HomeworkWithStatus) => void; onReject: (hw: HomeworkWithStatus) => void }) {
   const due = dueInfo(hw.due_date)
   return (
     <div className="bg-[#FFFBF2] border border-kh-amber/30 rounded-2xl px-4 py-3.5 flex items-center gap-3">
@@ -467,7 +487,7 @@ function PendingHomeworkCard({ hw, onConfirm, onReject }: { hw: HomeworkWithStat
         delete
       </button>
       <button
-        onClick={() => onConfirm(hw.id)}
+        onClick={() => onConfirm(hw)}
         className="flex items-center gap-1 bg-kh-teal text-white text-[12px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity flex-shrink-0"
       >
         <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
