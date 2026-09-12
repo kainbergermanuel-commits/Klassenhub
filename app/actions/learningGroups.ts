@@ -154,6 +154,8 @@ export async function setLearningGroupMembers(groupId: string, studentIds: strin
  */
 export async function createGroupHomework(
   groupId: string, title: string, dueDate: string, details: string | null,
+  /** Mitglieder, die diese eine Hausübung ausnahmsweise NICHT bekommen. */
+  excludedIds: string[] = [],
 ) {
   const { user, profile } = await getAuth()
   if (!user || !profile) throw new Error('Nicht angemeldet')
@@ -167,6 +169,7 @@ export async function createGroupHomework(
     p_title: title.trim(),
     p_due: dueDate,
     p_details: details?.trim() || null,
+    p_excluded: excludedIds,
   })
   if (error) throw new Error(error.message)
   revalidatePath('/gruppen')

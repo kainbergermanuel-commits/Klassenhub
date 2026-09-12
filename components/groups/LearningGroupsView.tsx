@@ -274,6 +274,7 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
       {(adding || editing) && (
         <GroupHomeworkModal
           group={group}
+          members={members ?? []}
           edit={editing}
           pending={pending}
           onClose={() => { setAdding(false); setEditing(null) }}
@@ -368,9 +369,10 @@ function HomeworkRow({ hw, onEdit, onDelete }: { hw: GroupHw; onEdit: () => void
 /** Anlegen/Bearbeiten einer Gruppen-Hausübung. Bewusst schlanker als das
  *  Klassen-Formular: Fach und Empfängerkreis stehen durch die Gruppe fest. */
 function GroupHomeworkModal({
-  group, edit, onClose, onSaved, pending,
+  group, members, edit, onClose, onSaved, pending,
 }: {
   group: Group
+  members: Member[]
   edit: GroupHw | null
   onClose: () => void
   onSaved: () => void
@@ -379,6 +381,10 @@ function GroupHomeworkModal({
   const [title, setTitle] = useState(edit?.title ?? '')
   const [dueDate, setDueDate] = useState(edit?.due_date ?? EARLIEST_DUE())
   const [details, setDetails] = useState(edit?.details ?? '')
+  /** Mitglieder, die diese eine Hausübung nicht bekommen. Abwahl wie bei der
+   *  Klassen-HÜ: der Normalfall ist „alle", niemand soll acht Kinder
+   *  anklicken müssen, damit sieben eine Aufgabe bekommen. */
+  const [excluded, setExcluded] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -388,7 +394,7 @@ function GroupHomeworkModal({
     setError(null)
     try {
       if (edit) await updateGroupHomework(edit.batch_id, title, dueDate, details)
-      else await createGroupHomework(group.id, title, dueDate, details)
+      else await createGroupHomework(group.id, title, dueDate, details, [...excluded])
       onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Speichern fehlgeschlagen.')
@@ -441,11 +447,51 @@ function GroupHomeworkModal({
             <DatePicker value={dueDate} min={edit ? todayISO() : EARLIEST_DUE()} onChange={setDueDate} />
           </div>
 
+          {/* Empfängerkreis. Nur beim Anlegen: nachträglich jemanden
+              herauszunehmen wirft die Frage auf, was mit einer bereits
+              erfolgten Abgabe passiert — im Alltag kommt es nicht vor. */}
+          {!edit && members.length > 0 && (
+            <div>
+              <label className="text-xs font-bold text-kh-dark mb-1.5 block">
+                {excluded.size === 0
+                  ? 'Für alle Kinder der Gruppe'
+                  : `${members.length - excluded.size} von ${members.length} Kindern`}
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {members.map(m => {
+                  const off = excluded.has(m.student_id)
+                  return (
+                    <StudentChip
+                      key={m.student_id}
+                      student={m}
+                      tone={off ? 'gedimmt' : 'aktiv'}
+                      classLabel={m.class_name}
+                      pressed={off}
+                      title={off
+                        ? `${m.full_name.split(' ')[0]} bekommt diese Hausübung nicht`
+                        : `${m.full_name.split(' ')[0]} bekommt diese Hausübung`}
+                      onClick={() => setExcluded(prev => {
+                        const next = new Set(prev)
+                        if (next.has(m.student_id)) next.delete(m.student_id)
+                        else next.add(m.student_id)
+                        return next
+                      })}
+                    />
+                  )
+                })}
+              </div>
+              <p className="text-[11px] font-semibold text-kh-muted mt-1.5 leading-snug">
+                Angetippte Kinder bekommen diese Hausübung nicht. Sie taucht bei ihnen
+                nirgends auf und zählt für sie auch nicht als versäumt.
+              </p>
+            </div>
+          )}
+
           {/* Sagt ausdrücklich, was beim Speichern passiert: die Gruppen-HÜ
               landet bei den Kindern als HÜ ihrer jeweiligen Klasse. */}
           <p className="text-[11.5px] text-kh-muted font-semibold leading-snug">
-            Geht an alle Kinder der Gruppe — in jeder Klasse erscheint sie als gewöhnliche
-            Hausübung mit dem Vermerk „{group.name}".
+            Erscheint in jeder Klasse als gewöhnliche Hausübung mit dem Vermerk
+            „{group.name}".
           </p>
 
           {error && (
@@ -454,7 +500,7 @@ function GroupHomeworkModal({
 
           <button
             onClick={save}
-            disabled={saving || pending || !title.trim()}
+            disabled={saving || pending || !title.trim() || (!edit && members.length > 0 && excluded.size === members.length)}
             className="w-full gradient-teal text-white font-bold rounded-xl py-3.5 text-sm flex items-center justify-center gap-2 hover:brightness-105 transition-[filter,opacity] duration-150 tap disabled:opacity-60"
           >
             {saving
