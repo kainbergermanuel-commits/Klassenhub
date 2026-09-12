@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -97,32 +97,62 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
   const [homework, setHomework] = useState<GroupHw[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Zählt die Ladevorgänge. Nur die Antwort des JÜNGSTEN darf schreiben —
+   *  sonst überholt eine langsame frühere Antwort eine neuere (Aufklappen,
+   *  zuklappen, wieder aufklappen) und die Karte zeigt veraltete Daten. */
+  const loadSeq = useRef(0)
+  /** Fehler einer Aktion (Löschen) — getrennt vom Ladefehler, der die ganze
+   *  Karte ersetzt. */
+  const [actionError, setActionError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<GroupHw | null>(null)
   const [pending, startTransition] = useTransition()
   const { confirm, dialog } = useConfirm()
 
+  /**
+   * Mitglieder + Hausübungen der Gruppe holen.
+   *
+   * Bewusst mit try/finally und sichtbarem Fehler: vorher verschluckte diese
+   * Funktion jeden Fehlschlag. Brach ein Aufruf ab, blieb „Lädt…" für immer
+   * stehen; lieferte er einen Fehler statt Daten, sah das aus wie „Gruppe hat
+   * keine Mitglieder". Beides war von aussen nicht zu unterscheiden.
+   */
   async function load() {
+    const seq = ++loadSeq.current
     setLoading(true)
-    const supabase = createClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any
-    const [mem, hw] = await Promise.all([
-      client.rpc('group_members', { p_group: group.id }),
-      client.rpc('group_homework', { p_group: group.id }),
-    ])
-    setMembers((mem.data as Member[] | null) ?? [])
-    setHomework((hw.data as GroupHw[] | null) ?? [])
-    setLoading(false)
+    setError(null)
+    try {
+      const supabase = createClient()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any
+      const [mem, hw] = await Promise.all([
+        client.rpc('group_members', { p_group: group.id }),
+        client.rpc('group_homework', { p_group: group.id }),
+      ])
+      if (seq !== loadSeq.current) return
+      const failure = mem.error ?? hw.error
+      if (failure) {
+        setError(`Konnte die Gruppe nicht laden: ${failure.message ?? 'unbekannter Fehler'}`)
+        return
+      }
+      setMembers((mem.data as Member[] | null) ?? [])
+      setHomework((hw.data as GroupHw[] | null) ?? [])
+    } catch (e) {
+      if (seq !== loadSeq.current) return
+      setError(e instanceof Error ? `Konnte die Gruppe nicht laden: ${e.message}` : 'Konnte die Gruppe nicht laden.')
+    } finally {
+      if (seq === loadSeq.current) setLoading(false)
+    }
   }
 
   // Laden hängt am Zustand „offen", nicht am Klick: bei genau einer Gruppe
   // startet die Karte bereits aufgeklappt, und dann gibt es keinen Klick, der
   // das Laden auslösen könnte — sie stand aufgeklappt und leer da.
   useEffect(() => {
-    if (open && members === null && !loading) void load()
-    // load/members bewusst nicht in den Abhängigkeiten: die Wächter oben
-    // sorgen dafür, dass genau einmal geladen wird.
+    // Beim Aufklappen genau einmal laden. `loading` steht bewusst NICHT in der
+    // Bedingung: es stammte aus einem alten Render-Stand und konnte das Laden
+    // dauerhaft blockieren. Gegen doppelte Läufe schützt die Sequenznummer.
+    if (open && members === null) void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -140,8 +170,9 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
       icon: 'delete',
     })
     if (!ok) return
+    setActionError(null)
     try { await deleteGroupHomework(hw.batch_id); afterChange() }
-    catch (e) { setError(e instanceof Error ? e.message : 'Löschen fehlgeschlagen.') }
+    catch (e) { setActionError(e instanceof Error ? e.message : 'Löschen fehlgeschlagen.') }
   }
 
   return (
@@ -172,7 +203,17 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
 
       {open && (
         <div className="mt-4 pt-4 border-t border-kh-border/50">
-          {loading && members === null ? (
+          {error ? (
+            <div className="py-4">
+              <div className="bg-kh-red-light text-kh-red text-[13px] font-semibold rounded-xl px-4 py-3">{error}</div>
+              <button
+                onClick={() => void load()}
+                className="mt-2.5 text-[12.5px] font-bold text-kh-teal hover:underline flex items-center gap-1"
+              >
+                <span className="msym text-[16px]">refresh</span> Erneut versuchen
+              </button>
+            </div>
+          ) : loading && members === null ? (
             <div className="text-[12.5px] text-kh-muted font-semibold py-6 text-center">Lädt…</div>
           ) : (
             <>
@@ -195,8 +236,8 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
                 )}
               </div>
 
-              {error && (
-                <div className="bg-kh-red-light text-kh-red text-sm font-semibold rounded-xl px-4 py-3 mb-3">{error}</div>
+              {actionError && (
+                <div className="bg-kh-red-light text-kh-red text-[13px] font-semibold rounded-xl px-4 py-3 mb-3">{actionError}</div>
               )}
 
               {/* Hausübungen */}
