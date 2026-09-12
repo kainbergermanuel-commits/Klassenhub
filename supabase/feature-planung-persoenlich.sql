@@ -58,12 +58,17 @@ drop index if exists public.planning_notes_class_week_idx;
 create index if not exists planning_notes_author_week_idx
   on public.planning_notes (author_id, week_start);
 
--- ---- 3) Klassenbezug entfernen -----------------------------
+-- ---- 3) Alte Policy zuerst ---------------------------------
+-- Sie verweist auf class_id; solange sie steht, lässt sich die Spalte nicht
+-- entfernen ("cannot drop column ... because other objects depend on it").
+drop policy if exists "planning_teacher_all" on public.planning_notes;
+
+-- ---- 4) Klassenbezug entfernen -----------------------------
 alter table public.planning_notes drop column if exists class_id;
 
--- ---- 4) Policies -------------------------------------------
+-- ---- 5) Neue Policies --------------------------------------
 -- Ohne Unterabfrage: die Zeile gehört mir oder nicht.
-drop policy if exists "planning_teacher_all" on public.planning_notes;
+drop policy if exists "planning_own_all" on public.planning_notes;
 create policy "planning_own_all" on public.planning_notes
   for all to authenticated
   using (author_id = (select auth.uid()) and public.is_teacher())
