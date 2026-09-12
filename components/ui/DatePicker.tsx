@@ -135,16 +135,18 @@ export default function DatePicker({
               const day = i + 1
               const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               const isSelected = iso === value
-              const isWeekendBlocked = disableWeekends && !isSchoolday(iso)
-              const isPast = (!!min && iso < min) || isWeekendBlocked
+              // Zwei Gründe, ein Zustand: vor der Mindestgrenze oder (in der
+              // Anwesenheit) ein Wochenende. Beide sehen gleich aus und sind
+              // gleich behandelt — deshalb ein neutraler Name statt „isPast".
+              const isBlocked = (!!min && iso < min) || (disableWeekends && !isSchoolday(iso))
               const isToday = iso === today
               return (
-                <button key={day} type="button" onClick={() => selectDay(day)} disabled={isPast}
+                <button key={day} type="button" onClick={() => selectDay(day)} disabled={isBlocked}
                   className={`h-8 w-full rounded-lg text-[13px] font-semibold transition-all
                     ${isSelected ? 'bg-kh-teal text-white font-extrabold' : ''}
                     ${!isSelected && isToday ? 'border border-kh-teal text-kh-teal' : ''}
-                    ${!isSelected && !isPast ? 'hover:bg-[#F0FAF8] text-kh-dark' : ''}
-                    ${isPast ? 'text-kh-muted/40 cursor-not-allowed' : ''}`}
+                    ${!isSelected && !isBlocked ? 'hover:bg-[#F0FAF8] text-kh-dark' : ''}
+                    ${isBlocked ? 'text-kh-muted/40 cursor-not-allowed' : ''}`}
                 >
                   {day}
                 </button>
