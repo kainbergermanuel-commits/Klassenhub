@@ -14,7 +14,8 @@ eine Tabelle dazukommt, muss die Seite nachgezogen werden.
 
 ## 1. Aktiv genutzte Tabellen
 
-28 Tabellen werden im Code tatsächlich abgefragt.
+31 Tabellen werden im Code tatsächlich abgefragt (28 im Stand vom 2026-08-14,
+dazu die drei Tabellen der Lerngruppen vom 2026-09-12).
 
 `todos` und `todo_completions` werden **nicht mehr abgefragt**, seit das
 Wochen-To-Do entfernt wurde, und sind hier deshalb nicht mehr geführt. Laut
@@ -43,6 +44,22 @@ innerhalb von Supabase Auth, es geht keine Post dorthin.
 | `homework_completions` | `student_id`, `completed_at`, `confirmed_by_parent_at` | eigene Zeile; zusätzlich **alle Lehrpersonen und alle Eltern der Klasse** |
 | `homework_extensions` | `student_id`, `extra_days` | s. o. |
 | `parent_nudges` | `student_id`, `homework_id`, Zeitpunkt | Kind selbst, Eltern, Lehrperson |
+| `learning_groups` | Gruppenname, Fach, führende Lehrperson | Admin und die führende Lehrperson |
+| `learning_group_members` | `student_id` je Gruppe | Admin und die führende Lehrperson |
+| `subject_default_exclusions` | `student_id`, `subject_short` | Lehrpersonen der Klasse und Admin |
+
+**Neu seit 2026-09-12 (Lerngruppen).** Eine Lerngruppe bündelt Kinder mehrerer
+Klassen für ein Fach. Datenschutzrelevant sind zwei Punkte:
+
+1. `homework.group_label` trägt den Gruppennamen als Text in die Hausübung und
+   ist damit für die Gruppenkinder und deren Eltern lesbar (für andere Kinder
+   der Klasse nicht — die Zeile ist für sie per RLS ausgenommen). Der Name darf
+   deshalb nichts über die Kinder aussagen; die Verwaltungsoberfläche weist
+   ausdrücklich darauf hin.
+2. `subject_default_exclusions` hält ausschliesslich die organisatorische
+   Tatsache „dieses Kind ist in diesem Fach nicht dabei". **Kein Förderstatus,
+   kein Grund, keine Diagnose** — dieselbe Linie wie bei
+   `homework.excluded_student_ids`. Kinder und Eltern lesen die Tabelle nie.
 
 `attachment_name` ist **nur ein Dateiname als Text**. Es gibt keinen
 Storage-Bucket und keinen Upload im ganzen Projekt (geprüft: kein Treffer für

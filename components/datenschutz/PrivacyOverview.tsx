@@ -62,11 +62,13 @@ function storedGroups(role: Role): Group[] {
           'Welche Hausübung du erledigt hast und wann',
           'Ob deine Eltern es bestätigt haben',
           'Ob du eine Fristverlängerung genutzt hast',
+          'Ob du zu einer Lerngruppe gehörst — dann steht der Name der Gruppe bei ihrer Hausübung',
         ]
       : [
           'Welche Hausübung wann als erledigt markiert wurde',
           'Wann eine Erledigung von einem Elternteil bestätigt wurde',
           'Genutzte Fristverlängerungen und Erinnerungen an die Eltern',
+          'Die Zugehörigkeit zu einer Lerngruppe und in welchen Fächern ein Kind dauerhaft nicht mitarbeitet — ohne den Grund dafür',
         ],
   }
 
