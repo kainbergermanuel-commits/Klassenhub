@@ -291,7 +291,7 @@ function PlanungPopup({
 export default function HeuteAgenda({ data }: { data: AgendaData }) {
   const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage, supervisions } = data
   const focusIsSchoolday = focusWeekday >= 1 && focusWeekday <= 5
-  const [view, setView] = useState<'tag' | 'woche'>(focusIsSchoolday ? 'tag' : 'woche')
+  const [view, setView] = useState<'tag' | 'woche' | 'planung'>(focusIsSchoolday ? 'tag' : 'woche')
   const [popupDay, setPopupDay] = useState<number | null>(null)
 
   const subjMap = new Map(subjects.map(s => [s.label, s]))
@@ -315,6 +315,13 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
 
   const focusPlanCount = focusIsSchoolday ? dayPlanCount(focusWeekday) : 0
 
+  /** Der Planung-Reiter existiert nur für Lehrpersonen — Eltern und
+   *  Schüler:innen sehen dieselbe Card ohne Planungsdaten (notes = []). */
+  const focusHasPlan = focusIsSchoolday && dayHasPlan(focusWeekday)
+  const tabs: [('tag' | 'woche' | 'planung'), string][] = showPlanningLinks
+    ? [['tag', focusTabLabel], ['woche', 'Woche'], ['planung', 'Planung']]
+    : [['tag', focusTabLabel], ['woche', 'Woche']]
+
   /** Gangaufsichten des Fokustags, nach Zeit (= break_slot) sortiert. */
   const focusSupervisions: (SupervisionBreak & { location: string })[] = (supervisions ?? [])
     .filter(s => s.day === focusWeekday)
@@ -333,21 +340,39 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
             verschiedene Umschalter-Stile nebeneinander wirkten zufällig. Gilt
             über diese Komponente automatisch für Lehrer- UND Elternansicht. */}
         <div className="flex gap-0.5 p-0.5 rounded-lg bg-gradient-to-b from-[#ECE7DD] to-white flex-shrink-0">
-          {([['tag', focusTabLabel], ['woche', 'Woche']] as const).map(([v, lbl]) => (
+          {tabs.map(([v, lbl]) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all ${
+              className={`relative px-3 py-1.5 rounded-md text-[11px] font-bold transition-all ${
                 view === v ? 'bg-white/70 text-kh-dark shadow-sm' : 'text-kh-muted hover:text-kh-dark'
               }`}
             >
               {lbl}
+              {/* Punkt am Planung-Reiter: heute steht etwas in der Planung.
+                  Bewusst nur ein Punkt ohne Zahl — die Zahl steht im Reiter
+                  selbst (Tagesabschnitte) und wäre hier doppelt. */}
+              {v === 'planung' && focusHasPlan && (
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full" style={{ background: '#B9791A' }} />
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {view === 'tag' ? (
+      {view === 'planung' ? (
+        <PlanungView
+          weekLabel={weekLabel}
+          weekStart={weekStart}
+          focusWeekday={focusWeekday}
+          weekNote={weekNote}
+          dayGeneralNote={dayGeneralNote}
+          dayPlanNotes={dayPlanNotes}
+          subjects={subjects}
+          subjOf={subjOf}
+          onOpenPlanning={setPopupDay}
+        />
+      ) : view === 'tag' ? (
         <TagView
           weekday={focusWeekday}
           tabLabel={focusTabLabel}
@@ -578,6 +603,100 @@ function WocheView({
       </div>
 
       {weekNote && <WeekNoteLine text={weekNote} />}
+    </>
+  )
+}
+
+/** Dritter Reiter (nur Lehrpersonen): die Planung der Woche am Stück lesbar.
+ *
+ *  Bewusst eine reine LESE-Ansicht auf dieselben Notizen, die Tag- und
+ *  Wochenreiter schon geladen haben — geschrieben wird weiterhin nur unter
+ *  /planung. Der Unterschied zum Popup ist die Woche auf einen Blick statt
+ *  Tag für Tag; deshalb sind die Texte hier gekürzt, das Popup bleibt der Ort
+ *  für den vollen Wortlaut (Tag antippen).
+ *
+ *  Leere Tage bleiben sichtbar statt herausgefiltert: „an diesem Tag ist noch
+ *  nichts geplant" ist genau die Information, für die man den Reiter öffnet. */
+function PlanungView({
+  weekLabel, weekStart, focusWeekday, weekNote, dayGeneralNote, dayPlanNotes, subjects, subjOf, onOpenPlanning,
+}: {
+  weekLabel: string
+  weekStart: string
+  focusWeekday: number
+  weekNote: string | null
+  dayGeneralNote: (day: number) => string | null
+  dayPlanNotes: (day: number) => Note[]
+  subjects: Subject[]
+  subjOf: (l: string) => Subject
+  onOpenPlanning: (day: number) => void
+}) {
+  const hasAnything = !!weekNote || [1, 2, 3, 4, 5].some(d => !!dayGeneralNote(d) || dayPlanNotes(d).length > 0)
+
+  return (
+    <>
+      <p className="text-[12.5px] font-semibold text-kh-muted mb-3 -mt-1">{weekLabel}</p>
+
+      {weekNote && <div className="mb-2.5"><WeekNoteLine text={weekNote} /></div>}
+
+      {!hasAnything ? (
+        <div className="flex flex-col items-center text-center py-7">
+          <span className="msym text-[34px] text-kh-muted/40 mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>edit_calendar</span>
+          <p className="text-[13.5px] text-kh-muted font-medium">Für diese Woche ist noch nichts geplant.</p>
+          <Link href="/planung" className="mt-3 flex items-center gap-1.5 text-[12.5px] font-bold text-[#3E8DB8] hover:underline">
+            <span className="msym text-[16px]">edit_calendar</span> Planung öffnen
+          </Link>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {DAY_SHORT.map((short, i) => {
+            const day = i + 1
+            const isFocus = day === focusWeekday
+            const general = dayGeneralNote(day)
+            const subjectNotes = dayPlanNotes(day)
+              .sort((a, b) => subjects.findIndex(s => s.label === a.subject) - subjects.findIndex(s => s.label === b.subject))
+            const empty = !general && subjectNotes.length === 0
+
+            return (
+              <button
+                key={day}
+                onClick={() => !empty && onOpenPlanning(day)}
+                disabled={empty}
+                aria-label={empty ? `${DAY_FULL[i]}: nichts geplant` : `Planung ${DAY_FULL[i]} ansehen`}
+                className={`w-full text-left flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+                  isFocus ? 'bg-[#3E8DB8]/12 ring-1 ring-[#3E8DB8]/30' : 'bg-white/60'
+                } ${empty ? 'cursor-default' : 'hover:bg-white/90'}`}
+              >
+                <div className="flex flex-col items-center w-9 flex-shrink-0 pt-px">
+                  <span className={`text-[12.5px] font-extrabold leading-none ${isFocus ? 'text-[#3E8DB8]' : 'text-kh-dark'}`}>{short}</span>
+                  <span className="text-[9.5px] font-medium text-kh-muted mt-0.5 leading-none">{fmtDayNum(weekStart, i)}</span>
+                </div>
+
+                {empty ? (
+                  <span className="text-[12.5px] text-kh-muted/70 font-medium pt-px">Nichts geplant</span>
+                ) : (
+                  <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                    {general && (
+                      <div className="flex items-start gap-2 min-w-0">
+                        <span className="msym text-[15px] text-kh-muted flex-shrink-0 mt-px" style={{ fontVariationSettings: "'FILL' 1" }}>push_pin</span>
+                        <span className="text-[12.5px] text-kh-dark/90 leading-snug line-clamp-2 whitespace-pre-wrap">{general}</span>
+                      </div>
+                    )}
+                    {subjectNotes.map((n, k) => {
+                      const s = subjOf(n.subject)
+                      return (
+                        <div key={k} className="flex items-start gap-2 min-w-0">
+                          <SubjChip subj={s} size={20} />
+                          <span className="text-[12.5px] text-kh-dark/90 leading-snug line-clamp-2 whitespace-pre-wrap pt-px">{n.content}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </>
   )
 }
