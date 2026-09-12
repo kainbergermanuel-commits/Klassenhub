@@ -310,7 +310,15 @@ function HomeworkRow({ hw, onEdit, onDelete }: { hw: GroupHw; onEdit: () => void
   return (
     <div className="rounded-xl bg-white/70 ring-1 ring-kh-border/40 px-3 py-2.5">
       <div className="flex items-center gap-3">
-        <button onClick={toggle} className="flex-1 min-w-0 flex items-center gap-3 text-left">
+        {/* Die ganze Zeile öffnet die namentliche Abgabeliste. Das war vorher
+            nicht zu erkennen — daneben standen zwei deutliche Symbole zum
+            Bearbeiten und Löschen, und der Rest sah nach reiner Anzeige aus.
+            Deshalb ein sichtbarer Hinweis statt einer versteckten Fläche. */}
+        <button
+          onClick={toggle}
+          aria-expanded={open}
+          className="flex-1 min-w-0 flex items-center gap-3 text-left group"
+        >
           <span
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-extrabold text-[10px] flex-shrink-0"
             style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee, ${hw.subject_color}99)` }}
@@ -324,6 +332,10 @@ function HomeworkRow({ hw, onEdit, onDelete }: { hw: GroupHw; onEdit: () => void
               {hw.confirmed_count > 0 && ` · ${hw.confirmed_count} bestätigt`}
             </div>
           </div>
+          <span className="flex items-center gap-0.5 text-[11.5px] font-bold text-kh-teal flex-shrink-0 mr-1">
+            <span className="max-sm:hidden">{open ? 'schließen' : 'wer hat abgegeben?'}</span>
+            <span className="msym text-[18px]">{open ? 'expand_less' : 'expand_more'}</span>
+          </span>
         </button>
         <button onClick={onEdit} aria-label="Bearbeiten" className="msym text-[18px] text-kh-muted hover:text-kh-teal transition-colors">edit</button>
         <button onClick={onDelete} aria-label="Löschen" className="msym text-[18px] text-kh-muted hover:text-kh-red transition-colors">delete</button>
