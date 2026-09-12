@@ -348,8 +348,12 @@ export default async function HomePage() {
       supabase.from('teacher_timetable_entries' as never)
         .select('day,slot,subject,class_label').eq('teacher_id', user.id)
         .order('day').order('slot') as unknown as Promise<{ data: { day: number; slot: number; subject: string; class_label: string }[] | null }>,
+      // Eigene Planung, klassenunabhängig (siehe
+      // supabase/feature-planung-persoenlich.sql). Vorher hing sie an der
+      // aktiven Klasse und stand damit neben einem Stundenplan, der über alle
+      // Klassen geht — die eigene Planung war nur bei „richtiger" Klasse da.
       supabase.from('planning_notes' as never)
-        .select('day,subject,content').eq('class_id', activeClassId)
+        .select('day,subject,content').eq('author_id', user.id)
         .eq('week_start', agendaWeekStart) as unknown as Promise<{ data: { day: number; subject: string; content: string }[] | null }>,
       // Gangaufsichten der Lehrperson (siehe supabase/add-teacher-supervisions.sql).
       // Fehlt die Tabelle noch, liefert Supabase data=null → keine Aufsichten.
@@ -363,7 +367,6 @@ export default async function HomePage() {
         day: e.day, slot: e.slot, subject: e.subject, classLabel: e.class_label ?? '',
       })),
       notes: planningNotes ?? [],
-      notesClassName: klass?.name ?? null,
       emptyMessage: 'Du hast noch keinen eigenen Stundenplan angelegt.',
       subjects,
       focusWeekday: todayWeekday,
@@ -372,7 +375,7 @@ export default async function HomePage() {
       weekStart: agendaWeekStart,
       weekLabel: `KW ${getWeekNumber(agendaWeekStart)}`,
       showPlanningLinks: true,
-      classId: activeClassId,
+      authorId: user.id,
       supervisions: (supervisionRows ?? []).map(s => ({ day: s.day, breakSlot: s.break_slot, location: s.location ?? '' })),
     }
 

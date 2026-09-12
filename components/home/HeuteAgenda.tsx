@@ -33,12 +33,11 @@ export interface AgendaData {
    *  (eigener Plan, mit classLabel); Eltern/Schüler: timetable_entries
    *  (gepushter Plan des Kindes, ohne classLabel). */
   entries: Entry[]
-  /** Planungs-Notizen (nur Lehrer; Eltern übergeben []). subject = Fach-Label,
-   *  leer = allgemeine Tages-/Wochennotiz. day 0 = Wochennotiz. */
+  /** Planungs-Notizen der Lehrperson (Eltern übergeben []). subject =
+   *  Fach-Label, leer = allgemeine Tages-/Wochennotiz, day 0 = Wochennotiz.
+   *  Klassenunabhängig: die Planung gehört der Lehrperson, welche Klasse eine
+   *  Notiz meint, steht in ihrem Text (feature-planung-persoenlich.sql). */
   notes: Note[]
-  /** Name der aktiven Klasse. Die Notizen stammen aus DEREN Planung, dürfen
-   *  also nicht an Stunden einer anderen Klasse kleben (z.B. "D 1b"). */
-  notesClassName?: string | null
   /** Text im Leerzustand, wenn für den Fokustag nichts eingetragen ist. */
   emptyMessage?: string
   /** Fächer-Katalog für Kürzel + Farbe. */
@@ -55,9 +54,10 @@ export interface AgendaData {
   weekLabel: string
   /** Fußzeile mit Stundenplan-/Planung-Links (nur Lehrer). */
   showPlanningLinks: boolean
-  /** Aktive Klasse — nur nötig, damit der Planung-Reiter andere Wochen
-   *  nachladen kann. Fehlt sie, bleibt das Blättern aus. */
-  classId?: string | null
+  /** Eigene Benutzer-ID — nur nötig, damit der Planung-Reiter andere Wochen
+   *  nachladen kann (die Planung gehört der Lehrperson). Fehlt sie, bleibt
+   *  das Blättern aus. */
+  authorId?: string | null
   /** Gangaufsichten der Lehrperson (nur Lehrer; Eltern lassen es weg). day 1=Mo…5=Fr,
    *  breakSlot 0=vor der 1. Stunde, N=Pause nach der N. Stunde, location Freitext. */
   supervisions?: { day: number; breakSlot: number; location: string }[]
@@ -294,7 +294,7 @@ function PlanungPopup({
  * auf Kartenebene. Bewusst KEINE Doppelung des Statistik-Panels.
  */
 export default function HeuteAgenda({ data }: { data: AgendaData }) {
-  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage, supervisions, classId } = data
+  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage, supervisions, authorId } = data
   const focusIsSchoolday = focusWeekday >= 1 && focusWeekday <= 5
   const [view, setView] = useState<'tag' | 'woche' | 'planung'>(focusIsSchoolday ? 'tag' : 'woche')
   const [popupDay, setPopupDay] = useState<number | null>(null)
@@ -312,14 +312,14 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
   const planNotes = planOffset === 0 ? notes : planCache[planWeekStart] ?? []
 
   useEffect(() => {
-    if (view !== 'planung' || planOffset === 0 || !classId) return
+    if (view !== 'planung' || planOffset === 0 || !authorId) return
     if (planCache[planWeekStart]) return
     let cancelled = false
     setPlanLoading(true)
     const supabase = createClient()
     supabase.from('planning_notes' as never)
       .select('day,subject,content')
-      .eq('class_id', classId)
+      .eq('author_id', authorId)
       .eq('week_start', planWeekStart)
       .then(({ data: rows }) => {
         if (cancelled) return
@@ -327,7 +327,7 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
         setPlanLoading(false)
       })
     return () => { cancelled = true }
-  }, [view, planOffset, planWeekStart, classId, planCache])
+  }, [view, planOffset, planWeekStart, authorId, planCache])
 
   const subjMap = new Map(subjects.map(s => [s.label, s]))
   const subjOf = (label: string): Subject => subjMap.get(label) ?? { label, short: label.slice(0, 2).toUpperCase(), color: '#6E7E80' }
@@ -403,7 +403,7 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
           weekStart={planWeekStart}
           isCurrentWeek={planOffset === 0}
           loading={planLoading}
-          canBrowse={!!classId}
+          canBrowse={!!authorId}
           onPrev={() => setPlanOffset(o => o - 1)}
           onNext={() => setPlanOffset(o => o + 1)}
           onBackToCurrent={() => setPlanOffset(0)}

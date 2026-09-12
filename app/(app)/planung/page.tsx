@@ -10,7 +10,7 @@ import { loadSubjectsCatalog } from '@/lib/subjectsCatalog'
 interface Note { day: number; subject: string; content: string }
 
 export default async function PlanungPage({ searchParams }: { searchParams: Promise<{ w?: string }> }) {
-  const { user, profile, activeClassId } = await getEffectiveAuth()
+  const { user, profile } = await getEffectiveAuth()
   if (!user || !profile) redirect('/login')
   if (profile.role !== 'teacher') redirect('/')
 
@@ -21,14 +21,15 @@ export default async function PlanungPage({ searchParams }: { searchParams: Prom
     : getRelevantMondayOfWeek()
 
   const supabase = await createClient()
+  // Die Planung gehört der Lehrperson, nicht der Klasse
+  // (supabase/feature-planung-persoenlich.sql): kein Klassenfilter, keine
+  // Abhängigkeit vom Klassenumschalter.
   const [notesResult, subjects] = await Promise.all([
-    activeClassId
-      ? (supabase
-          .from('planning_notes' as never)
-          .select('day,subject,content')
-          .eq('class_id', activeClassId)
-          .eq('week_start', weekStart) as unknown as Promise<{ data: Note[] | null }>)
-      : Promise.resolve({ data: [] as Note[] }),
+    supabase
+      .from('planning_notes' as never)
+      .select('day,subject,content')
+      .eq('author_id', user.id)
+      .eq('week_start', weekStart) as unknown as Promise<{ data: Note[] | null }>,
     loadSubjectsCatalog(supabase),
   ])
   const notes = notesResult.data ?? []

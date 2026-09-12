@@ -3,13 +3,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 
-/** Lehrperson + aktive Klasse ermitteln, sonst Fehler. */
-async function getTeacherClassId(): Promise<{ userId: string; classId: string }> {
-  const { user, profile, activeClassId } = await getEffectiveAuth()
+/** Lehrperson ermitteln, sonst Fehler.
+ *
+ *  Die Planung gehört seit feature-planung-persoenlich.sql der Lehrperson,
+ *  nicht der Klasse: kein activeClassId mehr, keine Abhängigkeit vom
+ *  Klassenumschalter. Welche Klasse eine Notiz meint, steht in ihrem Text. */
+async function getTeacher(): Promise<{ userId: string }> {
+  const { user, profile } = await getEffectiveAuth()
   if (!user || !profile) throw new Error('Nicht angemeldet')
   if (profile.role !== 'teacher') throw new Error('Keine Berechtigung')
-  if (!activeClassId) throw new Error('Keine Klasse aktiv')
-  return { userId: user.id, classId: activeClassId }
+  return { userId: user.id }
 }
 
 /**
@@ -17,22 +20,22 @@ async function getTeacherClassId(): Promise<{ userId: string; classId: string }>
  * subject '' = allgemein). Leerer Inhalt löscht die Notiz.
  */
 export async function savePlanningNote(weekStart: string, day: number, subject: string, content: string) {
-  const { userId, classId } = await getTeacherClassId()
+  const { userId } = await getTeacher()
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const table = (supabase as any).from('planning_notes')
 
   if (!content.trim()) {
     const { error } = await table.delete()
-      .eq('class_id', classId).eq('week_start', weekStart)
+      .eq('author_id', userId).eq('week_start', weekStart)
       .eq('day', day).eq('subject', subject)
     if (error) throw new Error(error.message)
     return
   }
 
   const { error } = await table.upsert(
-    { class_id: classId, author_id: userId, week_start: weekStart, day, subject, content, updated_at: new Date().toISOString() },
-    { onConflict: 'class_id,week_start,day,subject' }
+    { author_id: userId, week_start: weekStart, day, subject, content, updated_at: new Date().toISOString() },
+    { onConflict: 'author_id,week_start,day,subject' }
   )
   if (error) throw new Error(error.message)
 }
@@ -42,7 +45,7 @@ export async function savePlanningNote(weekStart: string, day: number, subject: 
  * Bestehende Notizen der Zielwoche bleiben unangetastet.
  */
 export async function copyPreviousWeek(weekStart: string): Promise<number> {
-  const { userId, classId } = await getTeacherClassId()
+  const { userId } = await getTeacher()
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const table = (supabase as any).from('planning_notes')
@@ -55,8 +58,8 @@ export async function copyPreviousWeek(weekStart: string): Promise<number> {
   const prevWeek = `${y}-${m}-${d}`
 
   const [{ data: source }, { data: existing }] = await Promise.all([
-    table.select('day,subject,content').eq('class_id', classId).eq('week_start', prevWeek),
-    table.select('day,subject').eq('class_id', classId).eq('week_start', weekStart),
+    table.select('day,subject,content').eq('author_id', userId).eq('week_start', prevWeek),
+    table.select('day,subject').eq('author_id', userId).eq('week_start', weekStart),
   ])
   if (!source || source.length === 0) return 0
 
@@ -64,7 +67,7 @@ export async function copyPreviousWeek(weekStart: string): Promise<number> {
   const rows = source
     .filter((n: { day: number; subject: string }) => !taken.has(`${n.day}|${n.subject}`))
     .map((n: { day: number; subject: string; content: string }) => ({
-      class_id: classId, author_id: userId, week_start: weekStart,
+      author_id: userId, week_start: weekStart,
       day: n.day, subject: n.subject, content: n.content,
     }))
   if (rows.length === 0) return 0

@@ -93,7 +93,7 @@ Ausbau nicht gebrochen werden darf.
 | `duties`, `duty_completions` | Dienstzuteilung und Erledigung je Kind | Klasse |
 | `events` | Termine, `target_student_ids` für persönliche Termine | Klasse, persönliche gefiltert |
 | `reminders`, `reminder_views` | Erinnerungen, wer sie gesehen hat | Klasse, Gesehen-Status bei Lehrperson |
-| `planning_notes` | Unterrichtsplanung der Lehrperson | **nur Lehrpersonen** |
+| `planning_notes` | Unterrichtsplanung der Lehrperson | **nur die Autorin selbst** (seit 2026-09-12; vorher alle Lehrpersonen der Klasse) |
 
 ### Besonders schutzbedürftig
 
