@@ -139,6 +139,22 @@ export default async function AdminPage() {
         </div>
       </AnimateIn>
 
+      {/* Lerngruppen (klassenübergreifender Unterricht) */}
+      <AnimateIn delay={45} className="mt-8">
+        <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px] mb-3">Unterricht</div>
+        <Link
+          href="/admin/gruppen"
+          className="bg-white rounded-2xl px-5 py-4 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+        >
+          <span className="msym text-[22px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>diversity_3</span>
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-[15px] text-kh-dark">Lerngruppen</div>
+            <div className="text-xs text-kh-muted font-medium mt-0.5">Kinder mehrerer Klassen zu einer Unterrichtsgruppe bündeln — Mitglieder und führende Lehrperson</div>
+          </div>
+          <span className="msym text-[20px] text-kh-muted">chevron_right</span>
+        </Link>
+      </AnimateIn>
+
       {/* Fächer-Katalog (für den Stundenplan-Baustein) */}
       <AnimateIn delay={60} className="mt-8">
         <div className="text-xs font-bold text-[#9AA6A4] uppercase tracking-[.6px] mb-3">Stundenplan</div>

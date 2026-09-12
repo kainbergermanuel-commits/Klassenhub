@@ -22,6 +22,10 @@ function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, mess
     { href: '/', icon: 'home', label: 'Start' },
     { href: '/streaks', icon: 'explore', label: 'Abenteuer' },
     { href: '/hausaufgaben', icon: 'assignment', label: 'Hausübungen', badge: hwOpen || undefined, section: 'Unterricht' },
+    // Bewusst ohne Vorab-Prüfung, ob diese Lehrperson überhaupt eine Gruppe
+    // führt: das wäre eine zusätzliche Abfrage in JEDEM Seitenaufbau, nur um
+    // einen Menüeintrag auszublenden. Die Seite selbst erklärt den Leerfall.
+    { href: '/gruppen', icon: 'diversity_3', label: 'Lerngruppen' },
     { href: '/anwesenheit', icon: 'fact_check', label: 'Anwesenheit', badge: attendancePending || undefined },
     { href: '/dienste', icon: 'cleaning_services', label: 'Dienste' },
     { href: '/stundenplan', icon: 'calendar_view_week', label: 'Stundenplan' },
