@@ -47,7 +47,7 @@ function StudentStatsDetail({ studentEntries, today }: { studentEntries: Attenda
     for (const e of studentEntries) {
       byMonth[e.date.slice(0, 7)] = (byMonth[e.date.slice(0, 7)] ?? 0) + 1
       const wd = new Date(`${e.date}T00:00:00`).getDay()
-      if (wd >= 1 && wd <= 5) byWeekday[wd - 1]++
+      if (isSchoolday(e.date)) byWeekday[wd - 1]++
     }
 
     // Längster zusammenhängender Block (Schultage; Fr→Mo zählt als Folge)

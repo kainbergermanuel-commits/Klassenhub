@@ -127,9 +127,9 @@ export async function setBulkAbsence(
   for (let i = 0; i < spanDays; i++) {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
-    const weekday = d.getDay()
-    if (weekday === 0 || weekday === 6) continue
-    dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    if (!isSchoolday(iso)) continue
+    dates.push(iso)
   }
   if (dates.length === 0) throw new Error('Der Zeitraum enthält nur Wochenendtage')
 
@@ -189,9 +189,8 @@ export async function reportAbsence(startDate: string, endDate: string, note: st
   for (let i = 0; i < spanDays; i++) {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
-    const weekday = d.getDay()
-    if (weekday === 0 || weekday === 6) continue // Wochenende überspringen
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    if (!isSchoolday(iso)) continue // Wochenende überspringen
     rows.push({
       class_id: child.class_id,
       student_id: child.id,

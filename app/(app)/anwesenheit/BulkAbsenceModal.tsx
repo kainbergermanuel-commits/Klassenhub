@@ -6,6 +6,7 @@ import { setBulkAbsence } from '@/app/actions/attendance'
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
 import DatePicker from '@/components/ui/DatePicker'
+import { isSchoolday } from '@/lib/date'
 import type { Profile } from '@/lib/types'
 
 interface Props {
@@ -28,8 +29,7 @@ function countSchoolDays(startDate: string, endDate: string): number {
   for (let i = 0; i < span; i++) {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
-    const wd = d.getDay()
-    if (wd !== 0 && wd !== 6) n++
+    if (isSchoolday(d)) n++
   }
   return n
 }

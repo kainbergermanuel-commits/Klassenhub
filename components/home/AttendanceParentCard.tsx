@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { reportAbsence, withdrawReport } from '@/app/actions/attendance'
+import { isSchoolday } from '@/lib/date'
 
 export interface ChildAbsenceEntry {
   id: string
@@ -43,8 +44,7 @@ export default function AttendanceParentCard({ childFirstName, upcomingEntries, 
   const [error, setError] = useState<string | null>(null)
 
   const todayEntry = upcomingEntries.find(e => e.date === today)
-  const weekday = new Date(`${today}T00:00:00`).getDay()
-  const isWeekend = weekday === 0 || weekday === 6
+  const isWeekend = !isSchoolday(today)
   const showQuickAction = !todayEntry && !sent && !isWeekend
 
   async function reportToday() {

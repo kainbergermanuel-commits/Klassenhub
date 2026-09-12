@@ -42,8 +42,7 @@ export function weekdayCountBetween(startISO: string, endISO: string): number {
   const cur = new Date(`${startISO}T00:00:00`)
   const end = new Date(`${endISO}T00:00:00`)
   while (cur <= end) {
-    const d = cur.getDay()
-    if (d >= 1 && d <= 5) count++
+    if (isSchoolday(cur)) count++
     cur.setDate(cur.getDate() + 1)
   }
   return count
@@ -98,11 +97,10 @@ export function buildAttendanceStats(
   const months = monthKeys.map(key => ({ key, ...monthMap.get(key)! }))
   const monthMax = Math.max(1, ...months.map(m => m.excused + m.unexcused))
 
+  // focus enthält nach dem Filter oben ohnehin nur Schultage; der Index
+  // verschiebt Mo(1)…Fr(5) auf 0…4.
   const weekday = [0, 0, 0, 0, 0]
-  for (const e of focus) {
-    const wd = new Date(`${e.date}T00:00:00`).getDay()
-    if (wd >= 1 && wd <= 5) weekday[wd - 1]++
-  }
+  for (const e of focus) weekday[new Date(`${e.date}T00:00:00`).getDay() - 1]++
   const weekdayMax = Math.max(...weekday)
   const peakWeekday = focus.length >= 3 && weekdayMax > 0 ? weekday.indexOf(weekdayMax) : -1
   const moFrShare = focus.length > 0 ? (weekday[0] + weekday[4]) / focus.length : 0

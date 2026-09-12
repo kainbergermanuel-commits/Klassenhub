@@ -50,7 +50,8 @@ export function addDaysISO(days: number, from: Date = new Date()): string {
 }
 
 /**
- * Ist dieses Datum ein Schultag (Mo–Fr)?
+ * Ist dieses Datum ein Schultag (Mo–Fr)? Nimmt ISO-Text oder ein Date —
+ * sonst müssten Aufrufer, die über Tage iterieren, jedes Mal erst formatieren.
  *
  * Samstag und Sonntag zählen in der Anwesenheit NICHT — weder als Tag, an dem
  * etwas eingetragen werden kann, noch im Nenner einer Quote. Diese Funktion
@@ -61,9 +62,9 @@ export function addDaysISO(days: number, from: Date = new Date()): string {
  * es keinen Kalender in der App, und ein halb gepflegter wäre schlechter als
  * gar keiner.
  */
-export function isSchoolday(dateISO: string): boolean {
-  const d = new Date(`${dateISO}T00:00:00`).getDay()
-  return d >= 1 && d <= 5
+export function isSchoolday(date: string | Date): boolean {
+  const day = (typeof date === 'string' ? new Date(`${date}T00:00:00`) : date).getDay()
+  return day >= 1 && day <= 5
 }
 
 /** Dieser Tag, oder der letzte Schultag davor (Samstag/Sonntag → Freitag).
