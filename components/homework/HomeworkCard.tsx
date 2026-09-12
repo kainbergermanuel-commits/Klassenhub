@@ -21,6 +21,10 @@ import { useConfirm } from '@/components/ui/ConfirmDialog'
 interface StudentRow {
   id: string
   full_name: string
+  /** Nur bei Gruppen-Hausübungen gesetzt: aus welcher Klasse das Kind kommt.
+   *  In der Klassenliste wäre die Angabe überflüssig, in der Gruppe ist sie
+   *  die Orientierung. */
+  class_name?: string | null
   done: boolean
   /** Von den Eltern bestätigt — nur das zählt für Flamme und Klassenziel. */
   confirmed: boolean
@@ -206,6 +210,37 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
 
   async function openStudents() {
     setShowStudents(true)
+    // Gruppen-Hausübung: die GRUPPE zeigen, nicht die Klasse. Sonst stünden
+    // hier drei Gruppenkinder und dreizehn Kinder der Regelklasse als
+    // „bekommen sie nicht", während die Gruppenkinder der anderen Klassen
+    // ganz fehlten. Eine Abfrage wie vorher, nur die richtige.
+    // Fristverlängerungen bleiben hier aussen vor: sie sind persönlich und
+    // stehen in der Klassenansicht der jeweiligen Lehrperson.
+    if (hw.group_batch_id) {
+      const supabase = createClient()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any).rpc('group_homework_students', { p_batch: hw.group_batch_id })
+      type GroupStudent = {
+        student_id: string; full_name: string; class_name: string | null
+        avatar_color: string; avatar_seed: string | null
+        avatar_hair_color: string | null; avatar_skin_color: string | null
+        done: boolean; confirmed: boolean
+      }
+      setStudents(((data as GroupStudent[] | null) ?? []).map(g => ({
+        id: g.student_id,
+        full_name: g.full_name,
+        class_name: g.class_name,
+        done: g.done,
+        confirmed: g.confirmed,
+        extraDays: 0,
+        avatar_color: g.avatar_color,
+        avatar_seed: g.avatar_seed,
+        avatar_hair_color: g.avatar_hair_color,
+        avatar_skin_color: g.avatar_skin_color,
+      })))
+      return
+    }
+
     // Bei jedem Öffnen neu laden. Hakt ein Kind zwischendurch ab, wäre eine
     // einmal gecachte Liste dauerhaft falsch — die Karte wird durch
     // router.refresh() nicht neu erzeugt. Die alte Liste bleibt so lange
@@ -441,7 +476,14 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
                 >
                   {hw.subject_short}
                 </div>
-                <h2 className="text-[16px] font-extrabold text-kh-dark">{hw.title}</h2>
+                <div className="min-w-0">
+                  <h2 className="text-[16px] font-extrabold text-kh-dark">{hw.title}</h2>
+                  {hw.group_label && (
+                    <p className="text-[11.5px] font-semibold text-kh-muted mt-0.5 truncate">
+                      Lerngruppe {hw.group_label} · alle Klassen
+                    </p>
+                  )}
+                </div>
               </div>
               <button onClick={() => setShowStudents(false)} aria-label="Schließen" className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
             </div>
@@ -611,6 +653,11 @@ function StudentGroup({
               <span key={s.id} className="flex items-center gap-1.5 text-[12px] font-semibold pl-1 pr-2.5 py-0.5 rounded-full" style={{ background: chipBg, color }}>
                 <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
                 {s.full_name.split(' ')[0]}
+                {/* Klasse nur bei Gruppen-HÜ gesetzt — dort ist sie die
+                    Orientierung, in der Klassenliste wäre sie Rauschen. */}
+                {s.class_name && (
+                  <span className="text-[10px] font-bold opacity-70">{s.class_name}</span>
+                )}
                 {s.extraDays > 0 && (
                   <span className="msym text-[13px] text-[#4A6FA5]" title={`Zeitkristall: Frist um ${s.extraDays} Tage verlängert`} style={{ fontVariationSettings: "'FILL' 1" }}>diamond</span>
                 )}
