@@ -181,7 +181,13 @@ export default async function HomePage() {
     // Fensters, das oben (homeworkAll) schon geladen ist — hier nur noch
     // gefiltert/geschnitten statt neu abgefragt.
     const allHwForStreaks = homeworkAll
-    const recentHw = homeworkAll.filter(h => isOver(h.due_date, today)).slice(0, 3)
+    // Gruppen-HÜ hier schon aussortieren, nicht erst in der Ansicht: sonst
+    // verbrauchte eine Gruppen-Hausübung einen der drei Plätze und die Liste
+    // bliebe leer, obwohl es eigene gäbe. (Sie gehören unter /gruppen, siehe
+    // TeacherHome.)
+    const recentHw = homeworkAll
+      .filter(h => isOver(h.due_date, today) && !h.group_batch_id)
+      .slice(0, 3)
 
     const allHwIds = allHwForStreaks.map(h => h.id)
     const { data: allCompletions } = allHwIds.length > 0

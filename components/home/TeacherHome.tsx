@@ -124,7 +124,7 @@ interface TeacherHomeProps {
   upcomingEvents: AgendaEvent[]
   /** Gesamtzahl bevorstehender Termine (upcomingEvents ist auf sechs begrenzt). */
   upcomingEventCount: number
-  recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number }[]
+  recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number; group_batch_id?: string | null }[]
   attendancePendingReports: PendingAttendanceReport[]
   absentToday: AbsentTodayEntry[]
   /** Alle Schüler:innen der Klasse (für Avatare der Anwesenheits-Karte) */
@@ -145,10 +145,20 @@ export default function TeacherHome({
   const firstName = fullName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
   const todayStr = todayISO()
-  const upcoming = [...homeworkList]
+  /** Hausübungen einer Lerngruppe bleiben auf der Startseite aussen vor.
+   *
+   *  Sie stehen zwar in dieser Klasse, sind aber nicht der Unterricht DIESER
+   *  Lehrperson — kontrolliert und gepflegt werden sie unter /gruppen, von
+   *  der Lehrperson, die die Gruppe führt. Die Startseite ist der Blick auf
+   *  den eigenen Tag; auf der Hausübungsseite bleiben sie mit ihrem
+   *  Gruppen-Kennzeichen sichtbar, damit das vollständige Bild der Klasse
+   *  weiterhin an einem Ort steht. */
+  const ownClassHw = homeworkList.filter(h => !h.group_batch_id)
+  const upcoming = [...ownClassHw]
     .filter(h => h.due_date >= todayStr)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
     .slice(0, 5)
+  const recentOwn = recentHomework.filter(h => !h.group_batch_id)
 
   const hasAttendanceContent = attendancePendingReports.length > 0 || absentToday.length > 0
 
@@ -247,7 +257,7 @@ export default function TeacherHome({
               </div>
             )}
 
-            {recentHomework.length > 0 && (
+            {recentOwn.length > 0 && (
               <>
                 <div className="flex items-center gap-2 mt-4 mb-2.5">
                   <div className="flex-1 h-px bg-kh-border/60" />
@@ -255,7 +265,7 @@ export default function TeacherHome({
                   <div className="flex-1 h-px bg-kh-border/60" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  {recentHomework.map(hw => (
+                  {recentOwn.map(hw => (
                     <div key={hw.id} className="flex items-center gap-3 rounded-xl px-3 py-2">
                       <div
                         className="w-7 h-7 rounded-[8px] flex items-center justify-center font-extrabold text-[11px] text-white flex-shrink-0 opacity-50"
