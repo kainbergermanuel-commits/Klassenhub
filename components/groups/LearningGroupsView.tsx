@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -116,10 +116,15 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
     setLoading(false)
   }
 
-  function handleToggle() {
-    onToggle()
-    if (!open && members === null) void load()
-  }
+  // Laden hängt am Zustand „offen", nicht am Klick: bei genau einer Gruppe
+  // startet die Karte bereits aufgeklappt, und dann gibt es keinen Klick, der
+  // das Laden auslösen könnte — sie stand aufgeklappt und leer da.
+  useEffect(() => {
+    if (open && members === null && !loading) void load()
+    // load/members bewusst nicht in den Abhängigkeiten: die Wächter oben
+    // sorgen dafür, dass genau einmal geladen wird.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   function afterChange() {
     void load()
@@ -142,7 +147,7 @@ function GroupCard({ group, open, onToggle }: { group: Group; open: boolean; onT
   return (
     <div className="kh-card px-5 py-4">
       {dialog}
-      <button onClick={handleToggle} className="w-full flex items-center gap-4 text-left">
+      <button onClick={onToggle} className="w-full flex items-center gap-4 text-left">
         <span
           className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-extrabold text-[13px] flex-shrink-0"
           style={{ background: `linear-gradient(135deg, ${group.subject_color}ee, ${group.subject_color}99)` }}
