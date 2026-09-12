@@ -106,6 +106,17 @@ export type Homework = {
    *  alle" — siehe supabase/add-homework-exclusions.sql. Auswerten immer über
    *  hwForStudent()/isHwForStudent() in lib/homeworkScope.ts, nie von Hand. */
   excluded_student_ids: string[] | null
+  /** Lerngruppen-Herkunft (siehe supabase/feature-lerngruppen.sql). `null`
+   *  bei jeder gewöhnlichen Klassen-HÜ, also fast überall.
+   *  • group_id       — welche Lerngruppe
+   *  • group_batch_id — klammert die je Klasse aufgeteilten Zeilen EINER
+   *    Gruppen-HÜ. Bearbeiten/Löschen nie einzeln, immer über die Funktionen
+   *    update_group_homework()/delete_group_homework().
+   *  • group_label    — Gruppenname als Text, bewusst mitgeschrieben statt
+   *    nachgeschlagen: so kostet die Kennzeichnung beim Kind keine Abfrage. */
+  group_id: string | null
+  group_batch_id: string | null
+  group_label: string | null
 }
 
 export type HomeworkCompletion = {
@@ -162,6 +173,9 @@ export type Database = {
           details?: string | null
           status?: 'published' | 'pending'
           excluded_student_ids?: string[] | null
+          group_id?: string | null
+          group_batch_id?: string | null
+          group_label?: string | null
         }
         Update: Partial<Homework>
         Relationships: []
