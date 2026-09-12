@@ -1,4 +1,4 @@
-import { localDateOf } from '@/lib/date'
+import { localDateOf, isSchoolday } from '@/lib/date'
 import type { Attendance, AttendanceStatus } from '@/lib/types'
 
 /** Reine Statistik-Ableitungen aus Anwesenheits-Einträgen — gemeinsam von der
@@ -70,7 +70,13 @@ export function buildAttendanceStats(
 ): AttendanceStats {
   const { studentCount, startISO, endISO, statusFilter } = opts
   // Zeitraum-Filter (alle Status) — Basis für KPIs.
-  const inRange = entries.filter(e => e.date >= startISO && e.date <= endISO)
+  //
+  // Wochenendtage fallen hier heraus, nicht nur im Nenner: der Nenner zählt
+  // ausschliesslich Schultage (weekdayCountBetween), ein Eintrag an einem
+  // Samstag oder Sonntag drückte die Quote also gegen eine Zahl, in der sein
+  // Tag gar nicht vorkommt. Der Filter greift auch für Altbestand, ohne dass
+  // Daten angefasst werden müssen.
+  const inRange = entries.filter(e => e.date >= startISO && e.date <= endISO && isSchoolday(e.date))
   const excused = inRange.filter(e => e.status === 'entschuldigt').length
   const unexcused = inRange.filter(e => e.status === 'unentschuldigt').length
   const total = inRange.length

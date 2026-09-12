@@ -16,7 +16,8 @@ interface Props {
 
 /** Zählt die Schultage (Mo–Fr) im Zeitraum — dieselbe Wochenend-Regel wie in
  *  der Server-Action, damit die Vorschau nicht mehr verspricht als eingetragen
- *  wird. */
+ *  wird. Der Zeitraum DARF über ein Wochenende laufen (Skikurs Mo–Fr, Krankheit
+ *  über zwei Wochen); nur seine Eckdaten sind Schultage. */
 function countSchoolDays(startDate: string, endDate: string): number {
   if (!startDate || !endDate || endDate < startDate) return 0
   const start = new Date(`${startDate}T00:00:00`)
@@ -119,11 +120,12 @@ export default function BulkAbsenceModal({ students, today, onClose }: Props) {
                   // Zustand laufen zu lassen.
                   if (endDate < v) setEndDate(v)
                 }}
+                disableWeekends
               />
             </div>
             <div>
               <span className="block text-[11px] font-bold text-kh-muted uppercase tracking-wide mb-1.5">Bis</span>
-              <DatePicker value={endDate} min={startDate} onChange={setEndDate} />
+              <DatePicker value={endDate} min={startDate} onChange={setEndDate} disableWeekends />
             </div>
           </div>
           <p className={`text-[12px] font-semibold mt-1.5 ${schoolDays === 0 || schoolDays > 30 ? 'text-kh-red' : 'text-kh-muted'}`}>

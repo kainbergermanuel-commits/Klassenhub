@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import IconButton from '@/components/ui/IconButton'
-import { todayISO } from '@/lib/date'
+import { todayISO, isSchoolday } from '@/lib/date'
 
 const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
@@ -40,8 +40,17 @@ function formatDisplay(iso: string) {
  *  abhängt und die Panelhöhe kaum schwankt. */
 const PANEL_HEIGHT = 330
 export default function DatePicker({
-  value, min, onChange, placeholder = 'Datum wählen',
-}: { value: string; min?: string; onChange: (v: string) => void; placeholder?: string }) {
+  value, min, onChange, placeholder = 'Datum wählen', disableWeekends = false,
+}: {
+  value: string
+  min?: string
+  onChange: (v: string) => void
+  placeholder?: string
+  /** Samstag und Sonntag nicht wählbar — für die Anwesenheit, wo das
+   *  Wochenende kein Schultag ist. Bewusst abschaltbar: Termine und
+   *  Erinnerungen dürfen sehr wohl auf ein Wochenende fallen. */
+  disableWeekends?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const [dropUp, setDropUp] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -95,6 +104,7 @@ export default function DatePicker({
   function selectDay(day: number) {
     const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     if (min && iso < min) return
+    if (disableWeekends && !isSchoolday(iso)) return
     onChange(iso); setOpen(false)
   }
 
@@ -125,7 +135,8 @@ export default function DatePicker({
               const day = i + 1
               const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               const isSelected = iso === value
-              const isPast = !!min && iso < min
+              const isWeekendBlocked = disableWeekends && !isSchoolday(iso)
+              const isPast = (!!min && iso < min) || isWeekendBlocked
               const isToday = iso === today
               return (
                 <button key={day} type="button" onClick={() => selectDay(day)} disabled={isPast}

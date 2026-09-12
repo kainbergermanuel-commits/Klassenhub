@@ -49,6 +49,40 @@ export function addDaysISO(days: number, from: Date = new Date()): string {
   return toISODateLocal(d)
 }
 
+/**
+ * Ist dieses Datum ein Schultag (Mo–Fr)?
+ *
+ * Samstag und Sonntag zählen in der Anwesenheit NICHT — weder als Tag, an dem
+ * etwas eingetragen werden kann, noch im Nenner einer Quote. Diese Funktion
+ * ist die einzige Stelle, an der die Regel steht; nirgends sonst von Hand auf
+ * getDay() prüfen (dieselbe Konvention wie bei isOver/isActionable).
+ *
+ * Schulfreie Werktage (Feiertage, Ferien) kennt sie bewusst nicht: dafür gäbe
+ * es keinen Kalender in der App, und ein halb gepflegter wäre schlechter als
+ * gar keiner.
+ */
+export function isSchoolday(dateISO: string): boolean {
+  const d = new Date(`${dateISO}T00:00:00`).getDay()
+  return d >= 1 && d <= 5
+}
+
+/** Dieser Tag, oder der letzte Schultag davor (Samstag/Sonntag → Freitag).
+ *  Für Ansichten, die an einem Wochenende geöffnet werden: gezeigt wird der
+ *  Tag, um den es dann tatsächlich geht. */
+export function schooldayOnOrBefore(dateISO: string): string {
+  const d = new Date(`${dateISO}T00:00:00`)
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1)
+  return toISODateLocal(d)
+}
+
+/** Nächster Schultag in Schrittrichtung (+1 vorwärts, -1 rückwärts).
+ *  Überspringt das Wochenende, statt daran hängenzubleiben. */
+export function stepSchoolday(dateISO: string, direction: 1 | -1): string {
+  const d = new Date(`${dateISO}T00:00:00`)
+  do { d.setDate(d.getDate() + direction) } while (d.getDay() === 0 || d.getDay() === 6)
+  return toISODateLocal(d)
+}
+
 /** Montag der Woche eines Datums als YYYY-MM-DD (lokal). */
 export function getMondayOfWeek(from: Date = new Date()): string {
   const d = new Date(from)

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getActiveChildId } from '@/lib/auth'
+import { isSchoolday } from '@/lib/date'
 import type { AttendanceStatus } from '@/lib/types'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -21,6 +22,10 @@ async function getTeacherCtx(): Promise<{ userId: string; classId: string }> {
 export async function setAttendanceStatus(studentId: string, date: string, status: AttendanceStatus) {
   const { userId, classId } = await getTeacherCtx()
   if (!ISO_DATE.test(date)) throw new Error('Ungültiges Datum')
+  // Samstag und Sonntag zählen nicht zur Anwesenheit. Die Sammel-Eintragungen
+  // unten überspringen sie längst; hier fehlte die Regel, und über den
+  // Tages-Abgleich ist am Wochenende tatsächlich schon ein Eintrag entstanden.
+  if (!isSchoolday(date)) throw new Error('Samstag und Sonntag sind keine Schultage')
   if (status !== 'entschuldigt' && status !== 'unentschuldigt') throw new Error('Ungültiger Status')
 
   const supabase = await createClient()

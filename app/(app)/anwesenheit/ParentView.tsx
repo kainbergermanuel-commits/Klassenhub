@@ -73,11 +73,11 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
         <div className="flex gap-3 flex-wrap items-start">
           <div className="w-[168px]">
             <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Von</label>
-            <DatePicker value={startDate} onChange={onStartDateChange} />
+            <DatePicker value={startDate} onChange={onStartDateChange} disableWeekends />
           </div>
           <div className="w-[168px]">
             <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Bis</label>
-            <DatePicker value={endDate} min={startDate} onChange={setEndDate} />
+            <DatePicker value={endDate} min={startDate} onChange={setEndDate} disableWeekends />
           </div>
           <div className="flex-1 min-w-[200px]">
             <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5">Notiz (freiwillig)</label>

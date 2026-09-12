@@ -2,7 +2,7 @@
 
 import { Fragment, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { addDaysISO, schoolYearStartISO } from '@/lib/date'
+import { schoolYearStartISO, isSchoolday, schooldayOnOrBefore, stepSchoolday } from '@/lib/date'
 import { setAttendanceStatus, clearAttendance, confirmReport, rejectReport } from '@/app/actions/attendance'
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
@@ -180,7 +180,10 @@ const STATUS_META: Record<RowStatus, { label: string; short: string; color: stri
 export default function TeacherView({ students, entries, today }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('tag')
-  const [date, setDate] = useState(today)
+  /** Der Tages-Abgleich startet nie auf einem Wochenende: Samstag und Sonntag
+   *  zählen nicht zur Anwesenheit, und wer am Samstag noch etwas nachträgt,
+   *  meint den Freitag. */
+  const [date, setDate] = useState(schooldayOnOrBefore(today))
   const [isPending, startTransition] = useTransition()
   // Optimistische Overrides, bis router.refresh() die Server-Daten nachliefert
   const [overrides, setOverrides] = useState<Record<string, RowStatus>>({})
@@ -264,7 +267,9 @@ export default function TeacherView({ students, entries, today }: Props) {
   }, [students, entries])
 
   const dayLabel = fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long' })
-  const isToday = date === today
+  // Am Wochenende ist der „heutige" Bezugspunkt der letzte Schultag — sonst
+  // stünde die Rückkehr-Schaltfläche dauerhaft da, ohne irgendwohin zu führen.
+  const isToday = date === schooldayOnOrBefore(today)
   const absentCount = students.filter(s => rowStatus(s.id) !== 'anwesend').length
 
   return (
@@ -373,12 +378,14 @@ export default function TeacherView({ students, entries, today }: Props) {
           {/* Tages-Navigation */}
           <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <IconButton onClick={() => setDate(addDaysISO(-1, new Date(`${date}T00:00:00`)))} aria-label="Vortag" icon="chevron_left" size="sm" />
-              <IconButton onClick={() => setDate(addDaysISO(1, new Date(`${date}T00:00:00`)))} aria-label="Nächster Tag" icon="chevron_right" size="sm" />
+              {/* Blättert über das Wochenende hinweg: von Montag zurück auf
+                  Freitag, nicht auf einen Sonntag, an dem es nichts einzutragen gibt. */}
+              <IconButton onClick={() => setDate(stepSchoolday(date, -1))} aria-label="Vorheriger Schultag" icon="chevron_left" size="sm" />
+              <IconButton onClick={() => setDate(stepSchoolday(date, 1))} aria-label="Nächster Schultag" icon="chevron_right" size="sm" />
               <span className="font-extrabold text-[15px] text-kh-dark ml-1">{dayLabel}</span>
               {!isToday && (
-                <button onClick={() => setDate(today)} className="ml-1 px-2.5 py-1 rounded-full text-[11.5px] font-bold text-kh-teal bg-kh-teal-light hover:bg-kh-teal hover:text-white transition-colors">
-                  Heute
+                <button onClick={() => setDate(schooldayOnOrBefore(today))} className="ml-1 px-2.5 py-1 rounded-full text-[11.5px] font-bold text-kh-teal bg-kh-teal-light hover:bg-kh-teal hover:text-white transition-colors">
+                  {isSchoolday(today) ? 'Heute' : 'Letzter Schultag'}
                 </button>
               )}
             </div>
