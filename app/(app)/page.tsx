@@ -366,6 +366,7 @@ export default async function HomePage() {
       weekStart: agendaWeekStart,
       weekLabel: `KW ${getWeekNumber(agendaWeekStart)}`,
       showPlanningLinks: true,
+      classId: activeClassId,
       supervisions: (supervisionRows ?? []).map(s => ({ day: s.day, breakSlot: s.break_slot, location: s.location ?? '' })),
     }
 

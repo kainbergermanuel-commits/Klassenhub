@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { buildClassColorMap, classColorFrom } from '@/lib/classLabelColor'
 import { supervisionBreak, type SupervisionBreak } from '@/lib/supervisionSlots'
+import { addDaysISO, getWeekNumber } from '@/lib/date'
+import { createClient } from '@/lib/supabase/client'
 import IconButton from '@/components/ui/IconButton'
 
 // Slot→Zeit-Mapping identisch zum Stundenplan (TimetableGrid.tsx SLOT_TIMES).
@@ -53,6 +55,9 @@ export interface AgendaData {
   weekLabel: string
   /** Fußzeile mit Stundenplan-/Planung-Links (nur Lehrer). */
   showPlanningLinks: boolean
+  /** Aktive Klasse — nur nötig, damit der Planung-Reiter andere Wochen
+   *  nachladen kann. Fehlt sie, bleibt das Blättern aus. */
+  classId?: string | null
   /** Gangaufsichten der Lehrperson (nur Lehrer; Eltern lassen es weg). day 1=Mo…5=Fr,
    *  breakSlot 0=vor der 1. Stunde, N=Pause nach der N. Stunde, location Freitext. */
   supervisions?: { day: number; breakSlot: number; location: string }[]
@@ -182,12 +187,12 @@ function SupervisionColumn({ breaks }: { breaks: (SupervisionBreak & { location:
 
 /** Dezente „Diese Woche"-Zeile: bringt die (sonst nirgends sichtbare)
  *  Wochennotiz auf die Startseite, ohne die Card aufzublähen. */
-function WeekNoteLine({ text }: { text: string }) {
+function WeekNoteLine({ text, label = 'Diese Woche' }: { text: string; label?: string }) {
   return (
     <div className="mt-3 flex items-start gap-2.5 rounded-xl px-3 py-2.5" style={{ background: '#F8ECD6' }}>
       <span className="msym text-[16px] flex-shrink-0 mt-px" style={{ color: '#B9791A', fontVariationSettings: "'FILL' 1" }}>event_note</span>
       <div className="min-w-0">
-        <div className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: '#8A5E14' }}>Diese Woche</div>
+        <div className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: '#8A5E14' }}>{label}</div>
         <div className="text-[12.5px] text-kh-dark/90 leading-snug line-clamp-2 mt-0.5 whitespace-pre-wrap">{text}</div>
       </div>
     </div>
@@ -289,10 +294,40 @@ function PlanungPopup({
  * auf Kartenebene. Bewusst KEINE Doppelung des Statistik-Panels.
  */
 export default function HeuteAgenda({ data }: { data: AgendaData }) {
-  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage, supervisions } = data
+  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage, supervisions, classId } = data
   const focusIsSchoolday = focusWeekday >= 1 && focusWeekday <= 5
   const [view, setView] = useState<'tag' | 'woche' | 'planung'>(focusIsSchoolday ? 'tag' : 'woche')
   const [popupDay, setPopupDay] = useState<number | null>(null)
+  /** Aus welcher Woche das Popup stammt — im Planung-Reiter kann das eine
+   *  andere als die angezeigte Startwoche sein. */
+  const [popupWeek, setPopupWeek] = useState<string>(weekStart)
+
+  /** Planung-Reiter: Wochenversatz + nachgeladene Notizen je Woche.
+   *  Woche 0 kommt vom Server (data.notes), alles andere wird beim ersten
+   *  Blättern einmal geholt und dann aus dem Cache bedient. */
+  const [planOffset, setPlanOffset] = useState(0)
+  const [planCache, setPlanCache] = useState<Record<string, Note[]>>({})
+  const [planLoading, setPlanLoading] = useState(false)
+  const planWeekStart = planOffset === 0 ? weekStart : addDaysISO(planOffset * 7, new Date(`${weekStart}T00:00:00`))
+  const planNotes = planOffset === 0 ? notes : planCache[planWeekStart] ?? []
+
+  useEffect(() => {
+    if (view !== 'planung' || planOffset === 0 || !classId) return
+    if (planCache[planWeekStart]) return
+    let cancelled = false
+    setPlanLoading(true)
+    const supabase = createClient()
+    supabase.from('planning_notes' as never)
+      .select('day,subject,content')
+      .eq('class_id', classId)
+      .eq('week_start', planWeekStart)
+      .then(({ data: rows }) => {
+        if (cancelled) return
+        setPlanCache(c => ({ ...c, [planWeekStart]: (rows as Note[] | null) ?? [] }))
+        setPlanLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [view, planOffset, planWeekStart, classId, planCache])
 
   const subjMap = new Map(subjects.map(s => [s.label, s]))
   const subjOf = (label: string): Subject => subjMap.get(label) ?? { label, short: label.slice(0, 2).toUpperCase(), color: '#6E7E80' }
@@ -305,8 +340,10 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
 
   /** Nur nicht-leere Notizen zählen — leergeräumte Fach-Abschnitte hinterlassen
    *  teils leere Zeilen, die weder Badge noch Popup verdienen. */
-  const dayPlanNotes = (day: number) => notes.filter(n => n.day === day && n.subject !== '' && n.content.trim())
-  const dayGeneralNote = (day: number) => notes.find(n => n.day === day && n.subject === '')?.content.trim() || null
+  const notesOfDay = (src: Note[], day: number) => src.filter(n => n.day === day && n.subject !== '' && n.content.trim())
+  const generalOfDay = (src: Note[], day: number) => src.find(n => n.day === day && n.subject === '')?.content.trim() || null
+  const dayPlanNotes = (day: number) => notesOfDay(notes, day)
+  const dayGeneralNote = (day: number) => generalOfDay(notes, day)
   const dayHasPlan = (day: number) => !!dayGeneralNote(day) || dayPlanNotes(day).length > 0
   const dayPlanCount = (day: number) => (dayGeneralNote(day) ? 1 : 0) + dayPlanNotes(day).length
 
@@ -362,15 +399,21 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
 
       {view === 'planung' ? (
         <PlanungView
-          weekLabel={weekLabel}
-          weekStart={weekStart}
-          focusWeekday={focusWeekday}
-          weekNote={weekNote}
-          dayGeneralNote={dayGeneralNote}
-          dayPlanNotes={dayPlanNotes}
+          weekLabel={planOffset === 0 ? weekLabel : `KW ${getWeekNumber(planWeekStart)}`}
+          weekStart={planWeekStart}
+          isCurrentWeek={planOffset === 0}
+          loading={planLoading}
+          canBrowse={!!classId}
+          onPrev={() => setPlanOffset(o => o - 1)}
+          onNext={() => setPlanOffset(o => o + 1)}
+          onBackToCurrent={() => setPlanOffset(0)}
+          focusWeekday={planOffset === 0 ? focusWeekday : 0}
+          weekNote={generalOfDay(planNotes, 0)}
+          dayGeneralNote={(d) => generalOfDay(planNotes, d)}
+          dayPlanNotes={(d) => notesOfDay(planNotes, d)}
           subjects={subjects}
           subjOf={subjOf}
-          onOpenPlanning={setPopupDay}
+          onOpenPlanning={(d) => { setPopupWeek(planWeekStart); setPopupDay(d) }}
         />
       ) : view === 'tag' ? (
         <TagView
@@ -383,7 +426,7 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
           emptyMessage={emptyMessage}
           classColorOf={classColorOf}
           planCount={focusPlanCount}
-          onOpenPlanning={() => setPopupDay(focusWeekday)}
+          onOpenPlanning={() => { setPopupWeek(weekStart); setPopupDay(focusWeekday) }}
           weekNote={showPlanningLinks ? weekNote : null}
           supervisions={focusSupervisions}
         />
@@ -397,7 +440,7 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
           classColorOf={classColorOf}
           dayPlanCount={dayPlanCount}
           dayHasPlan={dayHasPlan}
-          onOpenPlanning={setPopupDay}
+          onOpenPlanning={(d) => { setPopupWeek(weekStart); setPopupDay(d) }}
           weekNote={showPlanningLinks ? weekNote : null}
         />
       )}
@@ -405,10 +448,10 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
       {popupDay !== null && (
         <PlanungPopup
           dayLabel={DAY_FULL[popupDay - 1]}
-          dateLabel={fmtDayDate(weekStart, popupDay - 1)}
-          isToday={focusIsSchoolday && popupDay === focusWeekday}
-          dayNote={dayGeneralNote(popupDay)}
-          subjectNotes={dayPlanNotes(popupDay)
+          dateLabel={fmtDayDate(popupWeek, popupDay - 1)}
+          isToday={focusIsSchoolday && popupDay === focusWeekday && popupWeek === weekStart}
+          dayNote={generalOfDay(popupWeek === weekStart ? notes : planCache[popupWeek] ?? [], popupDay)}
+          subjectNotes={notesOfDay(popupWeek === weekStart ? notes : planCache[popupWeek] ?? [], popupDay)
             .map(n => ({ subject: n.subject, content: n.content }))
             .sort((a, b) => subjects.findIndex(s => s.label === a.subject) - subjects.findIndex(s => s.label === b.subject))}
           subjOf={subjOf}
@@ -618,10 +661,17 @@ function WocheView({
  *  Leere Tage bleiben sichtbar statt herausgefiltert: „an diesem Tag ist noch
  *  nichts geplant" ist genau die Information, für die man den Reiter öffnet. */
 function PlanungView({
-  weekLabel, weekStart, focusWeekday, weekNote, dayGeneralNote, dayPlanNotes, subjects, subjOf, onOpenPlanning,
+  weekLabel, weekStart, isCurrentWeek, loading, canBrowse, onPrev, onNext, onBackToCurrent,
+  focusWeekday, weekNote, dayGeneralNote, dayPlanNotes, subjects, subjOf, onOpenPlanning,
 }: {
   weekLabel: string
   weekStart: string
+  isCurrentWeek: boolean
+  loading: boolean
+  canBrowse: boolean
+  onPrev: () => void
+  onNext: () => void
+  onBackToCurrent: () => void
   focusWeekday: number
   weekNote: string | null
   dayGeneralNote: (day: number) => string | null
@@ -632,17 +682,53 @@ function PlanungView({
 }) {
   const hasAnything = !!weekNote || [1, 2, 3, 4, 5].some(d => !!dayGeneralNote(d) || dayPlanNotes(d).length > 0)
 
+  const monday = new Date(`${weekStart}T00:00:00`)
+  const friday = new Date(monday)
+  friday.setDate(monday.getDate() + 4)
+  const fmtShort = (d: Date) => d.toLocaleDateString('de-AT', { day: 'numeric', month: 'numeric' })
+
   return (
     <>
-      <p className="text-[12.5px] font-semibold text-kh-muted mb-3 -mt-1">{weekLabel}</p>
+      {/* Wochenzeile mit Pfeilen: dieselbe Woche wie /planung, nur zum Lesen.
+          Ein Klick auf die KW-Beschriftung führt zurück in die aktuelle Woche —
+          sonst findet man nach dem Blättern nicht mehr zurück. */}
+      <div className="flex items-center gap-1.5 mb-3 -mt-1">
+        <button
+          onClick={onPrev}
+          disabled={!canBrowse}
+          aria-label="Woche zurück"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-kh-muted hover:text-kh-dark hover:bg-white/80 transition-colors disabled:opacity-30 disabled:hover:bg-transparent flex-shrink-0"
+        >
+          <span className="msym text-[18px]">chevron_left</span>
+        </button>
+        <button
+          onClick={onBackToCurrent}
+          disabled={isCurrentWeek}
+          className="text-[12.5px] font-semibold text-kh-muted disabled:cursor-default enabled:hover:text-[#3E8DB8] transition-colors"
+          title={isCurrentWeek ? undefined : 'Zurück zur aktuellen Woche'}
+        >
+          {weekLabel} · {fmtShort(monday)}–{fmtShort(friday)}
+        </button>
+        <button
+          onClick={onNext}
+          disabled={!canBrowse}
+          aria-label="Woche vor"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-kh-muted hover:text-kh-dark hover:bg-white/80 transition-colors disabled:opacity-30 disabled:hover:bg-transparent flex-shrink-0"
+        >
+          <span className="msym text-[18px]">chevron_right</span>
+        </button>
+        {loading && <span className="text-[11px] font-semibold text-kh-muted/70">lädt …</span>}
+      </div>
 
-      {weekNote && <div className="mb-2.5"><WeekNoteLine text={weekNote} /></div>}
+      {weekNote && <div className="mb-2.5"><WeekNoteLine text={weekNote} label={isCurrentWeek ? 'Diese Woche' : weekLabel} /></div>}
 
       {!hasAnything ? (
         <div className="flex flex-col items-center text-center py-7">
           <span className="msym text-[34px] text-kh-muted/40 mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>edit_calendar</span>
-          <p className="text-[13.5px] text-kh-muted font-medium">Für diese Woche ist noch nichts geplant.</p>
-          <Link href="/planung" className="mt-3 flex items-center gap-1.5 text-[12.5px] font-bold text-[#3E8DB8] hover:underline">
+          <p className="text-[13.5px] text-kh-muted font-medium">
+            {loading ? 'Planung wird geladen …' : `Für ${isCurrentWeek ? 'diese Woche' : weekLabel} ist noch nichts geplant.`}
+          </p>
+          <Link href={`/planung?w=${weekStart}`} className="mt-3 flex items-center gap-1.5 text-[12.5px] font-bold text-[#3E8DB8] hover:underline">
             <span className="msym text-[16px]">edit_calendar</span> Planung öffnen
           </Link>
         </div>
