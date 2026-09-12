@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import {
   createLearningGroup, updateLearningGroup, deleteLearningGroup,
@@ -26,7 +27,6 @@ interface Props {
   members: Record<string, string[]>
   teachers: { id: string; full_name: string }[]
   classes: { id: string; name: string }[]
-  students: Student[]
   subjects: SubjectOption[]
 }
 
@@ -42,13 +42,31 @@ interface Props {
  * die Oberfläche ausdrücklich hin: „Mathe Gruppe 2" ist eine Bezeichnung,
  * „SPF Mathe" wäre eine Auskunft über die Kinder.
  */
-export default function LearningGroupsEditor({ groups, members, teachers, classes, students, subjects }: Props) {
+export default function LearningGroupsEditor({ groups, members, teachers, classes, subjects }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const { confirm, dialog } = useConfirm()
+  /** Alle Kinder der Schule — erst geladen, wenn jemand eine Gruppe öffnet.
+   *  Vorher lud die Seite sie bei JEDEM Aufruf mit, obwohl man sie nur zum
+   *  Zusammenstellen braucht; bei einer ganzen Schule sind das hunderte Namen. */
+  const [students, setStudents] = useState<Student[] | null>(null)
+  const [studentsError, setStudentsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (openId === null || students !== null) return
+    createClient()
+      .from('profiles')
+      .select('id,full_name,class_id')
+      .eq('role', 'student')
+      .order('full_name')
+      .then(({ data, error: loadError }) => {
+        if (loadError) { setStudentsError(loadError.message); return }
+        setStudents(data ?? [])
+      })
+  }, [openId, students])
 
   const teacherName = (id: string | null) => teachers.find(t => t.id === id)?.full_name ?? 'keine Lehrperson'
   const className = (id: string | null) => classes.find(c => c.id === id)?.name ?? '—'
@@ -109,7 +127,9 @@ export default function LearningGroupsEditor({ groups, members, teachers, classe
       <div className="flex flex-col gap-2">
         {groups.map(g => {
           const memberIds = members[g.id] ?? []
-          const memberClasses = [...new Set(memberIds.map(id => students.find(s => s.id === id)?.class_id ?? null))]
+          const memberClasses = students
+            ? [...new Set(memberIds.map(id => students.find(s => s.id === id)?.class_id ?? null))]
+            : []
           const isOpen = openId === g.id
           return (
             <div key={g.id} className="bg-white rounded-2xl px-5 py-4 shadow-sm">
@@ -154,13 +174,21 @@ export default function LearningGroupsEditor({ groups, members, teachers, classe
                     pending={pending}
                   />
 
-                  <MemberPicker
-                    classes={classes}
-                    students={students}
-                    initial={memberIds}
-                    pending={pending}
-                    onSave={ids => run(() => setLearningGroupMembers(g.id, ids))}
-                  />
+                  {studentsError ? (
+                    <div className="bg-kh-red-light text-kh-red text-sm font-semibold rounded-xl px-4 py-3">
+                      Die Kinderliste konnte nicht geladen werden: {studentsError}
+                    </div>
+                  ) : students === null ? (
+                    <div className="text-[12.5px] text-kh-muted font-semibold py-2">Kinder werden geladen…</div>
+                  ) : (
+                    <MemberPicker
+                      classes={classes}
+                      students={students}
+                      initial={memberIds}
+                      pending={pending}
+                      onSave={ids => run(() => setLearningGroupMembers(g.id, ids))}
+                    />
+                  )}
 
                   <div className="flex items-center gap-3 flex-wrap">
                     <button

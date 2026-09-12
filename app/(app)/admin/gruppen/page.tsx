@@ -19,7 +19,10 @@ export default async function AdminGruppenPage() {
   if (!profile?.is_admin) redirect('/')
 
   const supabase = await createClient()
-  const [groupsRes, membersRes, teachersRes, classesRes, studentsRes, subjects] = await Promise.all([
+  // Die Kinderliste wird hier BEWUSST nicht mitgeladen: sie umfasst alle
+  // Klassen der Schule und wird nur gebraucht, wenn jemand tatsächlich eine
+  // Gruppe zusammenstellt. Der Mitglieder-Picker holt sie beim Aufklappen.
+  const [groupsRes, membersRes, teachersRes, classesRes, subjects] = await Promise.all([
     supabase.from('learning_groups' as never)
       .select('id,name,subject,subject_short,subject_color,teacher_id,archived')
       .order('name') as unknown as Promise<{ data: GroupRow[] | null }>,
@@ -27,7 +30,6 @@ export default async function AdminGruppenPage() {
       .select('group_id,student_id') as unknown as Promise<{ data: { group_id: string; student_id: string }[] | null }>,
     supabase.from('profiles').select('id,full_name').eq('role', 'teacher').order('full_name'),
     supabase.from('classes').select('id,name').order('name'),
-    supabase.from('profiles').select('id,full_name,class_id').eq('role', 'student').order('full_name'),
     loadSubjectsCatalog(supabase),
   ])
 
@@ -50,7 +52,6 @@ export default async function AdminGruppenPage() {
           members={members}
           teachers={teachersRes.data ?? []}
           classes={classesRes.data ?? []}
-          students={(studentsRes.data ?? []).map(s => ({ id: s.id, full_name: s.full_name, class_id: s.class_id }))}
           subjects={subjects}
         />
       </AnimateIn>
