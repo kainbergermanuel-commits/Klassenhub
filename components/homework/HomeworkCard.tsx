@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { deleteGroupHomework, updateGroupHomework } from '@/app/actions/learningGroups'
 import { useRouter } from 'next/navigation'
 import { todayISO, addDaysISO, dueInfo, isOver, isActionable } from '@/lib/date'
 import type { HomeworkWithStatus, Role } from '@/lib/types'
@@ -160,7 +161,9 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
   async function deleteHw() {
     const ok = await confirm({
       title: 'Hausübung löschen?',
-      message: `„${hw.title}" wird für die ganze Klasse entfernt. Das lässt sich nicht rückgängig machen.`,
+      message: hw.group_batch_id
+        ? `„${hw.title}" wird für alle Kinder der Gruppe „${hw.group_label ?? 'Lerngruppe'}" entfernt, auch in den anderen Klassen. Das lässt sich nicht rückgängig machen.`
+        : `„${hw.title}" wird für die ganze Klasse entfernt. Das lässt sich nicht rückgängig machen.`,
       confirmLabel: 'Löschen',
       tone: 'danger',
       icon: 'delete',
@@ -169,6 +172,16 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
     // Erst löschen, dann ausblenden. Umgekehrt verschwände die Karte auch
     // dann, wenn die Löschung an RLS scheitert, und käme erst beim nächsten
     // Laden wieder — ein stiller Fehler.
+    // Gruppen-HÜ liegt als je eine Zeile pro beteiligter Klasse vor. Sie
+    // darf nur als Ganzes verschwinden — sonst bliebe sie bei der halben
+    // Gruppe stehen. Deshalb über die geprüfte Funktion, nicht über delete().
+    if (hw.group_batch_id) {
+      try { await deleteGroupHomework(hw.group_batch_id) }
+      catch { setActionError('Löschen fehlgeschlagen. Bitte erneut versuchen.'); return }
+      setDeleted(true)
+      startTransition(() => router.refresh())
+      return
+    }
     const supabase = createClient()
     const { error } = await supabase.from('homework').delete().eq('id', hw.id)
     if (error) { setActionError('Löschen fehlgeschlagen. Bitte erneut versuchen.'); return }
@@ -220,6 +233,23 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
     if (!editTitle.trim() || !editDate) return
     setSaving(true)
     setActionError(null)
+    // Gruppen-HÜ: Titel, Frist und Details gelten für alle Klassenhälften
+    // gemeinsam. Fach und Empfängerkreis stehen durch die Gruppe fest und
+    // sind hier deshalb nicht änderbar.
+    if (hw.group_batch_id) {
+      try {
+        await updateGroupHomework(hw.group_batch_id, editTitle.trim(), editDate, editDetails)
+      } catch {
+        setSaving(false)
+        setActionError('Speichern fehlgeschlagen. Bitte erneut versuchen.')
+        return
+      }
+      setSaving(false)
+      setEditing(false)
+      startTransition(() => router.refresh())
+      return
+    }
+
     const supabase = createClient()
     // Fach nur mitschreiben, wenn es im Katalog gefunden wird — sonst blieben
     // subject_short und subject_color inkonsistent zum Namen.
@@ -315,6 +345,17 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
           {/* attachment_name war ein toter Zweig: die Spalte existiert, wurde
               aber nie beschrieben und hatte keine Datei zum Öffnen. Entfernt
               am 2026-08-29; die Spalte bleibt in der Datenbank bestehen. */}
+
+          {/* Herkunft aus einer Lerngruppe. Steht als Text in der Zeile
+              (homework.group_label), kostet also keine zusätzliche Abfrage —
+              und macht für Kind, Eltern und Klassenlehrperson sichtbar,
+              dass diese HÜ nicht von der Klasse kommt. */}
+          {hw.group_label && (
+            <span className="inline-flex items-center gap-1.5 mt-2 text-[11.5px] font-bold text-[#5B6F7A] bg-[#EDF3F6] border border-[#D8E5EC] px-2.5 py-1 rounded-lg">
+              <span className="msym text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>diversity_3</span>
+              {hw.group_label}
+            </span>
+          )}
 
           {hw.details && <HomeworkDetails text={hw.details} clamp={2} className="mt-2" />}
         </div>
@@ -479,8 +520,18 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
                 placeholder="Titel"
                 className="w-full border border-kh-border rounded-xl px-4 py-3 text-base font-medium text-kh-dark outline-none focus:border-kh-teal transition-colors"
               />
-              {subjects.length > 0 && (
+              {subjects.length > 0 && !hw.group_batch_id && (
                 <SubjectPicker subjects={subjects} value={editSubject} onChange={setEditSubject} />
+              )}
+              {hw.group_batch_id && (
+                // Fach und Empfängerkreis stehen bei einer Gruppen-HÜ durch die
+                // Gruppe fest. Sie hier änderbar zu machen hiesse, sie in einer
+                // Klasse anders zu setzen als in der anderen.
+                <p className="text-[11.5px] font-semibold text-kh-muted leading-snug bg-[#F6F3ED] rounded-xl px-3 py-2">
+                  Hausübung der Lerngruppe „{hw.group_label ?? 'Lerngruppe'}". Änderungen gelten
+                  für alle Kinder der Gruppe, auch in den anderen Klassen. Fach und Gruppe
+                  werden in der Gruppenverwaltung festgelegt.
+                </p>
               )}
               <div>
                 <label className="text-xs font-bold text-kh-muted uppercase tracking-wider block mb-1.5" htmlFor={`hw-details-${hw.id}`}>
@@ -501,13 +552,17 @@ export default function HomeworkCard({ hw, role, userId, childId, subjects = [] 
                 <DatePicker value={editDate} min={TOMORROW} onChange={setEditDate} />
               </div>
               {/* Bestehende Ausnahmen gleich sichtbar, sonst ändert man sie
-                  beim Bearbeiten versehentlich nicht mit. */}
+                  beim Bearbeiten versehentlich nicht mit. Bei einer Gruppen-HÜ
+                  ergibt sich der Kreis aus der Gruppe — dort wäre die Liste
+                  eine Falle, weil sie nur die eine Klassenhälfte beträfe. */}
+              {!hw.group_batch_id && (
               <StudentExclusionPicker
                 classId={hw.class_id}
                 value={editExcluded}
                 onChange={setEditExcluded}
                 defaultOpen={(hw.excluded_student_ids?.length ?? 0) > 0}
               />
+              )}
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setEditing(false)} className="flex-1 py-3 rounded-full border border-kh-border text-sm font-bold text-kh-muted hover:bg-[#F6F3ED] transition-colors">
