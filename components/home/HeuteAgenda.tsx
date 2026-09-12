@@ -294,7 +294,7 @@ function PlanungPopup({
  * auf Kartenebene. Bewusst KEINE Doppelung des Statistik-Panels.
  */
 export default function HeuteAgenda({ data }: { data: AgendaData }) {
-  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage, supervisions, classId, notesClassName } = data
+  const { title, icon, entries, notes, subjects, focusWeekday, focusTabLabel, focusDateLabel, weekStart, weekLabel, showPlanningLinks, emptyMessage, supervisions, classId } = data
   const focusIsSchoolday = focusWeekday >= 1 && focusWeekday <= 5
   const [view, setView] = useState<'tag' | 'woche' | 'planung'>(focusIsSchoolday ? 'tag' : 'woche')
   const [popupDay, setPopupDay] = useState<number | null>(null)
@@ -347,55 +347,10 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
   const dayHasPlan = (day: number) => !!dayGeneralNote(day) || dayPlanNotes(day).length > 0
   const dayPlanCount = (day: number) => (dayGeneralNote(day) ? 1 : 0) + dayPlanNotes(day).length
 
-  /** Stundenfolge eines Tages als Fach → früheste Stunde.
-   *
-   *  Die Notizen gehören zur AKTIVEN Klasse, der persönliche Stundenplan geht
-   *  aber über alle Klassen. Ohne Filter auf das Klassen-Label würde eine
-   *  Notiz zu "D" an die Deutschstunde einer anderen Klasse rutschen. Trägt
-   *  der Plan gar keine Labels (z.B. nur eine Klasse), zählen alle Stunden. */
-  const classEntries = (() => {
-    if (!notesClassName) return entries
-    const own = entries.filter(e => (e.classLabel ?? '') === notesClassName)
-    return own.length > 0 ? own : entries.filter(e => !e.classLabel)
-  })()
-  const slotOfSubject = (day: number) => {
-    const m = new Map<string, number>()
-    for (const e of classEntries) {
-      if (e.day !== day) continue
-      const prev = m.get(e.subject)
-      if (prev === undefined || e.slot < prev) m.set(e.subject, e.slot)
-    }
-    return m
-  }
-
-  /** Notizen eines Tages in der Reihenfolge des Stundenplans: was zuerst
-   *  unterrichtet wird, steht zuerst. Fächer ohne Stunde an diesem Tag
-   *  (Nachtrag, Förderstunde …) hängen hinten in Katalogreihenfolge. */
-  const sortNotesByLesson = (day: number, list: Note[]) => {
-    const slots = slotOfSubject(day)
-    return [...list].sort((a, b) => {
-      const sa = slots.get(a.subject), sb = slots.get(b.subject)
-      if (sa !== undefined && sb !== undefined) return sa - sb
-      if (sa !== undefined) return -1
-      if (sb !== undefined) return 1
-      return subjects.findIndex(x => x.label === a.subject) - subjects.findIndex(x => x.label === b.subject)
-    })
-  }
-
   /** Wochennotiz (day 0) — tagesübergreifend, gehört auf Kartenebene. */
   const weekNote = notes.find(n => n.day === 0 && n.subject === '')?.content.trim() || null
 
   const focusPlanCount = focusIsSchoolday ? dayPlanCount(focusWeekday) : 0
-
-  /** Planung direkt an der Stunde des Fokustags: beantwortet "wo genau steht
-   *  was", ohne das Popup zu öffnen. Nur an Stunden der aktiven Klasse —
-   *  eine Notiz der 1b gehört nicht an die Englischstunde der 4a. */
-  const ownFocusSlots = new Set(classEntries.filter(e => e.day === focusWeekday).map(e => e.slot))
-  const focusNotes = focusIsSchoolday ? dayPlanNotes(focusWeekday) : []
-  const noteOfEntry = (e: Entry): string | null => {
-    if (!ownFocusSlots.has(e.slot)) return null
-    return focusNotes.find(n => n.subject === e.subject)?.content.trim() || null
-  }
 
   /** Der Planung-Reiter existiert nur für Lehrpersonen — Eltern und
    *  Schüler:innen sehen dieselbe Card ohne Planungsdaten (notes = []). */
@@ -455,7 +410,8 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
           focusWeekday={planOffset === 0 ? focusWeekday : 0}
           weekNote={generalOfDay(planNotes, 0)}
           dayGeneralNote={(d) => generalOfDay(planNotes, d)}
-          dayPlanNotes={(d) => sortNotesByLesson(d, notesOfDay(planNotes, d))}
+          dayPlanNotes={(d) => notesOfDay(planNotes, d)}
+          subjects={subjects}
           subjOf={subjOf}
           onOpenPlanning={(d) => { setPopupWeek(planWeekStart); setPopupDay(d) }}
         />
@@ -471,7 +427,6 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
           classColorOf={classColorOf}
           planCount={focusPlanCount}
           onOpenPlanning={() => { setPopupWeek(weekStart); setPopupDay(focusWeekday) }}
-          noteOfEntry={showPlanningLinks ? noteOfEntry : () => null}
           weekNote={showPlanningLinks ? weekNote : null}
           supervisions={focusSupervisions}
         />
@@ -496,8 +451,9 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
           dateLabel={fmtDayDate(popupWeek, popupDay - 1)}
           isToday={focusIsSchoolday && popupDay === focusWeekday && popupWeek === weekStart}
           dayNote={generalOfDay(popupWeek === weekStart ? notes : planCache[popupWeek] ?? [], popupDay)}
-          subjectNotes={sortNotesByLesson(popupDay, notesOfDay(popupWeek === weekStart ? notes : planCache[popupWeek] ?? [], popupDay))
-            .map(n => ({ subject: n.subject, content: n.content }))}
+          subjectNotes={notesOfDay(popupWeek === weekStart ? notes : planCache[popupWeek] ?? [], popupDay)
+            .map(n => ({ subject: n.subject, content: n.content }))
+            .sort((a, b) => subjects.findIndex(s => s.label === a.subject) - subjects.findIndex(s => s.label === b.subject))}
           subjOf={subjOf}
           onClose={() => setPopupDay(null)}
         />
@@ -507,7 +463,7 @@ export default function HeuteAgenda({ data }: { data: AgendaData }) {
 }
 
 function TagView({
-  weekday, tabLabel, entries, subjOf, dateLabel, showPlanningLinks, emptyMessage, classColorOf, planCount, onOpenPlanning, weekNote, supervisions, noteOfEntry,
+  weekday, tabLabel, entries, subjOf, dateLabel, showPlanningLinks, emptyMessage, classColorOf, planCount, onOpenPlanning, weekNote, supervisions,
 }: {
   weekday: number
   tabLabel: string
@@ -521,8 +477,6 @@ function TagView({
   onOpenPlanning: () => void
   weekNote: string | null
   supervisions: (SupervisionBreak & { location: string })[]
-  /** Planungsnotiz dieser Stunde, falls vorhanden (nur Lehrer). */
-  noteOfEntry: (e: Entry) => string | null
 }) {
   if (weekday > 5) {
     return (
@@ -568,11 +522,8 @@ function TagView({
             <div className="flex flex-col gap-1.5">
               {entries.map(e => {
                 const s = subjOf(e.subject)
-                const note = noteOfEntry(e)
-                // Mit Planung wird die Zeile antippbar (öffnet das Tages-Popup
-                // mit dem vollen Wortlaut); ohne bleibt sie ein stiller Eintrag.
-                const Body = (
-                  <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${note ? 'bg-white/85 hover:bg-white' : 'bg-white/70'}`}>
+                return (
+                  <div key={`${e.day}-${e.slot}`} className="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5">
                     <div className="flex flex-col items-center w-11 flex-shrink-0">
                       <span className="text-[13px] font-extrabold text-kh-dark leading-none">{e.slot}.</span>
                       <span className="text-[10px] font-medium text-kh-muted mt-0.5">{SLOT_TIMES[e.slot - 1]}</span>
@@ -583,26 +534,8 @@ function TagView({
                         <span className="text-[14px] font-semibold text-kh-dark truncate">{s.label}</span>
                         {e.classLabel && <ClassPill label={e.classLabel} color={classColorOf(e.classLabel)} />}
                       </div>
-                      {note && (
-                        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                          <span className="msym text-[13px] flex-shrink-0" style={{ color: '#B9791A', fontVariationSettings: "'FILL' 1" }}>sticky_note_2</span>
-                          <span className="text-[12px] text-kh-dark/75 leading-snug truncate">{note}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
-                )
-                return note ? (
-                  <button
-                    key={`${e.day}-${e.slot}`}
-                    onClick={onOpenPlanning}
-                    className="w-full text-left"
-                    aria-label={`Planung zu ${s.label} ansehen`}
-                  >
-                    {Body}
-                  </button>
-                ) : (
-                  <div key={`${e.day}-${e.slot}`}>{Body}</div>
                 )
               })}
             </div>
@@ -729,7 +662,7 @@ function WocheView({
  *  nichts geplant" ist genau die Information, für die man den Reiter öffnet. */
 function PlanungView({
   weekLabel, weekStart, isCurrentWeek, loading, canBrowse, onPrev, onNext, onBackToCurrent,
-  focusWeekday, weekNote, dayGeneralNote, dayPlanNotes, subjOf, onOpenPlanning,
+  focusWeekday, weekNote, dayGeneralNote, dayPlanNotes, subjects, subjOf, onOpenPlanning,
 }: {
   weekLabel: string
   weekStart: string
@@ -743,6 +676,7 @@ function PlanungView({
   weekNote: string | null
   dayGeneralNote: (day: number) => string | null
   dayPlanNotes: (day: number) => Note[]
+  subjects: Subject[]
   subjOf: (l: string) => Subject
   onOpenPlanning: (day: number) => void
 }) {
@@ -804,8 +738,8 @@ function PlanungView({
             const day = i + 1
             const isFocus = day === focusWeekday
             const general = dayGeneralNote(day)
-            // Reihenfolge kommt schon sortiert herein (Stundenfolge des Tages).
             const subjectNotes = dayPlanNotes(day)
+              .sort((a, b) => subjects.findIndex(s => s.label === a.subject) - subjects.findIndex(s => s.label === b.subject))
             const empty = !general && subjectNotes.length === 0
 
             return (
