@@ -81,7 +81,7 @@ export default function AnnouncementCard() {
       <button
         onClick={wegklicken}
         aria-label="Hinweis ausblenden"
-        className="msym -mr-0.5 flex-shrink-0 rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/10 hover:text-kh-dark md:-mr-1 md:p-1 md:text-[19px] md:text-kh-dark/60"
+        className="msym -mr-0.5 flex-shrink-0 rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/25 hover:text-kh-dark md:-mr-1 md:p-1 md:text-[19px] md:text-kh-dark/60"
       >
         close
       </button>
