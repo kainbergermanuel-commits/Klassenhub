@@ -71,18 +71,17 @@ export default function AnnouncementCard() {
         campaign
       </span>
 
-      {/* Ein Textfluss statt zwei Absaetze: der Hinweis soll auf Desktop eine
-          Zeile hoch sein und auf Mobile hoechstens drei. */}
+      {/* Nur die Tatsache, kein Handlungsaufruf: Lesezeichen und Startbildschirm
+          sind optional, und ein Hinweis, der um etwas bittet, wiegt schwerer als
+          einer, der nur Bescheid gibt. */}
       <p className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug text-kh-dark/80">
-        <span className="font-extrabold text-kh-dark/90">ClassHaven ist jetzt classhaven.at</span>
-        {' \u00b7 '}
-        Lesezeichen aktualisieren, Symbol am Startbildschirm neu ablegen.
+        ClassHaven hat eine neue Adresse: <span className="font-extrabold text-kh-dark/90">classhaven.at</span>
       </p>
 
       <button
         onClick={wegklicken}
         aria-label="Hinweis ausblenden"
-        className="msym -mr-0.5 mt-px flex-shrink-0 rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/10 hover:text-kh-dark"
+        className="msym -mr-0.5 mt-px flex-shrink-0 rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/10 hover:text-kh-dark md:-mr-1 md:p-1 md:text-[19px] md:text-kh-dark/60"
       >
         close
       </button>
