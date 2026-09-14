@@ -75,7 +75,7 @@ export default function AnnouncementCard() {
           sind optional, und ein Hinweis, der um etwas bittet, wiegt schwerer als
           einer, der nur Bescheid gibt. */}
       <p className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug text-kh-dark/80">
-        ClassHaven hat eine neue Adresse: <span className="font-extrabold text-kh-dark/90">classhaven.at</span>
+        ClassHaven hat eine neue Adresse: <span className="font-extrabold text-kh-teal">classhaven.at</span>
       </p>
 
       {/* Tooltip in der Optik von StatTooltip (components/home/statParts.tsx),
