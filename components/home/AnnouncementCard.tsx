@@ -94,7 +94,7 @@ export default function AnnouncementCard() {
         <div
           role="tooltip"
           className="
-            pointer-events-none absolute bottom-full -right-[5px] z-30 mb-2 w-max max-w-[220px]
+            pointer-events-none absolute bottom-full -right-[10px] z-30 mb-2 w-max max-w-[220px]
             opacity-0 translate-y-1
             hidden md:block
             group-hover/x:opacity-100 group-hover/x:translate-y-0
@@ -108,7 +108,7 @@ export default function AnnouncementCard() {
               Verschwindet nur auf diesem Gerät.
             </div>
           </div>
-          <div className="absolute -bottom-1 right-[21px] h-2.5 w-2.5 rotate-45 bg-kh-dark/95" />
+          <div className="absolute -bottom-1 right-[26px] h-2.5 w-2.5 rotate-45 bg-kh-dark/95" />
         </div>
       </div>
     </div>
