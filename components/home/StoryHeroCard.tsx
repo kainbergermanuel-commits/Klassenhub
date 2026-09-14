@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getSeasonTheme, currentStageIndex, GUIDE_PORTRAIT } from '@/lib/seasonTheme'
-import { SEASON_ART } from '@/components/streaks/seasonArt'
+import { SEASON_ART, SEASON_ART_TALL } from '@/components/streaks/seasonArt'
 import { daysUntilLabel } from '@/lib/date'
 import { eventCategoryMeta } from '@/lib/eventCategories'
 import type { QuestResult } from '@/lib/quests'
@@ -26,6 +26,9 @@ export default function StoryHeroCard({ season, classGoal, classGoalDone, quests
   const activeStage = currentStageIndex(pct, theme.stages.length)
   const stage = theme.stages[activeStage]
   const Art = SEASON_ART[theme.icon]
+  // Der Portrait-Zweig wird auf Mobile hoch — dort der tiefere Ausschnitt,
+  // sonst füllt blasser Himmel die obere Kartenhälfte (siehe SEASON_ART_TALL).
+  const ArtTall = SEASON_ART_TALL[theme.icon]
   const portrait = GUIDE_PORTRAIT[theme.icon]
 
   const questsDone = quests.filter(q => q.done).length
@@ -77,9 +80,9 @@ export default function StoryHeroCard({ season, classGoal, classGoalDone, quests
       >
         {/* Hintergrund-Ebene — eigenes Overflow-Clipping, damit Vala oben drüber ragen kann */}
         <div className="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-[#EFEAE0] to-[#FAF8F3]">
-          {Art && (
+          {ArtTall && (
             <div className="absolute inset-0 pointer-events-none select-none">
-              <Art />
+              <ArtTall />
             </div>
           )}
         </div>

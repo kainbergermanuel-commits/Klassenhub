@@ -59,3 +59,47 @@ function seasonArtComponent(src: string, pos: string) {
 export const SEASON_ART: Partial<Record<string, () => React.ReactElement>> = Object.fromEntries(
   Object.entries(SEASON_ART_SRC).map(([icon, src]) => [icon, seasonArtComponent(src as string, SEASON_ART_POS[icon] ?? 'center')]),
 )
+
+/** Variante für HOHE Container (Story-Hero auf Mobile).
+ *
+ *  Warum es die braucht: Auf einer hohen, schmalen Karte skaliert `object-cover`
+ *  auf die Breite, wodurch die Bildhöhe exakt aufgeht und die VOLLE Bildhöhe
+ *  sichtbar wird. Bei `season-mountain.webp` ist die obere Hälfte flächiger
+ *  Himmel (gemessen: RGB ~210/220/235 bis 50 % Höhe, erst ab 70 % der Berg) —
+ *  auf dem Handy las sich das als grauer Streifen am oberen Kartenrand.
+ *
+ *  ⚠️ `objectPosition` hilft dagegen NICHT: Ohne vertikalen Überhang gibt es
+ *  nichts zu verschieben, jeder Y-Wert sieht gleich aus. Deshalb wird das Bild
+ *  hier höher als der Container gezogen und unten verankert — dadurch entsteht
+ *  der Überhang oben, und der Himmel wird herausgeschnitten.
+ *
+ *  Unten verankert, weil bei diesen Motiven das Bildthema (Berg, Wald, Schiff)
+ *  im unteren Teil sitzt und der Himmel oben. Falls eine künftige Welt das
+ *  anders braucht, hier einen Eintrag in SEASON_ART_POS_TALL ergänzen. */
+export const SEASON_ART_POS_TALL: Partial<Record<string, string>> = {}
+
+function seasonArtComponentTall(src: string, pos: string) {
+  return function SeasonArtTall() {
+    return (
+      <div className="absolute inset-0 w-full h-full">
+        <img
+          src={src}
+          alt=""
+          className="absolute inset-x-0 bottom-0 w-full h-[170%] object-cover"
+          style={{ opacity: 0.55, objectPosition: pos }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(180deg, rgba(239,234,224,0.05) 0%, rgba(239,234,224,0.4) 55%, #FAF8F3 100%)' }}
+        />
+      </div>
+    )
+  }
+}
+
+export const SEASON_ART_TALL: Partial<Record<string, () => React.ReactElement>> = Object.fromEntries(
+  Object.entries(SEASON_ART_SRC).map(([icon, src]) => [
+    icon,
+    seasonArtComponentTall(src as string, SEASON_ART_POS_TALL[icon] ?? 'center bottom'),
+  ]),
+)
