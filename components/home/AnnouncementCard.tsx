@@ -53,14 +53,14 @@ export default function AnnouncementCard() {
     <div
       className="animate-card-enter mb-4 flex items-start gap-2.5 rounded-xl border border-kh-teal/10 px-3.5 py-2"
       style={{
-        // Verlauf von einer Ahnung Petrol ins Nichts: links oben beim Symbol am
-        // kraeftigsten, diagonal nach rechts unten auslaufend. Bewusst
-        // `to bottom right` statt eines festen Winkels: die Achse laeuft dann
+        // Verlauf von einer Ahnung Petrol ins Nichts: rechts oben beim Kreuz am
+        // kraeftigsten, diagonal nach links unten auslaufend. Bewusst
+        // `to bottom left` statt eines festen Winkels: die Achse laeuft dann
         // von Ecke zu Ecke und passt sich der Form an. Ein fester Winkel wie
         // 135deg draengt den ganzen Verlauf bei dieser flachen, breiten Zeile
         // in die obere linke Ecke, der Rest bliebe durchsichtig.
         // Beide Stopps halbtransparent, damit die Zeile auf jedem Untergrund sitzt.
-        background: 'linear-gradient(to bottom right, rgba(15,138,130,.13) 0%, rgba(15,138,130,.055) 45%, rgba(15,138,130,0) 100%)',
+        background: 'linear-gradient(to bottom left, rgba(15,138,130,.13) 0%, rgba(15,138,130,.055) 45%, rgba(15,138,130,0) 100%)',
       }}
     >
       <span
