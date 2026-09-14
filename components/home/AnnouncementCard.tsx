@@ -78,13 +78,39 @@ export default function AnnouncementCard() {
         ClassHaven hat eine neue Adresse: <span className="font-extrabold text-kh-dark/90">classhaven.at</span>
       </p>
 
-      <button
-        onClick={wegklicken}
-        aria-label="Hinweis ausblenden"
-        className="msym -mr-0.5 flex-shrink-0 rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/25 hover:text-kh-dark md:-mr-1 md:p-1 md:text-[19px] md:text-kh-dark/60"
-      >
-        close
-      </button>
+      {/* Tooltip in der Optik von StatTooltip (components/home/statParts.tsx),
+          aber rechtsbuendig statt ueber die volle Breite: der Ausloeser ist hier
+          ein kleiner Knopf am rechten Rand. Ab `md`, weil es auf einem
+          Berührungsbildschirm kein Darüberfahren gibt. */}
+      <div className="relative flex-shrink-0 group/x">
+        <button
+          onClick={wegklicken}
+          aria-label="Hinweis ausblenden"
+          className="msym -mr-0.5 block rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/25 hover:text-kh-dark md:-mr-1 md:p-1 md:text-[19px] md:text-kh-dark/60"
+        >
+          close
+        </button>
+
+        <div
+          role="tooltip"
+          className="
+            pointer-events-none absolute bottom-full right-0 z-30 mb-2 w-max max-w-[220px]
+            opacity-0 translate-y-1
+            hidden md:block
+            group-hover/x:opacity-100 group-hover/x:translate-y-0
+            group-focus-within/x:opacity-100 group-focus-within/x:translate-y-0
+            motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out
+          "
+        >
+          <div className="rounded-xl bg-kh-dark/95 px-3 py-2 shadow-[0_6px_20px_rgba(20,40,45,.28)] backdrop-blur-sm">
+            <div className="text-[11.5px] font-bold leading-snug text-white">Hinweis ausblenden</div>
+            <div className="mt-0.5 text-[11px] leading-snug text-white/75">
+              Verschwindet nur auf diesem Gerät.
+            </div>
+          </div>
+          <div className="absolute -bottom-1 right-4 h-2.5 w-2.5 rotate-45 bg-kh-dark/95" />
+        </div>
+      </div>
     </div>
   )
 }
