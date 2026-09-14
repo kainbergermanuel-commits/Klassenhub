@@ -50,28 +50,35 @@ export default function AnnouncementCard() {
   if (!zeigen) return null
 
   return (
-    <div className="animate-card-enter mb-5 flex items-start gap-3 rounded-2xl border border-kh-teal/15 bg-kh-teal-light/70 px-4 py-3">
+    <div
+      className="animate-card-enter mb-4 flex items-start gap-2.5 rounded-xl border border-kh-teal/10 px-3.5 py-2"
+      style={{
+        // Verlauf von einer Ahnung Petrol ins Nichts: die Zeile hebt sich links
+        // beim Symbol ab und laeuft nach rechts in die weisse Seite aus. Beide
+        // Stopps halbtransparent, damit sie auf jedem Untergrund sitzt.
+        background: 'linear-gradient(100deg, rgba(15,138,130,.10) 0%, rgba(15,138,130,.045) 45%, rgba(15,138,130,0) 100%)',
+      }}
+    >
       <span
-        className="msym mt-[1px] flex-shrink-0 text-[20px] text-kh-teal"
+        className="msym mt-[2px] flex-shrink-0 text-[18px] text-kh-teal/75"
         style={{ fontVariationSettings: "'FILL' 1" }}
         aria-hidden="true"
       >
         campaign
       </span>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-extrabold leading-snug text-kh-dark">
-          ClassHaven ist jetzt unter <span className="text-kh-teal">classhaven.at</span>
-        </p>
-        <p className="mt-0.5 text-[12.5px] font-medium leading-snug text-kh-muted">
-          Bitte das Lesezeichen aktualisieren. Symbol am Startbildschirm neu ablegen.
-        </p>
-      </div>
+      {/* Ein Textfluss statt zwei Absaetze: der Hinweis soll auf Desktop eine
+          Zeile hoch sein und auf Mobile hoechstens drei. */}
+      <p className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug text-kh-dark/80">
+        <span className="font-extrabold text-kh-dark/90">ClassHaven ist jetzt classhaven.at</span>
+        {' \u00b7 '}
+        Lesezeichen aktualisieren, Symbol am Startbildschirm neu ablegen.
+      </p>
 
       <button
         onClick={wegklicken}
         aria-label="Hinweis ausblenden"
-        className="msym -mr-1 flex-shrink-0 rounded-full p-1 text-[18px] leading-none text-kh-muted/70 transition-colors hover:bg-kh-teal/10 hover:text-kh-dark"
+        className="msym -mr-0.5 mt-px flex-shrink-0 rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/10 hover:text-kh-dark"
       >
         close
       </button>
