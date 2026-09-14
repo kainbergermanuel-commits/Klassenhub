@@ -166,7 +166,10 @@ export default function ParentHome({
           </AnimateIn>
         </div>
 
-        <div className="relative">
+        {/* min-w-0: ohne das setzt die Mindestbreite dieser Spalte im
+            einspaltigen Grid (Mobile) den Boden fuer die ganze Spur —
+            die linke Spalte wird mitgezogen und bricht aus dem Bild. */}
+        <div className="relative min-w-0">
           <div className="flex flex-col gap-5 lg:bg-[#EDE9DF] lg:rounded-2xl lg:p-5 lg:sticky lg:top-7">
             <AnimateIn delay={120}>
               <AgendaPanel reminders={reminders} events={upcomingEvents} eventCount={upcomingEventCount} role="parent" />
