@@ -12,7 +12,7 @@ const SICHTBAR_BIS = '2026-11-01'
 /** Eigener Schlüssel pro Hinweis. Niemals wiederverwenden: ein neuer Hinweis
  *  unter altem Schlüssel wäre für alle, die den alten weggeklickt haben,
  *  unsichtbar. */
-const STORAGE_KEY = 'kh-hinweis-domain-2026-09'
+const STORAGE_KEY = 'kh-hinweis-classhaven-at'
 
 /**
  * Schmaler Hinweis über den Startseiten-Cards. Bewusst hartkodiert statt aus
