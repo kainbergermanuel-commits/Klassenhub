@@ -51,7 +51,7 @@ export default function AnnouncementCard() {
 
   return (
     <div
-      className="animate-card-enter mb-4 flex items-start gap-2.5 rounded-xl border border-kh-teal/10 px-3.5 py-2"
+      className="animate-card-enter mb-4 flex items-center gap-2.5 rounded-xl border border-kh-teal/10 px-3.5 py-2"
       style={{
         // Verlauf von einer Ahnung Petrol ins Nichts: rechts oben beim Kreuz am
         // kraeftigsten, diagonal nach links unten auslaufend. Bewusst
@@ -64,7 +64,7 @@ export default function AnnouncementCard() {
       }}
     >
       <span
-        className="msym mt-[2px] flex-shrink-0 text-[18px] text-kh-teal/75"
+        className="msym flex-shrink-0 text-[18px] text-kh-teal/75"
         style={{ fontVariationSettings: "'FILL' 1" }}
         aria-hidden="true"
       >
@@ -81,7 +81,7 @@ export default function AnnouncementCard() {
       <button
         onClick={wegklicken}
         aria-label="Hinweis ausblenden"
-        className="msym -mr-0.5 mt-px flex-shrink-0 rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/10 hover:text-kh-dark md:-mr-1 md:p-1 md:text-[19px] md:text-kh-dark/60"
+        className="msym -mr-0.5 flex-shrink-0 rounded-full p-0.5 text-[16px] leading-none text-kh-muted/50 transition-colors hover:bg-kh-teal/10 hover:text-kh-dark md:-mr-1 md:p-1 md:text-[19px] md:text-kh-dark/60"
       >
         close
       </button>
