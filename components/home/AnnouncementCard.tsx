@@ -108,7 +108,10 @@ export default function AnnouncementCard() {
               Verschwindet nur auf diesem Gerät.
             </div>
           </div>
-          <div className="absolute -bottom-1 right-[26px] h-2.5 w-2.5 rotate-45 bg-kh-dark/95" />
+          {/* Pfeil sitzt genau auf der Mitte des Kreuzes. Der Wert haengt am Versatz
+              der Sprechblase (-right-[10px]) und an der Groesse des Knopfes —
+              nachmessen, nicht schaetzen, wenn eines davon sich aendert. */}
+          <div className="absolute -bottom-1 right-[14px] h-2.5 w-2.5 rotate-45 bg-kh-dark/95" />
         </div>
       </div>
     </div>
