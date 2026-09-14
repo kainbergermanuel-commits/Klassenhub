@@ -11,6 +11,7 @@ import { greeting, dueInfo } from '@/lib/date'
 import { dueDateFor } from '@/lib/homework'
 import HomeworkDetails from '@/components/homework/HomeworkDetails'
 import AnimateIn from '@/components/ui/AnimateIn'
+import AnnouncementCard from '@/components/home/AnnouncementCard'
 
 interface ParentHomeProps {
   fullName: string
@@ -78,6 +79,9 @@ export default function ParentHome({
           )}
         </div>
       </header>
+
+      {/* Hinweis zur neuen Adresse — befristet, siehe AnnouncementCard. */}
+      <AnnouncementCard />
 
       {/* HÜ-Bestätigungen – bestätigte HÜ verdienen automatisch die Streak-Flammen */}
       <ParentHwConfirmList items={pendingConfirmations} childFirstName={childFirst} nudgedHomeworkIds={nudgedHomeworkIds} />

@@ -17,6 +17,7 @@ import type { RucksackState } from '@/lib/rucksack'
 import type { GuideNote, ChronicleEntry } from '@/lib/heldenbuch'
 import type { Riddle } from '@/lib/riddles'
 import { greeting } from '@/lib/date'
+import AnnouncementCard from '@/components/home/AnnouncementCard'
 
 interface DutyPartner {
   full_name: string
@@ -94,6 +95,9 @@ export default function StudentHome({
         </div>
         <p className="text-sm text-kh-muted font-medium mt-1">{today}</p>
       </header>
+
+      {/* Hinweis zur neuen Adresse — befristet, siehe AnnouncementCard. */}
+      <AnnouncementCard />
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-0 items-start">
         <div className="flex flex-col gap-5 min-w-0 lg:pr-6 mx-auto w-full">

@@ -14,6 +14,7 @@ import { todayISO, addDaysISO, greeting } from '@/lib/date'
 import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 import AnimateIn from '@/components/ui/AnimateIn'
+import AnnouncementCard from '@/components/home/AnnouncementCard'
 
 type StudentStatus = { id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }
 
@@ -173,6 +174,9 @@ export default function TeacherHome({
           <p className="text-sm text-kh-muted font-medium mt-1">{today} · Klasse {klass?.name}</p>
         </div>
       </header>
+
+      {/* Hinweis zur neuen Adresse — befristet, siehe AnnouncementCard. */}
+      <AnnouncementCard />
 
       {/* Schwebender „Neue HÜ"-Button unter dem Burger (nur Mobile, nur Startseite) */}
       <button
