@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getActiveChildId } from '@/lib/auth'
 import { todayISO, schoolYearStartISO } from '@/lib/date'
+import { isAbsence } from '@/lib/attendance'
 import PageHeader from '@/components/layout/PageHeader'
 import TeacherView from './TeacherView'
 import ParentView from './ParentView'
@@ -28,8 +29,11 @@ export default async function AnwesenheitPage() {
     ])
     const studentList = (students ?? []) as Profile[]
     const entryList = entries ?? []
-    const absentToday = entryList.filter(e => e.date === today).length
-    const pending = entryList.filter(e => !e.confirmed_at).length
+    // TeacherView braucht ALLE Zeilen (auch die Teilabwesenheiten fürs
+    // Tages-Raster) — die Kopfzeile zählt aber nur echte Fehltage.
+    const absences = entryList.filter(isAbsence)
+    const absentToday = absences.filter(e => e.date === today).length
+    const pending = absences.filter(e => !e.confirmed_at).length
 
     return (
       <div>
@@ -57,8 +61,10 @@ export default async function AnwesenheitPage() {
 
   if (studentId) {
     const [{ data }, childRes] = await Promise.all([
+      // Die Elternansicht zeigt ausschließlich Fehltage — Teilabwesenheiten
+      // trägt die Lehrperson ein und wertet sie dort auch aus.
       supabase.from('attendance' as never).select('*')
-        .eq('student_id', studentId).gte('date', schoolYearStart)
+        .eq('student_id', studentId).neq('status', 'anwesend').gte('date', schoolYearStart)
         .order('date', { ascending: false }) as unknown as Promise<{ data: Attendance[] | null }>,
       supabase.from('profiles').select('full_name').eq('id', studentId).maybeSingle(),
     ])

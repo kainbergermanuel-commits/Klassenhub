@@ -160,9 +160,12 @@ export default async function HomePage() {
       supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', activeClassId).eq('role', 'student'),
       // Anwesenheit für die Startkarte: heutige Einträge + alle offenen
       // Elternmeldungen in einem Rutsch (statt zwei Abfragen).
+      // neq 'anwesend': Teilabwesenheiten (zu spät / vorzeitig weg) sind
+      // keine Fehltage und gehören nicht in die Abwesenheits-Startkarte.
       supabase.from('attendance' as never)
         .select('id,student_id,date,status,source,note,confirmed_at')
         .eq('class_id', activeClassId)
+        .neq('status', 'anwesend')
         .or(`date.eq.${today},confirmed_at.is.null`)
         .order('date') as unknown as Promise<{ data: { id: string; student_id: string; date: string; status: 'entschuldigt' | 'unentschuldigt'; source: 'teacher' | 'parent'; note: string; confirmed_at: string | null }[] | null }>,
       // Fächer-Katalog fürs "Neue Hausübung"-Modal (siehe lib/subjectsCatalog.ts).
@@ -920,6 +923,7 @@ export default async function HomePage() {
           supabase.from('attendance' as never)
             .select('id,date,status,source,confirmed_at')
             .eq('student_id', child.id)
+            .neq('status', 'anwesend')
             .gte('date', today)
             .order('date')
             .limit(5) as unknown as Promise<{ data: { id: string; date: string; status: 'entschuldigt' | 'unentschuldigt'; source: 'teacher' | 'parent'; confirmed_at: string | null }[] | null }>,

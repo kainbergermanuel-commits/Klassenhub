@@ -7,7 +7,9 @@ import { setAttendanceStatus, clearAttendance, confirmReport, rejectReport } fro
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
 import BulkAbsenceModal from './BulkAbsenceModal'
+import PartialAbsenceModal from './PartialAbsenceModal'
 import StatsView from './StatsView'
+import { isAbsence, partialLabel } from '@/lib/attendance'
 import type { Attendance, AttendanceStatus, Profile } from '@/lib/types'
 
 interface Props {
@@ -191,6 +193,13 @@ export default function TeacherView({ students, entries, today }: Props) {
   const [openStatsId, setOpenStatsId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showBulk, setShowBulk] = useState(false)
+  // Tages-Abgleich: für welches Kind ist das Zeiten-Popup offen?
+  const [partialFor, setPartialFor] = useState<string | null>(null)
+
+  // Seit den Teilabwesenheiten ist nicht mehr jede Zeile ein Fehltag: eine
+  // Zeile mit status 'anwesend' heißt "war da, kam zu spät / ging früher".
+  // Alles, was Fehltage zählt, rechnet deshalb auf dieser gefilterten Liste.
+  const absenceEntries = useMemo(() => entries.filter(isAbsence), [entries])
 
   const entryByKey = useMemo(() => {
     const map: Record<string, Attendance> = {}
@@ -199,8 +208,8 @@ export default function TeacherView({ students, entries, today }: Props) {
   }, [entries])
 
   const pendingReports = useMemo(
-    () => entries.filter(e => !e.confirmed_at).sort((a, b) => a.date.localeCompare(b.date)),
-    [entries]
+    () => absenceEntries.filter(e => !e.confirmed_at).sort((a, b) => a.date.localeCompare(b.date)),
+    [absenceEntries]
   )
 
   const studentById = useMemo(
@@ -256,7 +265,7 @@ export default function TeacherView({ students, entries, today }: Props) {
   // Übersicht: Fehltage pro Kind seit Schuljahresbeginn
   const summary = useMemo(() => {
     const counts: Record<string, { e: number; u: number }> = {}
-    for (const entry of entries) {
+    for (const entry of absenceEntries) {
       if (!counts[entry.student_id]) counts[entry.student_id] = { e: 0, u: 0 }
       if (entry.status === 'entschuldigt') counts[entry.student_id].e++
       else counts[entry.student_id].u++
@@ -264,7 +273,7 @@ export default function TeacherView({ students, entries, today }: Props) {
     return students
       .map(s => ({ student: s, e: counts[s.id]?.e ?? 0, u: counts[s.id]?.u ?? 0 }))
       .sort((a, b) => (b.e + b.u) - (a.e + a.u) || a.student.full_name.localeCompare(b.student.full_name))
-  }, [students, entries])
+  }, [students, absenceEntries])
 
   const dayLabel = fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long' })
   // Am Wochenende ist der „heutige" Bezugspunkt der letzte Schultag — sonst
@@ -373,6 +382,22 @@ export default function TeacherView({ students, entries, today }: Props) {
         <BulkAbsenceModal students={students} today={today} onClose={() => setShowBulk(false)} />
       )}
 
+      {partialFor && studentById[partialFor] && (
+        <PartialAbsenceModal
+          student={studentById[partialFor]}
+          date={date}
+          entry={entryByKey[`${partialFor}|${date}`]}
+          onClose={() => {
+            // Optimistischen Override der Zeile fallen lassen: ab jetzt soll
+            // wieder der Server-Stand zählen, sonst überdeckt ein „anwesend"
+            // aus dem Klick davor die gerade gespeicherte Teilabwesenheit.
+            const key = `${partialFor}|${date}`
+            setOverrides(prev => { const rest = { ...prev }; delete rest[key]; return rest })
+            setPartialFor(null)
+          }}
+        />
+      )}
+
       {tab === 'tag' && (
         <section className="kh-card p-5">
           {/* Tages-Navigation */}
@@ -402,6 +427,8 @@ export default function TeacherView({ students, entries, today }: Props) {
               const key = `${s.id}|${date}`
               const entry = entryByKey[key]
               const isParentPending = entry && !entry.confirmed_at && !overrides[key]
+              // Teilabwesenheit: das Kind war da, die Zeile ist kein Fehltag.
+              const partial = entry?.status === 'anwesend' && !overrides[key] ? entry : undefined
               const hasUnexcused = status === 'unentschuldigt'
               const hasOnlyExcused = status === 'entschuldigt'
               const rowStyle = hasUnexcused
@@ -422,7 +449,28 @@ export default function TeacherView({ students, entries, today }: Props) {
                     {entry?.note && !overrides[key] && (
                       <div className="text-[12px] text-kh-muted italic truncate">„{entry.note}"</div>
                     )}
+                    {partial && (
+                      <div className="text-[12px] font-semibold text-kh-teal truncate">{partialLabel(partial)}</div>
+                    )}
                   </div>
+                  {/* Die Uhr erscheint nur bei anwesenden Kindern: bei einem
+                      ganzen Fehltag gibt es weder eine Verspätung noch eine
+                      Gehzeit einzutragen. */}
+                  {status === 'anwesend' && (
+                    <button
+                      onClick={() => setPartialFor(s.id)}
+                      title={partial ? `${partialLabel(partial)} (ändern)` : 'Zu spät gekommen oder vorzeitig gegangen'}
+                      aria-label={`Zeiten ${s.full_name}`}
+                      className={`msym text-[19px] w-8 h-8 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
+                        partial
+                          ? 'text-white bg-kh-teal'
+                          : 'text-kh-muted hover:text-kh-teal hover:bg-kh-teal-light opacity-60 hover:opacity-100'
+                      }`}
+                      style={partial ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                    >
+                      schedule
+                    </button>
+                  )}
                   <div className="flex gap-1" role="radiogroup" aria-label={`Status ${s.full_name}`}>
                     {(Object.keys(STATUS_META) as RowStatus[]).map(st => {
                       const meta = STATUS_META[st]
@@ -491,7 +539,7 @@ export default function TeacherView({ students, entries, today }: Props) {
                     </button>
                     {open && (
                       <StudentStatsDetail
-                        studentEntries={entries.filter(en => en.student_id === student.id)}
+                        studentEntries={absenceEntries.filter(en => en.student_id === student.id)}
                         today={today}
                       />
                     )}
@@ -505,7 +553,7 @@ export default function TeacherView({ students, entries, today }: Props) {
       )}
 
       {tab === 'statistik' && (
-        <StatsView entries={entries} students={students} today={today} />
+        <StatsView entries={absenceEntries} students={students} today={today} />
       )}
     </div>
   )

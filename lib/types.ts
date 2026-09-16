@@ -511,13 +511,21 @@ export type Message = {
 // Lehrperson noch bestätigt werden muss. Bewusst kein Status "krank"
 // (Gesundheitsdaten, DSGVO Art. 9) — siehe supabase/feature-anwesenheit.sql.
 export type AttendanceStatus = 'entschuldigt' | 'unentschuldigt'
+/** Status 'anwesend' = das Kind war da, kam aber zu spät und/oder ging früher.
+ *  Eine solche Zeile ist KEIN Fehltag — zum Zählen immer `isAbsence()` aus
+ *  lib/attendance.ts verwenden, nie die blosse Existenz der Zeile. */
+export type AttendanceRowStatus = AttendanceStatus | 'anwesend'
 
 export type Attendance = {
   id: string
   class_id: string
   student_id: string
   date: string
-  status: AttendanceStatus
+  status: AttendanceRowStatus
+  /** Zu spät gekommen. Verspätung, keine Fehlstunde. */
+  late: boolean
+  /** Erste versäumte Stunde (1-10); null = bis Schulschluss da. */
+  gone_from_slot: number | null
   note: string
   source: 'teacher' | 'parent'
   reported_by: string

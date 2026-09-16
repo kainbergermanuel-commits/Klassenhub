@@ -41,11 +41,61 @@ export async function setAttendanceStatus(studentId: string, date: string, statu
     .from('attendance').select('id').eq('student_id', studentId).eq('date', date).maybeSingle()
 
   const confirmed = { confirmed_by: userId, confirmed_at: new Date().toISOString() }
+  // Ein ganzer Fehltag kennt weder Verspätung noch Gehzeit: war die Zeile
+  // vorher eine Teilabwesenheit, müssen die beiden Felder mit zurückgesetzt
+  // werden, sonst bleiben sie als stille Altlast an der Zeile hängen.
+  const partialReset = { late: false, gone_from_slot: null }
   const { error } = existing
-    ? await sb.from('attendance').update({ status, ...confirmed }).eq('id', existing.id)
+    ? await sb.from('attendance').update({ status, ...partialReset, ...confirmed }).eq('id', existing.id)
     : await sb.from('attendance').insert({
         class_id: classId, student_id: studentId, date, status,
-        source: 'teacher', reported_by: userId, ...confirmed,
+        ...partialReset, source: 'teacher', reported_by: userId, ...confirmed,
+      })
+  if (error) throw new Error(error.message)
+}
+
+/** Lehrperson: Teilabwesenheit für (Schüler:in, Tag) setzen — zu spät
+ *  gekommen und/oder vorzeitig gegangen. Das Kind war da, die Zeile ist
+ *  deshalb KEIN Fehltag (status 'anwesend').
+ *
+ *  Sind beide Angaben leer, verschwindet die Zeile wieder. Eine bestehende
+ *  ganztägige Abwesenheit wird dabei bewusst überschrieben: die Lehrperson
+ *  hat im Tages-Abgleich zuletzt etwas anderes gesagt. */
+export async function setAttendancePartial(
+  studentId: string,
+  date: string,
+  late: boolean,
+  goneFromSlot: number | null,
+) {
+  const { userId, classId } = await getTeacherCtx()
+  if (!ISO_DATE.test(date)) throw new Error('Ungültiges Datum')
+  if (!isSchoolday(date)) throw new Error('Samstag und Sonntag sind keine Schultage')
+  if (goneFromSlot !== null && (!Number.isInteger(goneFromSlot) || goneFromSlot < 1 || goneFromSlot > 10)) {
+    throw new Error('Ungültige Stunde')
+  }
+
+  // Nichts angegeben = keine Abweichung, also auch keine Zeile.
+  if (!late && goneFromSlot === null) return clearAttendance(studentId, date)
+
+  const supabase = await createClient()
+  const { data: student } = await supabase
+    .from('profiles').select('id,role,class_id').eq('id', studentId).maybeSingle()
+  if (!student || student.role !== 'student' || student.class_id !== classId) {
+    throw new Error('Schüler:in gehört nicht zur aktiven Klasse')
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any
+  const { data: existing } = await sb
+    .from('attendance').select('id').eq('student_id', studentId).eq('date', date).maybeSingle()
+
+  const fields = { status: 'anwesend', late, gone_from_slot: goneFromSlot }
+  const confirmed = { confirmed_by: userId, confirmed_at: new Date().toISOString() }
+  const { error } = existing
+    ? await sb.from('attendance').update({ ...fields, ...confirmed }).eq('id', existing.id)
+    : await sb.from('attendance').insert({
+        class_id: classId, student_id: studentId, date,
+        ...fields, source: 'teacher', reported_by: userId, ...confirmed,
       })
   if (error) throw new Error(error.message)
 }
@@ -156,7 +206,10 @@ export async function setBulkAbsence(
 
   const { error: updateError } = await sb
     .from('attendance')
-    .update({ status: 'entschuldigt', confirmed_by: userId, confirmed_at: new Date().toISOString() })
+    // late/gone_from_slot mit zurücksetzen: lag für einen Tag im Zeitraum
+    // schon eine Teilabwesenheit vor, wird sie hier zum ganzen Fehltag —
+    // ohne das Zurücksetzen kippt die DB-Prüfung (siehe Migration).
+    .update({ status: 'entschuldigt', late: false, gone_from_slot: null, confirmed_by: userId, confirmed_at: new Date().toISOString() })
     .eq('class_id', classId).in('student_id', validIds).in('date', dates)
   if (updateError) throw new Error(updateError.message)
 
