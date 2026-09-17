@@ -1,110 +1,18 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
-import { createPortal } from 'react-dom'
-import { createClient } from '@/lib/supabase/client'
-import Avatar from '@/components/ui/Avatar'
+import { useState } from 'react'
 import Link from 'next/link'
 import HeuteAgenda, { type AgendaData } from './HeuteAgenda'
 import AgendaPanel from './AgendaPanel'
 import TeacherStatsPanel, { type TeacherStats } from './TeacherStatsPanel'
 import AddHomeworkModal from '@/components/homework/AddHomeworkModal'
+import HomeworkStudentsPopup from '@/components/homework/HomeworkStudentsPopup'
 import AttendanceTeacherCard, { type PendingAttendanceReport, type AbsentTodayEntry } from './AttendanceTeacherCard'
 import { todayISO, addDaysISO, greeting } from '@/lib/date'
 import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/types'
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 import AnimateIn from '@/components/ui/AnimateIn'
 import AnnouncementCard from '@/components/home/AnnouncementCard'
-
-type StudentStatus = { id: string; full_name: string; done: boolean; avatar_color: string; avatar_seed: string | null; avatar_hair_color: string | null; avatar_skin_color: string | null }
-
-type HwEyeItem = Pick<HomeworkWithStatus, 'id' | 'title' | 'subject_color' | 'subject_short' | 'completion_count'>
-
-function HwEyeButton({ hw, classId }: { hw: HwEyeItem; classId: string }) {
-  const [open, setOpen] = useState(false)
-  const [students, setStudents] = useState<StudentStatus[] | null>(null)
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
-  const openPopup = useCallback(async () => {
-    setOpen(true)
-    if (students !== null) return
-    const supabase = createClient()
-    const [{ data: allStudents }, { data: completions }] = await Promise.all([
-      supabase.from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').eq('class_id', classId).eq('role', 'student').order('full_name'),
-      supabase.from('homework_completions').select('student_id').eq('homework_id', hw.id),
-    ])
-    const doneIds = new Set((completions ?? []).map(c => c.student_id))
-    setStudents((allStudents ?? []).map(s => ({ ...s, avatar_color: s.avatar_color ?? '#0F8A82', avatar_seed: s.avatar_seed ?? null, avatar_hair_color: s.avatar_hair_color ?? null, avatar_skin_color: s.avatar_skin_color ?? null, done: doneIds.has(s.id) })))
-  }, [hw.id, classId, students])
-
-  return (
-    <>
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        <span className="text-xs font-bold text-kh-teal">{hw.completion_count ?? 0} gemacht</span>
-        <button onClick={openPopup} className="msym text-[17px] text-kh-teal/60 hover:text-kh-teal transition-colors leading-none">visibility</button>
-      </div>
-      {open && mounted && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setOpen(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-[11px] flex items-center justify-center font-extrabold text-[13px] text-white flex-shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${hw.subject_color}ee 0%, ${hw.subject_color}99 100%)` }}>
-                  {hw.subject_short}
-                </div>
-                <h2 className="text-[16px] font-extrabold text-kh-dark">{hw.title}</h2>
-              </div>
-              <button onClick={() => setOpen(false)} className="msym text-2xl text-kh-muted hover:text-kh-dark transition-colors">close</button>
-            </div>
-            {students === null ? (
-              <div className="text-center py-8 text-kh-muted text-sm">Lädt…</div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="msym text-[16px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    <span className="text-[12px] font-extrabold text-kh-teal uppercase tracking-wide">Gemacht · {students.filter(s => s.done).length}</span>
-                  </div>
-                  {students.filter(s => s.done).length === 0
-                    ? <p className="text-xs text-kh-muted pl-1">Noch niemand</p>
-                    : <div className="flex flex-wrap gap-1.5">
-                        {students.filter(s => s.done).map(s => (
-                          <span key={s.id} className="flex items-center gap-1.5 text-[12px] font-semibold bg-[#DDF0E7] text-[#2E9C6E] pl-1 pr-2.5 py-0.5 rounded-full">
-                            <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
-                            {s.full_name.split(' ')[0]}
-                          </span>
-                        ))}
-                      </div>
-                  }
-                </div>
-                <div className="border-t border-kh-border/40" />
-                <div>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="msym text-[16px] text-kh-muted" style={{ fontVariationSettings: "'FILL' 0" }}>radio_button_unchecked</span>
-                    <span className="text-[12px] font-extrabold text-kh-muted uppercase tracking-wide">Nicht gemacht · {students.filter(s => !s.done).length}</span>
-                  </div>
-                  {students.filter(s => !s.done).length === 0
-                    ? <p className="text-xs text-kh-muted pl-1">Alle haben gemacht 🎉</p>
-                    : <div className="flex flex-wrap gap-1.5">
-                        {students.filter(s => !s.done).map(s => (
-                          <span key={s.id} className="flex items-center gap-1.5 text-[12px] font-semibold bg-[#F6F3ED] text-kh-muted pl-1 pr-2.5 py-0.5 rounded-full">
-                            <Avatar name={s.full_name} color={s.avatar_color} seed={s.avatar_seed} hairColor={s.avatar_hair_color} skinColor={s.avatar_skin_color} size={20} />
-                            {s.full_name.split(' ')[0]}
-                          </span>
-                        ))}
-                      </div>
-                  }
-                </div>
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body,
-      )}
-    </>
-  )
-}
 
 interface Person {
   id?: string
@@ -125,7 +33,7 @@ interface TeacherHomeProps {
   upcomingEvents: AgendaEvent[]
   /** Gesamtzahl bevorstehender Termine (upcomingEvents ist auf sechs begrenzt). */
   upcomingEventCount: number
-  recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number; group_batch_id?: string | null }[]
+  recentHomework: { id: string; title: string; subject: string; subject_short: string; subject_color: string; due_date: string; completion_count: number; group_batch_id?: string | null; excluded_student_ids: string[] | null }[]
   attendancePendingReports: PendingAttendanceReport[]
   absentToday: AbsentTodayEntry[]
   /** Alle Schüler:innen der Klasse (für Avatare der Anwesenheits-Karte) */
@@ -254,7 +162,7 @@ export default function TeacherHome({
                           {dateLabel} · {hw.subject}
                         </div>
                       </div>
-                      <HwEyeButton hw={hw} classId={classId} />
+                      <HomeworkStudentsPopup hw={{ ...hw, class_id: classId }} />
                     </div>
                   )
                 })}
@@ -283,7 +191,7 @@ export default function TeacherHome({
                           {new Date(hw.due_date).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })} · {hw.subject}
                         </div>
                       </div>
-                      <HwEyeButton hw={hw} classId={classId} />
+                      <HomeworkStudentsPopup hw={{ ...hw, class_id: classId }} />
                     </div>
                   ))}
                 </div>
