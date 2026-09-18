@@ -10,11 +10,14 @@ import BulkAbsenceModal from './BulkAbsenceModal'
 import PartialAbsenceModal from './PartialAbsenceModal'
 import StatsView from './StatsView'
 import { isAbsence, partialLabel } from '@/lib/attendance'
+import { buildLessonStats, type WeekdaySlots } from '@/lib/attendanceHours'
 import type { Attendance, AttendanceStatus, Profile } from '@/lib/types'
 
 interface Props {
   students: Profile[]
   entries: Attendance[]
+  /** Klassen-Stundenplan: Umrechnungskurs von Fehltagen in Fehlstunden. */
+  slots: WeekdaySlots
   today: string
 }
 
@@ -179,7 +182,7 @@ const STATUS_META: Record<RowStatus, { label: string; short: string; color: stri
   unentschuldigt:{ label: 'Unentschuldigt',short: 'U',  color: '#E06B57', bg: '#FDECEA' },
 }
 
-export default function TeacherView({ students, entries, today }: Props) {
+export default function TeacherView({ students, entries, slots, today }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('tag')
   /** Der Tages-Abgleich startet nie auf einem Wochenende: Samstag und Sonntag
@@ -270,10 +273,21 @@ export default function TeacherView({ students, entries, today }: Props) {
       if (entry.status === 'entschuldigt') counts[entry.student_id].e++
       else counts[entry.student_id].u++
     }
+    // Zweite Einheit, zweite Zeile: Verspätungen und Fehlstunden stehen unter
+    // den Fehltagen, nicht als dritter bunter Status daneben.
+    const byStudent: Record<string, Attendance[]> = {}
+    for (const entry of entries) (byStudent[entry.student_id] ??= []).push(entry)
     return students
-      .map(s => ({ student: s, e: counts[s.id]?.e ?? 0, u: counts[s.id]?.u ?? 0 }))
+      .map(s => ({
+        student: s,
+        e: counts[s.id]?.e ?? 0,
+        u: counts[s.id]?.u ?? 0,
+        lesson: buildLessonStats(byStudent[s.id] ?? [], {
+          slots, startISO: schoolYearStartISO(new Date(`${today}T00:00:00`)), endISO: today, studentCount: 1,
+        }),
+      }))
       .sort((a, b) => (b.e + b.u) - (a.e + a.u) || a.student.full_name.localeCompare(b.student.full_name))
-  }, [students, absenceEntries])
+  }, [students, absenceEntries, entries, slots, today])
 
   const dayLabel = fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long' })
   // Am Wochenende ist der „heutige" Bezugspunkt der letzte Schultag — sonst
@@ -509,8 +523,12 @@ export default function TeacherView({ students, entries, today }: Props) {
             <span className="text-[12px] text-kh-muted font-medium">seit Schuljahresbeginn · Schultage, keine Stunden</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-            {summary.map(({ student, e, u }) => {
+            {summary.map(({ student, e, u, lesson }) => {
               const hasDays = e + u > 0
+              const quiet = [
+                lesson.lateDays > 0 ? `${lesson.lateDays}× zu spät` : null,
+                lesson.missedHours > 0 ? `${lesson.missedHours} ${lesson.missedHours === 1 ? 'Fehlstunde' : 'Fehlstunden'}` : null,
+              ].filter(Boolean).join(' · ')
               const open = openStatsId === student.id
               return (
                 <Fragment key={student.id}>
@@ -527,7 +545,10 @@ export default function TeacherView({ students, entries, today }: Props) {
                       aria-expanded={hasDays ? open : undefined}
                     >
                       <Avatar name={student.full_name} color={student.avatar_color} seed={student.avatar_seed} hairColor={student.avatar_hair_color} skinColor={student.avatar_skin_color} size={34} />
-                      <div className="flex-1 font-bold text-[14px] text-kh-dark truncate">{student.full_name}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-[14px] text-kh-dark truncate">{student.full_name}</div>
+                        {quiet && <div className="text-[11.5px] font-semibold text-kh-teal truncate">{quiet}</div>}
+                      </div>
                       <div className="flex items-center gap-2 text-[12.5px] font-bold">
                         <span className="text-kh-dark">{e + u === 0 ? '—' : `${e + u} ${e + u === 1 ? 'Tag' : 'Tage'}`}</span>
                         {e > 0 && <span className="px-2 py-0.5 rounded-full text-kh-amber bg-kh-amber-light">{e} E</span>}
@@ -548,12 +569,15 @@ export default function TeacherView({ students, entries, today }: Props) {
               )
             })}
           </div>
-          <p className="text-[11.5px] text-kh-muted mt-3">E = entschuldigt · U = unentschuldigt. Kein Eintrag bedeutet anwesend.</p>
+          <p className="text-[11.5px] text-kh-muted mt-3">
+            E = entschuldigt · U = unentschuldigt. Kein Eintrag bedeutet anwesend. Fehlstunden zählen ganze Fehltage
+            und vorzeitiges Gehen zusammen, gerechnet gegen den Stundenplan des Wochentags.
+          </p>
         </section>
       )}
 
       {tab === 'statistik' && (
-        <StatsView entries={absenceEntries} students={students} today={today} />
+        <StatsView entries={absenceEntries} allEntries={entries} slots={slots} students={students} today={today} />
       )}
     </div>
   )

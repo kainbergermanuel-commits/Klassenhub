@@ -5,10 +5,15 @@ import { useRouter } from 'next/navigation'
 import { reportAbsence, withdrawReport } from '@/app/actions/attendance'
 import DatePicker from '@/components/ui/DatePicker'
 import PersonalAttendanceStats from './PersonalAttendanceStats'
+import { isAbsence, partialLabel } from '@/lib/attendance'
+import type { WeekdaySlots } from '@/lib/attendanceHours'
 import type { Attendance } from '@/lib/types'
 
 interface Props {
+  /** Alle Zeilen, auch die Teilabwesenheiten (status 'anwesend'). */
   entries: Attendance[]
+  /** Stundenplan des Kindes, für die Fehlstunden. */
+  slots: WeekdaySlots
   childFirstName: string
   today: string
 }
@@ -18,7 +23,11 @@ function fmtDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
-export default function ParentView({ entries, childFirstName, today }: Props) {
+export default function ParentView({ entries, slots, childFirstName, today }: Props) {
+  // Fehltage und Teilabwesenheiten sind zwei verschiedene Dinge und stehen
+  // deshalb in zwei getrennten Listen statt gemischt untereinander.
+  const absences = entries.filter(isAbsence)
+  const partials = entries.filter(e => !isAbsence(e))
   const router = useRouter()
   const [startDate, setStartDate] = useState(today)
   const [endDate, setEndDate] = useState(today)
@@ -103,18 +112,18 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
       </section>
 
       {/* Persönliche Statistik */}
-      <PersonalAttendanceStats entries={entries} today={today} role="parent" />
+      <PersonalAttendanceStats entries={entries} slots={slots} today={today} role="parent" />
 
       {/* Historie */}
       <section className="kh-card p-5">
         <h2 className="font-extrabold text-[16px] text-kh-dark mb-3">Abwesenheiten</h2>
-        {entries.length === 0 && (
+        {absences.length === 0 && (
           <div className="text-kh-muted text-[14px] py-4 text-center">
             Keine Abwesenheiten seit Schuljahresbeginn — {childFirstName} war immer da.
           </div>
         )}
         <div className="space-y-1.5">
-          {entries.map(e => {
+          {absences.map(e => {
             const pending = !e.confirmed_at
             const chip = pending
               ? { label: 'Gemeldet', color: '#C98A2B', bg: '#F8ECD6' }
@@ -143,12 +152,33 @@ export default function ParentView({ entries, childFirstName, today }: Props) {
             )
           })}
         </div>
-        {entries.length > 0 && (
+        {absences.length > 0 && (
           <p className="text-[11.5px] text-kh-muted mt-3">
-            „Gemeldet" = von dir abgemeldet — die Bestätigung der Lehrperson steht noch aus; danach gilt der Tag als entschuldigt.
+            „Gemeldet" = von dir abgemeldet, die Bestätigung der Lehrperson steht noch aus; danach gilt der Tag als entschuldigt.
           </p>
         )}
       </section>
+
+      {/* Zu spät gekommen / vorzeitig gegangen — eigene Liste, weil das
+          Kind an diesen Tagen da war und sie keine Fehltage sind. */}
+      {partials.length > 0 && (
+        <section className="kh-card p-5">
+          <h2 className="font-extrabold text-[16px] text-kh-dark mb-1">Zu spät gekommen oder früher gegangen</h2>
+          <p className="text-[12.5px] text-kh-muted mb-3">
+            An diesen Tagen war {childFirstName} da. Sie zählen nicht als Fehltage.
+          </p>
+          <div className="space-y-1.5">
+            {partials.map(e => (
+              <div key={e.id} className="kh-card-flat px-3.5 py-2.5 flex items-center gap-3 flex-wrap">
+                <div className="flex-1 min-w-[140px] font-bold text-[14px] text-kh-dark">{fmtDate(e.date)}</div>
+                <span className="px-2.5 py-1 rounded-full text-[11.5px] font-bold text-kh-teal bg-kh-teal-light">
+                  {partialLabel(e)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

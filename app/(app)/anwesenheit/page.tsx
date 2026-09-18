@@ -4,6 +4,7 @@ import { getEffectiveAuth } from '@/lib/previewAuth'
 import { getActiveChildId } from '@/lib/auth'
 import { todayISO, schoolYearStartISO } from '@/lib/date'
 import { isAbsence } from '@/lib/attendance'
+import { buildWeekdaySlots, type WeekdaySlots } from '@/lib/attendanceHours'
 import PageHeader from '@/components/layout/PageHeader'
 import TeacherView from './TeacherView'
 import ParentView from './ParentView'
@@ -20,13 +21,17 @@ export default async function AnwesenheitPage() {
   const schoolYearStart = schoolYearStartISO()
 
   if (profile.role === 'teacher') {
-    const [{ data: students }, { data: entries }] = await Promise.all([
+    // Der Klassen-Stundenplan ist der Umrechnungskurs von Tagen in Stunden:
+    // „ab der 5. weg" heißt am Donnerstag etwas anderes als am Montag.
+    const [{ data: students }, { data: entries }, { data: timetable }] = await Promise.all([
       supabase.from('profiles').select('*')
         .eq('class_id', activeClassId).eq('role', 'student').order('full_name'),
       supabase.from('attendance' as never).select('*')
         .eq('class_id', activeClassId).gte('date', schoolYearStart)
         .order('date', { ascending: false }) as unknown as Promise<{ data: Attendance[] | null }>,
+      supabase.from('class_timetable_entries').select('day,slot').eq('class_id', activeClassId),
     ])
+    const slots = buildWeekdaySlots(timetable ?? [])
     const studentList = (students ?? []) as Profile[]
     const entryList = entries ?? []
     // TeacherView braucht ALLE Zeilen (auch die Teilabwesenheiten fürs
@@ -44,7 +49,7 @@ export default async function AnwesenheitPage() {
           gradient="from-[#2E9C6E] to-[#5BC392]"
         />
         <AnimateIn delay={0}>
-          <TeacherView students={studentList} entries={entryList} today={today} />
+          <TeacherView students={studentList} entries={entryList} slots={slots} today={today} />
         </AnimateIn>
       </div>
     )
@@ -58,18 +63,21 @@ export default async function AnwesenheitPage() {
   const studentId = await getActiveChildId(profile)
   let entries: Attendance[] = []
   let childName: string | null = null
+  let childSlots: WeekdaySlots = {}
 
   if (studentId) {
-    const [{ data }, childRes] = await Promise.all([
-      // Die Elternansicht zeigt ausschließlich Fehltage — Teilabwesenheiten
-      // trägt die Lehrperson ein und wertet sie dort auch aus.
+    const [{ data }, childRes, { data: childTimetable }] = await Promise.all([
       supabase.from('attendance' as never).select('*')
-        .eq('student_id', studentId).neq('status', 'anwesend').gte('date', schoolYearStart)
+        .eq('student_id', studentId).gte('date', schoolYearStart)
         .order('date', { ascending: false }) as unknown as Promise<{ data: Attendance[] | null }>,
       supabase.from('profiles').select('full_name').eq('id', studentId).maybeSingle(),
+      // Eltern lesen den an das Kind gepushten Stundenplan (nicht die
+      // Lehrer-Vorlage class_timetable_entries, die ist teacher-only).
+      supabase.from('timetable_entries').select('day,slot').eq('student_id', studentId),
     ])
     entries = data ?? []
     if (childRes.data) childName = childRes.data.full_name
+    childSlots = buildWeekdaySlots(childTimetable ?? [])
   }
 
   const firstName = childName?.split(' ')[0]
@@ -82,7 +90,7 @@ export default async function AnwesenheitPage() {
         gradient="from-[#2E9C6E] to-[#5BC392]"
       />
       {studentId && firstName
-        ? <AnimateIn delay={0}><ParentView entries={entries} childFirstName={firstName} today={today} /></AnimateIn>
+        ? <AnimateIn delay={0}><ParentView entries={entries} slots={childSlots} childFirstName={firstName} today={today} /></AnimateIn>
         : <div className="kh-card p-6 text-kh-muted text-[14px]">Deinem Profil ist noch kein Kind zugeordnet — bitte bei der Lehrperson melden.</div>}
     </div>
   )

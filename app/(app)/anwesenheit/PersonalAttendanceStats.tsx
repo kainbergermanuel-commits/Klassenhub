@@ -3,6 +3,8 @@
 import { useMemo } from 'react'
 import { schoolYearStartISO } from '@/lib/date'
 import { buildAttendanceStats } from '@/lib/attendanceStats'
+import { buildLessonStats, type WeekdaySlots } from '@/lib/attendanceHours'
+import { isAbsence } from '@/lib/attendance'
 import { Ring } from '@/components/home/statParts'
 import type { Attendance } from '@/lib/types'
 
@@ -14,13 +16,29 @@ const WEEKDAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
  *  Bewusst schlichter (kein Klassen-Filter, kein Vergleich): der eigene
  *  Jahresverlauf, das Wochentags-Muster und – für Eltern – die eigene
  *  Melde-Rechtzeitigkeit. */
-export default function PersonalAttendanceStats({ entries, today, role }: { entries: Attendance[]; today: string; role: 'parent' | 'student' }) {
-  const s = useMemo(() => buildAttendanceStats(entries, {
+export default function PersonalAttendanceStats({ entries, slots, today, role }: {
+  /** Alle Zeilen, auch die Teilabwesenheiten. */
+  entries: Attendance[]
+  slots: WeekdaySlots
+  today: string
+  role: 'parent' | 'student'
+}) {
+  // Die Fehltags-Auswertung darf die Teilabwesenheiten nicht sehen, die
+  // Stunden-Auswertung braucht sie: zwei Einheiten, zwei Datensätze.
+  const absences = useMemo(() => entries.filter(isAbsence), [entries])
+  const s = useMemo(() => buildAttendanceStats(absences, {
     studentCount: 1,
     startISO: schoolYearStartISO(new Date(`${today}T00:00:00`)),
     endISO: today,
     statusFilter: 'all',
-  }), [entries, today])
+  }), [absences, today])
+
+  const lesson = useMemo(() => buildLessonStats(entries, {
+    slots,
+    startISO: schoolYearStartISO(new Date(`${today}T00:00:00`)),
+    endISO: today,
+    studentCount: 1,
+  }), [entries, slots, today])
 
   const timelyPct = s.parent.total > 0 ? Math.round((s.parent.timely / s.parent.total) * 100) : null
 
@@ -50,6 +68,11 @@ export default function PersonalAttendanceStats({ entries, today, role }: { entr
             <div className="text-[11.5px] font-semibold text-kh-muted mt-2 flex gap-2">
               <span className="text-kh-amber">{s.excused} entsch.</span>
               {s.unexcused > 0 && <span className="text-kh-red">{s.unexcused} unentsch.</span>}
+            </div>
+          )}
+          {lesson.hasTimetable && lesson.missedHours > 0 && (
+            <div className="text-[11.5px] font-semibold text-kh-teal mt-1.5">
+              = {lesson.missedHours} {lesson.missedHours === 1 ? 'Fehlstunde' : 'Fehlstunden'}
             </div>
           )}
         </div>
@@ -106,6 +129,24 @@ export default function PersonalAttendanceStats({ entries, today, role }: { entr
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Zu spät / früher weg: sachlich, eigene Zeile, keine Wertung. Die
+          Stunden stehen schon oben in der Fehltage-Kachel. */}
+      {(lesson.lateDays > 0 || lesson.earlyDays > 0) && (
+        <div className="mt-4 pt-4 border-t border-kh-border/60 flex items-center gap-2 flex-wrap text-[12.5px] font-medium text-kh-muted">
+          <span className="msym text-[16px] text-kh-teal">schedule</span>
+          {lesson.lateDays > 0 && (
+            <span><b className="text-kh-dark font-extrabold">{lesson.lateDays}×</b> zu spät gekommen</span>
+          )}
+          {lesson.lateDays > 0 && lesson.earlyDays > 0 && <span className="text-kh-muted/70">·</span>}
+          {lesson.earlyDays > 0 && (
+            <span>
+              an <b className="text-kh-dark font-extrabold">{lesson.earlyDays}</b> {lesson.earlyDays === 1 ? 'Tag' : 'Tagen'} früher gegangen
+              {lesson.partialHours > 0 && ` (${lesson.partialHours} ${lesson.partialHours === 1 ? 'Stunde' : 'Stunden'})`}
+            </span>
+          )}
         </div>
       )}
 

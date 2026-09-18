@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { schoolYearStartISO, firstDayOfMonthISO, addDaysISO } from '@/lib/date'
 import { buildAttendanceStats, type StatusFilter } from '@/lib/attendanceStats'
+import { buildLessonStats, type WeekdaySlots } from '@/lib/attendanceHours'
 import { Ring, Sparkline } from '@/components/home/statParts'
 import Avatar from '@/components/ui/Avatar'
 import type { Attendance, Profile } from '@/lib/types'
@@ -14,7 +15,16 @@ const WEEKDAY_LONG = ['Montagen', 'Dienstagen', 'Mittwochen', 'Donnerstagen', 'F
 type Range = 'year' | 'days30' | 'month'
 const RANGE_LABEL: Record<Range, string> = { year: 'Schuljahr', days30: 'Letzte 30 Tage', month: 'Dieser Monat' }
 
-export default function StatsView({ entries, students, today }: { entries: Attendance[]; students: Profile[]; today: string }) {
+/** `entries` sind nur die Fehltage. Die Stunden-Auswertung braucht zusätzlich
+ *  die Teilabwesenheiten und bekommt deshalb `allEntries` — zwei Einheiten,
+ *  zwei Datensätze, bewusst nicht vermischt. */
+export default function StatsView({ entries, allEntries, slots, students, today }: {
+  entries: Attendance[]
+  allEntries: Attendance[]
+  slots: WeekdaySlots
+  students: Profile[]
+  today: string
+}) {
   const [range, setRange] = useState<Range>('year')
   const [status, setStatus] = useState<StatusFilter>('all')
   const [childId, setChildId] = useState<'all' | string>('all')
@@ -27,6 +37,7 @@ export default function StatsView({ entries, students, today }: { entries: Atten
   // Seite auf dieses Kind um (studentCount=1); die anonyme Verteilung blendet
   // sich dann aus (studentCount > 1 false).
   const scopedEntries = useMemo(() => childId === 'all' ? entries : entries.filter(e => e.student_id === childId), [entries, childId])
+  const scopedAll = useMemo(() => childId === 'all' ? allEntries : allEntries.filter(e => e.student_id === childId), [allEntries, childId])
   const studentCount = childId === 'all' ? students.length : 1
   const childName = childId === 'all' ? null : students.find(s => s.id === childId)?.full_name ?? null
 
@@ -39,6 +50,13 @@ export default function StatsView({ entries, students, today }: { entries: Atten
   const s = useMemo(
     () => buildAttendanceStats(scopedEntries, { studentCount, startISO, endISO, statusFilter: status }),
     [scopedEntries, studentCount, startISO, endISO, status],
+  )
+
+  // Stunden statt Tage. Ignoriert den Status-Fokus bewusst: eine Verspätung
+  // ist weder entschuldigt noch unentschuldigt, der Filter passt nicht darauf.
+  const lesson = useMemo(
+    () => buildLessonStats(scopedAll, { slots, startISO, endISO, studentCount }),
+    [scopedAll, slots, startISO, endISO, studentCount],
   )
 
   const insights = useMemo(() => {
@@ -276,6 +294,83 @@ export default function StatsView({ entries, students, today }: { entries: Atten
             )}
           </Card>
         </div>
+
+        {/* Stunden statt Tage — eigene Karte, weil hier eine andere Einheit
+            gerechnet wird als in allem darüber. Ohne gepflegten Stundenplan
+            gibt es nichts umzurechnen, dann bleibt die Karte weg. */}
+        {lesson.hasTimetable && (
+          <div className="mt-4">
+            <Card icon="schedule" title="Verspätungen & Fehlstunden" hint="unabhängig vom Status-Fokus">
+              {lesson.missedHours === 0 && lesson.lateDays === 0 ? (
+                <p className="text-[12.5px] text-kh-muted font-medium py-4 text-center">
+                  Keine Fehlstunden und keine Verspätungen im Zeitraum.
+                </p>
+              ) : (
+                <div className="grid lg:grid-cols-[1fr_1fr_1.1fr] gap-4 pt-2">
+                  {/* Fehlstunden */}
+                  <div className="kh-card-flat p-3.5">
+                    <div className="text-[26px] font-extrabold text-kh-dark leading-none tabular-nums">{lesson.missedHours}</div>
+                    <div className="text-[11.5px] font-medium text-kh-muted mt-1">
+                      versäumte {lesson.missedHours === 1 ? 'Unterrichtsstunde' : 'Unterrichtsstunden'}
+                    </div>
+                    <div className="mt-2.5 pt-2.5 border-t border-kh-border/60 text-[11.5px] font-semibold text-kh-muted space-y-0.5">
+                      <div>{lesson.fullDayHours} aus ganzen Fehltagen</div>
+                      <div>{lesson.partialHours} durch vorzeitiges Gehen</div>
+                    </div>
+                  </div>
+
+                  {/* Quote + Verspätungen */}
+                  <div className="kh-card-flat p-3.5 flex flex-col">
+                    <div className="text-[26px] font-extrabold text-kh-dark leading-none tabular-nums">
+                      {lesson.missedRate}<span className="text-[14px] text-kh-muted font-bold">%</span>
+                    </div>
+                    <div className="text-[11.5px] font-medium text-kh-muted mt-1">
+                      des Unterrichts versäumt
+                    </div>
+                    <div className="mt-2.5 pt-2.5 border-t border-kh-border/60 text-[11.5px] font-semibold text-kh-muted">
+                      von {lesson.scheduledHours} angesetzten Stunden
+                    </div>
+                    <div className="mt-auto pt-2.5 text-[12.5px] font-semibold text-kh-dark">
+                      {lesson.lateDays === 0
+                        ? 'Keine Verspätungen'
+                        : `${lesson.lateDays}× zu spät gekommen`}
+                      {lesson.earlyDays > 0 && (
+                        <span className="block text-[11.5px] font-medium text-kh-muted mt-0.5">
+                          an {lesson.earlyDays} {lesson.earlyDays === 1 ? 'Tag' : 'Tagen'} früher gegangen
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Verspätungen nach Wochentag — die interessanteste Achse */}
+                  <div>
+                    <div className="text-[11px] font-bold text-kh-muted uppercase tracking-wide mb-2">Verspätungen nach Wochentag</div>
+                    <div className="flex items-end gap-2 h-[110px]">
+                      {WEEKDAY_SHORT.map((wd, i) => {
+                        const count = lesson.lateWeekday[i]
+                        const max = Math.max(1, ...lesson.lateWeekday)
+                        return (
+                          <div key={wd} className="flex-1 flex flex-col items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-kh-dark leading-none">{count > 0 ? count : ''}</span>
+                            <div className="w-full max-w-[26px] rounded-t-md" style={{
+                              height: count > 0 ? `${Math.max(8, (count / max) * 78)}px` : '3px',
+                              background: count === 0 ? '#E3DFD5' : 'linear-gradient(180deg,#5BC392,#2E9C6E)',
+                            }} />
+                            <span className="text-[10px] font-semibold text-kh-muted leading-none">{wd}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <p className="text-[11px] text-kh-muted font-medium mt-3 pt-3 border-t border-kh-border/60">
+                Fehlstunden werden gegen den Stundenplan des jeweiligen Wochentags gerechnet. Eine Verspätung zählt
+                als Verspätung, nicht als Fehlstunde. Die angesetzten Stunden sind ohne Ferienabzug gerechnet.
+              </p>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )
