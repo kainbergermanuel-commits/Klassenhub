@@ -8,7 +8,7 @@
 import Link from 'next/link'
 import { type SupervisionBreak } from '@/lib/supervisionSlots'
 import {
-  SLOT_TIMES, DAY_SHORT, DAY_FULL, fmtDayNum,
+  slotStart, slotEnd, DAY_SHORT, DAY_FULL, fmtDayNum,
   SubjChip, ClassPill, LessonCell, SupervisionColumn, WeekNoteLine,
   type Entry, type Note, type Subject,
 } from './shared'
@@ -77,7 +77,8 @@ export function TagView({
                   <div key={`${e.day}-${e.slot}`} className="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5">
                     <div className="flex flex-col items-center w-11 flex-shrink-0">
                       <span className="text-[13px] font-extrabold text-kh-dark leading-none">{e.slot}.</span>
-                      <span className="text-[10px] font-medium text-kh-muted mt-0.5">{SLOT_TIMES[e.slot - 1]}</span>
+                      <span className="text-[10px] font-medium text-kh-muted mt-0.5 tabular-nums leading-[1.15]">{slotStart(e.slot)}</span>
+                      <span className="text-[10px] font-medium text-kh-muted/50 tabular-nums leading-[1.15]">{slotEnd(e.slot)}</span>
                     </div>
                     <SubjChip subj={s} />
                     <div className="flex-1 min-w-0">

@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect, useTransition } from 'react'
 import { saveClassTimetableEntry, pushClassTimetable } from '@/app/actions/classTimetable'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { subjectShortStyle, SUBJECT_SHORT_CLASSES } from '@/lib/subjectShortFit'
+import { slotStart, slotEnd } from '@/lib/lessonTimes'
 
 const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40', '14:35', '15:30', '16:25']
 
 interface Entry { day: number; slot: number; subject: string }
 interface SubjectOption { label: string; short: string; color: string }
@@ -106,9 +107,10 @@ export default function ClassTimetableEditor({ entries, subjects, lastPushedAt }
         <tbody>
           {visibleSlots.map(slot => (
             <tr key={slot}>
-              <td className="pr-2 text-right select-none py-0.5 w-10">
-                <div className="text-[11px] font-bold text-kh-muted">{slot}.</div>
-                <div className="text-[9px] font-medium text-kh-muted/70">{SLOT_TIMES[slot - 1]}</div>
+              <td className="pr-2 text-right select-none py-0.5 w-10 align-middle">
+                <div className="text-[11px] font-bold text-kh-muted leading-[1.35]">{slot}.</div>
+                <div className="text-[9px] font-medium text-kh-muted/70 tabular-nums leading-[1.15]">{slotStart(slot)}</div>
+                <div className="text-[9px] font-medium text-kh-muted/45 tabular-nums leading-[1.15]">{slotEnd(slot)}</div>
               </td>
               {DAYS.map((_, di) => {
                 const day = di + 1
@@ -116,22 +118,26 @@ export default function ClassTimetableEditor({ entries, subjects, lastPushedAt }
                 const value = grid.get(k) ?? ''
                 const isSaving = saving === k
                 const subj = subjects.find(s => s.label === value)
+                const label = value ? (subj?.short ?? value) : ''
 
                 return (
                   <td key={day} className="p-0.5">
                     <button
                       onClick={() => setPopup({ day, slot })}
                       disabled={isSaving}
-                      className={`w-full rounded-lg px-2 py-2.5 text-[12px] font-bold text-center transition min-h-[40px] ${
+                      className={`w-full rounded-lg px-1 py-2.5 font-bold text-center transition min-h-[40px] ${SUBJECT_SHORT_CLASSES} ${
                         value ? 'text-white hover:opacity-75 transition-opacity' : 'bg-transparent text-transparent hover:bg-kh-teal/10 hover:text-kh-teal transition-colors'
                       } disabled:cursor-default`}
-                      style={value && subj
-                        ? { background: `linear-gradient(180deg, ${subj.color}ee 0%, ${subj.color}99 100%)` }
-                        : value
-                        ? { background: 'linear-gradient(180deg, #6E7E80ee 0%, #6E7E8099 100%)' }
-                        : undefined}
+                      style={{
+                        ...subjectShortStyle(label),
+                        ...(value && subj
+                          ? { background: `linear-gradient(180deg, ${subj.color}ee 0%, ${subj.color}99 100%)` }
+                          : value
+                          ? { background: 'linear-gradient(180deg, #6E7E80ee 0%, #6E7E8099 100%)' }
+                          : {}),
+                      }}
                     >
-                      {isSaving ? '…' : value ? (subj?.short ?? value) : '+'}
+                      {isSaving ? '…' : value ? label : '+'}
                     </button>
                   </td>
                 )

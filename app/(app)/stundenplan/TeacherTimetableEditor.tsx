@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { saveTeacherTimetableEntry } from '@/app/actions/teacherTimetable'
 import { buildClassColorMap, classColorFrom } from '@/lib/classLabelColor'
+import { subjectShortStyle, SUBJECT_SHORT_CLASSES } from '@/lib/subjectShortFit'
+import { slotStart, slotEnd } from '@/lib/lessonTimes'
 
 const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40', '14:35', '15:30', '16:25']
 
 export interface TeacherEntry { day: number; slot: number; subject: string; classLabel: string }
 interface SubjectOption { label: string; short: string; color: string }
@@ -127,9 +128,10 @@ export default function TeacherTimetableEditor({ entries, subjects, activeClassN
         <tbody>
           {visibleSlots.map(slot => (
             <tr key={slot}>
-              <td className="pr-2 text-right select-none py-0.5 w-10">
-                <div className="text-[11px] font-bold text-kh-muted">{slot}.</div>
-                <div className="text-[9px] font-medium text-kh-muted/70">{SLOT_TIMES[slot - 1]}</div>
+              <td className="pr-2 text-right select-none py-0.5 w-10 align-middle">
+                <div className="text-[11px] font-bold text-kh-muted leading-[1.35]">{slot}.</div>
+                <div className="text-[9px] font-medium text-kh-muted/70 tabular-nums leading-[1.15]">{slotStart(slot)}</div>
+                <div className="text-[9px] font-medium text-kh-muted/45 tabular-nums leading-[1.15]">{slotEnd(slot)}</div>
               </td>
               {DAYS.map((_, di) => {
                 const day = di + 1
@@ -143,7 +145,7 @@ export default function TeacherTimetableEditor({ entries, subjects, activeClassN
                     <button
                       onClick={() => setPopup({ day, slot })}
                       disabled={isSaving}
-                      className={`w-full rounded-lg px-2 py-2 text-center transition min-h-[46px] flex flex-col items-center justify-center gap-0.5 ${
+                      className={`w-full rounded-lg px-1 py-2 text-center transition min-h-[46px] flex flex-col items-center justify-center gap-0.5 ${
                         cell ? 'text-white hover:opacity-75 transition-opacity' : 'bg-transparent text-transparent hover:bg-kh-teal/10 hover:text-kh-teal transition-colors'
                       } disabled:cursor-default`}
                       style={cell && subj
@@ -156,7 +158,12 @@ export default function TeacherTimetableEditor({ entries, subjects, activeClassN
                         <span className="text-[12px] font-bold">…</span>
                       ) : cell ? (
                         <>
-                          <span className="text-[12px] font-bold leading-none">{subj?.short ?? cell.subject}</span>
+                          <span
+                            className={`font-bold ${SUBJECT_SHORT_CLASSES}`}
+                            style={subjectShortStyle(subj?.short ?? cell.subject)}
+                          >
+                            {subj?.short ?? cell.subject}
+                          </span>
                           {cell.classLabel && (
                             // Weiße Pille statt farbigem Text direkt auf dem
                             // Fach-Verlauf — sonst wäre z.B. Blau auf Blau

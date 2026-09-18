@@ -13,10 +13,8 @@
 // alles andere sind die kurzen 5-Minuten-Pausen zwischen den Stunden.
 // ============================================================
 
-/** Stundenbeginn-Zeiten wie im Stundenplan (TimetableGrid/HeuteAgenda). */
-const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40', '14:35', '15:30', '16:25']
-/** Dauer einer Unterrichtseinheit in Minuten. */
-const LESSON_MIN = 50
+import { SLOT_TIMES, LESSON_MIN } from '@/lib/lessonTimes'
+
 /** Beginn der Aufsicht vor der ersten Stunde. */
 const PRE_SCHOOL_START = '7:45'
 /** Ab dieser Pausenlänge (Minuten) gilt eine Aufsicht als "lang". */

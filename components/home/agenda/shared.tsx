@@ -14,8 +14,8 @@ import Link from 'next/link'
 import { type SupervisionBreak } from '@/lib/supervisionSlots'
 import IconButton from '@/components/ui/IconButton'
 
-// Slot→Zeit-Mapping identisch zum Stundenplan (TimetableGrid.tsx SLOT_TIMES).
-export const SLOT_TIMES = ['8:00', '8:55', '10:00', '10:55', '11:50', '12:45', '13:40', '14:35', '15:30', '16:25']
+// Slot→Zeit-Mapping identisch zum Stundenplan (lib/lessonTimes.ts).
+export { SLOT_TIMES, slotStart, slotEnd } from '@/lib/lessonTimes'
 export const DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
 export const DAY_FULL = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
 
@@ -89,10 +89,12 @@ export function fmtDayDate(weekStart: string, dayIdx0: number): string {
 export function SubjChip({ subj, size = 28 }: { subj: Subject; size?: number }) {
   const base = size <= 24 ? 10 : 11.5
   const len = subj.short.length
-  const scale = len >= 4 ? 0.62 : len === 3 ? 0.78 : 1
+  // Ab sechs Zeichen (Lerngruppen wie "DGB/F4L2") passt nichts mehr in eine
+  // Zeile: Dann bricht das Kürzel im Quadrat um, statt darüber hinauszuragen.
+  const scale = len >= 6 ? 0.52 : len >= 4 ? 0.62 : len === 3 ? 0.78 : 1
   return (
     <span
-      className="rounded-[9px] flex items-center justify-center font-extrabold text-white flex-shrink-0 leading-none"
+      className={`rounded-[9px] flex items-center justify-center font-extrabold text-white flex-shrink-0 overflow-hidden text-center ${len >= 6 ? 'break-all leading-[1.05] px-[1px]' : 'leading-none'}`}
       style={{
         width: size, height: size,
         fontSize: base * scale,
