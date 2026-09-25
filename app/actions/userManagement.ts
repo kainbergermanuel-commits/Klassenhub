@@ -81,7 +81,7 @@ async function assertTeacher() {
   return profile
 }
 
-export async function createStudent(formData: FormData) {
+async function createStudentUnsafe(formData: FormData) {
   const teacherProfile = await assertTeacher()
   const classId = await getTeacherActiveClassId(teacherProfile)
 
@@ -113,7 +113,7 @@ export async function createStudent(formData: FormData) {
   return { username, password, fullName }
 }
 
-export async function createParent(formData: FormData) {
+async function createParentUnsafe(formData: FormData) {
   const teacherProfile = await assertTeacher()
   const classId = await getTeacherActiveClassId(teacherProfile)
 
@@ -162,6 +162,34 @@ export async function createParent(formData: FormData) {
   }
 
   return { username, password, fullName }
+}
+
+type AnlageErgebnis =
+  | { ok: true; username: string; password: string; fullName: string }
+  | { ok: false; error: string }
+
+/**
+ * Fehler als Wert zurückgeben statt zu werfen: in Production ersetzt Next.js
+ * den Text geworfener Fehler durch eine Standardmeldung. Dann sähe niemand,
+ * ob die Klasse, das Kind oder Supabase das Problem war.
+ */
+async function alsErgebnis(
+  anlegen: () => Promise<{ username: string; password: string; fullName: string }>,
+): Promise<AnlageErgebnis> {
+  try {
+    return { ok: true, ...(await anlegen()) }
+  } catch (err) {
+    console.error('Konto-Anlage fehlgeschlagen:', err)
+    return { ok: false, error: (err as Error).message || 'Unbekannter Fehler' }
+  }
+}
+
+export async function createStudent(formData: FormData): Promise<AnlageErgebnis> {
+  return alsErgebnis(() => createStudentUnsafe(formData))
+}
+
+export async function createParent(formData: FormData): Promise<AnlageErgebnis> {
+  return alsErgebnis(() => createParentUnsafe(formData))
 }
 
 export async function resetPassword(profileId: string) {

@@ -21,7 +21,8 @@ export default function NeuesElternteilForm({ students }: { students: Student[] 
     setError(null)
     try {
       const res = await createParent(new FormData(e.currentTarget))
-      setResult(res)
+      if (res.ok) setResult(res)
+      else setError(res.error)
     } catch (err) {
       setError((err as Error).message)
     } finally {

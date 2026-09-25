@@ -15,7 +15,8 @@ export default function NeuerSchuelerPage() {
     setError(null)
     try {
       const res = await createStudent(new FormData(e.currentTarget))
-      setResult(res)
+      if (res.ok) setResult(res)
+      else setError(res.error)
     } catch (err) {
       setError((err as Error).message)
     } finally {
