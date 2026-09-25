@@ -48,6 +48,17 @@ async function adminFetch(path: string, method: string, body?: object) {
   return res
 }
 
+/**
+ * Fehlertext einer Admin-API-Antwort. Neuere Supabase-Versionen liefern ihn in
+ * `msg` (plus `error_code`), ältere in `message` — nur `message` zu lesen hieß,
+ * dass jeder Fehler als leerer Text ankam.
+ */
+async function adminError(res: Response): Promise<{ msg: string; code: string }> {
+  const err = await res.json().catch(() => ({}))
+  const msg: string = err.msg ?? err.message ?? err.error_description ?? err.error ?? ''
+  return { msg: msg || `HTTP ${res.status}`, code: err.error_code ?? '' }
+}
+
 async function createAuthUserUnique(
   baseUsername: string,
   password: string,
@@ -64,9 +75,8 @@ async function createAuthUserUnique(
       usedEmails.add(email)
       return { authUser: await res.json(), username }
     }
-    const err = await res.json()
-    const msg: string = err.message ?? ''
-    if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('registered')) {
+    const { msg, code } = await adminError(res)
+    if (code === 'email_exists' || msg.toLowerCase().includes('already') || msg.toLowerCase().includes('registered')) {
       usedEmails.add(email)
       suffix++
       continue
@@ -206,8 +216,7 @@ export async function resetPassword(profileId: string) {
   // Login einer anderen Familie.
   const res = await adminFetch(`users/${profileId}`, 'PUT', { password })
   if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err.message ?? 'Passwort-Reset fehlgeschlagen')
+    throw new Error(`Passwort-Reset fehlgeschlagen: ${(await adminError(res)).msg}`)
   }
 
   return { password }
@@ -219,8 +228,7 @@ export async function deleteUser(profileId: string) {
   // Auth-Account löschen (Supabase löscht das Profil via CASCADE nicht automatisch)
   const res = await adminFetch(`users/${profileId}`, 'DELETE')
   if (!res.ok && res.status !== 404) {
-    const err = await res.json()
-    throw new Error(err.message ?? 'Löschen fehlgeschlagen')
+    throw new Error(`Löschen fehlgeschlagen: ${(await adminError(res)).msg}`)
   }
 
   // Profil explizit löschen
