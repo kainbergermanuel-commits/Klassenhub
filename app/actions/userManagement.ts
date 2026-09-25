@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getAuth } from '@/lib/auth'
+import { getAuth, getTeacherActiveClassId } from '@/lib/auth'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -83,7 +83,7 @@ async function assertTeacher() {
 
 export async function createStudent(formData: FormData) {
   const teacherProfile = await assertTeacher()
-  if (!teacherProfile.class_id) throw new Error('Kein Klassen-Zugriff')
+  const classId = await getTeacherActiveClassId(teacherProfile)
 
   const fullName = (formData.get('full_name') as string).trim()
   const gender = null
@@ -98,7 +98,7 @@ export async function createStudent(formData: FormData) {
     id: authUser.id,
     role: 'student',
     full_name: fullName,
-    class_id: teacherProfile.class_id,
+    class_id: classId,
     gender,
     avatar_color: '#0F8A82',
     avatar_seed: null,
@@ -115,32 +115,34 @@ export async function createStudent(formData: FormData) {
 
 export async function createParent(formData: FormData) {
   const teacherProfile = await assertTeacher()
-  if (!teacherProfile.class_id) throw new Error('Kein Klassen-Zugriff')
+  const classId = await getTeacherActiveClassId(teacherProfile)
 
   const fullName = (formData.get('full_name') as string).trim()
-  const childId = formData.get('child_id') as string | null
-  const username = toUsername(fullName, 'parent')
+  const childId = (formData.get('child_id') as string | null) || null
   const password = toPassword(fullName, 'parent')
-  const email = `${username}@klassenhub.local`
-
-  const res = await adminFetch('users', 'POST', {
-    email,
-    password,
-    email_confirm: true,
-  })
-  if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err.message ?? 'Auth-Account konnte nicht angelegt werden')
-  }
-  const authUser = await res.json()
 
   const service = createServiceClient()
+
+  // Das Kind muss in der gewählten Klasse sitzen. Die ID kommt aus dem Formular
+  // und geht danach über den Service-Client an RLS vorbei — ohne diese Prüfung
+  // ließe sich jedes beliebige Kind der Schule verknüpfen.
+  if (childId) {
+    const { data: kind } = await service
+      .from('profiles').select('id').eq('id', childId)
+      .eq('role', 'student').eq('class_id', classId).maybeSingle()
+    if (!kind) throw new Error('Das Kind gehört nicht zur gewählten Klasse')
+  }
+
+  // Gleicher Nachname heißt nicht gleiche Familie: ist eltern.<nachname> schon
+  // vergeben, bekommt das neue Konto eltern.<nachname>2 usw. wie bei Schülern.
+  const { authUser, username } = await createAuthUserUnique(toUsername(fullName, 'parent'), password)
+
   const { error } = await service.from('profiles').upsert({
     id: authUser.id,
     role: 'parent',
     full_name: fullName,
-    class_id: teacherProfile.class_id,
-    child_id: childId || null,
+    class_id: classId,
+    child_id: childId,
     avatar_color: '#C98A2B',
     avatar_seed: crypto.randomUUID(),
     is_admin: false,
@@ -170,10 +172,11 @@ export async function resetPassword(profileId: string) {
 
   const role = profile.role as 'student' | 'parent'
   const password = toPassword(profile.full_name, role)
-  const username = toUsername(profile.full_name, role)
-  const email = `${username}@klassenhub.local`
 
-  const res = await adminFetch(`users/${profileId}`, 'PUT', { password, email })
+  // Nur das Passwort zurücksetzen, den Benutzernamen nicht aus dem Namen neu
+  // bilden: bei eltern.isakovic2 käme sonst eltern.isakovic heraus, also das
+  // Login einer anderen Familie.
+  const res = await adminFetch(`users/${profileId}`, 'PUT', { password })
   if (!res.ok) {
     const err = await res.json()
     throw new Error(err.message ?? 'Passwort-Reset fehlgeschlagen')

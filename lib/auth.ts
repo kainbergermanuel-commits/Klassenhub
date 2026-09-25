@@ -85,6 +85,34 @@ export const getTeacherClasses = cache(async (teacherId: string): Promise<Class[
 })
 
 /**
+ * Die Klasse, in der eine Lehrkraft gerade arbeitet — geprüft.
+ *
+ * Anlegen von Konten darf nicht an `profiles.class_id` hängen: das ist nur die
+ * Stammklasse. Wer in der 2b arbeitet, bekäme sonst die 1b-Kinderliste und
+ * legte Konten in der 1b an. Maßgeblich ist das Cookie `active_class_id` vom
+ * Umschalter. Weil es vom Client kommt, gilt es nur, wenn die Klasse wirklich
+ * zu dieser Lehrkraft gehört (Admins verwalten alle Klassen). Ein ungültiges
+ * Cookie ist ein Fehler, kein stiller Rückfall auf die Stammklasse.
+ */
+export async function getTeacherActiveClassId(teacher: Profile): Promise<string> {
+  const jar = await cookies()
+  const gewuenscht = jar.get('active_class_id')?.value ?? null
+  const klassen = await getTeacherClasses(teacher.id)
+
+  if (!gewuenscht) {
+    const id = teacher.class_id ?? klassen[0]?.id ?? null
+    if (!id) throw new Error('Kein Klassen-Zugriff')
+    return id
+  }
+
+  const erlaubt = teacher.is_admin
+    || gewuenscht === teacher.class_id
+    || klassen.some(k => k.id === gewuenscht)
+  if (!erlaubt) throw new Error('Kein Zugriff auf die gewählte Klasse')
+  return gewuenscht
+}
+
+/**
  * Die ID des Kindes, das dieses Elternteil gerade sieht.
  *
  * Der Rückfall auf profiles.child_id steht bewusst hier und nur hier: er hält
