@@ -54,6 +54,43 @@ function dayLabel(iso: string) {
   return new Date(iso).toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
+// URLs im Text klickbar machen und kuerzen (Domain + Pfadende), voller Link im href.
+// Reines React-Rendering, kein innerHTML -> kein XSS-Risiko.
+const URL_RE = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/g
+
+function shortUrl(raw: string) {
+  const s = raw.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '')
+  if (s.length <= 40) return s
+  const slash = s.indexOf('/')
+  const host = slash === -1 ? s : s.slice(0, slash)
+  const tail = s.slice(s.lastIndexOf('/') + 1)
+  return `${host}/…/${tail.length > 18 ? tail.slice(0, 18) + '…' : tail}`
+}
+
+function linkify(text: string, own: boolean) {
+  return text.split(URL_RE).map((part, i) => {
+    if (i % 2 === 0) return part
+    // Satzzeichen am Ende gehoert nicht zum Link.
+    const m = part.match(/^(.*?)([.,;:!?)\]]*)$/)!
+    const url = m[1]
+    const href = url.startsWith('http') ? url : `https://${url}`
+    return (
+      <span key={i}>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={href}
+          className={`underline underline-offset-2 font-medium ${own ? 'text-white' : 'text-kh-teal'}`}
+        >
+          {shortUrl(url)}
+        </a>
+        {m[2]}
+      </span>
+    )
+  })
+}
+
 const INITIAL_COUNT = 4
 
 export default function MessageThread({ messages, side, currentUserId, senderNames = {}, senderAvatars = {}, onAcknowledge }: Props) {
@@ -115,7 +152,7 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
                   <Avatar name={avatar?.name ?? name ?? ''} color={avatar?.color ?? '#E8E4DC'} seed={avatar?.seed ?? null} hairColor={avatar?.hairColor} skinColor={avatar?.skinColor} size={32} />
                 </div>
               )}
-              <div className={`flex flex-col max-w-[78%] ${own ? 'items-end' : 'items-start'}`}>
+              <div className={`flex flex-col min-w-0 max-w-[78%] ${own ? 'items-end' : 'items-start'}`}>
                 <div className="flex items-center gap-1.5 mb-1 px-1 text-[10.5px]">
                   {own ? (
                     <>
@@ -136,7 +173,7 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
                   )}
                 </div>
                 <div
-                  className={`px-4 py-2.5 text-[14px] leading-snug whitespace-pre-wrap break-words shadow-sm ${
+                  className={`px-4 py-2.5 text-[14px] leading-snug whitespace-pre-wrap [overflow-wrap:anywhere] shadow-sm ${
                     own
                       ? 'gradient-teal text-white rounded-[18px_18px_2px_18px]'
                       : 'text-kh-dark rounded-[2px_18px_18px_18px]'
@@ -151,7 +188,7 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
                         : { background: 'linear-gradient(135deg, #C2E6DF 0%, #E4F3F0 100%)', color: '#2C5550' }
                   }
                 >
-                  {m.body}
+                  {linkify(m.body, own)}
                 </div>
                 {m.requires_ack && (() => {
                   const acked = !!m.acknowledged_at || ackedLocal.has(m.id)
