@@ -267,6 +267,7 @@ export type Database = {
           broadcast_id?: string | null
           requires_ack?: boolean
           acknowledged_at?: string | null
+          deleted_at?: string | null
         }
         Update: Partial<Message>
         Relationships: []
@@ -504,6 +505,8 @@ export type Message = {
   broadcast_id: string | null
   requires_ack: boolean
   acknowledged_at: string | null
+  /** Weich gelöscht: Zeile bleibt als Platzhalter, body ist leer. */
+  deleted_at: string | null
 }
 
 // Anwesenheit: nur ABWEICHUNGEN werden gespeichert (kein Eintrag = anwesend).

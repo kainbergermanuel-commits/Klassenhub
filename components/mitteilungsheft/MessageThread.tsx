@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import type { Message } from '@/lib/types'
 
 export type SenderAvatar = {
@@ -99,6 +102,41 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
   // Optimistisch: sofort als bestätigt anzeigen, bevor der Server-Refresh durch ist.
   const [ackedLocal, setAckedLocal] = useState<Set<string>>(new Set())
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }) }, [messages.length, expanded])
+  const router = useRouter()
+  const { confirm, dialog } = useConfirm()
+  // Optimistisch: sofort als gelöscht anzeigen, bevor der Server-Refresh durch ist.
+  const [deletedLocal, setDeletedLocal] = useState<Set<string>>(new Set())
+
+  // Löschen läuft über delete_own_message (feature-message-delete.sql): dort
+  // stehen die Regeln (nur eigene, nicht bestätigte; Sammelnachricht überall).
+  async function deleteMessage(m: Message) {
+    const ok = await confirm({
+      title: 'Nachricht löschen?',
+      message: m.broadcast_id
+        ? 'Das ist eine Sammelnachricht. Sie wird aus allen Heften entfernt, in die sie geschickt wurde. Dort steht dann „Nachricht gelöscht“.'
+        : 'Der Text wird entfernt. Im Heft steht dann „Nachricht gelöscht“.',
+      confirmLabel: 'Löschen',
+      tone: 'danger',
+      icon: 'delete',
+    })
+    if (!ok) return
+    setDeletedLocal(prev => new Set(prev).add(m.id))
+    const { error } = await (createClient() as any).rpc('delete_own_message', { p_id: m.id })
+    if (error) {
+      setDeletedLocal(prev => { const n = new Set(prev); n.delete(m.id); return n })
+      await confirm({
+        title: 'Löschen nicht möglich',
+        message: error.code === 'P0001'
+          ? 'Diese Nachricht wurde bereits zur Kenntnis genommen und kann nicht mehr gelöscht werden.'
+          : 'Die Nachricht konnte nicht gelöscht werden. Bitte später nochmal versuchen.',
+        confirmLabel: 'OK',
+        cancelLabel: 'Schließen',
+        icon: 'error',
+      })
+      return
+    }
+    router.refresh()
+  }
 
   // Standardmäßig nur die letzten 5 Nachrichten zeigen.
   const hiddenCount = Math.max(0, messages.length - INITIAL_COUNT)
@@ -134,6 +172,9 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
         const own = kind === 'own'
         const name = m.sender_id ? senderNames[m.sender_id] : undefined
         const avatar = m.sender_id ? senderAvatars[m.sender_id] : undefined
+        const deleted = !!m.deleted_at || deletedLocal.has(m.id)
+        // Bestätigte Nachrichten bleiben stehen — sonst verlöre die Bestätigung ihren Sinn.
+        const deletable = own && !deleted && !m.acknowledged_at && !ackedLocal.has(m.id)
         const showDay = dayKey(m.created_at) !== lastDay
         lastDay = dayKey(m.created_at)
 
@@ -158,8 +199,18 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
                     <>
                       <span className="text-kh-muted/85">{timeOf(m.created_at)}</span>
                       <span className="font-semibold text-kh-muted">Du</span>
-                      {m.seen_at && (
+                      {m.seen_at && !deleted && (
                         <span className="msym text-[14px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>done_all</span>
+                      )}
+                      {deletable && (
+                        <button
+                          onClick={() => deleteMessage(m)}
+                          aria-label="Nachricht löschen"
+                          title="Nachricht löschen"
+                          className="-my-1.5 -mr-1.5 p-1.5 rounded-full text-kh-muted/70 hover:text-kh-red hover:bg-kh-red/10 transition-colors"
+                        >
+                          <span className="msym text-[15px] block">delete</span>
+                        </button>
                       )}
                     </>
                   ) : (
@@ -172,6 +223,16 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
                     </>
                   )}
                 </div>
+                {deleted ? (
+                  <div
+                    className={`flex items-center gap-1.5 px-4 py-2.5 text-[13px] italic text-kh-muted border border-dashed border-kh-border ${
+                      own ? 'rounded-[18px_18px_2px_18px]' : 'rounded-[2px_18px_18px_18px]'
+                    }`}
+                  >
+                    <span className="msym text-[16px] not-italic">block</span>
+                    Nachricht gelöscht
+                  </div>
+                ) : (
                 <div
                   className={`px-4 py-2.5 text-[14px] leading-snug whitespace-pre-wrap [overflow-wrap:anywhere] shadow-sm ${
                     own
@@ -190,7 +251,8 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
                 >
                   {linkify(m.body, own)}
                 </div>
-                {m.requires_ack && (() => {
+                )}
+                {m.requires_ack && !deleted && (() => {
                   const acked = !!m.acknowledged_at || ackedLocal.has(m.id)
                   // Elternteil, eingehende Lehrer-Nachricht: aktiver Bestätigungs-Button.
                   if (kind === 'teacher' && side === 'parent') {
@@ -234,6 +296,7 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
         )
       })}
       <div ref={endRef} />
+      {dialog}
     </div>
   )
 }

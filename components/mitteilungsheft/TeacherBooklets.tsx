@@ -134,7 +134,8 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
   )
   const broadcasts = useMemo(() => {
     const groups: Record<string, Message[]> = {}
-    for (const m of broadcastMessages) if (m.broadcast_id) (groups[m.broadcast_id] ??= []).push(m)
+    // Gelöschte Sammelnachrichten haben keinen Inhalt mehr — nicht in der Übersicht.
+    for (const m of broadcastMessages) if (m.broadcast_id && !m.deleted_at) (groups[m.broadcast_id] ??= []).push(m)
     return Object.entries(groups)
       .map(([id, msgs]) => ({
         id,
@@ -252,7 +253,7 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
                         ? ''
                         : last.sender_id === userId
                           ? 'Sie: '
-                          : `${firstName(senderNames[last.sender_id ?? ''] ?? 'Kollegium')}: `}${last.body}`
+                          : `${firstName(senderNames[last.sender_id ?? ''] ?? 'Kollegium')}: `}${last.deleted_at ? 'Nachricht gelöscht' : last.body}`
                     : 'Noch keine Nachrichten'}
                 </p>
               </div>
