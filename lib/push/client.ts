@@ -1,6 +1,6 @@
 'use client'
 
-import { savePushSubscription } from '@/app/actions/push'
+import { savePushSubscription, removePushSubscription } from '@/app/actions/push'
 import type { PushSubscriptionJSON } from './send'
 
 /** Gemeinsame Browser-Seite für PushSettingsCard und PushPromptCard. */
@@ -46,4 +46,37 @@ export async function enablePush(): Promise<{ status: DeviceStatus; error?: stri
     return { status: 'off', error: res.error }
   }
   return { status: 'on' }
+}
+
+/** Beim Abmelden: Gerät vom Konto lösen, sonst bekäme ein geteiltes Gerät
+ *  (Familienhandy, Tablet) nach dem nächsten Login die Push-Nachrichten der
+ *  vorigen Person. Muss VOR signOut laufen, solange die Session noch gilt.
+ *  Fehler werden geschluckt: Abmelden darf daran nie scheitern. */
+export async function forgetDeviceOnLogout(): Promise<void> {
+  try {
+    if (!('serviceWorker' in navigator)) return
+    const reg = await navigator.serviceWorker.getRegistration()
+    const sub = await reg?.pushManager.getSubscription()
+    if (!sub) return
+    await removePushSubscription(sub.endpoint)
+    await sub.unsubscribe()
+  } catch { /* siehe oben */ }
+}
+
+/** Beim Öffnen der App: ein im Browser vorhandenes Abo erneut speichern.
+ *  Heilt drei Fälle still: der Browser hat den Endpoint gewechselt, die Zeile
+ *  wurde nach einem 410 gelöscht, oder das Speichern beim Aktivieren ging
+ *  schief. Einmal pro Sitzung reicht. */
+export async function resyncSubscription(): Promise<void> {
+  const FLAG = 'kh-push-sync'
+  try {
+    if (sessionStorage.getItem(FLAG)) return
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return
+    if (Notification.permission !== 'granted') return
+    const reg = await navigator.serviceWorker.getRegistration()
+    const sub = await reg?.pushManager.getSubscription()
+    if (!sub) return
+    const res = await savePushSubscription(sub.toJSON() as PushSubscriptionJSON, navigator.userAgent)
+    if (!res.error) sessionStorage.setItem(FLAG, '1')
+  } catch { /* nicht kritisch */ }
 }

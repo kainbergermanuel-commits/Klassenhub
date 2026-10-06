@@ -130,6 +130,7 @@ function storedGroups(role: Role): Group[] {
       'Der Text der Nachrichten',
       'Wer sie geschrieben hat und wann',
       'Wann sie gelesen und, falls verlangt, bestätigt wurde',
+      'Nur wenn Sie Benachrichtigungen aktivieren: eine technische Adresse Ihres Geräts und der Browsertyp, damit der Hinweis ankommt. Beim Ausschalten oder Abmelden wird beides gelöscht.',
     ],
   }
 
@@ -230,7 +231,7 @@ const NOT_STORED = [
   'Keine hochgeladenen Dateien und keine Fotos.',
   'Keine Standortdaten.',
   'Keine Werbung, keine Analyse-Dienste, kein Tracking.',
-  'Keine Weitergabe an Dritte.',
+  'Keine Weitergabe an Dritte. Einzige Ausnahme, wenn Sie Benachrichtigungen aktivieren: Der Hinweis läuft verschlüsselt über den Benachrichtigungsdienst Ihres Geräts (Apple, Google oder Mozilla), der ihn nicht lesen kann.',
 ]
 
 export default function PrivacyOverview({ role }: Props) {

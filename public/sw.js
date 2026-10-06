@@ -43,12 +43,11 @@ self.addEventListener('notificationclick', (event) => {
   const url = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin).href
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
-      for (const w of windows) {
-        if (w.url.startsWith(self.location.origin)) {
-          return w.focus().then(() => w.navigate(url))
-        }
-      }
-      return self.clients.openWindow(url)
+      const w = windows.find((c) => c.url.startsWith(self.location.origin))
+      if (!w) return self.clients.openWindow(url)
+      // navigate() geht nur bei Fenstern, die dieser Worker steuert;
+      // sonst lieber ein neues Fenster als gar keine Reaktion.
+      return w.focus().then(() => w.navigate(url)).catch(() => self.clients.openWindow(url))
     })
   )
 })

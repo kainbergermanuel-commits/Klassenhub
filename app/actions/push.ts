@@ -59,15 +59,19 @@ export async function setNotificationPref(kind: PushKind, enabled: boolean): Pro
 }
 
 /**
- * Probe-Benachrichtigung an genau das Gerät, das gerade fragt. Braucht keine
- * Tabelle und keinen Webhook: prüft nur Service Worker, Schlüssel und den
- * Weg über den Push-Dienst. Ignoriert PUSH_DRY_RUN absichtlich, weil sie nur
- * an das eigene Gerät geht.
+ * Probe-Benachrichtigung an genau das Gerät, das gerade fragt. Prüft vorher,
+ * ob das Gerät auch wirklich für dieses Konto gespeichert ist: sonst käme
+ * die Probe an, echte Nachrichten aber nicht. Ignoriert PUSH_DRY_RUN
+ * absichtlich, weil sie nur an das eigene Gerät geht.
  */
 export async function sendTestPush(sub: PushSubscriptionJSON): Promise<{ status?: number; error?: string }> {
   const { user } = await getAuth()
   if (!user) return { error: 'Nicht angemeldet' }
   if (!isValidSubscription(sub)) return { error: 'Ungültiges Abo' }
+  const supabase = await createClient()
+  const { data: row } = await supabase.from('push_subscriptions' as never).select('id')
+    .eq('endpoint', sub.endpoint).eq('user_id', user.id).maybeSingle()
+  if (!row) return { error: 'Dieses Gerät ist nicht gespeichert. Bitte einmal aus- und wieder einschalten.' }
   const status = await sendToSubscription(sub, {
     title: 'ClassHaven',
     body: 'Probe: Benachrichtigungen funktionieren auf diesem Gerät.',

@@ -114,6 +114,20 @@ nur hineinschreiben sollen, was nötig ist.
 ausschließlich das eigene Heft, auch bei einer Sammelnachricht, weil diese
 als einzelne Kopien je Elternteil ausgeliefert wird.
 
+### Push-Benachrichtigungen
+
+| Tabelle | Felder | Lesezugriff |
+|---|---|---|
+| `push_subscriptions` | Push-Endpoint und Schlüssel je Gerät, `user_agent` | nur eigene Zeilen; Versand liest mit Service-Key |
+| `notification_prefs` | pro Person und Art an/aus | nur eigene Zeilen |
+
+Die beiden Push-Tabellen (seit 06.10.2026, `supabase/feature-push.sql`) sind
+nicht inhaltlich sensibel, aber ein Endpoint erlaubt, einem Gerät
+Benachrichtigungen zu schicken. Er wird beim Ausschalten, beim Abmelden und
+nach einer Ablehnung durch den Push-Dienst (404/410) gelöscht. Der Inhalt
+läuft Ende-zu-Ende-verschlüsselt (RFC 8291) über Apple, Google oder Mozilla;
+der Text nennt nie den Nachrichteninhalt.
+
 ---
 
 ## 2. Was nicht existiert

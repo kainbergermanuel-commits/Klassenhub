@@ -1,7 +1,14 @@
+import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { planMessagePush, type MessageRow } from '@/lib/push/recipients'
 import { dispatch } from '@/lib/push/send'
+
+function secretMatches(given: string | null, expected: string | undefined): boolean {
+  if (!given || !expected) return false
+  const a = Buffer.from(given), b = Buffer.from(expected)
+  return a.length === b.length && timingSafeEqual(a, b)
+}
 
 /**
  * Ziel des Supabase Database Webhooks (INSERT auf public.messages).
@@ -10,8 +17,7 @@ import { dispatch } from '@/lib/push/send'
  * Nachricht, weil der Webhook erst nach dem Insert läuft.
  */
 export async function POST(req: Request) {
-  const secret = process.env.PUSH_WEBHOOK_SECRET
-  if (!secret || req.headers.get('x-push-secret') !== secret) {
+  if (!secretMatches(req.headers.get('x-push-secret'), process.env.PUSH_WEBHOOK_SECRET)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 

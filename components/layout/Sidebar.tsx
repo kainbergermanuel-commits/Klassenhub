@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { forgetDeviceOnLogout } from '@/lib/push/client'
 import Avatar from '@/components/ui/Avatar'
 import NavBadge from '@/components/layout/NavBadge'
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal'
@@ -58,6 +59,7 @@ export default function Sidebar({ profile, klass, navItems, teacherClasses = [],
 
   async function handleLogout() {
     const supabase = createClient()
+    await forgetDeviceOnLogout()
     await Promise.all([
       supabase.auth.signOut(),
       fetch('/api/preview-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: null }) }),
