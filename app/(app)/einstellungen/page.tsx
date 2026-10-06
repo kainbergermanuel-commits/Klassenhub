@@ -5,6 +5,7 @@ import { getTeacherClasses } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import ChangePasswordForm from '@/components/settings/ChangePasswordForm'
 import DatenschutzCard from '@/components/settings/DatenschutzCard'
+import PushSettingsCard from '@/components/settings/PushSettingsCard'
 import TeacherSubjectsEditor from '@/components/settings/TeacherSubjectsEditor'
 import DefaultExclusionsEditor from '@/components/settings/DefaultExclusionsEditor'
 import PageHeader from '@/components/layout/PageHeader'
@@ -83,6 +84,13 @@ export default async function SettingsPage() {
               subjects={subjectsCatalog}
               initial={exclusionMap}
             />
+          </AnimateIn>
+        )}
+        {/* Push vorerst nur fürs Mitteilungsheft, das Schüler:innen nicht nutzen.
+            Nur mit echtem Login: in der Rollen-Vorschau nie ein Gerät abonnieren. */}
+        {realProfile && realProfile.role !== 'student' && effectiveProfile?.id === realProfile.id && (
+          <AnimateIn delay={45}>
+            <PushSettingsCard />
           </AnimateIn>
         )}
         <AnimateIn delay={60}>
