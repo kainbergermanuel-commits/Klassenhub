@@ -98,9 +98,11 @@ holiday_village
 home
 hourglass_empty
 hourglass_top
+http
 image
 info
 insights
+ios_share
 key
 label
 landscape
@@ -121,11 +123,13 @@ mark_email_read
 mark_email_unread
 menu
 menu_book
+message
 military_tech
 mop
 more_vert
 move
 nights_stay
+notifications
 outgoing_mail
 overview
 palette
@@ -149,11 +153,13 @@ quiz
 radio
 radio_button_unchecked
 redeem
+refresh
 reminder
 resize
 rocket
 rocket_launch
 route
+rule
 sailing
 satellite_alt
 schedule
@@ -184,7 +190,6 @@ target
 task_alt
 terrain
 thunderstorm
-title
 today
 tooltip
 track_changes
