@@ -38,6 +38,11 @@ export async function sendToSubscription(sub: PushSubscriptionJSON, payload: Pus
   }
 }
 
+/** Klassennamen aus PUSH_CLASSES, für die verschickt (und gefragt) wird. */
+export function pushClasses(): string[] {
+  return (process.env.PUSH_CLASSES ?? '').split(',').map(s => s.trim()).filter(Boolean)
+}
+
 export interface DispatchReport {
   dryRun: boolean
   skippedReason?: string
@@ -58,7 +63,7 @@ export async function dispatch(db: SupabaseClient, plan: PushPlan): Promise<Disp
   const dryRun = process.env.PUSH_DRY_RUN !== 'false'
   const report: DispatchReport = { dryRun, recipients: plan.recipientIds.length, mutedByPrefs: 0, devices: 0, sent: 0, removedExpired: 0, failed: 0 }
 
-  const allowed = (process.env.PUSH_CLASSES ?? '').split(',').map(s => s.trim()).filter(Boolean)
+  const allowed = pushClasses()
   const { data: cls } = await db.from('classes').select('name').eq('id', plan.classId).single()
   const className = (cls as { name: string } | null)?.name
   if (!className || !allowed.includes(className)) {

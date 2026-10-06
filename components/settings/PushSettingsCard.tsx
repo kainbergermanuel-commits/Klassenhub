@@ -2,28 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import {
-  savePushSubscription, removePushSubscription, sendTestPush,
+  removePushSubscription, sendTestPush,
   loadNotificationPrefs, setNotificationPref,
 } from '@/app/actions/push'
 import type { PushSubscriptionJSON } from '@/lib/push/send'
+import { deviceStatus, enablePush, type DeviceStatus } from '@/lib/push/client'
 
-type Status = 'loading' | 'unsupported' | 'ios-install' | 'denied' | 'off' | 'on'
-
-function urlBase64ToUint8Array(base64: string) {
-  const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/')
-  const raw = atob(padded)
-  return Uint8Array.from(raw, c => c.charCodeAt(0))
-}
-
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent)
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-}
-
-function isStandalone() {
-  return window.matchMedia('(display-mode: standalone)').matches
-    || (navigator as Navigator & { standalone?: boolean }).standalone === true
-}
+type Status = 'loading' | DeviceStatus
 
 /** Push-Benachrichtigungen fürs Gerät ein-/ausschalten. Fragt die
  *  Browser-Erlaubnis erst auf Knopfdruck, nie beim Laden der Seite. */
@@ -35,15 +20,9 @@ export default function PushSettingsCard() {
 
   useEffect(() => {
     (async () => {
-      const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
-      if (!supported) {
-        setStatus(isIOS() && !isStandalone() ? 'ios-install' : 'unsupported')
-        return
-      }
-      if (Notification.permission === 'denied') { setStatus('denied'); return }
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.getSubscription()
-      setStatus(sub ? 'on' : 'off')
+      const s = await deviceStatus()
+      setStatus(s)
+      if (s !== 'on') return
       const prefs = await loadNotificationPrefs().catch(() => ({}))
       setMessagesOn((prefs as { messages?: boolean }).messages ?? true)
     })()
@@ -58,16 +37,9 @@ export default function PushSettingsCard() {
   async function enable() {
     setBusy(true); setMessage(null)
     try {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') { setStatus(permission === 'denied' ? 'denied' : 'off'); return }
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
-      })
-      const res = await savePushSubscription(sub.toJSON() as PushSubscriptionJSON, navigator.userAgent)
-      if (res.error) { setMessage(res.error); await sub.unsubscribe(); return }
-      setStatus('on')
+      const res = await enablePush()
+      setStatus(res.status)
+      if (res.error) setMessage(res.error)
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Aktivieren fehlgeschlagen')
     } finally {

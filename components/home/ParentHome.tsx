@@ -12,6 +12,7 @@ import { dueDateFor } from '@/lib/homework'
 import HomeworkDetails from '@/components/homework/HomeworkDetails'
 import AnimateIn from '@/components/ui/AnimateIn'
 import AnnouncementCard from '@/components/home/AnnouncementCard'
+import PushPromptCard from '@/components/home/PushPromptCard'
 
 interface ParentHomeProps {
   fullName: string
@@ -39,10 +40,12 @@ interface ParentHomeProps {
   agenda: AgendaData
   /** Kind-Kennzahlen (inkl. Wochenrückblick) fürs Statistik-Panel der rechten Nav. */
   childStats: ChildStats
+  /** Push-Frage zeigen: Klasse freigeschaltet und echter Login (keine Vorschau). */
+  showPushPrompt?: boolean
 }
 
 export default function ParentHome({
-  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, upcomingEventCount, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, agenda, childStats,
+  fullName, childName, childColor, childSeed, childHairColor, childSkinColor, className, childHomework, reminders, upcomingEvents, upcomingEventCount, childConfirmedStreak, pendingConfirmations, nudgedHomeworkIds, childUpcomingAbsences, today: todayIso, agenda, childStats, showPushPrompt,
 }: ParentHomeProps) {
   const childFirst = childName.split(' ')[0]
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -82,6 +85,8 @@ export default function ParentHome({
 
       {/* Hinweis zur neuen Adresse — befristet, siehe AnnouncementCard. */}
       <AnnouncementCard />
+
+      {showPushPrompt && <PushPromptCard />}
 
       {/* HÜ-Bestätigungen – bestätigte HÜ verdienen automatisch die Streak-Flammen */}
       <ParentHwConfirmList items={pendingConfirmations} childFirstName={childFirst} nudgedHomeworkIds={nudgedHomeworkIds} />

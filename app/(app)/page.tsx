@@ -23,6 +23,7 @@ import StudentHome from '@/components/home/StudentHome'
 import ParentHome from '@/components/home/ParentHome'
 import type { HomeworkWithStatus, Reminder, Duty, AgendaEvent } from '@/lib/types'
 import { targetedStudentCount } from '@/lib/targeting'
+import { pushClasses } from '@/lib/push/send'
 
 /**
  * Label des nächsten Termins fürs Statistik-Panel ("Elternabend · morgen").
@@ -1045,6 +1046,7 @@ export default async function HomePage() {
         today={today}
         agenda={parentAgenda}
         childStats={childStats}
+        showPushPrompt={!isPreview && pushClasses().includes(klass?.name ?? '')}
       />
     )
   }
