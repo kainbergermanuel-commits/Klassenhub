@@ -13,6 +13,7 @@ import type { Class, HomeworkWithStatus, Reminder, AgendaEvent } from '@/lib/typ
 import type { SubjectOption } from '@/lib/subjectsCatalog'
 import AnimateIn from '@/components/ui/AnimateIn'
 import AnnouncementCard from '@/components/home/AnnouncementCard'
+import FeatureAnnouncePopup from '@/components/home/FeatureAnnouncePopup'
 
 interface Person {
   id?: string
@@ -85,6 +86,8 @@ export default function TeacherHome({
 
       {/* Hinweis zur neuen Adresse — befristet, siehe AnnouncementCard. */}
       <AnnouncementCard />
+      {/* Einmalige Ankündigung „An:“ im Mitteilungsheft, befristet bis 30.11. */}
+      <FeatureAnnouncePopup rolle="teacher" />
 
       {/* Schwebender „Neue HÜ"-Button unter dem Burger (nur Mobile, nur Startseite) */}
       <button

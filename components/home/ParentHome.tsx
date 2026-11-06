@@ -12,6 +12,7 @@ import { dueDateFor } from '@/lib/homework'
 import HomeworkDetails from '@/components/homework/HomeworkDetails'
 import AnimateIn from '@/components/ui/AnimateIn'
 import AnnouncementCard from '@/components/home/AnnouncementCard'
+import FeatureAnnouncePopup from '@/components/home/FeatureAnnouncePopup'
 import PushPromptCard from '@/components/home/PushPromptCard'
 
 interface ParentHomeProps {
@@ -85,6 +86,8 @@ export default function ParentHome({
 
       {/* Hinweis zur neuen Adresse — befristet, siehe AnnouncementCard. */}
       <AnnouncementCard />
+      {/* Einmalige Ankündigung „An:“ im Mitteilungsheft, befristet bis 30.11. */}
+      <FeatureAnnouncePopup rolle="parent" />
 
       {showPushPrompt && <PushPromptCard />}
 
