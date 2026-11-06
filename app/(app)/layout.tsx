@@ -144,12 +144,14 @@ async function computeMessageBadge(profile: Profile, userId: string, classId: st
   }
 
   // Lehrkraft: ungesehene Eltern-Nachrichten der Klasse, die an alle oder
-  // gezielt an mich gehen (lib/messages.ts). select('*') statt einer
-  // Spaltenliste: so läuft das Badge auch, bevor addressed_teacher_id
-  // eingespielt ist (die Spalte fehlt dann einfach).
+  // gezielt an mich gehen (lib/messages.ts).
+  // broadcast_id IS NULL filtert in der Datenbank vor: Elternnachrichten
+  // sind nie Sammelnachrichten, und ungelesene Sammelkopien (je Familie eine)
+  // wären sonst bei jedem Seitenaufruf mitgeladen worden, mit der Zeit
+  // immer mehr.
   const { data } = await supabase
-    .from('messages').select('*')
-    .eq('class_id', classId).is('seen_at', null)
+    .from('messages').select('parent_id,sender_id,seen_at,deleted_at,addressed_teacher_id')
+    .eq('class_id', classId).is('seen_at', null).is('broadcast_id', null)
   return (data ?? []).filter(m => isUnreadForTeacher(m, userId)).length
 }
 
