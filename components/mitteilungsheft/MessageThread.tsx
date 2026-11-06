@@ -175,6 +175,22 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
         const deleted = !!m.deleted_at || deletedLocal.has(m.id)
         // Bestätigte Nachrichten bleiben stehen — sonst verlöre die Bestätigung ihren Sinn.
         const deletable = own && !deleted && !m.acknowledged_at && !ackedLocal.has(m.id)
+        // Gezielt angeschrieben? Nur Elternnachrichten tragen einen Adressaten.
+        const addressedId = m.addressed_teacher_id ?? null
+        const addressedToMe = !!addressedId && addressedId === currentUserId
+        const addressedLabel = addressedId
+          ? (addressedToMe ? 'an dich' : `an ${senderNames[addressedId] ?? 'eine Lehrperson'}`)
+          : null
+        const addressedChip = addressedLabel && !deleted ? (
+          <span
+            className={`text-[10px] font-semibold px-1.5 py-px rounded-full truncate max-w-[180px] ${
+              addressedToMe ? 'text-white gradient-teal' : 'text-kh-muted bg-[#F1EFE8]'
+            }`}
+            title={addressedToMe ? 'Diese Nachricht ist gezielt an dich gerichtet' : undefined}
+          >
+            {addressedLabel}
+          </span>
+        ) : null
         const showDay = dayKey(m.created_at) !== lastDay
         lastDay = dayKey(m.created_at)
 
@@ -199,6 +215,7 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
                     <>
                       <span className="text-kh-muted/85">{timeOf(m.created_at)}</span>
                       <span className="font-semibold text-kh-muted">Du</span>
+                      {addressedChip}
                       {m.seen_at && !deleted && (
                         <span className="msym text-[14px] text-kh-teal" style={{ fontVariationSettings: "'FILL' 1" }}>done_all</span>
                       )}
@@ -219,6 +236,7 @@ export default function MessageThread({ messages, side, currentUserId, senderNam
                       {kind === 'teacher' && side === 'teacher' && (
                         <span className="text-[10px] font-semibold text-kh-teal bg-kh-teal-light px-1.5 py-px rounded-full">Kollegium</span>
                       )}
+                      {addressedChip}
                       <span className="text-kh-muted/85">{timeOf(m.created_at)}</span>
                     </>
                   )}

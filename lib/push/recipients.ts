@@ -7,6 +7,8 @@ export interface MessageRow {
   parent_id: string
   sender_id: string | null
   created_at?: string
+  /** Gezielt angeschriebene Lehrperson (feature-message-addressed.sql). */
+  addressed_teacher_id?: string | null
 }
 
 export type PushKind = 'messages' | 'events' | 'reminders' | 'homework'
@@ -28,7 +30,8 @@ export interface PushPlan {
  * - Lehrperson schreibt → genau das Elternteil, dem das Heft gehört
  *   (parent_id). Sammelnachrichten sind bereits pro Heft aufgefächert,
  *   jede Kopie löst also genau eine Push-Nachricht aus.
- * - Elternteil schreibt → die Lehrperson, die zuletzt in DIESEM Heft
+ * - Elternteil schreibt gezielt an eine Lehrperson → genau diese.
+ * - Elternteil schreibt an alle → die Lehrperson, die zuletzt in DIESEM Heft
  *   geschrieben hat (ihr wird geantwortet). Bewusst nicht alle, die je
  *   geschrieben haben: Sammelnachrichten mehrerer Lehrpersonen hätten
  *   sonst meist 3–4 Empfänger gemacht (in 1b sind 8 eingetragen). Hat
@@ -43,6 +46,25 @@ export async function planMessagePush(db: SupabaseClient, row: MessageRow): Prom
     return { ...base, recipientIds: [row.parent_id], body: 'Neue Nachricht im Mitteilungsheft', tag: 'heft' }
   }
 
+  const teacherIds = row.addressed_teacher_id
+    ? [row.addressed_teacher_id]
+    : await fallbackTeacherIds(db, row)
+
+  const { data: parent } = await db.from('profiles').select('full_name').eq('id', row.parent_id).single()
+  const name = (parent as { full_name: string } | null)?.full_name
+  return {
+    ...base,
+    recipientIds: teacherIds,
+    // Gezielt: „an Sie“ sagt, warum gerade diese Person den Push bekommt.
+    body: row.addressed_teacher_id
+      ? (name ? `Neue Nachricht von ${name} an Sie` : 'Neue Nachricht an Sie im Mitteilungsheft')
+      : (name ? `Neue Antwort von ${name}` : 'Neue Antwort im Mitteilungsheft'),
+    tag: `heft-${row.parent_id}`,
+  }
+}
+
+/** Ohne Adressat: wer zuletzt im Heft schrieb, sonst der Klassenvorstand. */
+async function fallbackTeacherIds(db: SupabaseClient, row: MessageRow): Promise<string[]> {
   const { data: lastTeacherMsg } = await db
     .from('messages')
     .select('sender_id')
@@ -63,13 +85,5 @@ export async function planMessagePush(db: SupabaseClient, row: MessageRow): Prom
       .eq('is_primary', true)
     teacherIds = (primary ?? []).map((r: { teacher_id: string }) => r.teacher_id)
   }
-
-  const { data: parent } = await db.from('profiles').select('full_name').eq('id', row.parent_id).single()
-  const name = (parent as { full_name: string } | null)?.full_name
-  return {
-    ...base,
-    recipientIds: teacherIds,
-    body: name ? `Neue Antwort von ${name}` : 'Neue Antwort im Mitteilungsheft',
-    tag: `heft-${row.parent_id}`,
-  }
+  return teacherIds
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import MessageThread, { type SenderAvatar } from './MessageThread'
 import type { Message } from '@/lib/types'
+import type { AddressableTeacher } from '@/lib/messages'
 
 function firstName(full: string) { return full.split(' ')[0] }
 
@@ -20,12 +21,16 @@ interface Props {
   classId: string
   senderNames?: Record<string, string>
   senderAvatars?: Record<string, SenderAvatar>
+  /** Lehrpersonen der Klasse, die gezielt angeschrieben werden können. */
+  teachers?: AddressableTeacher[]
 }
 
-export default function ParentBooklet({ messages, userId, classId, senderNames, senderAvatars, andereHefte = [], className = null, childName = null }: Props) {
+export default function ParentBooklet({ messages, userId, classId, senderNames, senderAvatars, andereHefte = [], className = null, childName = null, teachers = [] }: Props) {
   const router = useRouter()
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
+  // Leer = an alle Lehrpersonen (Standard, wie bisher).
+  const [addressee, setAddressee] = useState('')
   const markedRef = useRef(false)
 
   // Lehrer-Nachrichten beim Öffnen als gesehen markieren (beidseitig).
@@ -44,13 +49,26 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
     if (!text || sending) return
     setSending(true)
     const supabase = createClient()
-    await supabase.from('messages').insert({
+    // Die Spalte nur mitschicken, wenn jemand gewählt ist: so läuft das
+    // allgemeine Heft auch, solange die Migration noch nicht eingespielt ist.
+    const { error } = await supabase.from('messages').insert({
       class_id: classId,
       parent_id: userId,
       sender_id: userId,
       body: text,
+      ...(addressee ? { addressed_teacher_id: addressee } : {}),
     })
+    // Bei einem Fehler bleibt der Text stehen: lieber nochmal tippen lassen,
+    // als eine Nachricht still zu verlieren.
+    if (error) {
+      setSending(false)
+      alert('Die Nachricht konnte nicht gesendet werden. Bitte später nochmal versuchen.')
+      return
+    }
     setBody('')
+    // Zurück auf „alle“: die nächste Nachricht soll nicht unbemerkt an
+    // dieselbe Person gehen, nur weil die Auswahl noch stand.
+    setAddressee('')
     setSending(false)
     router.refresh()
   }
@@ -122,7 +140,38 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
         <MessageThread messages={messages} side="parent" currentUserId={userId} senderNames={senderNames} senderAvatars={senderAvatars} onAcknowledge={acknowledge} />
       </div>
 
-      <div className="flex items-end gap-2 pt-3 border-t border-kh-border/50">
+      {teachers.length > 0 && (
+        <div className="pt-3 border-t border-kh-border/50">
+          <label className="flex items-center gap-2 text-[12.5px] font-semibold text-kh-muted">
+            <span className="flex-shrink-0">An:</span>
+            <span className="relative min-w-0">
+              <select
+                value={addressee}
+                onChange={e => setAddressee(e.target.value)}
+                className={`appearance-none max-w-full truncate pl-3 pr-8 py-1.5 rounded-full border text-[16px] md:text-[13px] font-bold focus:outline-none focus:border-kh-teal transition-colors ${
+                  addressee ? 'border-kh-teal text-kh-teal bg-kh-teal-light/60' : 'border-kh-border/70 text-kh-dark bg-white'
+                }`}
+              >
+                <option value="">Alle Lehrpersonen der Klasse</option>
+                {teachers.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                    {t.primary ? ' · Klassenvorstand' : t.subjects.length > 0 ? ` · ${t.subjects.join(', ')}` : ''}
+                  </option>
+                ))}
+              </select>
+              <span className="msym text-[18px] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-kh-muted">expand_more</span>
+            </span>
+          </label>
+          {addressee && (
+            <p className="mt-1.5 text-[11.5px] text-kh-muted leading-snug">
+              Diese Lehrperson wird benachrichtigt. Lesen können das Heft weiterhin alle Lehrpersonen der Klasse.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className={`flex items-end gap-2 ${teachers.length > 0 ? 'pt-2' : 'pt-3 border-t border-kh-border/50'}`}>
         <textarea
           value={body}
           onChange={e => setBody(e.target.value)}

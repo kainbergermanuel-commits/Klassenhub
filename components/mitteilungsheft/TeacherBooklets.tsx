@@ -9,6 +9,7 @@ import IconButton from '@/components/ui/IconButton'
 import MessageThread, { type SenderAvatar } from './MessageThread'
 import PageHeader from '@/components/layout/PageHeader'
 import type { Message } from '@/lib/types'
+import { isUnreadForTeacher } from '@/lib/messages'
 
 type ParentLite = {
   id: string
@@ -110,7 +111,8 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
       .map(p => {
         const msgs = byParent[p.id] ?? []
         const last = msgs[msgs.length - 1] ?? null
-        const unread = msgs.filter(m => m.sender_id === p.id && !m.seen_at).length
+        // Gezielt an Kolleg*innen gerichtete Nachrichten zählen hier nicht.
+        const unread = msgs.filter(m => isUnreadForTeacher(m, userId)).length
         return { parent: p, last, unread }
       })
       .sort((a, b) => {
@@ -120,7 +122,7 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
         const tb = b.last ? new Date(b.last.created_at).getTime() : 0
         return tb - ta
       })
-  }, [parents, byParent])
+  }, [parents, byParent, userId])
 
   // Sammelnachrichten (Fan-out-Kopien je broadcast_id) mit aggregiertem Gesehen-Status.
   // Klassenübergreifend: Quelle ist broadcastMessages (alle eigenen Klassen).
@@ -299,16 +301,18 @@ function TeacherThread({
   const [sending, setSending] = useState(false)
   const markedRef = useRef(false)
 
-  // Eltern-Nachrichten als gesehen markieren.
+  // Eltern-Nachrichten als gesehen markieren. Nachrichten, die gezielt an
+  // eine Kollegin gehen, bleiben unberührt: sonst verschwände ihr „neu“,
+  // weil jemand anderer zuerst ins Heft geschaut hat.
   useEffect(() => {
     if (markedRef.current) return
-    const unseen = messages.filter(m => m.sender_id === parent.id && !m.seen_at).map(m => m.id)
+    const unseen = messages.filter(m => isUnreadForTeacher(m, userId)).map(m => m.id)
     if (unseen.length === 0) return
     markedRef.current = true
     const supabase = createClient()
     supabase.from('messages').update({ seen_at: new Date().toISOString() }).in('id', unseen)
       .then(() => router.refresh())
-  }, [messages, parent.id, router])
+  }, [messages, userId, router])
 
   async function send() {
     const text = body.trim()

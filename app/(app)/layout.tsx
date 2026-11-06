@@ -5,6 +5,7 @@ import { hwForStudent } from '@/lib/homeworkScope'
 import { getAuth, getClass, getTeacherClasses, getActiveChildId, getParentChildren, getParentsOfStudents } from '@/lib/auth'
 import { getEffectiveAuth } from '@/lib/previewAuth'
 import { todayISO } from '@/lib/date'
+import { isUnreadForTeacher } from '@/lib/messages'
 import BodyTheme from '@/components/layout/BodyTheme'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileHeader from '@/components/layout/MobileHeader'
@@ -137,11 +138,14 @@ async function computeMessageBadge(profile: Profile, userId: string, classId: st
     return (data ?? []).filter(m => m.sender_id !== userId).length
   }
 
-  // Lehrkraft: ungesehene Eltern-Nachrichten (sender = Heftbesitzer) der Klasse.
+  // Lehrkraft: ungesehene Eltern-Nachrichten der Klasse, die an alle oder
+  // gezielt an mich gehen (lib/messages.ts). select('*') statt einer
+  // Spaltenliste: so läuft das Badge auch, bevor addressed_teacher_id
+  // eingespielt ist (die Spalte fehlt dann einfach).
   const { data } = await supabase
-    .from('messages').select('parent_id,sender_id')
+    .from('messages').select('*')
     .eq('class_id', classId).is('seen_at', null)
-  return (data ?? []).filter(m => m.sender_id === m.parent_id).length
+  return (data ?? []).filter(m => isUnreadForTeacher(m, userId)).length
 }
 
 /** Anzahl für das HÜ-Badge je Rolle (offen bzw. aktiv). */

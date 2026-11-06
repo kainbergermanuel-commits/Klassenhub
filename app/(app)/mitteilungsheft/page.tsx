@@ -7,6 +7,7 @@ import TeacherBooklets from '@/components/mitteilungsheft/TeacherBooklets'
 import AnimateIn from '@/components/ui/AnimateIn'
 import type { SenderAvatar } from '@/components/mitteilungsheft/MessageThread'
 import type { Message } from '@/lib/types'
+import type { AddressableTeacher } from '@/lib/messages'
 
 export default async function MitteilungsheftPage() {
   const { user, profile, activeClassId } = await getEffectiveAuth()
@@ -29,14 +30,38 @@ export default async function MitteilungsheftPage() {
       .eq('class_id', activeClassId)
       .order('created_at', { ascending: true })
 
+    // Lehrpersonen der Klasse, die gezielt angeschrieben werden können.
+    // Klassenvorstand zuerst, dann alphabetisch. Eltern dürfen teacher_classes
+    // ihrer Klassen lesen (fix-teacher-classes-student-read.sql).
+    const { data: tcRows } = await (supabase
+      .from('teacher_classes' as string)
+      .select('teacher_id,is_primary,subjects')
+      .eq('class_id', activeClassId) as unknown as Promise<{ data: { teacher_id: string; is_primary: boolean; subjects: { short?: string; subject?: string }[] | null }[] | null }>)
+    const tcIds = (tcRows ?? []).map(r => r.teacher_id)
+    const { data: tcProfiles } = tcIds.length > 0
+      ? await supabase.from('profiles').select('id,full_name').in('id', tcIds)
+      : { data: [] as { id: string; full_name: string }[] }
+    const nameById = Object.fromEntries((tcProfiles ?? []).map(p => [p.id, p.full_name]))
+    const teachers: AddressableTeacher[] = (tcRows ?? [])
+      .filter(r => nameById[r.teacher_id])
+      .map(r => ({
+        id: r.teacher_id,
+        name: nameById[r.teacher_id],
+        primary: r.is_primary,
+        subjects: (r.subjects ?? []).map(s => s.short || s.subject || '').filter(Boolean),
+      }))
+      .sort((a, b) => (a.primary === b.primary ? a.name.localeCompare(b.name, 'de') : a.primary ? -1 : 1))
+
     // Anzeigenamen + Avatare der Absender (Lehrkraft[en] + eigener Name).
-    const senderNames: Record<string, string> = { [user.id]: profile.full_name }
+    // Die Lehrpersonen der Klasse stehen mit drin, damit „an …“ an der
+    // eigenen Nachricht einen Namen hat, auch wenn sie nie geschrieben haben.
+    const senderNames: Record<string, string> = { ...nameById, [user.id]: profile.full_name }
     const senderAvatars: Record<string, SenderAvatar> = {}
     const teacherIds = [...new Set((messages ?? []).map(m => m.sender_id).filter((id): id is string => !!id && id !== user.id))]
     if (teacherIds.length > 0) {
-      const { data: teachers } = await supabase
+      const { data: senderRows } = await supabase
         .from('profiles').select('id,full_name,avatar_color,avatar_seed,avatar_hair_color,avatar_skin_color').in('id', teacherIds)
-      for (const t of teachers ?? []) {
+      for (const t of senderRows ?? []) {
         senderNames[t.id] = t.full_name
         senderAvatars[t.id] = { name: t.full_name, color: t.avatar_color, seed: t.avatar_seed, hairColor: t.avatar_hair_color, skinColor: t.avatar_skin_color }
       }
@@ -79,6 +104,7 @@ export default async function MitteilungsheftPage() {
           classId={activeClassId}
           senderNames={senderNames}
           senderAvatars={senderAvatars}
+          teachers={teachers}
         />
       </AnimateIn>
     )
@@ -108,7 +134,9 @@ export default async function MitteilungsheftPage() {
   // haette fuer Aussagen eingestanden, die jemand anderer getroffen hat.
   const teacherSenderIds = [...new Set(
     [...(messages ?? []), ...(broadcastMessages ?? [])]
-      .map(m => m.sender_id)
+      // Adressaten mit dazu: „an Eva Ruth“ braucht einen Namen, auch wenn
+      // sie in diesem Heft selbst noch nie geschrieben hat.
+      .flatMap(m => [m.sender_id, (m as Message).addressed_teacher_id ?? null])
       .filter((id): id is string => !!id && id !== user.id),
   )]
   const senderProfiles: Record<string, SenderAvatar> = {}

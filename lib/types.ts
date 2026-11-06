@@ -268,6 +268,7 @@ export type Database = {
           requires_ack?: boolean
           acknowledged_at?: string | null
           deleted_at?: string | null
+          addressed_teacher_id?: string | null
         }
         Update: Partial<Message>
         Relationships: []
@@ -507,6 +508,13 @@ export type Message = {
   acknowledged_at: string | null
   /** Weich gelöscht: Zeile bleibt als Platzhalter, body ist leer. */
   deleted_at: string | null
+  /**
+   * Elternnachricht gezielt an diese Lehrperson (feature-message-addressed.sql).
+   * NULL = an alle Lehrpersonen der Klasse. Bei gesetztem Wert heißt seen_at
+   * „vom Adressaten gelesen“, nicht „von irgendwem“. Optional, damit der
+   * Code auch vor dem Einspielen der Migration läuft.
+   */
+  addressed_teacher_id?: string | null
 }
 
 // Anwesenheit: nur ABWEICHUNGEN werden gespeichert (kein Eintrag = anwesend).
