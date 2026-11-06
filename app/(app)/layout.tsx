@@ -13,6 +13,11 @@ import RolePreviewBar from '@/components/layout/RolePreviewBar'
 import ClassGoalWatermark from '@/components/home/ClassGoalWatermark'
 import type { Profile, Class } from '@/lib/types'
 
+/** Rollen-Vorschau-Pille für Admins. Vorerst aus (06.11.2026, auf Wunsch:
+ *  wird gerade nicht genutzt und stand ständig im Bild). Zum Wiedereinschalten
+ *  auf true setzen. Der Code dahinter bleibt unverändert. */
+const ROLE_PREVIEW_BAR_ENABLED = false
+
 function buildNav(profile: Profile, hwOpen: number, reminderUnread: number, messageUnread: number, attendancePending: number) {
   const isTeacher = profile.role === 'teacher'
 
@@ -226,9 +231,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let previewParentId: string | null = null
   let allStudents: { id: string; full_name: string }[] = []
   let allParents: { id: string; full_name: string }[] = []
-  if (realProfile.is_admin && activeClassId) {
+  const jar = realProfile.is_admin ? await cookies() : null
+  // Läuft gerade eine Vorschau, bleibt die Pille trotz Abschaltung sichtbar:
+  // sonst säße man in der Rolle fest, ohne Knopf zum Zurückkehren.
+  const showPreviewBar = !!realProfile.is_admin && (ROLE_PREVIEW_BAR_ENABLED || !!jar?.get('preview_role')?.value)
+  if (showPreviewBar && jar && activeClassId) {
     const supabase = await createClient()
-    const jar = await cookies()
     previewRole = jar.get('preview_role')?.value ?? null
     previewStudentId = jar.get('preview_student_id')?.value ?? null
     previewParentId = jar.get('preview_parent_id')?.value ?? null
@@ -270,7 +278,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </main>
       </div>
-      {realProfile.is_admin && (
+      {showPreviewBar && (
         <RolePreviewBar currentPreview={previewRole} previewName={previewName} previewStudentId={previewStudentId} previewParentId={previewParentId} students={allStudents} parents={allParents} />
       )}
     </div>
