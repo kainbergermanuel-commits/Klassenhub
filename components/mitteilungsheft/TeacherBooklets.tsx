@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Avatar from '@/components/ui/Avatar'
 import IconButton from '@/components/ui/IconButton'
+import { useAutoGrow } from './useAutoGrow'
 import MessageThread, { type SenderAvatar } from './MessageThread'
 import PageHeader from '@/components/layout/PageHeader'
 import type { Message } from '@/lib/types'
@@ -300,6 +301,7 @@ function TeacherThread({
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
   const markedRef = useRef(false)
+  const textareaRef = useAutoGrow(body)
 
   // Eltern-Nachrichten als gesehen markieren. Nachrichten, die gezielt an
   // eine Kollegin gehen, bleiben unberührt: sonst verschwände ihr „neu“,
@@ -361,9 +363,12 @@ function TeacherThread({
 
       <div className="flex items-end gap-2 pt-3 border-t border-kh-border/50">
         <textarea
+          ref={textareaRef}
           value={body}
           onChange={e => setBody(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+          // Enter = neue Zeile (wie in einem Brief). Senden über den Knopf,
+          // am Rechner zusätzlich mit Strg/Cmd + Enter.
+          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send() } }}
           rows={1}
           placeholder="Nachricht schreiben…"
           className="flex-1 resize-none rounded-[18px] border border-kh-border/70 px-4 py-2.5 text-[16px] md:text-[14px] focus:outline-none focus:border-kh-teal max-h-32"

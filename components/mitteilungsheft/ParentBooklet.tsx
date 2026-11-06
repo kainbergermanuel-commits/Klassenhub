@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useAutoGrow } from './useAutoGrow'
 import MessageThread, { type SenderAvatar } from './MessageThread'
 import type { Message } from '@/lib/types'
 import type { AddressableTeacher } from '@/lib/messages'
@@ -32,6 +33,7 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
   // Leer = an alle Lehrpersonen (Standard, wie bisher).
   const [addressee, setAddressee] = useState('')
   const markedRef = useRef(false)
+  const textareaRef = useAutoGrow(body)
 
   // Lehrer-Nachrichten beim Öffnen als gesehen markieren (beidseitig).
   useEffect(() => {
@@ -173,9 +175,12 @@ export default function ParentBooklet({ messages, userId, classId, senderNames, 
 
       <div className={`flex items-end gap-2 ${teachers.length > 0 ? 'pt-2' : 'pt-3 border-t border-kh-border/50'}`}>
         <textarea
+          ref={textareaRef}
           value={body}
           onChange={e => setBody(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+          // Enter = neue Zeile (wie in einem Brief). Senden über den Knopf,
+          // am Rechner zusätzlich mit Strg/Cmd + Enter.
+          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send() } }}
           rows={1}
           placeholder="Antwort schreiben…"
           className="flex-1 resize-none rounded-[18px] border border-kh-border/70 px-4 py-2.5 text-[16px] md:text-[14px] focus:outline-none focus:border-kh-teal max-h-32"
