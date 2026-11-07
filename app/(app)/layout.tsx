@@ -149,10 +149,22 @@ async function computeMessageBadge(profile: Profile, userId: string, classId: st
   // sind nie Sammelnachrichten, und ungelesene Sammelkopien (je Familie eine)
   // wären sonst bei jedem Seitenaufruf mitgeladen worden, mit der Zeit
   // immer mehr.
-  const { data } = await supabase
-    .from('messages').select('parent_id,sender_id,seen_at,deleted_at,addressed_teacher_id')
-    .eq('class_id', classId).is('seen_at', null).is('broadcast_id', null)
-  return (data ?? []).filter(m => isUnreadForTeacher(m, userId)).length
+  //
+  // Zweite Abfrage: gezielt an MICH gerichtete Nachrichten aus meinen ANDEREN
+  // Klassen. Die meisten Lehrpersonen sind in mehreren Klassen; ohne sie bliebe
+  // eine Nachricht an mich unsichtbar, solange zufällig eine andere Klasse
+  // aktiv ist. Allgemeine Nachrichten anderer Klassen zählen weiterhin nicht
+  // (sonst wäre das „neu“ in jeder Klasse gleichzeitig an).
+  const [{ data }, { data: anMichAnderswo }] = await Promise.all([
+    supabase
+      .from('messages').select('parent_id,sender_id,seen_at,deleted_at,addressed_teacher_id')
+      .eq('class_id', classId).is('seen_at', null).is('broadcast_id', null),
+    supabase
+      .from('messages').select('id')
+      .eq('addressed_teacher_id', userId).neq('class_id', classId)
+      .is('seen_at', null).is('deleted_at', null),
+  ])
+  return (data ?? []).filter(m => isUnreadForTeacher(m, userId)).length + (anMichAnderswo ?? []).length
 }
 
 /** Anzahl für das HÜ-Badge je Rolle (offen bzw. aktiv). */

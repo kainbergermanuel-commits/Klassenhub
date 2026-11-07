@@ -9,7 +9,8 @@ import type { SenderAvatar } from '@/components/mitteilungsheft/MessageThread'
 import type { Message } from '@/lib/types'
 import type { AddressableTeacher } from '@/lib/messages'
 
-export default async function MitteilungsheftPage() {
+export default async function MitteilungsheftPage({ searchParams }: { searchParams: Promise<{ heft?: string }> }) {
+  const { heft } = await searchParams
   const { user, profile, activeClassId } = await getEffectiveAuth()
   if (!user) redirect('/login')
   if (!activeClassId) redirect('/')
@@ -150,6 +151,18 @@ export default async function MitteilungsheftPage() {
     }
   }
 
+  // Gezielt an mich gerichtete, ungelesene Nachrichten aus meinen ANDEREN
+  // Klassen. Die Heft-Liste zeigt nur die aktive Klasse; ohne diesen Hinweis
+  // führte das „neu“ in der Navigation ins Leere (Gegenstück zu andereHefte
+  // auf der Elternseite).
+  const { data: anMichAnderswo } = await supabase
+    .from('messages').select('class_id')
+    .eq('addressed_teacher_id', user.id).neq('class_id', activeClassId)
+    .is('seen_at', null).is('deleted_at', null)
+  const andereKlassen = teacherClasses
+    .map(c => ({ classId: c.id, className: c.name, count: (anMichAnderswo ?? []).filter(m => m.class_id === c.id).length }))
+    .filter(k => k.count > 0)
+
   const students = (allStudents ?? []).filter(s => s.class_id === activeClassId)
   const idsAktiveKlasse = new Set(students.map(s => s.id))
   // Heft-Liste zeigt weiterhin nur die aktive Klasse: ein Elternteil gehört
@@ -173,6 +186,8 @@ export default async function MitteilungsheftPage() {
         senderProfiles={senderProfiles}
         childrenByParent={childrenByParent}
         classId={activeClassId}
+        andereKlassen={andereKlassen}
+        initialParentId={heft && parents.some(p => p.id === heft) ? heft : null}
       />
     </AnimateIn>
   )

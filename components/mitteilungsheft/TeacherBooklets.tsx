@@ -49,6 +49,10 @@ interface Props {
   // Führende Quelle für "welche Kinder": profiles.child_id kennt nur EIN
   // Hauptkind, und bei Geschwistern sitzt das oft in einer anderen Klasse.
   childrenByParent: Record<string, string[]>
+  /** Ungelesene Nachrichten an mich in meinen anderen Klassen. */
+  andereKlassen?: { classId: string; className: string; count: number }[]
+  /** Heft, das gleich offen sein soll (Push-Link ?heft=…). */
+  initialParentId?: string | null
 }
 
 function firstName(full: string) { return full.split(' ')[0] }
@@ -58,9 +62,26 @@ function familyInitial(full: string) {
   return (full.replace(/^Fam\.\s*/i, '').trim()[0] ?? '?').toUpperCase()
 }
 
-export default function TeacherBooklets({ parents, students, allParents, allStudents, classes, messages, broadcastMessages, userId, ownName, classId, senderProfiles, childrenByParent }: Props) {
+export default function TeacherBooklets({ parents, students, allParents, allStudents, classes, messages, broadcastMessages, userId, ownName, classId, senderProfiles, childrenByParent, andereKlassen = [], initialParentId = null }: Props) {
   const router = useRouter()
-  const [openParentId, setOpenParentId] = useState<string | null>(null)
+  const [openParentId, setOpenParentId] = useState<string | null>(initialParentId)
+  const [wechselt, setWechselt] = useState<string | null>(null)
+
+  // Nach dem Wechsel ist die Seite eine andere Klasse: Sperre wieder lösen,
+  // sonst blieben weitere Hinweise ausgegraut.
+  useEffect(() => { setWechselt(null) }, [classId])
+
+  // Wie der Klassen-Umschalter: Cookie setzen, dann neu laden.
+  async function zurKlasse(id: string) {
+    if (wechselt) return
+    setWechselt(id)
+    await fetch('/api/active-class', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ classId: id }),
+    })
+    router.refresh()
+  }
   const [composing, setComposing] = useState(false)
   const [showBroadcasts, setShowBroadcasts] = useState(false)
 
@@ -209,6 +230,30 @@ export default function TeacherBooklets({ parents, students, allParents, allStud
           </button>
         </div>
       </div>
+
+      {andereKlassen.map(k => (
+        <button
+          key={k.classId}
+          onClick={() => zurKlasse(k.classId)}
+          disabled={!!wechselt}
+          className="w-full flex items-center gap-3 mb-3 px-4 py-3 rounded-2xl text-left border border-kh-teal/30 bg-kh-teal-light/60 hover:border-kh-teal transition-colors disabled:opacity-60"
+        >
+          <span className="msym text-[22px] text-kh-teal flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
+            mark_email_unread
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13.5px] font-bold text-kh-dark">
+              {k.count === 1
+                ? `In der ${k.className} liegt eine Nachricht an dich`
+                : `In der ${k.className} liegen ${k.count} Nachrichten an dich`}
+            </span>
+            <span className="block text-[11.5px] text-kh-muted leading-snug">
+              {wechselt === k.classId ? 'Wird geöffnet…' : `Tippen, um zur ${k.className} zu wechseln`}
+            </span>
+          </span>
+          <span className="msym text-[20px] text-kh-teal flex-shrink-0">chevron_right</span>
+        </button>
+      ))}
 
       {parents.length === 0 ? (
         <div className="text-center py-16 text-kh-muted">

@@ -54,6 +54,9 @@ export async function planMessagePush(db: SupabaseClient, row: MessageRow): Prom
   const name = (parent as { full_name: string } | null)?.full_name
   return {
     ...base,
+    // Direkt in die richtige Klasse und ins richtige Heft: die meisten
+    // Lehrpersonen sind in mehreren Klassen.
+    url: `/api/active-class?classId=${row.class_id}&next=${encodeURIComponent(`/mitteilungsheft?heft=${row.parent_id}`)}`,
     recipientIds: teacherIds,
     // Gezielt: „an Sie“ sagt, warum gerade diese Person den Push bekommt.
     body: row.addressed_teacher_id
